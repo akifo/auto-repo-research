@@ -1,0 +1,100 @@
+url: https://github.com/mastra-ai/mastra
+stars: 21085
+language: TypeScript
+license: Apache-2.0
+description: "From the team behind Gatsby, Mastra is a framework for building AI-powered applications and agents with a modern TypeScript stack."
+analyzed_at: "2026-02-14"
+local_path: /Users/akiho/github/github.com/mastra-ai/mastra
+scale: large
+
+perspectives:
+  - name: project-structure
+    file: project-structure.md
+    wave: 1
+    intent: "モノレポのディレクトリ構成・ワークスペース分割・パッケージ間の依存管理パターンを明らかにする"
+    summary: "90超パッケージをカテゴリ別トップレベルディレクトリに分割し、@internal/*スコープとpnpm catalogで一貫管理"
+  - name: architecture
+    file: architecture.md
+    wave: 1
+    intent: "全体アーキテクチャ・レイヤー構成・コアと周辺パッケージの結合パターンを分析する"
+    summary: "Mastraクラスを中央レジストリとした4層構造で、Proxy遅延初期化とNoOpパターンを活用"
+  - name: design-philosophy
+    file: design-philosophy.md
+    wave: 1
+    intent: "フレームワーク設計の哲学・技術選定の根拠・AIフレームワークとしてのトレードオフ判断を明らかにする"
+    summary: "薄いコア+プラガブル周辺、DynamicArgument型による静的/動的統一、AI SDKベンダリング戦略"
+  - name: abstraction-patterns
+    file: abstraction-patterns.md
+    wave: 1
+    intent: "共通インターフェース・アダプターパターン・プラグイン接続の抽象化手法を分析する"
+    summary: "三層継承とフィルタ翻訳Interpreterで50超アダプターを統一インターフェースで管理"
+  - name: type-system-patterns
+    file: type-system-patterns.md
+    wave: 1
+    intent: "TypeScript型システムの活用パターン・ジェネリクス・型安全なAPIデザインを分析する"
+    summary: "Zodスキーマ駆動型設計、ブランド型によるsuspend安全性、条件型でのAPI分岐を高度に活用"
+  - name: code-organization
+    file: code-organization.md
+    wave: 1
+    intent: "モジュール分割・エクスポート戦略・パッケージ内のファイル構成パターンを分析する"
+    summary: "メインエントリ1行+20超サブパスエクスポートで最小公開面を実現、@deprecatedエイリアスで段階的移行"
+  - name: extensibility-mechanisms
+    file: extensibility-mechanisms.md
+    wave: 1
+    intent: "プラグイン登録・アダプター拡張・カスタムプロバイダー統合のメカニズムを明らかにする"
+    summary: "abstract class+中央レジストリ+自動DIの三位一体で50超プラグインの拡張メカニズムを統一"
+  - name: error-handling-idioms
+    file: error-handling-idioms.md
+    wave: 2
+    intent: "エラー型の設計・エラー伝播・リトライ戦略とフォールバックパターンを分析する"
+    summary: "ドメイン×カテゴリの構造化エラー、unknown正規化ユーティリティ、高階関数リトライを横断的に適用"
+  - name: testing-practices
+    file: testing-practices.md
+    wave: 2
+    intent: "テスト戦略・モノレポでのテスト構成・モック手法・E2Eテストパターンを分析する"
+    summary: "テストスイートファクトリとcapabilityフラグで20超アダプターに統一テストを適用、CI差分実行を徹底"
+  - name: api-design-practices
+    file: api-design-practices.md
+    wave: 2
+    intent: "パブリックAPI設計・設定オブジェクト・ビルダーパターン・DXの工夫を分析する"
+    summary: "設定オブジェクト+createXxxファクトリ+Fluent Builderで型推論を活かしたDX重視のAPI設計"
+  - name: build-and-tooling
+    file: build-and-tooling.md
+    wave: 2
+    intent: "ビルドパイプライン・Turborepo活用・TypeScriptビルド設定のパターンを分析する"
+    summary: "tsup(dts:false)+カスタム型生成+Turborepo二層タスク定義で80超パッケージのビルドを統一"
+  - name: dependency-management
+    file: dependency-management.md
+    wave: 2
+    intent: "モノレポ依存管理・pnpmカタログ・バージョニング戦略を分析する"
+    summary: "pnpm catalog+npm aliasing+カスタムchangeset CLIで100超パッケージの依存とバージョンを自動管理"
+  - name: dev-conventions
+    file: dev-conventions.md
+    wave: 2
+    intent: "コーディング規約・リンター設定・changesets運用・コミット規約を分析する"
+    summary: "@internal/lintで共有ESLint設定を一元化、依存検出による条件付きルール適用で異種パッケージに対応"
+  - name: ai-settings
+    file: ai-settings.md
+    wave: 2
+    intent: "Claude/Cursor/Copilot向けAI設定ファイル・カスタムコマンド・MCPサーバー設定の活用パターンを分析する"
+    summary: "3ツール並行管理の10種コマンド、段階的ワークフロー、カスタムMCPドキュメントサーバーを統合運用"
+  - name: concurrency-patterns
+    file: concurrency-patterns.md
+    wave: 2
+    intent: "非同期処理・ストリーミング・suspend/resume・並行処理のパターンを分析する"
+    summary: "branded type付きsuspend/resume、安全性制約による並行度自動降格、debounce+staleness永続化"
+  - name: schema-validation-patterns
+    file: schema-validation-patterns.md
+    wave: 2
+    intent: "Zod等のスキーマ検証・マルチバージョン対応・設定バリデーションのパターンを分析する"
+    summary: "Zod v3/v4互換のduck typing、プロバイダ別Strategy変換、5段階フォールバック入力正規化"
+  - name: composability-patterns
+    file: composability-patterns.md
+    wave: 2
+    intent: "ツール合成・ワークフローステップ連結・エージェント構成のコンポーザビリティパターンを分析する"
+    summary: "createStepで異種コンポーネントをStep統一変換、Workflow自体がStepを実装するComposite構造"
+  - name: ci-cd
+    file: ci-cd.md
+    wave: 2
+    intent: "CI/CDワークフロー・モノレポでのリリース自動化・品質ゲートの仕組みを分析する"
+    summary: "Turboハッシュ変更検出+workflow_runチェーン+Trusted Actionsで大規模モノレポCIを安全に自動化"
