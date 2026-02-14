@@ -5,98 +5,147 @@
 
 ## 概要
 
-Hono のディレクトリ構成・モジュール分割・エクスポートマップ設計を分析する。359 ソースファイルを持つ大規模 TypeScript ライブラリでありながら、70 以上のサブパスエクスポートによるきめ細かな tree-shaking を実現し、ESM/CJS デュアル出力と JSR 対応を同時に維持している。Web Standards ベースのマルチランタイムフレームワークとして、ランタイム固有コード（adapter）を完全に分離しつつ、コアを最小限に保つ構造設計が注目に値する。
+ディレクトリ構成・モジュール境界・公開 API の設計戦略を分析する。Hono は単一パッケージ（monorepo ではない）でありながら 60 以上のサブパスエクスポートを持ち、5 種のルーター実装・25 のミドルウェア・9 のランタイムアダプターを内包する。これだけの機能を tree-shakeable かつ dual ESM/CJS 対応で提供しつつ、各モジュールが一貫したディレクトリ規約に従っている点が設計上の注目ポイントである。
 
-## 設計思想
+## 背景にある原則
 
-- **ゼロ不要依存の原則（Pay-only-for-what-you-use）**: `hono` パッケージは 1 つだが、ユーザーが `import { cors } from 'hono/cors'` のように必要な機能だけをサブパスで取得する。コアの `hono` エントリポイント（`src/index.ts`）は `Hono` クラスと基本型のみをエクスポートし、ミドルウェア・ヘルパー・アダプターは一切含まない。これにより、最小構成のアプリでは不要なコードがバンドルに含まれない。
+- **公開 API をファイルシステム構造に写像する**: `package.json` の `exports` フィールドが `src/` のディレクトリ構造と 1:1 対応している。`hono/cors` は `src/middleware/cors/index.ts` に、`hono/router/reg-exp-router` は `src/router/reg-exp-router/index.ts` にマッピングされる。これにより、ユーザーの import パスを見ればソースの場所が推定でき、新モジュール追加時のエクスポート設定も機械的に行える（`build/validate-exports.ts` で package.json と jsr.json の整合性を自動検証している）。
 
-- **抽象コア + 具象プリセットの分離（Template Method 的構成）**: `HonoBase`（`src/hono-base.ts`）はルーターを持たない抽象的なクラスとして設計され（コメント: "This class is like an abstract class and does not have a router"）、具象の `Hono`（`src/hono.ts`）やプリセット（`src/preset/tiny.ts`, `src/preset/quick.ts`）がコンストラクタでルーターを注入する。これにより、ルーター選択という最もパフォーマンスに影響する部分をユーザーの選択に委ねている。
+- **コアを最小に保ち、拡張をサブパスに分離する**: メインエントリ `src/index.ts` は `Hono` クラスと主要な型のみをエクスポートし、ミドルウェア・ヘルパー・アダプターは個別の import パスに分離している。ユーザーが使わないモジュールがバンドルに含まれない設計であり、バンドルサイズの最適化と API の見通しの両方を達成している。
 
-- **ランタイム固有コードの完全隔離**: `src/adapter/` にランタイム固有の実装（`serveStatic`, `upgradeWebSocket`, `getConnInfo` 等）を閉じ込め、コア（`src/hono-base.ts`, `src/context.ts`, `src/compose.ts` 等）は Web Standards API のみに依存する。アダプターは `hono/cloudflare-workers` のようにサブパスで公開され、コアからは一切参照されない。
+- **インターフェースによる実装の交換可能性**: `Router<T>` インターフェース（`src/router.ts`）が `add` と `match` の 2 メソッドのみを定義し、5 種のルーター実装がすべてこの interface を満たす。同様に `GetConnInfo` 型（`src/helper/conninfo/types.ts`）がアダプターごとに異なる接続情報取得を同一シグネチャで抽象化している。インターフェースを最小にすることで、実装の差し替えが容易になる。
 
-- **インターフェースによる戦略パターンの徹底**: `Router<T>` インターフェース（`src/router.ts`）は `add()` と `match()` の 2 メソッドのみを定義し、5 種のルーター実装がこれに準拠する。SmartRouter は初回マッチ時にルーターを自動選択し、以降は `match` メソッドを直接バインドして委譲オーバーヘッドを排除する（`src/router/smart-router/router.ts:46`）。
+- **プリセットパターンによるデフォルトの層別化**: `src/hono-base.ts` がルーターを持たない「抽象基底」、`src/hono.ts` が SmartRouter をデフォルト注入する「標準構成」、`src/preset/tiny.ts` が PatternRouter のみの「軽量構成」という 3 層で構成される。ユーザーは用途に応じて `hono`/`hono/tiny`/`hono/quick` を選択でき、基底クラスの変更なしにバリエーションを追加できる。
 
-## 設計・実装の詳細
+## 実例と分析
 
-### ディレクトリ階層とモジュール分類
+### ディレクトリの役割分担と命名規約
 
-```
-src/
-├── index.ts              # メインエントリ（Hono + 基本型のみ）
-├── hono.ts               # デフォルトプリセット（SmartRouter = RegExp + Trie）
-├── hono-base.ts          # 抽象コア（ルーターなし）
-├── context.ts            # リクエスト/レスポンスコンテキスト
-├── compose.ts            # ミドルウェア合成（koa-compose 派生）
-├── request.ts            # HonoRequest ラッパー
-├── router.ts             # Router<T> インターフェース定義
-├── http-exception.ts     # HTTP 例外クラス
-├── types.ts              # 型定義の集約
-├── router/               # ルーター実装群（Strategy Pattern）
-│   ├── reg-exp-router/   # 正規表現ベース（高速・制約あり）
-│   ├── trie-router/      # Trie ベース（汎用・フォールバック）
-│   ├── smart-router/     # 自動選択プロキシ
-│   ├── pattern-router/   # 軽量正規表現（tiny プリセット用）
-│   └── linear-router/    # 線形走査（quick プリセット用）
-├── preset/               # ルーター組み合わせのプリセット
-│   ├── tiny.ts           # PatternRouter のみ
-│   └── quick.ts          # SmartRouter(Linear + Trie)
-├── adapter/              # ランタイム固有アダプター（9 種）
-│   ├── cloudflare-workers/
-│   ├── bun/
-│   ├── deno/
-│   ├── aws-lambda/
-│   ├── vercel/
-│   └── ...
-├── middleware/            # ビルトインミドルウェア（25 種）
-│   ├── cors/
-│   ├── jwt/
-│   ├── serve-static/
-│   └── ...
-├── helper/               # ヘルパーモジュール（14 種）
-│   ├── factory/          # createFactory / createMiddleware
-│   ├── testing/          # testClient
-│   ├── adapter/          # ランタイム検出ユーティリティ
-│   └── ...
-├── jsx/                  # JSX エンジン（server + dom）
-│   ├── dom/              # クライアントサイド JSX
-│   └── ...
-├── client/               # RPC クライアント（hc）
-├── validator/            # バリデーション基盤
-└── utils/                # 低レベルユーティリティ
-```
+ソースコードは `src/` 直下に 5 つの主要カテゴリディレクトリを持つ。
 
-モジュール分類は **コア / ルーター / アダプター / ミドルウェア / ヘルパー / JSX / クライアント / バリデーター / ユーティリティ** の 9 層構造。依存方向は `ユーティリティ <- コア <- ミドルウェア/ヘルパー/アダプター` の一方向で、ミドルウェアとアダプター間の依存はない。
+| ディレクトリ | 役割 | 粒度の基準 |
+|---|---|---|
+| `adapter/` | ランタイム固有の統合コード | ランタイムごとに 1 ディレクトリ |
+| `middleware/` | リクエスト/レスポンスパイプラインの横断的関心事 | 機能ごとに 1 ディレクトリ |
+| `helper/` | ユーティリティ的な機能拡張 | 機能ごとに 1 ディレクトリ |
+| `router/` | ルーティングアルゴリズムの実装 | アルゴリズムごとに 1 ディレクトリ |
+| `utils/` | 内部ユーティリティ関数 | ファイル単位（ディレクトリなし） |
 
-### サブパスエクスポートの設計
+`middleware/` と `helper/` の違いは、前者がミドルウェアシグネチャ `(c, next) => ...` を返す関数、後者はそれ以外の補助機能（`testClient`、`getRuntimeKey` など）である。この区別により、ユーザーは `app.use()` に渡せるモジュールか否かを import パスから判断できる。
 
-package.json の `exports` フィールドで 70 以上のサブパスを定義し、各エントリに `types` / `import` / `require` の 3 条件分岐を記述している。
+### index.ts によるバレルエクスポートの一貫パターン
 
-```jsonc
-// package.json:38-43 (抜粋)
-".": {
-  "types": "./dist/types/index.d.ts",
-  "import": "./dist/index.js",
-  "require": "./dist/cjs/index.js"
-},
-```
-
-注目すべき設計判断:
-
-1. **フラットなサブパス名**: `hono/cors`, `hono/jwt` のように内部ディレクトリ構造を隠蔽。ユーザーは `hono/middleware/cors` ではなく `hono/cors` でインポートする。ミドルウェアとヘルパーの区別はユーザーに見えない。
-
-2. **ルーターは階層を維持**: `hono/router/reg-exp-router` のように `router/` プレフィックスを付与。ルーターの使い分けは上級者向けの意図的な選択であるため、ディスカバビリティよりも分類の明確性を優先している。
-
-3. **utils はワイルドカードエクスポート**: `"./utils/*"` パターンで全ユーティリティを公開。内部実装の詳細だが、外部ライブラリ（`@hono/*` パッケージ群）からの利用を想定している。
-
-4. **JSX は階層的サブパス**: `hono/jsx`, `hono/jsx/dom`, `hono/jsx/dom/client`, `hono/jsx/dom/css` のようにネストした構造を反映。JSX のサーバー/クライアント/ランタイム区分はユーザーが明示的に選択する必要があるため。
-
-### ESM/CJS デュアル出力とビルドパイプライン
-
-ビルドは `build/build.ts` で esbuild を使い、ESM と CJS を並列ビルドする。
+各サブモジュールは `index.ts` をエントリポイントとし、内部実装を re-export する。
 
 ```typescript
-// build/build.ts:75-89
+// src/router/reg-exp-router/index.ts:5-7
+export { RegExpRouter } from './router'
+export { PreparedRegExpRouter, buildInitParams, serializeInitParams } from './prepared-router'
+```
+
+```typescript
+// src/adapter/cloudflare-workers/index.ts:5-8
+export { serveStatic } from './serve-static-module'
+export { upgradeWebSocket } from './websocket'
+export { getConnInfo } from './conninfo'
+```
+
+各 `index.ts` は公開 API の「門番」として機能し、内部のファイル構造を隠蔽する。`router.ts`、`matcher.ts`、`trie.ts` といった実装詳細は直接エクスポートされない。
+
+### コアのレイヤー分離: hono-base.ts / hono.ts / preset/
+
+```typescript
+// src/hono-base.ts:117-118 (コメントより)
+/*
+  This class is like an abstract class and does not have a router.
+  To use it, inherit the class and implement router in the constructor.
+*/
+router!: Router<[H, RouterRoute]>
+```
+
+```typescript
+// src/hono.ts:16-34
+export class Hono<...> extends HonoBase<E, S, BasePath> {
+  constructor(options: HonoOptions<E> = {}) {
+    super(options)
+    this.router =
+      options.router ??
+      new SmartRouter({
+        routers: [new RegExpRouter(), new TrieRouter()],
+      })
+  }
+}
+```
+
+```typescript
+// src/preset/tiny.ts:11-20
+export class Hono<...> extends HonoBase<E, S, BasePath> {
+  constructor(options: HonoOptions<E> = {}) {
+    super(options)
+    this.router = new PatternRouter()
+  }
+}
+```
+
+基底クラスはルーターを `!` 付きで宣言するだけで、具体的なルーターの注入はサブクラスに委ねる。TypeScript の `abstract` キーワードではなく non-null assertion を使っている点は、ユーザーが `HonoBase` を直接継承してカスタムプリセットを作れるようにするためと推測される。
+
+### SmartRouter: 実行時のアルゴリズム選択
+
+```typescript
+// src/router/smart-router/router.ts:21-50
+match(method: string, path: string): Result<T> {
+  // ...
+  for (; i < len; i++) {
+    const router = routers[i]
+    try {
+      for (let i = 0, len = routes.length; i < len; i++) {
+        router.add(...routes[i])
+      }
+      res = router.match(method, path)
+    } catch (e) {
+      if (e instanceof UnsupportedPathError) {
+        continue
+      }
+      throw e
+    }
+    this.match = router.match.bind(router)  // 以降は選ばれたルーターに直接委譲
+    this.#routers = [router]
+    this.#routes = undefined
+    break
+  }
+```
+
+SmartRouter は初回 `match` 時に複数のルーター候補を順に試し、成功したルーターの `match` メソッドで自身の `match` を上書きする。これは Chain of Responsibility + 自己書き換えによる遅延最適化パターンであり、パスパターンの複雑さに応じて最適なアルゴリズムが自動選択される。
+
+### ミドルウェアのファクトリ関数パターン
+
+全ミドルウェアは「オプションを受け取り MiddlewareHandler を返すファクトリ関数」という統一シグネチャに従う。
+
+```typescript
+// src/middleware/cors/index.ts:63
+export const cors = (options?: CORSOptions): MiddlewareHandler => {
+  // ... 設定のマージ・クロージャ変数の準備 ...
+  return async function cors(c, next) {
+    // ... 実行時ロジック ...
+  }
+}
+```
+
+```typescript
+// src/middleware/logger/index.ts:81
+export const logger = (fn: PrintFunc = console.log): MiddlewareHandler => {
+  return async function logger(c, next) {
+    // ...
+  }
+}
+```
+
+返される関数に名前（`function cors`, `function logger`）を付けているのは、スタックトレースでの識別を容易にするためである。
+
+### Dual ESM/CJS ビルドと package.cjs.json
+
+```typescript
+// build/build.ts:75-88
 const cjsConfig: BuildOptions = {
   ...commonOptions,
   outbase: './src',
@@ -114,164 +163,105 @@ const esmConfig: BuildOptions = {
 }
 ```
 
-CJS 対応の仕組みは `package.cjs.json`（`{ "type": "commonjs" }` のみ）を `dist/cjs/package.json` にコピーすることで実現する。ESM がデフォルト（ルートの `"type": "module"`）で、CJS サブディレクトリだけを CommonJS として扱わせるパターン。
+CJS 出力を `dist/cjs/` に分離し、そのディレクトリに `{"type": "commonjs"}` の `package.json` を配置する（`package.cjs.json` をコピー）。これにより、Node.js のモジュール解決が ESM/CJS を正しく判別できる。`package.json` の各エクスポートは `types`/`import`/`require` の 3 条件を明示する。
 
-型定義は esbuild ではなく `tsc --emitDeclarationOnly` で別途生成し、`dist/types/` に出力する。ビルド後に `removePrivateFields` でプライベートフィールドの `#` 宣言を .d.ts から除去する後処理が入る（`build/remove-private-fields.ts`）。
-
-### JSR / package.json エクスポートの同期バリデーション
-
-ビルド時に `validateExports()` で package.json と jsr.json のエクスポートキーの一致を検証する（`build/validate-exports.ts`）。どちらか一方にしか存在しないエクスポートがあればビルドが失敗する。これにより npm と JSR の公開内容の乖離を防止している。
+### エクスポート整合性の自動検証
 
 ```typescript
-// build/build.ts:29-32
-const [packageJsonExports, jsrJsonExports] = ['./package.json', './jsr.json'].map(readJsonExports)
+// build/validate-exports.ts:1-37
+export const validateExports = (
+  source: Record<string, unknown>,
+  target: Record<string, unknown>,
+  fileName: string
+) => {
+  // ...
+  Object.keys(source).forEach((sourceEntry) => {
+    if (!isEntryInTarget(sourceEntry)) {
+      throw new Error(`Missing "${sourceEntry}" in '${fileName}'`)
+    }
+  })
+}
+```
+
+```typescript
+// build/build.ts:31
 validateExports(packageJsonExports, jsrJsonExports, 'jsr.json')
 validateExports(jsrJsonExports, packageJsonExports, 'package.json')
 ```
 
-### テストの配置戦略
+ビルド時に `package.json` と `jsr.json` のエクスポート定義を双方向に検証する。一方にあって他方にないエクスポートがあればビルドエラーとなる。複数レジストリ対応で起こりがちなエクスポートの不整合を防ぐ仕組みである。
 
-テストファイルはソースと同階層に co-locate される（例: `src/middleware/cors/index.ts` と `src/middleware/cors/index.test.ts`）。ビルド時に `glob.sync('./src/**/*.ts', { ignore: ['./src/**/*.test.ts', ...] })` で除外し、tsconfig.build.json でも `"src/**/*.test.ts"` を exclude している。
+### アダプターの共通インターフェースと個別実装
 
-ルーターのテストは特殊で、`src/router/common.case.test.ts` に共通テストケースを定義し、各ルーター実装のテストファイルがこれを呼び出す。Router インターフェースの契約テスト（Contract Testing）パターン。
-
-### マルチランタイムテスト
-
-`runtime-tests/` ディレクトリに各ランタイム固有のテストを分離。Vitest のマルチプロジェクト構成（`--project node`, `--project workerd` 等）で実行環境を切り替える。Deno と Bun はそれぞれのネイティブテストランナーで実行。
-
-## コード例
-
-### コアエントリポイントの最小エクスポート
+`GetConnInfo` 型を例に、アダプター間の統一と分離を確認する。
 
 ```typescript
-// src/index.ts:17-52
-import { Hono } from './hono'
-
-export type {
-  Env, ErrorHandler, Handler, MiddlewareHandler, Next,
-  NotFoundResponse, NotFoundHandler, ValidationTargets,
-  Input, Schema, ToSchema, TypedResponse,
-} from './types'
-export type { Context, ContextVariableMap, ContextRenderer, ExecutionContext } from './context'
-export type { HonoRequest } from './request'
-export type { InferRequestType, InferResponseType, ClientRequestOptions } from './client'
-
-export { Hono }
+// src/helper/conninfo/types.ts:45
+export type GetConnInfo = (c: Context) => ConnInfo
 ```
 
-値としてのエクスポートは `Hono` クラスのみ。それ以外は全て `export type` であり、ランタイムフットプリントを最小化している。
-
-### プリセットによるルーター注入
+```typescript
+// src/adapter/cloudflare-workers/conninfo.ts:3-6
+export const getConnInfo: GetConnInfo = (c) => ({
+  remote: {
+    address: c.req.header('cf-connecting-ip'),
+  },
+})
+```
 
 ```typescript
-// src/hono.ts:16-34
-export class Hono<E extends Env = BlankEnv, S extends Schema = BlankSchema, BasePath extends string = '/'>
-  extends HonoBase<E, S, BasePath> {
-  constructor(options: HonoOptions<E> = {}) {
-    super(options)
-    this.router =
-      options.router ??
-      new SmartRouter({
-        routers: [new RegExpRouter(), new TrieRouter()],
-      })
-  }
+// src/adapter/bun/conninfo.ts:10-43
+export const getConnInfo: GetConnInfo = (c: Context) => {
+  const server = getBunServer<{...}>(c)
+  // ... Bun 固有の requestIP() を使用 ...
 }
 ```
 
-```typescript
-// src/preset/tiny.ts:12-20
-export class Hono<E extends Env = BlankEnv, S extends Schema = BlankSchema, BasePath extends string = '/'>
-  extends HonoBase<E, S, BasePath> {
-  constructor(options: HonoOptions<E> = {}) {
-    super(options)
-    this.router = new PatternRouter()
-  }
-}
-```
-
-デフォルトの `Hono` と `hono/tiny` の `Hono` は同じ `HonoBase` を継承し、ルーターだけが異なる。ユーザーはインポートパスの変更だけでルーター戦略を切り替えられる。
-
-### SmartRouter の遅延バインディング
-
-```typescript
-// src/router/smart-router/router.ts:21-49
-match(method: string, path: string): Result<T> {
-  // ...
-  for (; i < len; i++) {
-    const router = routers[i]
-    try {
-      for (let i = 0, len = routes.length; i < len; i++) {
-        router.add(...routes[i])
-      }
-      res = router.match(method, path)
-    } catch (e) {
-      if (e instanceof UnsupportedPathError) {
-        continue
-      }
-      throw e
-    }
-    this.match = router.match.bind(router)  // メソッド置換
-    this.#routers = [router]
-    this.#routes = undefined  // ルート情報を解放
-    break
-  }
-  // ...
-}
-```
-
-初回 `match()` 呼び出し時にルーターを試行し、成功したルーターの `match` メソッドで自身の `match` を上書きする。2 回目以降は SmartRouter を経由せず直接選ばれたルーターが呼ばれる。
-
-### アダプターの統一エクスポートパターン
-
-```typescript
-// src/adapter/cloudflare-workers/index.ts:1-9
-export { serveStatic } from './serve-static-module'
-export { upgradeWebSocket } from './websocket'
-export { getConnInfo } from './conninfo'
-
-// src/adapter/bun/index.ts:1-11
-export { serveStatic } from './serve-static'
-export { bunFileSystemModule, toSSG } from './ssg'
-export { createBunWebSocket, upgradeWebSocket, websocket } from './websocket'
-export type { BunWebSocketData, BunWebSocketHandler } from './websocket'
-export { getConnInfo } from './conninfo'
-export { getBunServer } from './server'
-```
-
-各アダプターは `serveStatic`, `upgradeWebSocket`, `getConnInfo` など共通機能名をエクスポートするが、内部実装はランタイム固有。ユーザーコードはインポートパスの切り替えだけで対応ランタイムを変更できる。
+共通の型を `helper/conninfo/types.ts` で定義し、各アダプターがランタイム固有の方法で実装する。ユーザーコードは `GetConnInfo` 型に依存すれば、ランタイムの切り替えが import パスの変更だけで完了する。
 
 ## パターンカタログ
 
-- **Strategy Pattern** (分類: 振る舞い)
-  - 解決する問題: 複数のルーティングアルゴリズムをユーザーが選択可能にする
-  - 適用条件: 同一インターフェースの複数実装が存在し、実行時に切り替える必要がある場合
-  - コード例: `src/router.ts:29-52` (Router インターフェース), `src/router/*/router.ts` (各実装)
-  - 注意点: SmartRouter がファーストマッチ後にメソッド置換するのは、Strategy の変形であり Proxy + Strategy のハイブリッド
+- **Strategy パターン** (分類: 振る舞い)
+  - 解決する問題: ルーティングアルゴリズムを実行時に切り替えたい
+  - 適用条件: 同一インターフェースを満たす複数の実装が存在し、コンテキストに応じて最適な実装を選びたい場合
+  - コード例: `src/router.ts:29-52` の `Router<T>` インターフェース、`src/router/smart-router/router.ts` の SmartRouter
+  - 注意点: SmartRouter は初回実行時に自己書き換えで Strategy を固定する変形。通常の Strategy よりオーバーヘッドが小さい
 
-- **Template Method Pattern** (分類: 振る舞い)
-  - 解決する問題: コア処理フローを固定しつつ、ルーター初期化を可変にする
-  - 適用条件: 共通ロジック（リクエスト処理、ミドルウェア合成）があり、一部のステップだけ差し替えたい場合
-  - コード例: `src/hono-base.ts:98-118` (HonoBase), `src/hono.ts:16-34` / `src/preset/tiny.ts:12-20` (具象クラス)
-  - 注意点: TypeScript では abstract class ではなく「ルーターを持たないクラス」として実現。コメントで意図を明示（`src/hono-base.ts:114-117`）
+- **Template Method パターン** (分類: 振る舞い)
+  - 解決する問題: フレームワークの骨格を定義しつつ、一部を利用者にカスタマイズさせたい
+  - 適用条件: 基底クラスがアルゴリズムの骨格（fetch/dispatch/compose）を定義し、サブクラスが可変部分（ルーター選択）を提供する場合
+  - コード例: `src/hono-base.ts` (基底) と `src/hono.ts` / `src/preset/tiny.ts` (サブクラス)
+  - 注意点: TypeScript の `abstract` は使わず `!` 演算子で「後から注入」を表現している
 
-- **Facade Pattern** (分類: 構造)
-  - 解決する問題: 各アダプターの複数ファイルを 1 つのサブパスで公開する
-  - 適用条件: 内部モジュールの複雑さをユーザーから隠蔽し、統一的なインポートパスを提供したい場合
-  - コード例: `src/adapter/cloudflare-workers/index.ts`, `src/adapter/bun/index.ts`
-  - 注意点: Barrel ファイル（index.ts による re-export）が Facade として機能
+- **Facade パターン** (分類: 構造)
+  - 解決する問題: 複雑なサブシステムに簡潔なインターフェースを提供したい
+  - 適用条件: 内部に多数のファイルを持つモジュールを、単一の `index.ts` 経由で公開する場合
+  - コード例: `src/adapter/bun/index.ts` が `serve-static`、`ssg`、`websocket`、`conninfo`、`server` を統合エクスポート
+  - 注意点: バレルファイルが大きくなりすぎると tree-shaking の効果が減少するリスクがある
 
 ## Good Patterns
 
-- **フラットなサブパスによる DX 最適化**: `hono/cors` のようにディレクトリ階層を隠蔽し、ユーザーが `middleware` か `helper` かを意識しなくてよい設計。内部の分類変更がユーザーの import 文に影響しない。
+- **ファクトリ関数 + 名前付き関数式**: ミドルウェアのファクトリが返す関数に名前を付けることで、デバッグ時のスタックトレースが読みやすくなる。
 
 ```typescript
-// ユーザーコード: 内部構造を意識しない
-import { cors } from 'hono/cors'           // 実体: src/middleware/cors/index.ts
-import { cookie } from 'hono/cookie'       // 実体: src/helper/cookie/index.ts
-import { testClient } from 'hono/testing'  // 実体: src/helper/testing/index.ts
+// src/middleware/cors/index.ts:99
+return async function cors(c, next) {
+  // ...
+}
 ```
 
-- **エクスポートマップの自動バリデーション**: ビルド時に package.json と jsr.json のエクスポートキーを双方向で検証し、不整合を即座に検出。レジストリが増えても漏れが発生しない。
+```typescript
+// src/middleware/basic-auth/index.ts:86
+return async function basicAuth(ctx, next) {
+  // ...
+}
+```
+
+無名関数 `async (c, next) => { ... }` ではなく `async function cors(c, next) { ... }` とすることで、エラー発生時に `cors` というスタックフレーム名が表示される。
+
+- **カテゴリディレクトリによるモジュール分類**: `middleware/`（パイプラインに挿入する横断的関心事）と `helper/`（補助的ユーティリティ）を明確に分けることで、新モジュールの配置場所が機械的に決まる。判断基準は「`app.use()` に渡せるか否か」。
+
+- **ビルド時のクロスレジストリ検証**: `package.json` と `jsr.json` のエクスポート定義を双方向に比較するスクリプトをビルドパイプラインに組み込むことで、npm と JSR のエクスポート不整合を CI 段階で検出できる。
 
 ```typescript
 // build/build.ts:31-32
@@ -279,79 +269,77 @@ validateExports(packageJsonExports, jsrJsonExports, 'jsr.json')
 validateExports(jsrJsonExports, packageJsonExports, 'package.json')
 ```
 
-- **プライベートフィールドの .d.ts 後処理**: TypeScript の `#private` フィールドが .d.ts に漏出する問題を、AST ベースの後処理（oxc-parser 使用）で除去。型定義の clean さを維持。
+- **private フィールドのビルド後除去**: TypeScript の `#` private フィールドは `.d.ts` に出力されるとユーザーの型チェックに不要なノイズとなる。ビルド後に AST パーサーで自動除去する。
 
 ```typescript
 // build/remove-private-fields.ts:5-25
 export async function removePrivateFields(files: string[]) {
-  const parsed = await Promise.all(
-    files.map(async (file) => {
-      const sourceCode = await readFile(file, 'utf-8')
-      const ast = parseSync(file, sourceCode)
-      return { file, sourceCode, ast }
-    })
-  )
-  // ...
+  // oxc-parser で AST 解析 → PrivateIdentifier を持つ PropertyDefinition を除去
 }
 ```
 
-- **ルーター共通テストケースによる契約テスト**: `src/router/common.case.test.ts` に全ルーターが満たすべき振る舞いを定義し、各ルーターのテストからパラメータ化して呼び出す。新しいルーター実装を追加した際に、同一のテストスイートで互換性を自動検証できる。
-
 ## Anti-Patterns / 注意点
 
-- **types.ts の肥大化**: `src/types.ts` が 2,489 行に達しており、型定義の巨大ファイル化が進んでいる。型推論の複雑さ（ハンドラーチェインの型安全性）に起因するため単純な分割は困難だが、ファイルサイズが IDE のパフォーマンスに影響する可能性がある。
+- **バレルファイルの肥大化**: サブパスエクスポートが 60 以上あるため、`package.json` の `exports` と `typesVersions` がそれぞれ数百行に達している。新モジュール追加時に 3 箇所（`package.json` exports、`typesVersions`、`jsr.json`）を同時更新する必要がある。
 
-```
-// Bad: 1ファイルに 2,489 行の型定義
-src/types.ts (2,489 lines)
-
-// Better: 関心ごとに分割（ただし Hono の場合は型の相互依存が深く、トレードオフがある）
-src/types/handler.ts
-src/types/schema.ts
-src/types/env.ts
+```json
+// Bad: 手動で 3 ファイルを同期管理
+// package.json exports + typesVersions + jsr.json
 ```
 
-- **Barrel ファイルの多層化リスク**: 各サブモジュールの `index.ts` は re-export のみで構成される Barrel ファイルだが、70 以上のサブパスエクスポートとの組み合わせでビルド設定の複雑性が増す。新しいモジュール追加時に package.json exports / jsr.json exports / typesVersions の 3 箇所を同期する必要がある（validateExports で検出はできるが、手動更新のコストは残る）。
+```typescript
+// Better: validate-exports.ts による自動検証で不整合を防止
+validateExports(packageJsonExports, jsrJsonExports, 'jsr.json')
+```
 
-```jsonc
-// 新しいミドルウェア追加時に更新が必要な箇所:
-// 1. package.json "exports"
-// 2. package.json "typesVersions"
-// 3. jsr.json "exports"
-// 4. src/middleware/<name>/index.ts (実装)
+この課題に対し、ビルドスクリプト内の `validateExports` が安全網として機能している。理想的にはエクスポート定義を単一の設定から自動生成する方がよいが、現状は検証による整合性保証で対処している。
+
+- **utils/ の二重性**: `src/utils/` にはフラットなファイル（`url.ts`、`cookie.ts` 等）が置かれ、一部は `hono/utils/*` としてユーザーにも公開されている。内部ユーティリティと公開ユーティリティが同一ディレクトリに混在するため、どのファイルが公開 API なのかがファイル名だけでは判断できない。
+
+```
+// Bad: 公開/非公開が混在
+src/utils/
+  url.ts          # 公開 (hono/utils/url)
+  cookie.ts       # 公開 (hono/utils/cookie)
+  constants.ts    # 非公開（exports に含まれない）
+  handler.ts      # 非公開
+```
+
+```
+// Better: 公開ユーティリティを別ディレクトリに分離するか、
+// ファイル命名規約（例: internal- prefix）で区別する
 ```
 
 ## 導出ルール
 
-- `[MUST]` マルチレジストリ対応のライブラリでは、エクスポートマップの同期をビルド時に自動バリデーションする
-  - 根拠: Hono は `build/validate-exports.ts` で package.json と jsr.json の双方向検証を実施し、エクスポートの不整合を CI で検出している
+- `[MUST]` package.json の `exports` フィールドはソースディレクトリ構造と 1:1 対応させ、ユーザーの import パスからソース位置を推定可能にする
+  - 根拠: Hono は `hono/cors` -> `src/middleware/cors/index.ts` の対応を全 60+ エクスポートで維持し、ビルドスクリプトで自動検証している（`build/validate-exports.ts`）
 
-- `[MUST]` ランタイム固有コードはサブパスエクスポートで隔離し、コアモジュールから参照しない
-  - 根拠: Hono の `src/adapter/` は `src/hono-base.ts` や `src/context.ts` から一切 import されず、ユーザーが `hono/cloudflare-workers` 等で明示的にオプトインする設計
+- `[MUST]` 複数のパッケージレジストリに公開する場合、ビルド時にエクスポート定義の整合性を双方向に自動検証する
+  - 根拠: `build/build.ts:31-32` で `package.json` と `jsr.json` の exports を相互比較し、不整合があればビルドエラーにしている
 
-- `[SHOULD]` サブパスエクスポートのパス名は内部ディレクトリ構造を隠蔽し、ユーザー視点の機能名で公開する
-  - 根拠: Hono は `hono/cors`（内部: `src/middleware/cors/`）のようにフラット化し、内部の `middleware/` vs `helper/` の分類をユーザーに露出させていない
+- `[SHOULD]` 単一パッケージで複数の独立機能を提供する場合、カテゴリディレクトリ（`middleware/`, `adapter/`, `helper/` 等）で分類し、各モジュールの `index.ts` を Facade として内部を隠蔽する
+  - 根拠: Hono の `src/adapter/bun/index.ts` は 5 つの内部ファイルを 1 つのバレルにまとめ、`package.json` では `hono/bun` として単一エクスポートを提供している
 
-- `[SHOULD]` 同一インターフェースの複数実装がある場合、共通テストケースを抽出して契約テストとして各実装に適用する
-  - 根拠: `src/router/common.case.test.ts` が 5 種のルーター実装全てに対して同一のテストスイートを適用し、インターフェース互換性を保証している
+- `[SHOULD]` ミドルウェアやプラグインのファクトリ関数が返す関数には名前を付け、スタックトレースでの識別を容易にする
+  - 根拠: 全ミドルウェアが `return async function cors(c, next)` のように名前付き関数式を使用しており、デバッグ時にどのミドルウェアでエラーが発生したか即座に特定できる
 
-- `[SHOULD]` ESM/CJS デュアル出力では、CJS サブディレクトリに `{ "type": "commonjs" }` の package.json を配置するパターンを使う
-  - 根拠: Hono は `package.cjs.json` を `dist/cjs/package.json` にコピーし、ルートの `"type": "module"` と共存させている
+- `[SHOULD]` 同一インターフェースの複数実装がある場合、コアにインターフェースを最小定義（2-3 メソッド）し、選択ロジックをコンポジションで提供する
+  - 根拠: `Router<T>` は `add` / `match` の 2 メソッドのみで、SmartRouter が初回実行時に最適な実装を自動選択する（`src/router/smart-router/router.ts:21-50`）
 
-- `[AVOID]` コアのエントリポイントからオプショナルな機能（ミドルウェア、ヘルパー等）を直接エクスポートすること
-  - 根拠: `src/index.ts` は `Hono` クラスと型のみをエクスポートし、25 のミドルウェアや 14 のヘルパーは全てサブパス経由。これにより最小バンドルサイズを保証している
+- `[SHOULD]` Dual ESM/CJS ビルドでは CJS 出力ディレクトリに `{"type": "commonjs"}` の package.json を配置し、各エクスポートに `types`/`import`/`require` の 3 条件を明示する
+  - 根拠: `dist/cjs/package.json`（`package.cjs.json` からコピー）と `package.json` の conditional exports で Node.js のモジュール解決を正しく制御している
 
-- `[AVOID]` プリセットやバリアント間でロジックを複製すること。共通基盤を抽象クラスとして抽出し、差分だけをサブクラスで定義する
-  - 根拠: `HonoBase`（539 行）にコア処理を集約し、`Hono`（34 行）/ `preset/tiny`（20 行）/ `preset/quick`（24 行）はコンストラクタでルーターを注入するだけ
+- `[AVOID]` コアモジュールのメインエントリに全機能を re-export すること。コアは最小限のクラスと型のみをエクスポートし、拡張機能はサブパスに分離する
+  - 根拠: `src/index.ts` は Hono クラスと主要型のみ（約 15 エクスポート）。25 のミドルウェアや 9 のアダプターは全てサブパスからの import を要求し、不要なコードのバンドルを防いでいる
 
 ## 適用チェックリスト
 
-- [ ] ライブラリのメインエントリポイントが最小限のエクスポートのみ含んでいるか確認する
-- [ ] オプショナルな機能（ミドルウェア、プラグイン等）はサブパスエクスポートで分離されているか確認する
-- [ ] package.json の `exports` フィールドに `types` / `import` / `require` の条件分岐が正しく定義されているか確認する
-- [ ] 複数レジストリ（npm, JSR 等）に公開する場合、エクスポートマップの同期バリデーションがビルドに組み込まれているか確認する
-- [ ] ランタイム固有のコードがコアから分離され、サブパスで隔離されているか確認する
-- [ ] 同一インターフェースの複数実装がある場合、共通テストスイート（契約テスト）が存在するか確認する
-- [ ] ESM/CJS デュアル出力の場合、CJS 側に `{ "type": "commonjs" }` の package.json が配置されているか確認する
-- [ ] 型定義ファイル（.d.ts）にプライベートフィールドが漏出していないか確認する
-- [ ] サブパスエクスポートのパス名がユーザー視点で直感的か（内部構造の詳細を露出していないか）レビューする
+- [ ] `package.json` の `exports` フィールドがソースディレクトリ構造と対応しているか確認する
+- [ ] メインエントリ（`index.ts`）がコア機能のみをエクスポートし、拡張機能がサブパスに分離されているか確認する
+- [ ] 各サブモジュールが `index.ts` によるバレルエクスポートで内部実装を隠蔽しているか確認する
+- [ ] ミドルウェア/プラグインのファクトリ関数が返す関数に名前が付いているか確認する
+- [ ] 同一目的で複数の実装が存在する場合、共通インターフェースが最小に定義されているか確認する
+- [ ] Dual ESM/CJS ビルドの場合、CJS ディレクトリに `{"type": "commonjs"}` の package.json が配置されているか確認する
+- [ ] 複数レジストリ（npm/JSR 等）に公開する場合、エクスポート定義の整合性を自動検証するスクリプトがあるか確認する
+- [ ] 公開ユーティリティと内部ユーティリティが同一ディレクトリに混在していないか、または区別する仕組みがあるか確認する

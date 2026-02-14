@@ -5,25 +5,25 @@
 
 ## 概要
 
-Hono は「Web Standards の上にフレームワークを構築する」という設計思想を徹底的に貫いた Web フレームワークである。Fetch API の Request/Response をコアの入出力境界とし、Web Crypto API でセキュリティ処理を行い、Streams API でストリーミングを実現する。この徹底した Web Standards 準拠により、ゼロ外部依存とマルチランタイム対応を同時に達成している。注目すべきは、これが単なるポータビリティの追求ではなく、「プラットフォームの進化に乗る」という長期的な設計判断であることだ。
+Web Standards 準拠の設計哲学と技術選定の判断基準を分析する。Hono は「Web Standards を唯一の抽象化レイヤーとして採用し、ランタイム固有 API を Adapter パターンで隔離する」という一貫した設計判断を貫いている。この判断により、ゼロ依存・マルチランタイム・超軽量という3つの目標を同時に達成している。フレームワーク設計における「何を標準とし、何をオプションにするか」の判断基準として、あらゆる規模のライブラリ設計に応用可能な知見を含む。
 
-## 設計思想
+## 背景にある原則
 
-- **Web Standards を唯一の抽象化レイヤーとする原則**: Hono のコア全体が Fetch API の `Request`/`Response` を入出力の境界としている。`hono-base.ts` の `fetch` メソッド（`src/hono-base.ts:473-479`）は標準の `Request` を受け取り `Response` を返す。これは Cloudflare Workers の `export default { fetch }` パターンに直接対応しており、ランタイム固有の抽象化を一切介さない。Web Standards を選んだ理由は、各ランタイムが競って準拠を進める「最大公約数」だからである。
+- **最小公倍数ではなく最大公約数を基盤にすべき**: マルチランタイム対応において、各ランタイムの機能を全て包含する抽象レイヤー（最小公倍数）ではなく、全ランタイムが共通で持つ Web Standards API（最大公約数）をコアに据えている。`fetch()` のシグネチャ `(request: Request, env?, executionCtx?) => Response | Promise<Response>` がその象徴で、Cloudflare Workers の `export default { fetch }` と同じ形式。コアは `Request` in / `Response` out に徹し、ランタイム固有の情報は `env` 経由で受け取る（`src/hono-base.ts:473-479`）。
 
-- **依存ゼロにより制約を自由に変える原則**: `package.json` の `dependencies` は空であり、全機能が自前実装されている。JWT 署名検証（`src/utils/jwt/jws.ts`）は `crypto.subtle` を直接使い、Base64 エンコード（`src/utils/encode.ts`）は `btoa`/`atob` を使う。外部ライブラリに依存しないことで、エッジランタイムのバンドルサイズ制約（Cloudflare Workers の 1MB 制限等）に対応し、かつ各ランタイムの Web Standards 実装差異を自前で吸収できる。
+- **依存を追加する前に標準 API で実装できないか確認すべき**: `package.json` の `dependencies` は空。暗号処理は `crypto.subtle`（`src/utils/crypto.ts:45-46`）、ストリーミングは `ReadableStream` / `WritableStream` / `TransformStream`（`src/utils/stream.ts`）、エンコーディングは `TextEncoder`（`src/utils/crypto.ts:42`）で実装している。Node.js 固有の `crypto` モジュールや `Buffer` を一切使わないことで、全ランタイムで動作する。
 
-- **Adapter Pattern によるランタイム差異の隔離原則**: コアは Web Standards のみで動作し、ランタイム固有の処理は `src/adapter/` に隔離する。AWS Lambda アダプタ（`src/adapter/aws-lambda/handler.ts:308-327`）は Lambda イベントを `new Request()` に変換し、`Response` を Lambda 結果に戻す。コアの変更なしに新ランタイムを追加できるのは、この境界が Web Standards という安定した契約で定義されているからである。
+- **パフォーマンスのために標準 API の使用を避けるべき場面を見極めよ**: Web Standards に準拠しつつも、ホットパスでは標準 API のオーバーヘッドを回避している。`getPath()` は `new URL()` を使わず文字列の charCode 比較でパスを抽出し（`src/utils/url.ts:106-134`）、`getQueryParam()` も `URLSearchParams` を使わず手動パースしている（`src/utils/url.ts:219-300`）。標準 API は「正しいが遅い」場面が存在する。
 
-- **Preset/Strategy による柔軟なトレードオフ選択原則**: 5種のルーターと3種のプリセット（default, tiny, quick）を提供し、ユーザーがパフォーマンスとバンドルサイズのトレードオフを選択できる。`hono/tiny`（`src/preset/tiny.ts`）は PatternRouter 単体で最小サイズを実現し、デフォルトの `Hono`（`src/hono.ts`）は SmartRouter が RegExpRouter と TrieRouter を自動選択する。設計思想として「正解は一つではない」ことを認め、選択肢を提供している。
+- **選択肢はユーザーに委ね、デフォルトは最適解を提供すべき**: ルーター実装を5種類用意し（RegExpRouter, TrieRouter, LinearRouter, PatternRouter, SmartRouter）、プリセットで使い分ける。デフォルトの `Hono` クラスは `SmartRouter` で最初のリクエスト時に最適なルーターを自動選択する（`src/router/smart-router/router.ts:21-60`）。`hono/tiny` は最小サイズの PatternRouter を使い、`hono/quick` は起動が速い LinearRouter を使う。
 
-## 設計・実装の詳細
+## 実例と分析
 
-### Web Standards 境界の設計
+### Web Standards を境界契約として使う
 
-Hono の最も重要な設計判断は、フレームワークの入出力境界を Web Standards の Fetch API に固定したことである。`HonoBase` クラスの `fetch` プロパティが全てのエントリポイントとなる。
+Hono のコア API は `fetch()` シグネチャそのものである。エントリポイントは `app.fetch(request, env, executionCtx)` で、入力は `Request`、出力は `Response`。この設計により、どのランタイムでも `export default app` だけで動作する。
 
-```ts
+```typescript
 // src/hono-base.ts:473-479
 fetch: (
   request: Request,
@@ -34,57 +34,95 @@ fetch: (
 }
 ```
 
-この設計により、Cloudflare Workers では `export default app` だけで動作し、Service Worker では `addEventListener('fetch', handle(app))` で動作する。Node.js のような Fetch API 非ネイティブ環境のみ別途アダプタ（`@hono/node-server`、devDependency として参照）が必要になるが、これは外部パッケージとしてコアから分離されている。
+ミドルウェアも同様に `Response` を返す関数として統一されている。CORS ミドルウェアの preflight 処理は `new Response(null, { headers, status: 204 })` を直接返す（`src/middleware/cors/index.ts:146-151`）。HTTPException も `getResponse()` で `new Response()` を返す（`src/http-exception.ts:67-77`）。
 
-### Adapter Pattern の実装
+### Adapter パターンによるランタイム固有 API の隔離
 
-各ランタイムアダプタの責務は「ランタイム固有イベントと Web Standards の相互変換」に限定される。AWS Lambda アダプタを例にとると、`EventProcessor` 抽象クラスが変換ロジックを定義し、API Gateway v1/v2、ALB、Lattice の差異をサブクラスで吸収する。
+ランタイムごとに異なる API（接続情報の取得、ファイルシステムアクセス、WebSocket）は `src/adapter/` に隔離され、共通インターフェースで抽象化される。
 
-```ts
-// src/adapter/aws-lambda/handler.ts:308-327
-createRequest(event: E): Request {
-  const queryString = this.getQueryString(event)
-  const domainName = this.getDomainName(event)
-  const path = this.getPath(event)
-  const urlPath = `https://${domainName}${path}`
-  const url = queryString ? `${urlPath}?${queryString}` : urlPath
+```typescript
+// src/helper/conninfo/types.ts:45
+export type GetConnInfo = (c: Context) => ConnInfo
 
-  const headers = this.getHeaders(event)
-  const method = this.getMethod(event)
-  const requestInit: RequestInit = { headers, method }
+// src/adapter/cloudflare-workers/conninfo.ts:3-7
+export const getConnInfo: GetConnInfo = (c) => ({
+  remote: {
+    address: c.req.header('cf-connecting-ip'),
+  },
+})
 
-  if (event.body) {
-    requestInit.body = event.isBase64Encoded ? decodeBase64(event.body) : event.body
-  }
-  return new Request(url, requestInit)
+// src/adapter/bun/conninfo.ts:10-43
+export const getConnInfo: GetConnInfo = (c: Context) => {
+  const server = getBunServer<{...}>(c)
+  const info = server.requestIP(c.req.raw)
+  return { remote: { address: info.address, ... } }
+}
+
+// src/adapter/deno/conninfo.ts:8-17
+export const getConnInfo: GetConnInfo = (c) => {
+  const { remoteAddr } = c.env
+  return { remote: { address: remoteAddr.hostname, ... } }
 }
 ```
 
-全てのアダプタに共通するのは、最終的に `app.fetch(req, env)` を呼び出す点である。アダプタは「翻訳者」であり、ビジネスロジックを含まない。
+同じ `GetConnInfo` 型を満たしつつ、Cloudflare は HTTP ヘッダから、Bun は `server.requestIP()` から、Deno は `c.env.remoteAddr` から取得する。ユーザーコードは `import { getConnInfo } from 'hono/cloudflare-workers'` のように、ランタイムに応じたアダプタを import するだけでよい。
 
-### ゼロ依存の実現戦略
+### ホットパスでの標準 API 回避
 
-Hono が自前実装している主要な機能群と、それぞれが依拠する Web Standards API を以下に示す。
+`getPath()` は URL パースの最頻出処理であり、`new URL()` の代わりに文字列操作で実装している。
 
-| 機能 | 使用する Web Standards API | 実装ファイル |
-|------|---------------------------|-------------|
-| JWT 署名/検証 | `crypto.subtle.sign`, `crypto.subtle.verify` | `src/utils/jwt/jws.ts` |
-| ハッシュ計算 | `crypto.subtle.digest` | `src/utils/crypto.ts` |
-| Base64 エンコード/デコード | `btoa`, `atob` | `src/utils/encode.ts` |
-| ストリーミング | `TransformStream`, `ReadableStream` | `src/helper/streaming/stream.ts` |
-| FormData パース | `Response.formData()` | `src/utils/buffer.ts:56-65` |
-| タイミングセーフ比較 | `crypto.subtle.digest` 経由 | `src/utils/buffer.ts:29-45` |
+```typescript
+// src/utils/url.ts:106-134
+export const getPath = (request: Request): string => {
+  const url = request.url
+  const start = url.indexOf('/', url.indexOf(':') + 4)
+  let i = start
+  for (; i < url.length; i++) {
+    const charCode = url.charCodeAt(i)
+    if (charCode === 37) { // '%'
+      // percent encoding がある場合のみ indexOf にフォールバック
+      const queryIndex = url.indexOf('?', i)
+      const hashIndex = url.indexOf('#', i)
+      // ...
+    } else if (charCode === 63 || charCode === 35) { // '?' or '#'
+      break
+    }
+  }
+  return url.slice(start, i)
+}
+```
 
-特に注目すべきは `bufferToFormData` の実装で、`new Response(arrayBuffer, { headers }).formData()` というトリックにより、FormData パーサーを自前実装せずブラウザ/ランタイムの実装に委譲している。
+`charCode` 比較によるバイト単位の走査、percent encoding がない場合（大多数のケース）は `indexOf` すら呼ばない最適化が施されている。同様に `context.ts` の `text()` メソッドもヘッダやステータスが未設定の場合は `new Response(text)` を直接返す fast path を持つ（`src/context.ts:677-684`）。
 
-### SmartRouter: 実行時自動最適化
+### Object.create(null) による辞書の高速化
 
-SmartRouter は Strategy パターンの変形で、初回マッチ時に最適なルーターを自動選択し、以降はそのルーターに委譲する。
+全ルーター実装で params や children の格納に `Object.create(null)` を使用している。
 
-```ts
-// src/router/smart-router/router.ts:21-50
+```typescript
+// src/router/reg-exp-router/router.ts:17
+const nullMatcher: Matcher<any> = [/^$/, [], Object.create(null)]
+
+// src/router/trie-router/node.ts:16
+const emptyParams = Object.create(null)
+
+// src/router/linear-router/router.ts:7
+const emptyParams = Object.create(null)
+
+// src/router/pattern-router/router.ts:6
+const emptyParams = Object.create(null)
+```
+
+通常のオブジェクトリテラル `{}` はプロトタイプチェーンを持つため、`hasOwnProperty` チェックが必要になり、V8 の hidden class 最適化にも影響する。`Object.create(null)` はプロトタイプを持たない純粋なハッシュマップとして機能する。
+
+### SmartRouter: 遅延評価と自己書き換えによる最適化
+
+SmartRouter は最初の `match()` 呼び出し時に複数のルーター候補を試し、成功したルーターに自身の `match` メソッドを書き換える。
+
+```typescript
+// src/router/smart-router/router.ts:21-60
 match(method: string, path: string): Result<T> {
-  // ...
+  const routers = this.#routers
+  const routes = this.#routes
   for (; i < len; i++) {
     const router = routers[i]
     try {
@@ -94,215 +132,164 @@ match(method: string, path: string): Result<T> {
       res = router.match(method, path)
     } catch (e) {
       if (e instanceof UnsupportedPathError) {
-        continue
+        continue  // 次のルーターを試す
       }
       throw e
     }
-    this.match = router.match.bind(router)  // メソッド差し替え
+    this.match = router.match.bind(router)  // 自己書き換え
     this.#routers = [router]
-    this.#routes = undefined  // 初期データを解放
+    this.#routes = undefined  // ルート定義を GC 可能に
     break
   }
   // ...
 }
 ```
 
-`this.match = router.match.bind(router)` でメソッド自体を差し替え、2回目以降のマッチではオーバーヘッドがゼロになる。また `this.#routes = undefined` で初期化データをGC対象にする。
+`this.match = router.match.bind(router)` で2回目以降は直接選択されたルーターの match を呼ぶ。Strategy パターンの動的選択だが、一度選択したら委譲コストもゼロになる点が特徴的。
 
-### ランタイム検出メカニズム
+### プリセットによるバンドルサイズ制御
 
-`getRuntimeKey()` 関数（`src/helper/adapter/index.ts:50-84`）は `navigator.userAgent` を第一の判定手段とし、フォールバックとしてグローバルオブジェクトの特徴を検査する。この実装は Web Standards（Navigator API）を優先しつつ、未対応環境への実用的な対応も行う現実主義を示している。
+コアクラス `HonoBase` を共有しつつ、ルーターの組み合わせだけが異なるプリセットを提供する。
 
-```ts
-// src/helper/adapter/index.ts:50-84
-export const getRuntimeKey = (): Runtime => {
-  const global = globalThis as any
-  const userAgentSupported =
-    typeof navigator !== 'undefined' && typeof navigator.userAgent === 'string'
-  if (userAgentSupported) {
-    for (const [runtimeKey, userAgent] of Object.entries(knownUserAgents)) {
-      if (checkUserAgentEquals(userAgent)) {
-        return runtimeKey as Runtime
-      }
-    }
+```typescript
+// src/hono.ts (default: 高速ルーティング重視)
+export class Hono<...> extends HonoBase<...> {
+  constructor(options = {}) {
+    super(options)
+    this.router = options.router ??
+      new SmartRouter({ routers: [new RegExpRouter(), new TrieRouter()] })
   }
-  if (typeof global?.EdgeRuntime === 'string') { return 'edge-light' }
-  if (global?.fastly !== undefined) { return 'fastly' }
-  if (global?.process?.release?.name === 'node') { return 'node' }
-  return 'other'
 }
-```
 
-## コード例
-
-### Context が Web Standards Response を生成する過程
-
-```ts
-// src/context.ts:672-684
-text: TextRespond = (
-  text: string,
-  arg?: ContentfulStatusCode | ResponseOrInit,
-  headers?: HeaderRecord
-): ReturnType<TextRespond> => {
-  // 最適化: ヘッダもステータスも未設定なら直接 new Response(text)
-  return !this.#preparedHeaders && !this.#status && !arg && !headers && !this.finalized
-    ? (new Response(text) as ReturnType<TextRespond>)
-    : (this.#newResponse(
-        text, arg, setDefaultContentType(TEXT_PLAIN, headers)
-      ) as ReturnType<TextRespond>)
-}
-```
-
-ヘッダやステータスが設定されていない場合、`new Response(text)` を直接返すことで不要なオブジェクト生成を避けている。これは Web Standards API のデフォルト挙動（status=200, Content-Type=text/plain）を活用した最適化である。
-
-### Dispatch の単一ハンドラ最適化
-
-```ts
-// src/hono-base.ts:423-442
-// Do not `compose` if it has only one handler
-if (matchResult[0].length === 1) {
-  let res: ReturnType<H>
-  try {
-    res = matchResult[0][0][0][0](c, async () => {
-      c.res = await this.#notFoundHandler(c)
-    })
-  } catch (err) {
-    return this.#handleError(err, c)
+// src/preset/tiny.ts (最小バンドルサイズ重視: < 12kB)
+export class Hono<...> extends HonoBase<...> {
+  constructor(options = {}) {
+    super(options)
+    this.router = new PatternRouter()
   }
-  return res instanceof Promise
-    ? res
-        .then(
-          (resolved: Response | undefined) =>
-            resolved || (c.finalized ? c.res : this.#notFoundHandler(c))
-        )
-        .catch((err: Error) => this.#handleError(err, c))
-    : (res ?? this.#notFoundHandler(c))
 }
 ```
 
-ミドルウェアが1つだけの場合に `compose()` を呼ばず直接実行する。エッジ環境では1リクエストあたりの CPU 時間が制限されるため、このような微細な最適化が積み重なって意味を持つ。
+これにより、同じ API を維持したまま、エッジ環境（サイズ重視）とサーバー環境（速度重視）で最適な構成を選択できる。
 
 ## パターンカタログ
 
 - **Strategy パターン** (分類: 振る舞い)
-  - 解決する問題: ルーティングアルゴリズムの選択をユーザーに委ねつつ、デフォルトで最適な選択を提供する
-  - 適用条件: 同じインターフェースで異なるアルゴリズムが必要な場合
-  - コード例: `src/router.ts:29-52` の `Router<T>` インターフェース、5種のルーター実装
-  - 注意点: SmartRouter の「初回マッチで確定」方式はホットパス最適化だが、全ルーターが同一インターフェースを満たす必要がある
+  - 解決する問題: ルーティングアルゴリズムの交換可能性
+  - 適用条件: 同じインターフェース (`Router<T>`) を満たす複数の実装が存在し、使用場面で最適な実装が異なる場合
+  - コード例: `src/router.ts:29-52` (Router インターフェース), `src/hono.ts:27-33` (Strategy の注入)
+  - 注意点: SmartRouter が初回リクエスト時に自動選択する変形で、一度選択されたら変更されない（Strategy の動的切り替えではなく、遅延バインディング）
 
 - **Adapter パターン** (分類: 構造)
-  - 解決する問題: ランタイム固有のイベント形式と Web Standards の Request/Response の変換
-  - 適用条件: コアが標準インターフェースで設計されており、外部システムとの接続が必要な場合
-  - コード例: `src/adapter/aws-lambda/handler.ts:268-388` の `EventProcessor` 抽象クラス
-  - 注意点: アダプタにビジネスロジックを混入させないこと。アダプタの責務は「翻訳」のみ
+  - 解決する問題: ランタイム固有 API を共通インターフェースに変換
+  - 適用条件: 同じ概念（接続情報、ファイルアクセス等）がランタイムごとに異なる API で提供される場合
+  - コード例: `src/helper/conninfo/types.ts:45` (共通型), `src/adapter/*/conninfo.ts` (各実装)
+  - 注意点: Adapter は `src/adapter/` に配置し、ユーザーが明示的に import する設計。自動検出ではない
 
 - **Template Method パターン** (分類: 振る舞い)
-  - 解決する問題: AWS Lambda の複数イベント形式（API Gateway v1/v2, ALB, Lattice）のパース差異を統一
-  - 適用条件: アルゴリズムの骨格は共通だが、個別ステップの実装が異なる場合
-  - コード例: `src/adapter/aws-lambda/handler.ts:268-388` の `EventProcessor` と4つのサブクラス
-  - 注意点: `getPath`, `getMethod`, `getHeaders` 等の抽象メソッドが差し替えポイント
-
-- **Chain of Responsibility パターン** (分類: 振る舞い)
-  - 解決する問題: ミドルウェアの連鎖的な処理（認証 -> ログ -> ハンドラ -> レスポンス加工）
-  - 適用条件: リクエスト処理のパイプライン構築
-  - コード例: `src/compose.ts:15-73` の koa-compose ベースのミドルウェア合成
-  - 注意点: `next()` の呼び忘れで後続ミドルウェアが実行されない
+  - 解決する問題: Lambda イベント処理の共通フローと差分の分離
+  - 適用条件: 処理フローは共通だが、各ステップの実装がイベント種別ごとに異なる場合
+  - コード例: `src/adapter/aws-lambda/handler.ts:268-328` (EventProcessor 抽象クラス)
 
 ## Good Patterns
 
-- **Web Standards を入出力の契約とする**: コアの `fetch` メソッドが `(Request) => Response | Promise<Response>` という Web Standards の型を入出力の契約としている。これにより、Web Standards に準拠するランタイムであれば自動的に互換性を持つ。また `export default app` だけで Cloudflare Workers/Deno/Bun で動作し、アダプタなしで最も直接的な統合が実現される。
+- **fetch シグネチャをフレームワークの境界契約にする**: `(Request, env?, ctx?) => Response | Promise<Response>` という Web Standards ベースのシグネチャをフレームワークのエントリポイントにすることで、どのランタイムでも `export default app` で動作する。テストも `app.request('/path')` で標準 Request/Response を使って実行できる（`src/helper/testing/index.ts:16-27`）。
 
-```ts
-// src/hono-base.ts:473-479 - コアの契約
-fetch: (request: Request, Env?: E['Bindings'] | {}, executionCtx?: ExecutionContext) =>
-  Response | Promise<Response>
-
-// ユーザーコード: これだけで複数ランタイムに対応
-export default app
-```
-
-- **自前実装で Web API を直接利用する**: JWT、ハッシュ、Base64 等のユーティリティを全て Web Crypto API や `btoa`/`atob` で実装している。これにより Node.js 固有の `crypto` モジュールや `Buffer` への依存を排除し、エッジランタイムでの動作を保証する。
-
-```ts
-// src/utils/crypto.ts:33-58 - crypto.subtle を直接使用
-export const createHash = async (data: Data, algorithm: Algorithm): Promise<string | null> => {
-  // ...
-  if (crypto && crypto.subtle) {
-    const buffer = await crypto.subtle.digest({ name: algorithm.name }, sourceBuffer as ArrayBuffer)
-    const hash = Array.prototype.map
-      .call(new Uint8Array(buffer), (x) => ('00' + x.toString(16)).slice(-2))
-      .join('')
-    return hash
+```typescript
+// src/hono-base.ts:493-511
+request = (
+  input: RequestInfo | URL,
+  requestInit?: RequestInit,
+  Env?: E['Bindings'] | {},
+  executionCtx?: ExecutionContext
+): Response | Promise<Response> => {
+  if (input instanceof Request) {
+    return this.fetch(requestInit ? new Request(input, requestInit) : input, Env, executionCtx)
   }
-  return null
+  input = input.toString()
+  return this.fetch(
+    new Request(
+      /^https?:\/\//.test(input) ? input : `http://localhost${mergePath('/', input)}`,
+      requestInit
+    ),
+    Env,
+    executionCtx
+  )
 }
 ```
 
-- **メソッド差し替えによる初回コスト償却**: SmartRouter が初回マッチ後に `this.match` を最適ルーターのメソッドに差し替える。これは JavaScript の動的性質を活用した実用的な最適化であり、2回目以降のルーティングではゼロオーバーヘッドとなる。
+- **ランタイム固有のコードを Adapter としてサブパスに分離する**: `hono/cloudflare-workers`, `hono/bun`, `hono/deno` など、ランタイム固有のコードは package.json の `exports` でサブパスとして公開する。コア (`hono`) はランタイム非依存を保ち、ユーザーは必要なアダプタだけを import する。ツリーシェイキングにも有利。
 
-```ts
-// src/router/smart-router/router.ts:46-49
-this.match = router.match.bind(router)  // 2回目以降はこの関数が直接呼ばれる
-this.#routers = [router]
-this.#routes = undefined  // GC 対象にする
+```jsonc
+// package.json (抜粋)
+"exports": {
+  ".": { "import": "./dist/index.js" },          // コア (ランタイム非依存)
+  "./cloudflare-workers": { "import": "..." },    // CF Workers アダプタ
+  "./bun": { "import": "..." },                   // Bun アダプタ
+  "./deno": { "import": "..." },                  // Deno アダプタ
+}
 ```
+
+- **単一ハンドラの場合に compose をスキップする最適化**: ミドルウェアチェーンが1つしかない場合、`compose()` を呼ばず直接ハンドラを実行する（`src/hono-base.ts:424-442`）。大多数のルートはミドルウェアなしか少数であるため、この最適化は全体のスループットに大きく寄与する。
 
 ## Anti-Patterns / 注意点
 
-- **Web Standards の前提で Node.js 固有 API を使う**: Hono のアプローチを採用する際、Node.js の `Buffer`、`crypto`（非 Web Crypto）、`fs` 等を直接使うとマルチランタイム互換性が壊れる。
+- **ホットパスでの new URL() 依存**: URL パースに `new URL()` を使うと、オブジェクト生成・プロトコル検証・ホスト解析などの不要な処理が毎リクエスト発生する。パスだけが必要な場面では文字列操作の方が桁違いに速い。
 
-```ts
-// Bad: Node.js 固有 API に依存
-import { createHash } from 'node:crypto'
-const hash = createHash('sha256').update(data).digest('hex')
-
-// Better: Web Crypto API を使用
-const buffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(data))
-const hash = Array.from(new Uint8Array(buffer), b => b.toString(16).padStart(2, '0')).join('')
-```
-
-- **アダプタにビジネスロジックを混入させる**: アダプタの責務は「翻訳」のみであるべき。レスポンスの加工やバリデーションをアダプタに入れると、ランタイムごとに挙動が変わるリスクがある。
-
-```ts
-// Bad: アダプタ内でビジネスロジック
-export const handle = (app) => async (event) => {
-  const req = processor.createRequest(event)
-  if (event.headers['x-api-key'] !== 'secret') { return { statusCode: 403 } } // NG
-  const res = await app.fetch(req)
-  return processor.createResult(res)
+```typescript
+// Bad: 毎リクエストで URL オブジェクトを生成
+const getPath = (request: Request): string => {
+  return new URL(request.url).pathname
 }
 
-// Better: ビジネスロジックはミドルウェアで
-app.use(async (c, next) => {
-  if (c.req.header('x-api-key') !== 'secret') throw new HTTPException(403)
-  await next()
-})
-export const handler = handle(app)
+// Better: 文字列操作でパスだけを抽出 (Hono の実装)
+const getPath = (request: Request): string => {
+  const url = request.url
+  const start = url.indexOf('/', url.indexOf(':') + 4)
+  // charCode 比較で '?' や '#' を検出し slice で返す
+}
 ```
 
-- **ランタイム分岐をコア全体に散在させる**: Hono は `getRuntimeKey()` を集約的に使い、ランタイム分岐をアダプタ層と一部のユーティリティに限定している。コアのロジックに `if (runtime === 'node')` のような分岐を散在させると保守性が著しく低下する。
+- **共通辞書での {} リテラル使用**: ルートパラメータなどの頻繁にアクセスされるオブジェクトに `{}` を使うと、プロトタイプチェーンの走査コストが発生し、`__proto__` や `constructor` がキーとして衝突するリスクもある。
+
+```typescript
+// Bad: プロトタイプチェーン付きオブジェクト
+const params: Record<string, string> = {}
+
+// Better: プロトタイプなしの純粋辞書
+const params: Record<string, string> = Object.create(null)
+```
 
 ## 導出ルール
 
-- `[MUST]` マルチランタイム対応ライブラリでは、コアの入出力境界を Web Standards API（Request/Response）で定義する
-  - 根拠: Hono は `fetch: (Request) => Response | Promise<Response>` を契約とし、9つのランタイムで同一コードが動作する（`src/hono-base.ts:473-479`）
-- `[MUST]` ランタイム固有の処理はアダプタ層に隔離し、コアに混入させない
-  - 根拠: Hono の `src/adapter/` は Lambda イベントの変換等をコアから完全分離しており、新ランタイム追加時にコア変更が不要（`src/adapter/aws-lambda/handler.ts`）
-- `[SHOULD]` 暗号・ハッシュ処理は Web Crypto API (`crypto.subtle`) を使い、ランタイム固有の crypto モジュールに依存しない
-  - 根拠: Hono の JWT 実装（`src/utils/jwt/jws.ts:29-47`）とハッシュ実装（`src/utils/crypto.ts:33-58`）は全て `crypto.subtle` で統一されている
-- `[SHOULD]` 複数の実装戦略が考えられる場合、共通インターフェースを定義して Strategy パターンで切り替え可能にする
-  - 根拠: Hono は `Router<T>` インターフェース（`src/router.ts:29-52`）で5種のルーターを統一し、SmartRouter による自動選択とプリセットによる手動選択の両方を提供する
-- `[SHOULD]` エッジランタイム向けでは、ホットパス上の不要なオブジェクト生成・関数呼び出しを排除する
-  - 根拠: `#dispatch` の単一ハンドラ最適化（`src/hono-base.ts:423-442`）や `text()` の直接 Response 生成（`src/context.ts:677-678`）がエッジ環境の CPU 時間制約に対応している
-- `[AVOID]` フレームワークのコア部分に外部依存を追加してマルチランタイム互換性を損なうこと
-  - 根拠: Hono は dependencies ゼロを維持し、`btoa`/`atob`（`src/utils/encode.ts`）や `Response.formData()`（`src/utils/buffer.ts:56-65`）等の Web Standards API で全ユーティリティを自前実装している
+- `[MUST]` マルチランタイム対応ライブラリでは、コアのエントリポイントを Web Standards API（Request/Response）で定義し、ランタイム固有 API はアダプタに隔離する
+  - 根拠: Hono は `fetch(Request) => Response` を境界契約とし、`src/adapter/` に CF Workers / Bun / Deno / AWS Lambda 等の固有処理を隔離することで、コアコードの変更なしに9つ以上のランタイムをサポートしている
+
+- `[MUST]` フレームワークやライブラリのコアモジュールは外部ランタイム依存（`node:crypto`, `node:fs` 等）を含めず、Web Standards API（`crypto.subtle`, `ReadableStream`, `TextEncoder` 等）のみを使用する
+  - 根拠: Hono は `dependencies` がゼロで、暗号処理を `crypto.subtle`（`src/utils/crypto.ts:45-46`）、ストリーミングを `TransformStream`（`src/helper/streaming/stream.ts:12`）で実装し、全ランタイムで動作を保証している
+
+- `[SHOULD]` リクエスト処理のホットパスでは `new URL()` や `URLSearchParams` を避け、文字列操作でパース処理を実装する
+  - 根拠: Hono の `getPath()` は `charCode` 比較による文字列走査で URL パスを抽出し（`src/utils/url.ts:106-134`）、`getQueryParam()` も手動パースしている（`src/utils/url.ts:219-300`）。percent encoding がないケース（大多数）では `indexOf` すら呼ばない最適化が施されている
+
+- `[SHOULD]` ホットパスでオブジェクトを辞書として使う場合は `Object.create(null)` でプロトタイプチェーンを排除する
+  - 根拠: Hono の全ルーター実装（RegExpRouter, TrieRouter, LinearRouter, PatternRouter）で params, children, cache に `Object.create(null)` を使用している（該当箇所 25 件以上）
+
+- `[SHOULD]` 同じインターフェースの複数実装がある場合、デフォルトは自動選択（SmartRouter パターン）にし、上級ユーザーには明示的な選択を許可する
+  - 根拠: SmartRouter は初回リクエスト時に最適なルーターを自動選択し、`this.match` を書き換えて以降のオーバーヘッドをゼロにする（`src/router/smart-router/router.ts:46`）。プリセット（`hono/tiny`, `hono/quick`）で明示的な選択も可能
+
+- `[SHOULD]` バンドルサイズが異なる複数のプリセットを提供する場合、コアクラスを共有し、差分（ルーター等）だけを差し替える構成にする
+  - 根拠: `HonoBase` を共有し、`Hono`（デフォルト）, `hono/tiny`（< 12kB）, `hono/quick`（起動高速）がルーターの組み合わせだけ異なる（`src/hono.ts`, `src/preset/tiny.ts`, `src/preset/quick.ts`）
+
+- `[AVOID]` ランタイム検出による分岐をコアコードに埋め込むこと。代わりに、ユーザーが import パスでランタイムを選択する設計にする
+  - 根拠: Hono は `if (typeof Deno !== 'undefined')` のようなランタイム検出をコアに持たず、`hono/cloudflare-workers` / `hono/bun` / `hono/deno` のサブパス import でアダプタを選択させる。これにより dead code elimination が効き、バンドルサイズが最小化される
 
 ## 適用チェックリスト
 
-- [ ] フレームワーク/ライブラリの入出力が Web Standards API（Request/Response, ReadableStream 等）で定義されているか確認する
-- [ ] `package.json` の `dependencies` に含まれる各パッケージが対象ランタイム全てで動作するか検証する
-- [ ] 暗号・ハッシュ処理で `node:crypto` ではなく `crypto.subtle` を使っているか確認する
-- [ ] ランタイム固有コードがアダプタ層に隔離されており、コアに `if (runtime === 'xxx')` 分岐が散在していないか確認する
-- [ ] パフォーマンスとサイズのトレードオフについて、ユーザーが選択肢を持てる設計（プリセット等）になっているか検討する
-- [ ] エッジランタイムのバンドルサイズ制約とCPU時間制約を考慮し、ホットパスの最適化を行っているか確認する
-- [ ] サードパーティ拡張（ミドルウェア等）を外部パッケージとして分離し、コアの依存ゼロを維持しているか確認する
+- [ ] ライブラリのコアモジュールが `node:` プレフィックス付きモジュールに依存していないか確認する
+- [ ] エントリポイントのシグネチャが Web Standards の `Request` / `Response` ベースになっているか確認する
+- [ ] ランタイム固有のコードが `adapter/` や専用サブパスに隔離されているか確認する
+- [ ] ホットパスで `new URL()`, `URLSearchParams`, `JSON.parse()` を不必要に使用していないか確認する
+- [ ] 頻繁にアクセスされるオブジェクト辞書が `Object.create(null)` で生成されているか確認する
+- [ ] `package.json` の `exports` でサブパスを定義し、ツリーシェイキングを有効にしているか確認する
+- [ ] デフォルト構成がほとんどのユーザーにとって最適か、上級ユーザー向けのカスタマイズ手段があるか確認する
+- [ ] 単一ハンドラのような頻出ケースに fast path を用意しているか確認する

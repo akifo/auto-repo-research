@@ -5,284 +5,281 @@
 
 ## 概要
 
-Hono は production dependencies をゼロに保つという徹底したポリシーを持つ Web フレームワークである。JWT、Cookie パーサー、Base64 エンコーディング、MIME タイプ判定など、通常は外部ライブラリに委ねる機能をすべて Web Standard API（特に Web Crypto API）の上に自前実装している。devDependencies は開発・ビルド・テストに必要な最小限のツールに限定し、publint によるパッケージ品質の自動バリデーション、package.json と jsr.json のエクスポート整合性チェック、pkg-pr-new による PR 時プレビュー公開という多層的な品質保証パイプラインを構築している。ゼロ依存ポリシーはマルチランタイム対応（Node.js / Deno / Bun / Cloudflare Workers / Fastly / AWS Lambda）の前提条件でもある。
+Hono はランタイム依存パッケージをゼロに保ちながら、JWT 署名/検証、Cookie パース、HTML エスケープ、Body パース、Base64 エンコード、MIME 判定、IP アドレス処理などすべてを自前実装している。これは「Web Standard API が提供する機能だけでフレームワークを構成する」という設計方針に基づいており、結果としてマルチランタイム対応（Cloudflare Workers, Deno, Bun, Node.js, Fastly Compute, AWS Lambda）とバンドルサイズの極小化（`hono/tiny` プリセットで 12kB 未満）を同時に実現している。この視点では、ゼロ依存を維持するための具体的なプラクティスと、その判断基準を分析する。
 
-## 設計思想
+## 背景にある原則
 
-- **Web Standard API への全面依拠**: 外部ライブラリを使わず、`crypto.subtle`、`TextEncoder`、`btoa`/`atob`、`fetch` といった Web Standard API のみで機能を実現する。これにより Node.js 固有のモジュール（`crypto`、`buffer` 等）への依存を回避し、あらゆるランタイムで動作可能になる。根拠: JWT 実装（`src/utils/jwt/jws.ts`）が `crypto.subtle.sign`/`verify` のみを使用し、Cookie 署名（`src/utils/cookie.ts`）も `crypto.subtle.importKey` で完結している。
+- **ランタイム可搬性の最大化**: 外部パッケージは特定ランタイムの API に依存していることが多い。Web Standard API のみに依存することで、コードの変更なしに 7 以上のランタイムで動作する。`node:` プレフィックスの import は adapter 層と一部のオプショナルミドルウェアに限定されている（`src/middleware/context-storage/index.ts:6`, `src/adapter/deno/serve-static.ts:1`）
+- **バンドルサイズの予測可能性**: 外部依存は推移的依存（transitive dependency）を持ち込み、バンドルサイズを予測不能にする。すべてを自前で実装することで、tree-shaking の効果を最大化し、サイズの管理を完全にコントロールできる。preset パターン（tiny/quick/default）によるサイズ階層がこれを証明している
+- **API の安定性と応答速度**: 外部パッケージの breaking change やセキュリティパッチへの追従コストを排除する。自前実装なら修正を即座にリリースできる
+- **ホットパスの最適化余地**: 汎用ライブラリは広範なユースケースをカバーするため、特定の用途に対して過剰な処理を含む。自前実装ならフレームワーク固有のホットパスに特化した最適化が可能（例: `getPath` での `new URL()` 回避）
 
-- **ランタイム固有コードのアダプターパターンによる隔離**: `node:*` モジュールの使用はアダプター層（`src/adapter/`）およびランタイム依存ミドルウェア内に限定し、コアからは排除する。根拠: `node:async_hooks` は `context-storage` ミドルウェア内のみ、`node:fs/promises` は `adapter/bun/serve-static.ts` 内のみで使用されている。コアの `serve-static` は `getContent` と `join` をコールバックとして受け取る設計。
+## 実例と分析
 
-- **第三者依存が必要な機能は別リポジトリへ分離**: 外部ライブラリに依存する必要があるミドルウェア（GraphQL、Firebase Auth、Sentry 等）はコアに含めず、`honojs/middleware` モノレポで `@honojs` 名前空間として配布する。根拠: `docs/CONTRIBUTING.md:37-48` に「Third-party middleware is not in the core. It is allowed to depend on other libraries」と明記。
+### Web Crypto API による暗号処理の自前実装
 
-- **デュアルレジストリ公開を前提とした構造**: npm と JSR（Deno）の両方に公開するため、`package.json` と `jsr.json` のエクスポートマップを同期し、ビルド時に自動検証する。根拠: `build/build.ts:30-31` で `validateExports()` を実行。
-
-## 設計・実装の詳細
-
-### ゼロ依存を支える自前実装群
-
-Hono は以下の機能を外部ライブラリなしで実装している:
-
-| 機能 | 一般的な外部ライブラリ | Hono の自前実装 |
-|------|----------------------|----------------|
-| JWT 署名/検証 | jsonwebtoken, jose | `src/utils/jwt/` (jwa, jws, jwt, types, utf8) |
-| Cookie パース/署名 | cookie, cookie-signature | `src/utils/cookie.ts` |
-| Base64/Base64URL エンコード | base64-js | `src/utils/encode.ts` |
-| MIME タイプ判定 | mime-types | `src/utils/mime.ts` |
-| ハッシュ関数 (SHA-256等) | crypto-js | `src/utils/crypto.ts` |
-| パス結合 | path (Node.js) | `src/middleware/serve-static/path.ts` |
-
-### ビルドパイプラインとパッケージ品質バリデーション
-
-ビルドは esbuild ベースのカスタムスクリプト（`build/build.ts`）で ESM と CJS の双方を生成し、`tsc` で型定義ファイルを出力する。ビルド後に以下の自動チェックが走る:
-
-1. **publint（postbuild）**: パッケージのエクスポートマップ、型定義の整合性、CJS/ESM デュアルフォーマットの正当性を検証
-2. **validateExports**: `package.json` と `jsr.json` のエクスポートキーが相互に対応しているかを検証
-3. **removePrivateFields**: `oxc-parser` で `.d.ts` ファイルを AST 解析し、`#private` フィールドを除去（TypeScript の private fields が型定義に漏洩するのを防止）
-
-### devDependencies の分類と役割
-
-```
-# ビルドツール
-esbuild          — ESM/CJS バンドル生成
-typescript       — 型チェック＆型定義出力
-oxc-parser       — .d.ts からの #private フィールド除去
-glob             — ビルドスクリプト内のファイル列挙
-
-# テストツール
-vitest           — テストランナー
-@vitest/coverage-v8 — カバレッジ
-msw              — HTTP モックサーバー（クライアントテスト用）
-jsdom            — DOM テスト環境
-undici           — HTTP クライアントテスト
-
-# リント・フォーマット
-eslint + @hono/eslint-config
-prettier
-editorconfig-checker
-
-# パッケージ品質
-publint          — パッケージバリデーション
-pkg-pr-new       — PR ごとの npm プレビュー公開
-
-# リリース
-np               — npm リリース管理
-
-# ランタイムテスト
-wrangler         — Cloudflare Workers テスト
-bun-types        — Bun 型定義
-zod              — バリデーションテスト用
-```
-
-### CJS/ESM デュアルパッケージ戦略
-
-`package.json` の `exports` フィールドで条件付きエクスポートを定義し、各サブパスに `types`、`import`（ESM）、`require`（CJS）の3つのエントリを設定している。CJS 側には `dist/cjs/package.json`（`{"type": "commonjs"}`）を配置して Node.js のモジュール解決を正しく機能させる。
-
-### アダプターパターンによるランタイム分離
-
-コアの `serveStatic` ミドルウェア（`src/middleware/serve-static/index.ts`）はファイルシステムアクセスを `getContent` コールバックとして受け取る設計にし、ランタイム固有の実装（Bun の `Bun.file()` や Deno のファイル API）をアダプター層に押し出している。`defaultJoin`（`src/middleware/serve-static/path.ts`）は `node:path` に依存しない独自のパス結合実装で、アダプターがランタイム固有の `join` を注入可能。
-
-### CI マトリクスによるマルチランタイム検証
-
-CI（`.github/workflows/ci.yml`）では Node.js（18, 20, 22）、Bun、Bun on Windows、Deno、Cloudflare Workers (workerd)、Fastly、AWS Lambda、Lambda@Edge の 8+ 環境でテストを実行。さらに `jsr-dry-run` ジョブで JSR 公開の妥当性も検証している。
-
-## コード例
-
-### Web Crypto API による JWT 署名（外部ライブラリ不要）
+JWT の署名・検証を `jsonwebtoken` や `jose` に頼らず、`crypto.subtle` を直接使用して実装している。これにより Node.js の `crypto` モジュールへの依存を回避し、Cloudflare Workers や Deno でも同一コードが動作する。
 
 ```typescript
-// src/utils/jwt/jws.ts:29-37
-export async function signing(
-  privateKey: SignatureKey,
-  alg: SignatureAlgorithm,
-  data: BufferSource
-): Promise<ArrayBuffer> {
-  const algorithm = getKeyAlgorithm(alg)
-  const cryptoKey = await importPrivateKey(privateKey, algorithm)
-  return await crypto.subtle.sign(algorithm, cryptoKey, data)
+// src/utils/jwt/jws.ts:36
+return await crypto.subtle.sign(algorithm, cryptoKey, data)
+```
+
+```typescript
+// src/utils/jwt/jws.ts:47
+return await crypto.subtle.verify(algorithm, cryptoKey, signature, data)
+```
+
+Cookie 署名にも同じパターンを適用している。
+
+```typescript
+// src/utils/cookie.ts:41
+return await crypto.subtle.importKey('raw', secretBuf, algorithm, false, ['sign', 'verify'])
+```
+
+ETag ミドルウェアでは `crypto.subtle.digest` をデフォルトの digest 生成器として使用しつつ、`crypto.subtle` が利用不可能な場合のフォールバックも考慮している。
+
+```typescript
+// src/middleware/etag/index.ts:42-43
+if (crypto && crypto.subtle) {
+  generator = (body: Uint8Array<ArrayBuffer>) =>
+    crypto.subtle.digest({ name: 'SHA-1' }, body)
 }
 ```
 
-### package.json / jsr.json エクスポート整合性チェック
+### URL パースの高速自前実装
+
+`new URL()` の呼び出しは比較的コストが高い。Hono はリクエストごとに呼ばれるホットパスでこれを回避し、`charCodeAt` と `indexOf` による手動パースを行っている。
 
 ```typescript
-// build/build.ts:28-31
-const [packageJsonExports, jsrJsonExports] = ['./package.json', './jsr.json'].map(readJsonExports)
-
-// Validate exports of package.json and jsr.json
-validateExports(packageJsonExports, jsrJsonExports, 'jsr.json')
-validateExports(jsrJsonExports, packageJsonExports, 'package.json')
-```
-
-### アダプターパターンによるランタイム依存の隔離
-
-```typescript
-// src/middleware/serve-static/index.ts:34-47 (コア: ランタイム非依存)
-export const serveStatic = <E extends Env = Env>(
-  options: ServeStaticOptions<E> & {
-    getContent: (path: string, c: Context<E>) => Promise<Data | Response | null>
-    join?: (...paths: string[]) => string
-    isDir?: (path: string) => boolean | undefined | Promise<boolean | undefined>
-  }
-): MiddlewareHandler => {
-  const root = options.root ?? './'
-  const join = options.join ?? defaultJoin
-  // ...
-}
-```
-
-```typescript
-// src/adapter/bun/serve-static.ts:8-32 (Bun アダプター: ランタイム固有コードを注入)
-export const serveStatic = <E extends Env = Env>(
-  options: ServeStaticOptions<E>
-): MiddlewareHandler => {
-  return async function serveStatic(c, next) {
-    const getContent = async (path: string) => {
-      const file = Bun.file(path)
-      return (await file.exists()) ? file : null
-    }
-    return baseServeStatic({ ...options, getContent, join, isDir })(c, next)
-  }
-}
-```
-
-### ランタイム非依存なパス結合の自前実装
-
-```typescript
-// src/middleware/serve-static/path.ts:5-25
-/**
- * `defaultJoin` does not support Windows paths and always uses `/` separators.
- * If you need Windows path support, please use `join` exported from `node:path` etc. instead.
- */
-export const defaultJoin = (...paths: string[]): string => {
-  let result = paths.filter((p) => p !== '').join('/')
-  result = result.replace(/(?<=\/)\/+/g, '')
-  const segments = result.split('/')
-  const resolved = []
-  for (const segment of segments) {
-    if (segment === '..' && resolved.length > 0 && resolved.at(-1) !== '..') {
-      resolved.pop()
-    } else if (segment !== '.') {
-      resolved.push(segment)
+// src/utils/url.ts:106-134
+export const getPath = (request: Request): string => {
+  const url = request.url
+  const start = url.indexOf('/', url.indexOf(':') + 4)
+  let i = start
+  for (; i < url.length; i++) {
+    const charCode = url.charCodeAt(i)
+    if (charCode === 37) {
+      // '%' - percent encoding path
+      const queryIndex = url.indexOf('?', i)
+      const hashIndex = url.indexOf('#', i)
+      // ...
+    } else if (charCode === 63 || charCode === 35) {
+      // '?' or '#'
+      break
     }
   }
-  return resolved.join('/') || '.'
+  return url.slice(start, i)
+}
+```
+
+クエリパラメータの取得でも `URLSearchParams` を使わず、手動で `indexOf` ベースの解析を行っている（`src/utils/url.ts:219-300`）。コメントで「optimized for unencoded key」と明記されており、パフォーマンスを意識した分岐が設計されている。
+
+### Cookie パーサーの自前実装
+
+`cookie` パッケージ（npm）を使わず、RFC 6265 に準拠した自前パーサーを実装している。fast-path として、要求されたキーが Cookie 文字列に存在しない場合は即座に空オブジェクトを返す最適化がある。
+
+```typescript
+// src/utils/cookie.ts:79-82
+export const parse = (cookie: string, name?: string): Cookie => {
+  if (name && cookie.indexOf(name) === -1) {
+    // Fast-path: return immediately if the demanded-key is not in the cookie string
+    return {}
+  }
+```
+
+### Response オブジェクトの創造的活用
+
+FormData のパースに `new Response()` を経由するパターンで、Web API のみで ArrayBuffer から FormData への変換を実現している。
+
+```typescript
+// src/utils/buffer.ts:55-65
+export const bufferToFormData = (
+  arrayBuffer: ArrayBuffer,
+  contentType: string
+): Promise<FormData> => {
+  const response = new Response(arrayBuffer, {
+    headers: { 'Content-Type': contentType },
+  })
+  return response.formData()
+}
+```
+
+### CompressionStream / ReadableStream の活用
+
+Compress ミドルウェアでは `CompressionStream`（Web Standard）を使い、zlib 等の外部ライブラリなしでレスポンス圧縮を実現している。
+
+```typescript
+// src/middleware/compress/index.ts:62-63
+const stream = new CompressionStream(encoding)
+ctx.res = new Response(ctx.res.body.pipeThrough(stream), ctx.res)
+```
+
+Body Limit ミドルウェアでは `ReadableStream` を使ってストリーミングでサイズを監視し、閾値を超えた時点でエラーを発行する。
+
+```typescript
+// src/middleware/body-limit/index.ts:93-114
+const rawReader = c.req.raw.body.getReader()
+const reader = new ReadableStream({
+  async start(controller) {
+    try {
+      for (;;) {
+        const { done, value } = await rawReader.read()
+        if (done) { break }
+        size += value.length
+        if (size > maxSize) {
+          controller.error(new BodyLimitError(ERROR_MESSAGE))
+          break
+        }
+        controller.enqueue(value)
+      }
+    } finally { controller.close() }
+  },
+})
+```
+
+### TextEncoder/TextDecoder のシングルトン化
+
+頻繁に使われる `TextEncoder` / `TextDecoder` はモジュールレベルでシングルトンとして生成し、インスタンス生成コストを削減している。
+
+```typescript
+// src/utils/jwt/utf8.ts:6-7
+export const utf8Encoder: TextEncoder = new TextEncoder()
+export const utf8Decoder: TextDecoder = new TextDecoder()
+```
+
+### Object.create(null) によるプロトタイプ汚染回避
+
+ルーター全体で `Object.create(null)` を一貫して使用し、プロトタイプチェーンのないプレーンオブジェクトを生成している。`Map` を使わないのはシリアライズの容易さと V8 の hidden class 最適化が効くためと推測される。
+
+```typescript
+// src/router/trie-router/node.ts:16
+const emptyParams = Object.create(null)
+```
+
+```typescript
+// src/router/reg-exp-router/router.ts:128-129
+this.#middleware = { [METHOD_NAME_ALL]: Object.create(null) }
+this.#routes = { [METHOD_NAME_ALL]: Object.create(null) }
+```
+
+### minify を意識した変数エイリアス
+
+長い組み込み関数名をローカル変数にエイリアスし、minifier が短縮できるようにしている。コメントで意図が明記されている。
+
+```typescript
+// src/utils/url.ts:317-319
+// `decodeURIComponent` is a long name.
+// By making it a function, we can use it commonly when minified, reducing the amount of code.
+export const decodeURIComponent_ = decodeURIComponent
+```
+
+### ランタイム固有 API の隔離パターン
+
+`node:` プレフィックスの import は adapter 層（`src/adapter/`）とオプショナルミドルウェア（`context-storage`）に厳密に限定されている。コアの `src/utils/` や `src/middleware/`（context-storage 以外）は一切 Node.js 固有 API を使用しない。`getRuntimeKey()` 関数でランタイムを判定し、差異を adapter 層で吸収する設計になっている。
+
+```typescript
+// src/helper/adapter/index.ts:50-84
+export const getRuntimeKey = (): Runtime => {
+  const global = globalThis as any
+  const userAgentSupported =
+    typeof navigator !== 'undefined' && typeof navigator.userAgent === 'string'
+  if (userAgentSupported) {
+    for (const [runtimeKey, userAgent] of Object.entries(knownUserAgents)) {
+      if (checkUserAgentEquals(userAgent)) { return runtimeKey as Runtime }
+    }
+  }
+  // ... fallback chain
+}
+```
+
+### Preset パターンによるバンドルサイズの段階的制御
+
+ゼロ依存の利点を最大化するため、ルーター構成を preset で切り替えられるようにしている。`tiny` はルーター 1 つ（PatternRouter のみ）、`quick` は 2 つ（LinearRouter + TrieRouter）、デフォルトは 2 つ（RegExpRouter + TrieRouter）。ユーザーはユースケースに応じてサイズとパフォーマンスのトレードオフを選択できる。
+
+```typescript
+// src/preset/tiny.ts:11-20
+export class Hono<...> extends HonoBase<E, S, BasePath> {
+  constructor(options: HonoOptions<E> = {}) {
+    super(options)
+    this.router = new PatternRouter()
+  }
 }
 ```
 
 ## パターンカタログ
 
 - **Strategy パターン** (分類: 振る舞い)
-  - 解決する問題: ランタイムごとに異なるファイルシステムアクセスをコアから分離する
-  - 適用条件: 同一インターフェースに対し、ランタイムごとに異なる実装が必要な場合
-  - コード例: `src/middleware/serve-static/index.ts:36-37`（`getContent` と `join` をコールバックとして受け取る）
-  - 注意点: コールバック数が増えると、アダプター側の実装負荷が増大する
+  - 解決する問題: ランタイムごとに異なる API（ファイルシステムアクセス、WebSocket 実装等）への対応
+  - 適用条件: ランタイム固有の機能が必要だが、コア API を統一したい場合
+  - コード例: `src/middleware/serve-static/index.ts:34` の `getContent` コールバック、`src/helper/adapter/index.ts:25` の `runtimeEnvHandlers`
+  - 注意点: Strategy の注入は adapter レイヤーに限定し、コアには持ち込まない
 
-- **Adapter パターン** (分類: 構造)
-  - 解決する問題: ランタイム固有 API（`Bun.file()`, `Deno.readFile()` 等）をコアのインターフェースに適合させる
-  - 適用条件: マルチランタイム対応が必要で、ランタイム固有の API を使わざるを得ない場合
-  - コード例: `src/adapter/bun/serve-static.ts` が `baseServeStatic` に Bun 固有の実装を注入
-  - 注意点: アダプターごとにテストが必要（CI で 8+ ランタイムを検証）
+- **Facade パターン** (分類: 構造)
+  - 解決する問題: Web Crypto API の冗長なインターフェースをドメイン固有の簡潔な API に変換
+  - 適用条件: 低レベル API の複雑さをユーザーから隠蔽したい場合
+  - コード例: `src/utils/cookie.ts:39-48` の `getCryptoKey` / `makeSignature`、`src/utils/crypto.ts:33-58` の `createHash`
+  - 注意点: Facade の裏で使う Web API の可用性チェックを怠らない（`if (crypto && crypto.subtle)`）
 
 ## Good Patterns
 
-- **postbuild フックでの publint 自動実行**: `"postbuild": "publint"` により、ビルドするたびにパッケージ品質が自動検証される。エクスポートマップの不整合、CJS/ESM の互換性問題をローカル開発時に即座に検出できる。
+- **Web Standard API のみで暗号処理を完結させる**: `crypto.subtle` は JWT 署名/検証、Cookie 署名、ETag ハッシュ生成のすべてをカバーする。外部の暗号ライブラリが不要になり、Cloudflare Workers のような制限的環境でもそのまま動作する。コード例: `src/utils/jwt/jws.ts:29-48`, `src/utils/cookie.ts:39-48`
 
-```json
-// package.json:29-30
-"build": "bun run --shell bun remove-dist && bun ./build/build.ts && bun run copy:package.cjs.json",
-"postbuild": "publint",
-```
+- **ホットパスでは Web API より低レベルな文字列操作を選択する**: `new URL()` や `URLSearchParams` の代わりに `charCodeAt` / `indexOf` / `slice` による手動パースを行い、リクエストごとのオーバーヘッドを最小化する。コード例: `src/utils/url.ts:106-134`
 
-- **デュアルレジストリのエクスポート同期検証**: ビルドスクリプト内で `package.json` と `jsr.json` のエクスポートを相互検証し、片方にだけエクスポートが追加される事故を防止。カスタムスクリプトだがロジックは 37 行と簡潔。
+- **Response コンストラクタを変換ユーティリティとして活用する**: `new Response(body, { headers })` を使って ArrayBuffer から FormData へ変換する。Web API の組み合わせで専用ライブラリの機能を代替する発想。コード例: `src/utils/buffer.ts:55-65`
 
-```typescript
-// build/validate-exports.ts:1-37
-export const validateExports = (
-  source: Record<string, unknown>,
-  target: Record<string, unknown>,
-  fileName: string
-) => {
-  // ワイルドカードマッチングを含む双方向検証
-  Object.keys(source).forEach((sourceEntry) => {
-    if (!isEntryInTarget(sourceEntry)) {
-      throw new Error(`Missing "${sourceEntry}" in '${fileName}'`)
-    }
-  })
-}
-```
-
-- **pkg-pr-new による PR 時プレビュー公開**: PR に `cr-tracked` ラベルを付けると、ビルド成果物が StackBlitz にプレビュー公開される。実際のパッケージを消費者として試せるため、エクスポートマップや型定義の問題をマージ前に発見できる。
-
-```yaml
-# .github/workflows/cr.yml:38-39
-- name: Publish to StackBlitz
-  run: bun pkg-pr-new publish --compact
-```
-
-- **Web Standard API による機能自前実装**: JWT を `crypto.subtle` で実装し、Cookie 署名も同じく Web Crypto API で行う。これにより 182 のソースファイルすべてが外部 production 依存なしで動作する。
-
-```typescript
-// src/utils/cookie.ts:39-42
-const getCryptoKey = async (secret: string | BufferSource): Promise<CryptoKey> => {
-  const secretBuf = typeof secret === 'string' ? new TextEncoder().encode(secret) : secret
-  return await crypto.subtle.importKey('raw', secretBuf, algorithm, false, ['sign', 'verify'])
-}
-```
+- **ランタイム固有コードの境界を明確にする**: `node:` import は `src/adapter/` と明示的にオプトインするミドルウェアにのみ存在し、コアコードは Web Standard API のみを使用する。コード例: `src/adapter/deno/serve-static.ts:1`, `src/adapter/bun/serve-static.ts:2-3`
 
 ## Anti-Patterns / 注意点
 
-- **自前実装のセキュリティリスク**: JWT や暗号処理の自前実装は、専門家によるレビューが不十分だとセキュリティ脆弱性を生む可能性がある。Hono は Web Crypto API の薄いラッパーに留め、暗号プリミティブ自体は実装しないことでリスクを軽減しているが、それでもアルゴリズム混同攻撃への対策（`verifyWithJwks` での対称鍵アルゴリズム拒否）など、深い知識が必要な実装が含まれる。
+- **何でも自前実装する**: ゼロ依存ポリシーが適切なのは、(1) Web Standard API でカバーできる範囲が広い場合、(2) マルチランタイム対応が要件の場合、(3) フレームワークの規模で自前実装の品質を維持できるコントリビューター数がいる場合に限る。一般的なアプリケーションで暗号処理やパーサーを自前実装するのはセキュリティリスクが高い。
 
 ```typescript
-// Bad: 暗号プリミティブの自前実装
-function hmacSha256(key: Uint8Array, data: Uint8Array): Uint8Array {
-  // 自前のHMAC実装 -- 脆弱性のリスク大
+// Bad: アプリケーションレベルで JWT を自前実装
+const sign = (payload, secret) => {
+  // 独自の Base64 + HMAC 実装...
 }
 
-// Better: Web Crypto API のラッパーに留める（Hono のアプローチ）
-const signature = await crypto.subtle.sign(algorithm, cryptoKey, data)
+// Better: ライブラリ/フレームワークが提供する機能を使い、
+// 自前実装はライブラリ/フレームワーク側に限定する
+import { sign } from 'hono/utils/jwt'
 ```
 
-- **node: プレフィックス付き import の無制限使用**: `node:async_hooks` や `node:fs/promises` の import がアダプター層だけでなくミドルウェア本体（`context-storage`）にも存在する。コアミドルウェアが Node.js 固有 API に依存すると、そのミドルウェアが一部ランタイムで動作しないリスクがある。
+- **最適化のために可読性を犠牲にしすぎる**: `getPath` の `charCodeAt` ベースのパースは高速だが、`new URL()` と比べて意図が読み取りにくい。ホットパス以外では可読性を優先すべき。Hono では `getPath` がリクエストごとに呼ばれるため正当化されるが、月に 1 回呼ばれる関数に適用するのは過剰最適化。
 
 ```typescript
-// Bad: コアミドルウェアでの直接的なランタイム固有 import
-// src/middleware/context-storage/index.ts:6
-import { AsyncLocalStorage } from 'node:async_hooks'
+// Bad: すべての URL パースを手動で行う
+const path = url.slice(url.indexOf('/', url.indexOf(':') + 4), url.indexOf('?'))
 
-// Better: ランタイム検出+フォールバック、またはアダプターパターンで隔離
-// (ただし AsyncLocalStorage は現在 Node.js/Bun/Deno すべてでサポートされるため、
-//  Hono の判断は実用的に妥当)
+// Better: ホットパスのみ手動パース、それ以外は new URL() を使う
+const url = new URL(request.url)
+const path = url.pathname
 ```
 
 ## 導出ルール
 
-- `[MUST]` ライブラリのコアモジュールは production dependencies ゼロを維持し、外部依存が必要な機能は別パッケージとして分離する
-  - 根拠: Hono は 182 ソースファイル・多数のミドルウェアを擁しつつ production dependencies ゼロを達成しており、CONTRIBUTING.md で「Third-party middleware is not in the core」と明文化している
-
-- `[MUST]` マルチレジストリ公開（npm + JSR 等）時は、エクスポートマップの同期をビルドスクリプト内で自動検証する
-  - 根拠: `build/build.ts` で `validateExports()` を双方向に実行し、片方だけにエクスポートが追加される事故を構造的に防止している
-
-- `[SHOULD]` ビルドの postbuild フックで publint を実行し、パッケージ品質（エクスポートマップ整合性、CJS/ESM 互換性、型定義パス）を自動検証する
-  - 根拠: `"postbuild": "publint"` により、壊れたパッケージの公開を開発時点で防止している
-
-- `[SHOULD]` 暗号処理は Web Crypto API（`crypto.subtle`）のラッパーとして実装し、暗号プリミティブの自前実装は避ける
-  - 根拠: Hono の JWT 実装（`src/utils/jwt/jws.ts`）は `crypto.subtle.sign`/`verify`/`importKey` のみを使用し、HMAC や RSA の低レベル演算は一切自前実装していない
-
-- `[SHOULD]` ランタイム固有の API 使用はアダプター層に隔離し、コアはコールバック/DI で受け取る設計にする
-  - 根拠: `serveStatic` コアは `getContent`/`join`/`isDir` をコールバックで受け取り、`Bun.file()` 等のランタイム固有コードはアダプター内に封じ込めている
-
-- `[AVOID]` devDependencies にテスト対象のバリデーションライブラリ（zod 等）を含めるだけで、production dependencies に追加してしまうこと
-  - 根拠: Hono は zod を devDependencies に配置しテスト内でのみ使用。バリデーション機能自体はフレームワーク内に独自の仕組み（`src/validator/`）を持ち、特定ライブラリへの依存を避けている
+- `[MUST]` ライブラリ/フレームワークのコアモジュールからランタイム固有 API（`node:` prefix, `Deno.*` 等）を排除し、adapter 層に隔離する
+  - 根拠: Hono は `node:` import を `src/adapter/` と `context-storage`（オプトイン型ミドルウェア）にのみ限定しており、コア 350+ ファイルで Web Standard API のみを使用することで 7 ランタイムへの可搬性を実現している
+- `[MUST]` 外部依存を追加する前に、同等機能を Web Standard API（`crypto.subtle`, `ReadableStream`, `CompressionStream`, `TextEncoder` 等）で実現できないか検証する
+  - 根拠: Hono は JWT 処理を `crypto.subtle` で、圧縮を `CompressionStream` で、FormData 変換を `new Response()` で実現しており、ランタイム依存ゼロを達成している
+- `[SHOULD]` リクエストごとに実行されるホットパスでは、`new URL()` / `URLSearchParams` の代わりに `indexOf` / `charCodeAt` / `slice` による手動パースを検討する
+  - 根拠: `src/utils/url.ts` では `getPath` / `getQueryParam` で手動パースを行い、コメントで「optimized for unencoded key」と最適化意図を明記している
+- `[SHOULD]` 頻繁にインスタンス化される Web API オブジェクト（`TextEncoder`, `TextDecoder`）はモジュールスコープでシングルトン化する
+  - 根拠: `src/utils/jwt/utf8.ts` でモジュールレベルの `utf8Encoder` / `utf8Decoder` を共有し、リクエストごとの `new TextEncoder()` 呼び出しを排除している
+- `[SHOULD]` ルックアップ用の辞書オブジェクトには `Object.create(null)` を使い、プロトタイプチェーンを排除する
+  - 根拠: Hono のルーター実装全体（`reg-exp-router`, `trie-router`, `linear-router`, `pattern-router`）で一貫して `Object.create(null)` を使用しており、プロトタイプ汚染防止と V8 最適化の両方に寄与している
+- `[SHOULD]` minifier の効果を最大化するため、長い組み込み関数名はローカル変数にエイリアスして再利用する
+  - 根拠: `src/utils/url.ts:317-319` で `decodeURIComponent` を `decodeURIComponent_` にエイリアスし、コメントで minify 時のコード量削減を意図として明記している
+- `[AVOID]` アプリケーションコードで暗号処理や HTTP パースを自前実装する。ゼロ依存戦略はフレームワーク/ライブラリレベルの判断であり、十分なテストカバレッジとコントリビューターが前提
+  - 根拠: Hono の JWT 実装（`src/utils/jwt/`）は 5 ファイル・数百行の規模で RFC 7515/7519 に準拠しており、網羅的なテスト（`jwt.test.ts` 1000行超）に支えられている。この投資はフレームワークだからこそ正当化される
 
 ## 適用チェックリスト
 
-- [ ] `package.json` の `dependencies` フィールドを確認し、本当に production で必要な依存のみが含まれているか検証する
-- [ ] `postbuild` スクリプトに `publint` を追加し、パッケージ品質を自動検証する仕組みを導入する
-- [ ] CJS/ESM デュアルパッケージを提供している場合、`exports` フィールドで `types`/`import`/`require` の3条件を正しく設定しているか確認する
-- [ ] 複数レジストリ（npm, JSR 等）に公開している場合、エクスポートマップの同期検証スクリプトをビルドに組み込む
-- [ ] 暗号処理に外部ライブラリを使用している場合、Web Crypto API で代替可能かどうか検討する
-- [ ] ランタイム固有 API の使用箇所を洗い出し、アダプターパターンでコアから分離できるか検討する
-- [ ] `pkg-pr-new` や同等ツールを導入し、PR 時にパッケージのプレビュー公開ができるようにする
-- [ ] 外部依存が必要な拡張機能を別パッケージ/モノレポとして分離する戦略を検討する
+- [ ] `package.json` の `dependencies`（devDependencies ではない）を棚卸しし、Web Standard API で代替できるものがないか確認する
+- [ ] `crypto.subtle` で代替できる暗号処理（ハッシュ生成、HMAC 署名、JWT）に外部ライブラリを使っていないか確認する
+- [ ] ランタイム固有の import（`node:`, `Deno.*`）がコアモジュールに混在していないか確認し、adapter 層に隔離する
+- [ ] リクエストホットパスで `new URL()` や `URLSearchParams` を毎回呼んでいないか確認し、必要に応じて手動パースに置き換える
+- [ ] `TextEncoder` / `TextDecoder` がリクエストごとに `new` されていないか確認し、シングルトン化する
+- [ ] ルックアップ用辞書が `{}` リテラルで作られていないか確認し、`Object.create(null)` に置き換えを検討する
+- [ ] フレームワーク/ライブラリの場合、preset パターンによるバンドルサイズの段階的制御が可能か検討する

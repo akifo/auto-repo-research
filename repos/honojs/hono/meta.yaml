@@ -11,100 +11,90 @@ perspectives:
   - name: project-structure
     file: project-structure.md
     wave: 1
-    intent: "ディレクトリ構成・モジュール分割・エクスポートマップ設計の意図を明らかにする"
-    summary: "70以上のサブパスエクスポートでtree-shakingを実現し、ランタイム固有コードをアダプター層に完全隔離する構造設計"
+    intent: "ディレクトリ構成・モジュール境界・公開APIの設計戦略を分析する"
+    summary: "exports とディレクトリ構造の1:1対応、index.ts による Facade 隠蔽、プリセットパターンによるルーター層別化、ファクトリ関数+名前付き関数式のミドルウェア統一シグネチャを分析"
   - name: architecture
     file: architecture.md
     wave: 1
-    intent: "全体アーキテクチャ・レイヤー構成・依存関係の方向性を分析する"
-    summary: "5層レイヤー構成で依存方向を内側→外側に統一し、薄いコア層と交換可能なルーターで9ランタイムに対応"
+    intent: "コア抽象・レイヤー構成・依存関係の方向性を明らかにする"
+    summary: "Web Standards を唯一の契約としたコア層、Router<T> インターフェースによる Strategy パターン（5実装+SmartRouter の遅延選択）、関数注入型 Template Method によるランタイムアダプター、compose ベースの Chain of Responsibility を分析"
   - name: design-philosophy
     file: design-philosophy.md
     wave: 1
-    intent: "Web Standards 中心の設計思想・ゼロ依存ポリシー・マルチランタイム戦略の根拠を解明する"
-    summary: "Fetch API を唯一の境界とし、ゼロ外部依存とプリセットによるトレードオフ選択でマルチランタイムを実現"
-  - name: router-design
-    file: router-design.md
+    intent: "Web Standards 準拠の設計哲学と技術選定の判断基準を探る"
+    summary: "最大公約数としての Web Standards 採用、ゼロ依存の crypto.subtle/ReadableStream 活用、ホットパスでの new URL() 回避と charCodeAt パース、プリセットによるバンドルサイズ段階制御を分析"
+  - name: type-system-patterns
+    file: type-system-patterns.md
     wave: 1
-    intent: "5種ルーター実装の Strategy パターンと SmartRouter による自動選択メカニズムを分析する"
-    summary: "最小インターフェース Router<T> で5種ルーターを統一し、SmartRouter がメソッド自己置換で最適ルーターに委譲"
-  - name: middleware-system
-    file: middleware-system.md
+    intent: "条件型・型推論・ジェネリクス活用による型安全API設計を体系化する"
+    summary: "Template Literal Typesによるパス→パラメータ型自動推論、IntersectNonAnyTypesによるanyフィルター付きミドルウェアチェーン型合成、TypedResponseファントム型によるレスポンス追跡、ToSchema/MergeSchemaPathによるEnd-to-End型安全RPC、Declaration Mergingによる二重拡張メカニズム、JSONParsedによるシリアライズ型精密化を分析"
+  - name: composition-patterns
+    file: composition-patterns.md
     wave: 1
-    intent: "onion 型ミドルウェア合成・compose 関数の実装・実行順序制御の仕組みを明らかにする"
-    summary: "73行のcompose関数でonion型合成を実現し、単一ハンドラ最適化でホットパスのオーバーヘッドを排除"
-  - name: context-design
-    file: context-design.md
+    intent: "ミドルウェア合成・関数パイプライン・デコレータ的パターンの技法を分析する"
+    summary: "koa-compose 由来の onion-ring モデル、next() 多重呼び出しガード、ファクトリ関数のクロージャ封入と事前計算、some/every/except による論理演算合成、単一ハンドラ高速パスを分析"
+  - name: abstraction-patterns
+    file: abstraction-patterns.md
     wave: 1
-    intent: "Context オブジェクトのライフサイクル・c.set/c.get の型安全ストア設計を分析する"
-    summary: "遅延初期化とEnv型+ContextVariableMapの二重レイヤーでランタイムコストゼロの型安全な変数ストアを実現"
-  - name: type-system
-    file: type-system.md
+    intent: "インターフェース設計・責務分離・拡張ポイント設計を分析する"
+    summary: "2メソッド最小インターフェース Router<T> の設計、コールバック注入による Template Method、UnsupportedPathError による能力宣言とフォールバック、Declaration Merging 拡張ポイントを分析"
+  - name: platform-abstraction
+    file: platform-abstraction.md
     wave: 1
-    intent: "型推論チェーン・ルート定義からクライアント型への伝搬メカニズムを解明する"
-    summary: "Phantom TypeとSchema累積合成でルート定義からRPCクライアントまでEnd-to-End型安全性をコード生成なしで実現"
-  - name: adapter-pattern
-    file: adapter-pattern.md
+    intent: "マルチランタイム対応の抽象化レイヤーとアダプター戦略を分析する"
+    summary: "fetch シグネチャを境界契約とした9ランタイム対応、handle(app) 統一パターン、EventProcessor による AWS Lambda 4形式吸収、getContent コールバック注入による serveStatic 共通化を分析"
+  - name: error-handling-idioms
+    file: error-handling-idioms.md
     wave: 2
-    intent: "マルチランタイムアダプター抽象化・Web Standards API ブリッジ設計を分析する"
-    summary: "アダプターの厚みをランタイムのAPI乖離度に比例させ、3行から680行まで変換責務のみに徹する設計"
-  - name: web-standards
-    file: web-standards.md
+    intent: "エラー型階層・HTTP例外・エラー伝播のイディオムを分析する"
+    summary: "HTTPException 単一クラスによるフラット例外モデル、Response 同梱パターン、cause チェーンによるトレーサビリティ、設定時エラーとリクエスト時エラーの分離、duck typing errorHandler を分析"
+  - name: testing-practices
+    file: testing-practices.md
     wave: 2
-    intent: "Fetch API/Web Crypto/Streams API など Web Standards の活用パターンと抽象化手法を分析する"
-    summary: "標準APIをラップしつつescape hatchで直接アクセスを保証し、Responseをデータ変換器として活用する実践手法"
-  - name: client-rpc
-    file: client-rpc.md
+    intent: "マルチランタイムテスト戦略・テストユーティリティ・カバレッジ設計を分析する"
+    summary: "app.request() によるサーバーレステスト、testClient の型安全 RPC テスト、コア網羅+ランタイム差分の二層構造、共通テストスイートの宣言的スキップ、expectTypeOf による型テストを分析"
+  - name: performance-techniques
+    file: performance-techniques.md
     wave: 2
-    intent: "hc クライアントの型安全 RPC メカニズム・サーバー型からクライアント型の導出を解明する"
-    summary: "Proxyでパスを蓄積しPathToChainで型変換する約220行のランタイムで、コード生成なしの型安全RPCを実現"
-  - name: jsx-engine
-    file: jsx-engine.md
+    intent: "ルーティング最適化・遅延評価・バンドルサイズ制御の技法を分析する"
+    summary: "SmartRouter のメソッド自己書き換え、静的ルートの O(1) テーブル直引き、charCodeAt による URL パース、単一ハンドラ compose バイパス、emptyParams シングルトン、PreparedRegExpRouter のシリアライズを分析"
+  - name: api-design-practices
+    file: api-design-practices.md
     wave: 2
-    intent: "独自 JSX ランタイム実装・サーバーサイドレンダリング・DOM レンダラーの設計を分析する"
-    summary: "SSR用文字列レンダラーとDOM用クライアントレンダラーをSymbolベースのディスパッチで切り替える独自JSXエンジン"
-  - name: validator-system
-    file: validator-system.md
+    intent: "メソッドチェーン・流暢なAPI・開発者体験重視の設計を分析する"
+    summary: "Fluent API による return this チェーン、c.text()/c.json() のファストパス最適化、getter + ??= の遅延初期化、Proxy ベース型安全 RPC クライアント、some/every/except の合成 API を分析"
+  - name: build-and-tooling
+    file: build-and-tooling.md
     wave: 2
-    intent: "バリデーター統合パターン・Zod/Valibot 等外部ライブラリとの連携設計を分析する"
-    summary: "コールバック関数の型シグネチャを統合契約としin/out分離で任意のバリデーションライブラリを20行で統合可能にする設計"
-  - name: error-handling
-    file: error-handling.md
+    intent: "マルチフォーマットビルド・エントリポイント管理・公開パイプラインを分析する"
+    summary: "ESM/CJS/型定義の並行ビルド、package.json と jsr.json の双方向エクスポート検証、publint による公開前検証、PR ごとのバンドルサイズ・型チェック速度・HTTP スループット計測を分析"
+  - name: extensibility-mechanisms
+    file: extensibility-mechanisms.md
     wave: 2
-    intent: "HTTPException 設計・エラー伝播パス・グローバルエラーハンドリングの仕組みを分析する"
-    summary: "Response同梱throwパターンとダックタイピング判定でエラーの意味と表現を一体運搬する二層構造のエラー設計"
-  - name: testing-strategy
-    file: testing-strategy.md
-    wave: 2
-    intent: "Vitest マルチプロジェクト構成・マルチランタイムテスト戦略を分析する"
-    summary: "app.request()によるサーバーレステストと共通テストスイートのskipリスト管理で7+ランタイムを効率的に検証"
-  - name: performance
-    file: performance.md
-    wave: 2
-    intent: "ルーター性能最適化・正規表現コンパイル戦略・ベンチマーク基盤を分析する"
-    summary: "全ルートを単一正規表現にコンパイルしO(1)マッチングを実現、静的ルートのハッシュマップ参照で更に高速化"
-  - name: build-system
-    file: build-system.md
-    wave: 2
-    intent: "Bun + esbuild カスタムビルドパイプライン・ESM/CJS デュアル出力・JSR 対応を分析する"
-    summary: "esbuild/tsc/publintの責務分離と並列実行で70+エクスポートのESM/CJSデュアル出力とJSR対応を自動保証"
-  - name: streaming
-    file: streaming.md
-    wave: 2
-    intent: "SSE/ストリーミング応答・ReadableStream 抽象化・TransformStream 活用を分析する"
-    summary: "TransformStreamを仲介したPush型抽象化でSSE/ストリーミングをWeb Standards APIのみで統一的に実装"
-  - name: preset-system
-    file: preset-system.md
-    wave: 2
-    intent: "Hono/HonoBase/Tiny/Quick プリセットによる段階的構成と tree-shaking 設計を分析する"
-    summary: "HonoBase基盤にルーターだけ差し替えた3プリセットをexports分離で提供し、バンドルサイズの段階的選択を実現"
-  - name: helper-utilities
-    file: helper-utilities.md
-    wave: 2
-    intent: "ヘルパー群（cookie, html, css, ssg, testing, dev, ws, conninfo, proxy）の設計パターンを分析する"
-    summary: "Context-first引数規約とHelper/Utils二層分離で14ヘルパーをサブパスエクスポートとして独立公開する設計"
+    intent: "プリセット・ファクトリ・プラグインによる拡張の仕組みを分析する"
+    summary: "HonoBase 抽象基底+プリセットによるルーター注入、ファクトリ関数パターンの統一シグネチャ、createMiddleware の型推論 identity wrapper、ContextVariableMap の declare module 拡張を分析"
   - name: dependency-management
     file: dependency-management.md
     wave: 2
-    intent: "ゼロ依存ポリシーの実践・devDependencies 管理・publint バリデーションを分析する"
-    summary: "Web Crypto APIによるJWT等の自前実装でproduction dependencies完全ゼロを達成し、publintで品質を自動保証"
+    intent: "ゼロ依存ポリシー・Web標準API活用・バンドルサイズ意識を分析する"
+    summary: "crypto.subtleによるJWT/Cookie署名、charCodeAt手動パースによるURL解析、Response経由のFormData変換など Web Standard API のみで全機能を実現するゼロ依存戦略、node: importのadapter層隔離、TextEncoderシングルトン化、Object.create(null)によるルックアップ最適化、preset階層によるバンドルサイズ制御を分析"
+  - name: security-practices
+    file: security-practices.md
+    wave: 2
+    intent: "セキュリティヘッダー・CSRF/CORS対策・認証ミドルウェアの設計パターンを分析する"
+    summary: "timingSafeEqual によるハッシュ後定数時間比較、secureHeaders の11ヘッダー安全デフォルト、JWT アルゴリズム混乱攻撃防御、CookieConstraint 条件型による型レベルセキュリティ制約を分析"
+  - name: streaming-patterns
+    file: streaming-patterns.md
+    wave: 2
+    intent: "SSE・ReadableStream・段階的レンダリングの実装パターンを分析する"
+    summary: "TransformStreamベースのペア生成による書き込み/読み取り分離、StreamingApi Facadeによるwrite/close/abort/pipeの統一API、Observer型onAbortによる切断検知分離、SSE 4ヘッダーセット+圧縮除外、Suspenseインラインスクリプトによる自己完結DOM置換、WeakMapコンテキスト保持、自己書き換え関数メモ化を分析"
+  - name: dev-conventions
+    file: dev-conventions.md
+    wave: 2
+    intent: "コーディング規約・ESLint/Prettier設定・CI/CD・コントリビューション規約を分析する"
+    summary: "ESLint 型チェック系47ルール OFF + tsc --strict への責務分離、autofix.ci による自動フォーマット、.tool-versions によるマルチランタイムバージョン一元管理、PR ごとのパフォーマンス退行検出を分析"
+  - name: metaprogramming-techniques
+    file: metaprogramming-techniques.md
+    wave: 2
+    intent: "JSX変換・ビルド時コード生成・型レベルメタプログラミングの技法を分析する"
+    summary: "Template Literal Types による型レベルパス合成、Proxy ベース RPC クライアント自動生成、カスタム JSX ランタイムの SSR/DOM 切り替え、Symbol によるプライベートプロトコル、oxc-parser による .d.ts 後処理を分析"
