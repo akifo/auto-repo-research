@@ -119,6 +119,7 @@ export default defineConfig({
   title: 'Auto Repo Research',
   description:
     'AI-driven repository research: structured insights from open-source codebases',
+  base: '/auto-repo-research/',
 
   srcExclude: [
     'templates/**',
