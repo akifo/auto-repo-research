@@ -26,7 +26,7 @@
 ```jsonc
 // package.cjs.json (全内容)
 {
-  "type": "commonjs"
+  "type": "commonjs",
 }
 ```
 
@@ -64,13 +64,13 @@ TypeScript の `#private` フィールドは `.d.ts` ファイルに `#private;`
     "rootDir": "./src/",
     "outDir": "./dist/types/",
     "noUnusedLocals": true,
-    "noUnusedParameters": true
+    "noUnusedParameters": true,
   },
   "exclude": [
     "src/mod.ts",
     "src/**/*.test.ts",
-    "src/**/*.test.tsx"
-  ]
+    "src/**/*.test.tsx",
+  ],
 }
 ```
 
@@ -96,32 +96,32 @@ CI で以下 3 軸を自動計測している:
 
 ```typescript
 // build/build.ts:42-67 — ESM import パスに .js 拡張子を付与するプラグイン
-const addExtension = (extension: string = '.js', fileExtension: string = '.ts'): Plugin => ({
-  name: 'add-extension',
+const addExtension = (extension: string = ".js", fileExtension: string = ".ts"): Plugin => ({
+  name: "add-extension",
   setup(build: PluginBuild) {
     build.onResolve({ filter: /.*/ }, (args) => {
       if (args.importer) {
-        const p = path.join(args.resolveDir, args.path)
-        let tsPath = `${p}${fileExtension}`
+        const p = path.join(args.resolveDir, args.path);
+        let tsPath = `${p}${fileExtension}`;
 
-        let importPath = ''
+        let importPath = "";
         if (fs.existsSync(tsPath)) {
-          importPath = args.path + extension
+          importPath = args.path + extension;
         } else {
-          tsPath = path.join(args.resolveDir, args.path, `index${fileExtension}`)
+          tsPath = path.join(args.resolveDir, args.path, `index${fileExtension}`);
           if (fs.existsSync(tsPath)) {
-            if (args.path.endsWith('/')) {
-              importPath = `${args.path}index${extension}`
+            if (args.path.endsWith("/")) {
+              importPath = `${args.path}index${extension}`;
             } else {
-              importPath = `${args.path}/index${extension}`
+              importPath = `${args.path}/index${extension}`;
             }
           }
         }
-        return { path: importPath, external: true }
+        return { path: importPath, external: true };
       }
-    })
+    });
   },
-})
+});
 ```
 
 ```typescript
@@ -129,10 +129,8 @@ const addExtension = (extension: string = '.js', fileExtension: string = '.ts'):
 await Promise.all([
   runBuild(esmConfig),
   runBuild(cjsConfig),
-  $`tsc ${
-    isWatch ? '-w' : ''
-  } --emitDeclarationOnly --declaration --project tsconfig.build.json`.nothrow(),
-])
+  $`tsc ${isWatch ? "-w" : ""} --emitDeclarationOnly --declaration --project tsconfig.build.json`.nothrow(),
+]);
 ```
 
 ```typescript
@@ -140,30 +138,29 @@ await Promise.all([
 export const validateExports = (
   source: Record<string, unknown>,
   target: Record<string, unknown>,
-  fileName: string
+  fileName: string,
 ) => {
   const isEntryInTarget = (entry: string): boolean => {
     if (entry in target) {
-      return true
+      return true;
     }
     // e.g., "./utils/*" -> "./utils"
-    const wildcardPrefix = entry.replace(/\/\*$/, '')
-    if (entry.endsWith('/*')) {
+    const wildcardPrefix = entry.replace(/\/\*$/, "");
+    if (entry.endsWith("/*")) {
       return Object.keys(target).some(
-        (targetEntry) =>
-          targetEntry.startsWith(wildcardPrefix + '/') && targetEntry !== wildcardPrefix
-      )
+        (targetEntry) => targetEntry.startsWith(wildcardPrefix + "/") && targetEntry !== wildcardPrefix,
+      );
     }
     // ... wildcard pattern matching
-    return false
-  }
+    return false;
+  };
 
   Object.keys(source).forEach((sourceEntry) => {
     if (!isEntryInTarget(sourceEntry)) {
-      throw new Error(`Missing "${sourceEntry}" in '${fileName}'`)
+      throw new Error(`Missing "${sourceEntry}" in '${fileName}'`);
     }
-  })
-}
+  });
+};
 ```
 
 ## パターンカタログ
@@ -199,13 +196,13 @@ export const validateExports = (
 
 ```typescript
 // build/validate-exports.test.ts:25-31
-describe('validateExports', () => {
-  it('Works', async () => {
-    expect(() => validateExports(mockExports1, mockExports1, 'package.json')).not.toThrowError()
-    expect(() => validateExports(mockExports1, mockExports2, 'jsr.json')).not.toThrowError()
-    expect(() => validateExports(mockExports1, mockExports3, 'package.json')).toThrowError()
-  })
-})
+describe("validateExports", () => {
+  it("Works", async () => {
+    expect(() => validateExports(mockExports1, mockExports1, "package.json")).not.toThrowError();
+    expect(() => validateExports(mockExports1, mockExports2, "jsr.json")).not.toThrowError();
+    expect(() => validateExports(mockExports1, mockExports3, "package.json")).toThrowError();
+  });
+});
 ```
 
 - **`.tool-versions` による全ランタイムのバージョン固定**: Node.js・Bun・Deno の 3 ランタイムのバージョンを `.tool-versions` に一元管理し、CI の `setup-*` アクションから `bun-version-file` / `node-version-file` / `deno-version-file` で参照する。バージョン情報の散在を防ぎ、更新箇所を 1 ファイルに集約する。
@@ -224,11 +221,11 @@ deno 2.4.5
 ```typescript
 // eslint.config.mjs:4-68（抜粋）
 const typeCheckedRules = {
-  '@typescript-eslint/await-thenable': 'off',
-  '@typescript-eslint/no-floating-promises': 'off',
-  '@typescript-eslint/no-misused-promises': 'off',
+  "@typescript-eslint/await-thenable": "off",
+  "@typescript-eslint/no-floating-promises": "off",
+  "@typescript-eslint/no-misused-promises": "off",
   // ... 40+ rules disabled
-}
+};
 ```
 
 Better: パフォーマンスが許容できるなら、安全性に直結するルール（`no-floating-promises`、`no-misused-promises`、`await-thenable`）だけは有効にする。

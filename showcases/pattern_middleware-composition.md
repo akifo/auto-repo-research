@@ -25,34 +25,34 @@ Hono は 25 種の組み込みミドルウェアすべてを `(options?) => asyn
 // src/middleware/cors/index.ts:63-97
 export const cors = (options?: CORSOptions): MiddlewareHandler => {
   const defaults: CORSOptions = {
-    origin: '*',
-    allowMethods: ['GET', 'HEAD', 'PUT', 'POST', 'DELETE', 'PATCH'],
+    origin: "*",
+    allowMethods: ["GET", "HEAD", "PUT", "POST", "DELETE", "PATCH"],
     allowHeaders: [],
     exposeHeaders: [],
-  }
-  const opts = { ...defaults, ...options }
+  };
+  const opts = { ...defaults, ...options };
 
   // 設定値の型に基づく関数の事前構築 -- リクエストごとに分岐しない
   const findAllowOrigin = ((optsOrigin) => {
-    if (typeof optsOrigin === 'string') {
-      if (optsOrigin === '*') {
-        return () => optsOrigin
+    if (typeof optsOrigin === "string") {
+      if (optsOrigin === "*") {
+        return () => optsOrigin;
       } else {
-        return (origin: string) => (optsOrigin === origin ? origin : null)
+        return (origin: string) => (optsOrigin === origin ? origin : null);
       }
-    } else if (typeof optsOrigin === 'function') {
-      return optsOrigin
+    } else if (typeof optsOrigin === "function") {
+      return optsOrigin;
     } else {
-      return (origin: string) => (optsOrigin.includes(origin) ? origin : null)
+      return (origin: string) => (optsOrigin.includes(origin) ? origin : null);
     }
-  })(opts.origin)
+  })(opts.origin);
 
   // 名前付き関数式で返却 -- スタックトレースに "cors" と表示される
   return async function cors(c, next) {
-    const allowOrigin = await findAllowOrigin(c.req.header('origin') || '', c)
+    const allowOrigin = await findAllowOrigin(c.req.header("origin") || "", c);
     // ...
-  }
-}
+  };
+};
 ```
 
 ### 2. onion-ring 合成エンジン
@@ -62,20 +62,20 @@ export const cors = (options?: CORSOptions): MiddlewareHandler => {
 export const compose = <E extends Env = Env>(
   middleware: [[Function, unknown], unknown][] | [[Function]][],
   onError?: ErrorHandler<E>,
-  onNotFound?: NotFoundHandler<E>
-): ((context: Context, next?: Next) => Promise<Context>) => {
+  onNotFound?: NotFoundHandler<E>,
+): (context: Context, next?: Next) => Promise<Context> => {
   return (context, next) => {
-    let index = -1
-    return dispatch(0)
+    let index = -1;
+    return dispatch(0);
     async function dispatch(i: number): Promise<Context> {
       if (i <= index) {
-        throw new Error('next() called multiple times')  // 不変量ガード
+        throw new Error("next() called multiple times"); // 不変量ガード
       }
-      index = i
+      index = i;
       // ... ハンドラの実行
     }
-  }
-}
+  };
+};
 ```
 
 ### 3. 論理演算合成 -- プリミティブの組み合わせ
@@ -90,12 +90,12 @@ export const except = (
   // ... 条件の解析
   const handler = some(
     (c: Context) => conditions.some((cond) => cond(c)),
-    every(...middleware)
-  )
+    every(...middleware),
+  );
   return async function except(c, next) {
-    await handler(c, next)
-  }
-}
+    await handler(c, next);
+  };
+};
 ```
 
 ## Good Example
@@ -104,32 +104,32 @@ export const except = (
 // ファクトリ関数: 設定の事前計算 + 名前付き関数式
 const rateLimit = (options: RateLimitOptions): MiddlewareHandler => {
   // ファクトリ呼び出し時に1回だけ実行
-  const maxRequests = options.max ?? 100
-  const windowMs = options.windowMs ?? 60_000
-  const keyExtractor = options.keyBy ?? ((c) => c.req.header('x-forwarded-for') || 'unknown')
-  const store = new Map<string, { count: number; resetAt: number }>()
+  const maxRequests = options.max ?? 100;
+  const windowMs = options.windowMs ?? 60_000;
+  const keyExtractor = options.keyBy ?? ((c) => c.req.header("x-forwarded-for") || "unknown");
+  const store = new Map<string, { count: number; resetAt: number; }>();
 
   // 名前付き関数式でスタックトレースの可読性を確保
   return async function rateLimit(c, next) {
-    const key = keyExtractor(c)
-    const now = Date.now()
-    const record = store.get(key)
+    const key = keyExtractor(c);
+    const now = Date.now();
+    const record = store.get(key);
 
     if (record && record.resetAt > now && record.count >= maxRequests) {
-      throw new HTTPException(429, { message: 'Too Many Requests' })
+      throw new HTTPException(429, { message: "Too Many Requests" });
     }
     // ...
-    await next()
-  }
-}
+    await next();
+  };
+};
 
 // 論理合成で柔軟に適用
 app.use(
   except(
-    '/health',                           // ヘルスチェックは除外
-    every(rateLimit({ max: 50 }), cors()) // 残りには両方適用
-  )
-)
+    "/health", // ヘルスチェックは除外
+    every(rateLimit({ max: 50 }), cors()), // 残りには両方適用
+  ),
+);
 ```
 
 ## Bad Example
@@ -137,38 +137,38 @@ app.use(
 ```typescript
 // Bad: 無名アロー関数 -- スタックトレースに名前が出ない
 const rateLimit = (options) => {
-  return async (c, next) => {  // anonymous function
+  return async (c, next) => { // anonymous function
     // ...
-  }
-}
+  };
+};
 
 // Bad: リクエストごとに設定を解析
 const cors = (options) => {
   return async (c, next) => {
     // 毎リクエストで分岐と関数構築が走る
-    const findOrigin = typeof options.origin === 'string'
+    const findOrigin = typeof options.origin === "string"
       ? () => options.origin
-      : (o) => options.origin.includes(o) ? o : null
+      : (o) => options.origin.includes(o) ? o : null;
     // ...
-  }
-}
+  };
+};
 
 // Bad: next() の多重呼び出しに無防備
 const middleware = async (c, next) => {
   if (condition) {
-    await next()
+    await next();
   }
-  await next()  // 条件次第で二重呼び出し
-}
+  await next(); // 条件次第で二重呼び出し
+};
 
 // Bad: ファクトリ内でリクエスト固有の処理を行う
 const myMiddleware = (opts) => {
-  const data = fetchSomething()  // 起動時に1回だけ実行 -- 全リクエストで同じ値
+  const data = fetchSomething(); // 起動時に1回だけ実行 -- 全リクエストで同じ値
   return async (c, next) => {
-    c.set('data', data)
-    await next()
-  }
-}
+    c.set("data", data);
+    await next();
+  };
+};
 ```
 
 ## 適用ガイド

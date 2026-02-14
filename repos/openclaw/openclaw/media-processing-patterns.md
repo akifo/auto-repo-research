@@ -41,8 +41,8 @@ if (headerMime && !isGenericMime(headerMime)) {
 // src/media/image-ops.ts:18-21
 function prefersSips(): boolean {
   return (
-    process.env.OPENCLAW_IMAGE_BACKEND === "sips" ||
-    (process.env.OPENCLAW_IMAGE_BACKEND !== "sharp" && isBun() && process.platform === "darwin")
+    process.env.OPENCLAW_IMAGE_BACKEND === "sips"
+    || (process.env.OPENCLAW_IMAGE_BACKEND !== "sharp" && isBun() && process.platform === "darwin")
   );
 }
 ```

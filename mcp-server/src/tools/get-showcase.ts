@@ -4,7 +4,7 @@ import type { ResearchIndex } from "../data/index.js";
 
 export function registerGetShowcase(
   server: McpServer,
-  index: ResearchIndex
+  index: ResearchIndex,
 ): void {
   server.tool(
     "get_showcase",
@@ -13,7 +13,7 @@ export function registerGetShowcase(
       name: z
         .string()
         .describe(
-          "showcase 名 (例: pattern_middleware-composition)"
+          "showcase 名 (例: pattern_middleware-composition)",
         ),
     },
     async ({ name }) => {
@@ -31,6 +31,6 @@ export function registerGetShowcase(
       }
 
       return { content: [{ type: "text", text: showcase.content }] };
-    }
+    },
   );
 }

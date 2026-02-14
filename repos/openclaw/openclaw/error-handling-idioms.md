@@ -88,10 +88,10 @@ function isToolInputError(err: unknown): boolean {
     return true;
   }
   return (
-    typeof err === "object" &&
-    err !== null &&
-    "name" in err &&
-    (err as { name?: unknown }).name === "ToolInputError"
+    typeof err === "object"
+    && err !== null
+    && "name" in err
+    && (err as { name?: unknown; }).name === "ToolInputError"
   );
 }
 ```
@@ -116,20 +116,20 @@ function collectErrorCandidates(err: unknown): unknown[] {
     candidates.push(current);
 
     if (typeof current === "object") {
-      const cause = (current as { cause?: unknown }).cause;
-      if (cause && !seen.has(cause)) { queue.push(cause); }
-      const reason = (current as { reason?: unknown }).reason;
-      if (reason && !seen.has(reason)) { queue.push(reason); }
-      const errors = (current as { errors?: unknown }).errors;
+      const cause = (current as { cause?: unknown; }).cause;
+      if (cause && !seen.has(cause)) queue.push(cause);
+      const reason = (current as { reason?: unknown; }).reason;
+      if (reason && !seen.has(reason)) queue.push(reason);
+      const errors = (current as { errors?: unknown; }).errors;
       if (Array.isArray(errors)) {
         for (const nested of errors) {
-          if (nested && !seen.has(nested)) { queue.push(nested); }
+          if (nested && !seen.has(nested)) queue.push(nested);
         }
       }
       // Grammy の HttpError は .error にラップする（.cause ではない）
       if (getErrorName(current) === "HttpError") {
-        const wrappedError = (current as { error?: unknown }).error;
-        if (wrappedError && !seen.has(wrappedError)) { queue.push(wrappedError); }
+        const wrappedError = (current as { error?: unknown; }).error;
+        if (wrappedError && !seen.has(wrappedError)) queue.push(wrappedError);
       }
     }
   }
@@ -145,17 +145,21 @@ function collectErrorCandidates(err: unknown): unknown[] {
 // src/agents/failover-error.ts:205-234
 export function coerceToFailoverError(
   err: unknown,
-  context?: { provider?: string; model?: string; profileId?: string },
+  context?: { provider?: string; model?: string; profileId?: string; },
 ): FailoverError | null {
-  if (isFailoverError(err)) { return err; }
+  if (isFailoverError(err)) return err;
   const reason = resolveFailoverReasonFromError(err);
-  if (!reason) { return null; }
+  if (!reason) return null;
   const message = getErrorMessage(err) || String(err);
   const status = getStatusCode(err) ?? resolveFailoverStatus(reason);
   const code = getErrorCode(err);
   return new FailoverError(message, {
-    reason, provider: context?.provider, model: context?.model,
-    profileId: context?.profileId, status, code,
+    reason,
+    provider: context?.provider,
+    model: context?.model,
+    profileId: context?.profileId,
+    status,
+    code,
     cause: err instanceof Error ? err : undefined,
   });
 }
@@ -168,8 +172,8 @@ I/O 境界（HTTP ボディ読み取り、設定パース等）では `{ ok: tru
 ```typescript
 // src/infra/http-body.ts:182-221
 export type ReadJsonBodyResult =
-  | { ok: true; value: unknown }
-  | { ok: false; error: string; code: RequestBodyLimitErrorCode | "INVALID_JSON" };
+  | { ok: true; value: unknown; }
+  | { ok: false; error: string; code: RequestBodyLimitErrorCode | "INVALID_JSON"; };
 
 export async function readJsonBodyWithLimit(
   req: IncomingMessage,
@@ -195,7 +199,7 @@ export async function readJsonBodyWithLimit(
 ```typescript
 // src/discord/api.ts:126-135
 return retryAsync(
-  async () => { /* fetch logic */ },
+  async () => {/* fetch logic */},
   {
     ...retryConfig,
     label: options?.label ?? path,
@@ -215,7 +219,7 @@ return retryAsync(
 ```typescript
 // src/infra/unhandled-rejections.ts:143-178
 process.on("unhandledRejection", (reason, _promise) => {
-  if (isUnhandledRejectionHandled(reason)) { return; }
+  if (isUnhandledRejectionHandled(reason)) return;
   if (isAbortError(reason)) {
     console.warn("[openclaw] Suppressed AbortError:", formatUncaughtError(reason));
     return;
@@ -296,7 +300,7 @@ if (err.message.includes("fetch failed")) {
 
 // Better: エラーコード・型名を優先し、メッセージマッチはフォールバック＋コンテキスト制御付きで使う
 const code = extractErrorCode(err);
-if (code && RECOVERABLE_ERROR_CODES.has(code)) { return true; }
+if (code && RECOVERABLE_ERROR_CODES.has(code)) return true;
 if (allowMessageMatch) { /* フォールバック */ }
 ```
 
@@ -304,11 +308,17 @@ if (allowMessageMatch) { /* フォールバック */ }
 
 ```typescript
 // OK: リソースクリーンアップ（エラーを無視して安全）
-try { reader.releaseLock(); } catch {}
-try { await handle.close(); } catch {}
+try {
+  reader.releaseLock();
+} catch {}
+try {
+  await handle.close();
+} catch {}
 
 // Bad: ビジネスロジックでの握りつぶし
-try { await processOrder(); } catch {} // 障害が見えなくなる
+try {
+  await processOrder();
+} catch {} // 障害が見えなくなる
 ```
 
 ## 導出ルール

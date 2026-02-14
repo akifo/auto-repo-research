@@ -26,16 +26,15 @@ mastra の並行処理パターンを横断的に分析した。このリポジ�
 ```typescript
 // packages/core/src/workflows/step.ts:17-21
 declare const SuspendBrand: unique symbol;
-export type InnerOutput = void & { readonly [SuspendBrand]: never };
+export type InnerOutput = void & { readonly [SuspendBrand]: never; };
 ```
 
 suspend 実行時には `__workflow_meta` という内部メタデータが payload に付加され、再開時のルーティングに使われる。この内部データはステップコードに露出する前にフィルタされる。
 
 ```typescript
 // packages/core/src/workflows/handlers/step.ts:125-132
-let suspendDataToUse =
-  stepResults[step.id]?.status === 'suspended' ? stepResults[step.id]?.suspendPayload : undefined;
-if (suspendDataToUse && '__workflow_meta' in suspendDataToUse) {
+let suspendDataToUse = stepResults[step.id]?.status === "suspended" ? stepResults[step.id]?.suspendPayload : undefined;
+if (suspendDataToUse && "__workflow_meta" in suspendDataToUse) {
   const { __workflow_meta, ...userSuspendData } = suspendDataToUse;
   suspendDataToUse = userSuspendData;
 }
@@ -65,8 +64,8 @@ for (let i = 0; i < prevOutput.length; i += concurrency) {
 ```typescript
 // packages/core/src/stream/aisdk/v5/compat/delayed-promise.ts:6-48
 export class DelayedPromise<T> {
-  public status: { type: 'pending' } | { type: 'resolved'; value: T } | { type: 'rejected'; error: unknown } = {
-    type: 'pending',
+  public status: { type: "pending"; } | { type: "resolved"; value: T; } | { type: "rejected"; error: unknown; } = {
+    type: "pending",
   };
   private _promise: Promise<T> | undefined;
   // ...
@@ -75,9 +74,9 @@ export class DelayedPromise<T> {
       return this._promise;
     }
     this._promise = new Promise<T>((resolve, reject) => {
-      if (this.status.type === 'resolved') {
+      if (this.status.type === "resolved") {
         resolve(this.status.value);
-      } else if (this.status.type === 'rejected') {
+      } else if (this.status.type === "rejected") {
         reject(this.status.error);
       }
       this._resolve = resolve;
@@ -156,14 +155,14 @@ async wrapDurableOperation<T>(_operationId: string, operationFn: () => Promise<T
 ```typescript
 // packages/core/src/workflows/step.ts:17-21
 declare const SuspendBrand: unique symbol;
-export type InnerOutput = void & { readonly [SuspendBrand]: never };
+export type InnerOutput = void & { readonly [SuspendBrand]: never; };
 ```
 
 - **内部メタデータの分離**: suspend payload に `__workflow_meta` を付加して実行復元に必要な情報を保持しつつ、ステップコードにはユーザーデータのみを露出する。プレフィックス `__` ではなく特定キー名で分離し、destructuring で除去する。
 
 ```typescript
 // packages/core/src/workflows/handlers/step.ts:129-132
-if (suspendDataToUse && '__workflow_meta' in suspendDataToUse) {
+if (suspendDataToUse && "__workflow_meta" in suspendDataToUse) {
   const { __workflow_meta, ...userSuspendData } = suspendDataToUse;
   suspendDataToUse = userSuspendData;
 }
@@ -207,7 +206,7 @@ const results: StepResult<any, any, any, any>[] = await Promise.all(
     // 一つが失敗しても他は走り続ける
   }),
 );
-const hasFailed = results.find(result => result.status === 'failed');
+const hasFailed = results.find(result => result.status === "failed");
 ```
 
 ## 導出ルール

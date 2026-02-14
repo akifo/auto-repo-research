@@ -48,7 +48,7 @@ mastraAgent.__registerPrimitives({
 // packages/core/src/storage/base.ts:152-165
 // Composition: mix domains from different stores
 const storage = new MastraCompositeStore({
-  id: 'composite',
+  id: "composite",
   default: pgStore,
   domains: {
     memory: libsqlStore.stores?.memory,
@@ -65,7 +65,7 @@ AI SDK の v4/v5/v6 を `packages/_vendored/` に格納し、`@internal/ai-sdk-v
 ```typescript
 // packages/core/src/llm/model/router.ts:17-22
 function isLanguageModelV3(model: GatewayLanguageModel): model is LanguageModelV3 {
-  return model.specificationVersion === 'v3';
+  return model.specificationVersion === "v3";
 }
 ```
 
@@ -95,7 +95,7 @@ AI SDK v6 の `ToolLoopAgent` を Mastra の `Agent` に変換する `toolLoopAg
 
 ```typescript
 // packages/core/src/tool-loop-agent/index.ts:36-47
-export function toolLoopAgentToMastraAgent(agent: ToolLoopAgentLike, options?: { fallbackName?: string }) {
+export function toolLoopAgentToMastraAgent(agent: ToolLoopAgentLike, options?: { fallbackName?: string; }) {
   const processor = new ToolLoopAgentProcessor(agent);
   const agentConfig = processor.getAgentConfig();
   const id = agentConfig.id || options?.fallbackName || `tool-loop-agent-${generateId()}`;
@@ -143,12 +143,12 @@ export function toolLoopAgentToMastraAgent(agent: ToolLoopAgentLike, options?: {
 export type DynamicArgument<T, TRequestContext extends Record<string, any> | unknown = unknown> =
   | T
   | (({
-      requestContext,
-      mastra,
-    }: {
-      requestContext: RequestContext<TRequestContext>;
-      mastra?: Mastra;
-    }) => Promise<T> | T);
+    requestContext,
+    mastra,
+  }: {
+    requestContext: RequestContext<TRequestContext>;
+    mastra?: Mastra;
+  }) => Promise<T> | T);
 ```
 
 - **登録順序による循環依存の防止**: Mastra コンストラクタ内でコンポーネントの登録順序を明示的に制御し、依存関係の循環を防いでいる。Tools → Processors → Memory → Vectors → Scorers → Workflows → Gateways → MCP Servers → Agents の順に登録することで、後から登録されるコンポーネントは先に登録済みのコンポーネントを安全に参照できる。
@@ -171,13 +171,18 @@ if (config?.agents) { /* ... */ }
 ```typescript
 // packages/core/src/error/index.ts:7-27
 export enum ErrorDomain {
-  TOOL = 'TOOL', AGENT = 'AGENT', MCP = 'MCP',
-  MASTRA_SERVER = 'MASTRA_SERVER', STORAGE = 'STORAGE',
+  TOOL = "TOOL",
+  AGENT = "AGENT",
+  MCP = "MCP",
+  MASTRA_SERVER = "MASTRA_SERVER",
+  STORAGE = "STORAGE",
   // ... 14 domains total
 }
 export enum ErrorCategory {
-  UNKNOWN = 'UNKNOWN', USER = 'USER',
-  SYSTEM = 'SYSTEM', THIRD_PARTY = 'THIRD_PARTY',
+  UNKNOWN = "UNKNOWN",
+  USER = "USER",
+  SYSTEM = "SYSTEM",
+  THIRD_PARTY = "THIRD_PARTY",
 }
 ```
 

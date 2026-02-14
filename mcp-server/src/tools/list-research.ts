@@ -4,7 +4,7 @@ import type { ResearchIndex } from "../data/index.js";
 
 export function registerListResearch(
   server: McpServer,
-  index: ResearchIndex
+  index: ResearchIndex,
 ): void {
   server.tool(
     "list_research",
@@ -16,11 +16,11 @@ export function registerListResearch(
 
       const repoLines = repos.map(
         (r) =>
-          `- **${r.repo}** (${r.language}) — ${r.description} [ルール: ${r.ruleCount}, 視点: ${r.perspectiveCount}]`
+          `- **${r.repo}** (${r.language}) — ${r.description} [ルール: ${r.ruleCount}, 視点: ${r.perspectiveCount}]`,
       );
 
       const showcaseLines = showcases.map(
-        (s) => `- **${s.name}** [${s.theme}] ${s.label}`
+        (s) => `- **${s.name}** [${s.theme}] ${s.label}`,
       );
 
       const text = [
@@ -34,6 +34,6 @@ export function registerListResearch(
       ].join("\n");
 
       return { content: [{ type: "text", text }] };
-    }
+    },
   );
 }

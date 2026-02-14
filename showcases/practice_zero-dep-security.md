@@ -22,21 +22,21 @@ Hono は9以上のランタイムで動作する Web フレームワークであ
 export const timingSafeEqual = async (
   a: string | object | boolean,
   b: string | object | boolean,
-  hashFunction?: Function
+  hashFunction?: Function,
 ): Promise<boolean> => {
   if (!hashFunction) {
-    hashFunction = sha256
+    hashFunction = sha256;
   }
 
-  const [sa, sb] = await Promise.all([hashFunction(a), hashFunction(b)])
+  const [sa, sb] = await Promise.all([hashFunction(a), hashFunction(b)]);
 
   if (!sa || !sb) {
-    return false
+    return false;
   }
 
   // ハッシュ値は固定長 → 文字列長の違いから情報が漏洩しない
-  return sa === sb && a === b
-}
+  return sa === sb && a === b;
+};
 ```
 
 ### 2. JWT アルゴリズム混乱攻撃の防御
@@ -44,24 +44,26 @@ export const timingSafeEqual = async (
 ```typescript
 // src/utils/jwt/jwt.ts:127-129 -- ヘッダーの alg と指定の alg を照合
 if (header.alg !== alg) {
-  throw new JwtAlgorithmMismatch(alg, header.alg)
+  throw new JwtAlgorithmMismatch(alg, header.alg);
 }
 
 // src/utils/jwt/jwt.ts:184-220 -- JWK 検証で対称アルゴリズムを拒否
 const symmetricAlgorithms: SymmetricAlgorithm[] = [
-  AlgorithmTypes.HS256, AlgorithmTypes.HS384, AlgorithmTypes.HS512,
-]
+  AlgorithmTypes.HS256,
+  AlgorithmTypes.HS384,
+  AlgorithmTypes.HS512,
+];
 
 export const verifyWithJwks = async (token, options, init) => {
   // ...
   if (symmetricAlgorithms.includes(header.alg as SymmetricAlgorithm)) {
-    throw new JwtSymmetricAlgorithmNotAllowed(header.alg)
+    throw new JwtSymmetricAlgorithmNotAllowed(header.alg);
   }
   if (!options.allowedAlgorithms.includes(header.alg as AsymmetricAlgorithm)) {
-    throw new JwtAlgorithmNotAllowed(header.alg, options.allowedAlgorithms)
+    throw new JwtAlgorithmNotAllowed(header.alg, options.allowedAlgorithms);
   }
   // ...
-}
+};
 ```
 
 ### 3. セキュリティヘッダーの安全デフォルト
@@ -69,15 +71,15 @@ export const verifyWithJwks = async (token, options, init) => {
 ```typescript
 // src/middleware/secure-headers/secure-headers.ts:94-124
 const HEADERS_MAP: HeadersMap = {
-  crossOriginResourcePolicy: ['Cross-Origin-Resource-Policy', 'same-origin'],
-  crossOriginOpenerPolicy: ['Cross-Origin-Opener-Policy', 'same-origin'],
-  referrerPolicy: ['Referrer-Policy', 'no-referrer'],
-  strictTransportSecurity: ['Strict-Transport-Security', 'max-age=15552000; includeSubDomains'],
-  xContentTypeOptions: ['X-Content-Type-Options', 'nosniff'],
-  xFrameOptions: ['X-Frame-Options', 'SAMEORIGIN'],
-  xXssProtection: ['X-XSS-Protection', '0'],
+  crossOriginResourcePolicy: ["Cross-Origin-Resource-Policy", "same-origin"],
+  crossOriginOpenerPolicy: ["Cross-Origin-Opener-Policy", "same-origin"],
+  referrerPolicy: ["Referrer-Policy", "no-referrer"],
+  strictTransportSecurity: ["Strict-Transport-Security", "max-age=15552000; includeSubDomains"],
+  xContentTypeOptions: ["X-Content-Type-Options", "nosniff"],
+  xFrameOptions: ["X-Frame-Options", "SAMEORIGIN"],
+  xXssProtection: ["X-XSS-Protection", "0"],
   // ...
-}
+};
 
 // すべてデフォルト有効 + X-Powered-By 削除
 const DEFAULT_OPTIONS: SecureHeadersOptions = {
@@ -89,18 +91,16 @@ const DEFAULT_OPTIONS: SecureHeadersOptions = {
   xContentTypeOptions: true,
   // ... 全て true
   removePoweredBy: true,
-}
+};
 ```
 
 ### 4. Cookie セキュリティプレフィックスの型レベル強制
 
 ```typescript
 // src/utils/cookie.ts:31-35
-export type CookieConstraint<Name> = Name extends `__Secure-${string}`
-  ? CookieOptions & SecureCookieConstraint    // secure: true が必須
-  : Name extends `__Host-${string}`
-    ? CookieOptions & HostCookieConstraint    // secure: true, path: '/' が必須
-    : CookieOptions
+export type CookieConstraint<Name> = Name extends `__Secure-${string}` ? CookieOptions & SecureCookieConstraint // secure: true が必須
+  : Name extends `__Host-${string}` ? CookieOptions & HostCookieConstraint // secure: true, path: '/' が必須
+  : CookieOptions;
 ```
 
 ### 5. CSRF の多層防御
@@ -109,16 +109,16 @@ export type CookieConstraint<Name> = Name extends `__Secure-${string}`
 // src/middleware/csrf/index.ts:138-150
 return async function csrf(c, next) {
   if (
-    !isSafeMethodRe.test(c.req.method) &&
-    isRequestedByFormElementRe.test(c.req.header('content-type') || 'text/plain') &&
-    !(await isAllowedSecFetchSite(c.req.header('sec-fetch-site'), c)) &&
-    !(await isAllowedOrigin(c.req.header('origin'), c))
+    !isSafeMethodRe.test(c.req.method)
+    && isRequestedByFormElementRe.test(c.req.header("content-type") || "text/plain")
+    && !(await isAllowedSecFetchSite(c.req.header("sec-fetch-site"), c))
+    && !(await isAllowedOrigin(c.req.header("origin"), c))
   ) {
-    const res = new Response('Forbidden', { status: 403 })
-    throw new HTTPException(403, { res })
+    const res = new Response("Forbidden", { status: 403 });
+    throw new HTTPException(403, { res });
   }
-  await next()
-}
+  await next();
+};
 // Origin 未設定 → 一律拒否（「不明」は「安全」ではない）
 ```
 
@@ -129,37 +129,37 @@ return async function csrf(c, next) {
 const verifySignature = async (
   payload: string,
   signature: string,
-  secret: string
+  secret: string,
 ): Promise<boolean> => {
-  const encoder = new TextEncoder()
+  const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
-    'raw',
+    "raw",
     encoder.encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
+    { name: "HMAC", hash: "SHA-256" },
     false,
-    ['verify']
-  )
-  const sig = Uint8Array.from(atob(signature), c => c.charCodeAt(0))
-  return crypto.subtle.verify('HMAC', key, sig, encoder.encode(payload))
-}
+    ["verify"],
+  );
+  const sig = Uint8Array.from(atob(signature), c => c.charCodeAt(0));
+  return crypto.subtle.verify("HMAC", key, sig, encoder.encode(payload));
+};
 
 // タイミングセーフなトークン検証
 const verifyApiKey = async (submitted: string, expected: string): Promise<boolean> => {
   const [hashA, hashB] = await Promise.all([
     sha256(submitted),
     sha256(expected),
-  ])
-  return hashA === hashB && submitted === expected
-}
+  ]);
+  return hashA === hashB && submitted === expected;
+};
 
 // セキュリティヘッダーはデフォルト有効、緩和は明示的に
-app.use(secureHeaders())  // 引数なしで11ヘッダー + X-Powered-By 削除
+app.use(secureHeaders()); // 引数なしで11ヘッダー + X-Powered-By 削除
 
 // CORS: 動的オリジン設定時は Vary: Origin を自動付与
 app.use(cors({
-  origin: ['https://app.example.com', 'https://admin.example.com'],
+  origin: ["https://app.example.com", "https://admin.example.com"],
   credentials: true,
-}))
+}));
 ```
 
 ## Bad Example
@@ -171,23 +171,23 @@ if (submittedToken === secretToken) {
 }
 
 // Bad: JWT のヘッダー alg をそのまま信頼
-const { alg } = decode(token).header
-verify(token, secret, alg)  // 攻撃者が alg を none に改竄可能
+const { alg } = decode(token).header;
+verify(token, secret, alg); // 攻撃者が alg を none に改竄可能
 
 // Bad: Node.js 固有の crypto に依存
-import { createHmac } from 'crypto'
-const hash = createHmac('sha256', secret).update(data).digest('hex')
+import { createHmac } from "crypto";
+const hash = createHmac("sha256", secret).update(data).digest("hex");
 // → Cloudflare Workers, Deno Deploy で動作しない
 
 // Bad: セキュリティヘッダーを個別に設定 -- 漏れが生じやすい
 app.use((c, next) => {
-  c.header('X-Content-Type-Options', 'nosniff')
+  c.header("X-Content-Type-Options", "nosniff");
   // X-Frame-Options は? HSTS は? Referrer-Policy は? → 漏れる
-  return next()
-})
+  return next();
+});
 
 // Bad: CORS で origin: '*' と credentials: true を併用
-cors({ origin: '*', credentials: true })
+cors({ origin: "*", credentials: true });
 // ブラウザが拒否する仕様だが、サーバー側で検出されない
 ```
 

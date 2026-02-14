@@ -28,6 +28,7 @@ Node.js/Bun をメインランタイムとする CLI/Gateway と、Swift（macOS
 プロトコルの Single Source of Truth は TypeScript の TypeBox スキーマ（`src/gateway/protocol/schema/` 配下、約 260 エントリ）。`scripts/protocol-gen-swift.ts` がこれを走査し、各スキーマの `type` と `properties` から Swift の `Codable, Sendable` 構造体を自動生成する。
 
 生成物は 2 箇所に同時出力される:
+
 1. `apps/macos/Sources/OpenClawProtocol/GatewayModels.swift` -- macOS アプリ直接配置
 2. `apps/shared/OpenClawKit/Sources/OpenClawProtocol/GatewayModels.swift` -- 共有パッケージ（iOS も参照）
 
@@ -61,6 +62,7 @@ let package = Package(
 ```
 
 共有される主な機能:
+
 - **プロトコルモデル** (`OpenClawProtocol`): 自動生成の `GatewayModels.swift` + `AnyCodable.swift`
 - **ゲートウェイセッション** (`OpenClawKit`): `GatewayNodeSession.swift` -- WebSocket 接続管理、invoke タイムアウト処理
 - **チャット UI** (`OpenClawChatUI`): `ChatViewModel.swift`, `ChatView.swift` 等
@@ -119,10 +121,12 @@ return when (command) {
 同一ロジックが Swift と Kotlin で独立実装される箇所がある。これは「コード生成では扱えないが、ロジックの一致が必要な領域」に相当する。
 
 **BonjourEscapes** -- mDNS の `\DDD` エスケープをデコードするユーティリティ:
+
 - Swift: `apps/shared/OpenClawKit/Sources/OpenClawKit/BonjourEscapes.swift`
 - Kotlin: `apps/android/app/src/main/java/ai/openclaw/android/gateway/BonjourEscapes.kt`
 
 **CanvasA2UIAction** -- UI アクションのメッセージフォーマットとディスパッチ:
+
 - Swift: `apps/shared/OpenClawKit/Sources/OpenClawKit/CanvasA2UIAction.swift:69-81`
 - Kotlin: `apps/android/app/src/main/java/ai/openclaw/android/protocol/OpenClawCanvasA2UIAction.kt:38-58`
 
@@ -131,6 +135,7 @@ return when (command) {
 ### 5. デュアルセッション（Operator/Node）アーキテクチャ
 
 iOS と Android の両方が Gateway に対して 2 本の WebSocket 接続を維持する:
+
 - **Operator セッション**: チャット、設定、音声操作のための読み書き
 - **Node セッション**: デバイスケイパビリティ（カメラ、位置情報等）の invoke 処理
 
@@ -202,6 +207,7 @@ public enum ErrorCode: String, Codable, Sendable {
 - **コード生成の対象が一部プラットフォームに限定される問題**: Swift はコード生成対象だが、Kotlin は手動管理。コマンド追加時に Android 側の `OpenClawProtocolConstants.kt` の更新を忘れるリスクがある。
 
 Bad（現状 -- Android は手動管理）:
+
 ```kotlin
 // apps/android/app/src/main/java/ai/openclaw/android/protocol/OpenClawProtocolConstants.kt
 enum class OpenClawCanvasCommand(val rawValue: String) {
@@ -212,6 +218,7 @@ enum class OpenClawCanvasCommand(val rawValue: String) {
 ```
 
 Better（コード生成を Kotlin にも拡張）:
+
 ```
 scripts/protocol-gen-kotlin.ts  // TypeBox -> Kotlin enum/data class 生成
 protocol:check:kotlin           // CI で差分チェック

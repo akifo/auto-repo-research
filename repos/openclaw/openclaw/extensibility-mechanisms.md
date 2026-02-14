@@ -35,7 +35,7 @@ export type OpenClawPluginApi = {
   registerTool: (tool: AnyAgentTool | OpenClawPluginToolFactory, opts?) => void;
   registerHook: (events: string | string[], handler: InternalHookHandler, opts?) => void;
   registerHttpHandler: (handler: OpenClawPluginHttpHandler) => void;
-  registerHttpRoute: (params: { path: string; handler: OpenClawPluginHttpRouteHandler }) => void;
+  registerHttpRoute: (params: { path: string; handler: OpenClawPluginHttpRouteHandler; }) => void;
   registerChannel: (registration: OpenClawPluginChannelRegistration | ChannelPlugin) => void;
   registerGatewayMethod: (method: string, handler: GatewayRequestHandler) => void;
   registerCli: (registrar: OpenClawPluginCliRegistrar, opts?) => void;
@@ -230,9 +230,9 @@ export type PluginRuntime = {
 // PluginRuntime には共通ユーティリティのみ公開
 export type PluginRuntime = {
   channel: {
-    text: { /* 共通テキスト処理 */ };
-    reply: { /* 共通返信ロジック */ };
-    routing: { /* 共通ルーティング */ };
+    text: {/* 共通テキスト処理 */};
+    reply: {/* 共通返信ロジック */};
+    routing: {/* 共通ルーティング */};
   };
 };
 ```

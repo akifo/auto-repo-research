@@ -48,8 +48,9 @@ export type StepParams<
 
 ```typescript
 // packages/core/src/types/zod-compat.ts:17-18
-export type InferZodLikeSchema<T extends ZodLikeSchema<any>> =
-  T extends z.ZodType<infer V, z.ZodTypeDef, any> ? V : T extends zv4.ZodType<infer V> ? V : never;
+export type InferZodLikeSchema<T extends ZodLikeSchema<any>> = T extends z.ZodType<infer V, z.ZodTypeDef, any> ? V
+  : T extends zv4.ZodType<infer V> ? V
+  : never;
 ```
 
 ### 条件型による API の分岐
@@ -58,8 +59,9 @@ export type InferZodLikeSchema<T extends ZodLikeSchema<any>> =
 
 ```typescript
 // packages/core/src/agent/agent.types.ts:246-247
-export type AgentExecutionOptions<OUTPUT = unknown> = AgentExecutionOptionsBase<OUTPUT> &
-  (OUTPUT extends {} ? { structuredOutput: StructuredOutputOptions<OUTPUT> } : { structuredOutput?: never });
+export type AgentExecutionOptions<OUTPUT = unknown> =
+  & AgentExecutionOptionsBase<OUTPUT>
+  & (OUTPUT extends {} ? { structuredOutput: StructuredOutputOptions<OUTPUT>; } : { structuredOutput?: never; });
 ```
 
 コールバック型も同様に出力型で分岐する。
@@ -81,7 +83,7 @@ onFinish?: OUTPUT extends undefined ? StreamTextOnFinishCallback<any> : StreamOb
 ```typescript
 // packages/core/src/workflows/step.ts:17-21
 declare const SuspendBrand: unique symbol;
-export type InnerOutput = void & { readonly [SuspendBrand]: never };
+export type InnerOutput = void & { readonly [SuspendBrand]: never; };
 ```
 
 `suspend` の戻り値が `InnerOutput` 型であるため、`execute` の戻り値型 `Promise<TStepOutput | InnerOutput>` と整合し、suspend 以外のコードパスでは `TStepOutput` を返すことが型レベルで強制される。
@@ -259,9 +261,9 @@ function isToolStep(input: unknown): input is ToolStep<any, any, any, any, any> 
   return input instanceof Tool;
 }
 function isStepParams(input: unknown): input is StepParams<any, any, any, any, any, any> {
-  return input !== null && typeof input === 'object' &&
-    'id' in input && 'execute' in input &&
-    !(input instanceof Agent) && !(input instanceof Tool);
+  return input !== null && typeof input === "object"
+    && "id" in input && "execute" in input
+    && !(input instanceof Agent) && !(input instanceof Tool);
 }
 ```
 
@@ -272,9 +274,9 @@ function isStepParams(input: unknown): input is StepParams<any, any, any, any, a
 export type DynamicArgument<T, TRequestContext extends Record<string, any> | unknown = unknown> =
   | T
   | (({ requestContext, mastra }: {
-      requestContext: RequestContext<TRequestContext>;
-      mastra?: Mastra;
-    }) => Promise<T> | T);
+    requestContext: RequestContext<TRequestContext>;
+    mastra?: Mastra;
+  }) => Promise<T> | T);
 ```
 
 ## Anti-Patterns / 注意点
@@ -294,7 +296,16 @@ export class Workflow<T extends WorkflowTypes>
 
 ```typescript
 // packages/core/src/workflows/workflow.ts:1440
-return this as unknown as Workflow<TEngineType, TSteps, TWorkflowId, TState, TInput, TOutput, TSchemaOut, TRequestContext>;
+return this as unknown as Workflow<
+  TEngineType,
+  TSteps,
+  TWorkflowId,
+  TState,
+  TInput,
+  TOutput,
+  TSchemaOut,
+  TRequestContext
+>;
 ```
 
 ## 導出ルール

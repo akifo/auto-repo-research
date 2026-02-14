@@ -24,6 +24,7 @@
 プロトコル定義は `src/gateway/protocol/schema/` 配下で `@sinclair/typebox` の `Type.Object` を使って記述される。これが唯一の真実源として機能する。
 
 生成パイプラインは 2 段階:
+
 1. `scripts/protocol-gen.ts`: TypeBox -> JSON Schema（`dist/protocol.schema.json`）
 2. `scripts/protocol-gen-swift.ts`: TypeBox -> Swift `Codable` 構造体（macOS/iOS 共有パッケージへ出力）
 
@@ -118,6 +119,7 @@ export default plugin;
 ### 5. 構成検証の多層パイプライン
 
 設定は Zod v4 スキーマ（`src/config/zod-schema.ts`）で定義し、JSON Schema へ変換して UI に配信する（`OpenClawSchema.toJSONSchema()`）。検証は多段:
+
 1. Zod パース（TypeScript 側）
 2. Plugin manifest の JSON Schema 検証（`validateJsonSchemaValue`）
 3. レガシー設定の自動マイグレーション（`src/config/legacy.migrations.*.ts`）

@@ -60,6 +60,7 @@ glob パターン（`src/hooks/bundled/*/handler.ts`）でエントリを指定�
 ```
 
 各ステップの責務:
+
 1. **A2UI バンドル** - Lit コンポーネントを rolldown でバンドル（コンテンツハッシュでスキップ判定）
 2. **tsdown** - メイン TypeScript バンドル
 3. **tsc** - Plugin SDK の `.d.ts` 生成（tsdown ではなく tsc を使用）
@@ -139,9 +140,8 @@ fi
 ```js
 // scripts/test-parallel.mjs:38-44
 const supportsVmForks = Number.isFinite(nodeMajor) ? nodeMajor !== 24 : true;
-const useVmForks =
-  process.env.OPENCLAW_TEST_VM_FORKS === "1" ||
-  (process.env.OPENCLAW_TEST_VM_FORKS !== "0" && !isWindows && supportsVmForks);
+const useVmForks = process.env.OPENCLAW_TEST_VM_FORKS === "1"
+  || (process.env.OPENCLAW_TEST_VM_FORKS !== "0" && !isWindows && supportsVmForks);
 ```
 
 ```js
@@ -151,13 +151,13 @@ const maxWorkersForRun = (name) => {
     return resolvedOverride;
   }
   if (isCI && !isMacOS) {
-    return null;  // Vitest defaults
+    return null; // Vitest defaults
   }
   if (isCI && isMacOS) {
-    return 1;  // macOS CI: OOM 回避
+    return 1; // macOS CI: OOM 回避
   }
   if (name === "unit-isolated") {
-    return 1;  // 隔離が必要なテスト
+    return 1; // 隔離が必要なテスト
   }
   if (name === "extensions") {
     return defaultExtensionsWorkers;

@@ -1,0 +1,24 @@
+{
+  "lineWidth": 120,
+  "indentWidth": 2,
+  "excludes": [
+    "node_modules",
+    "*-lock.json",
+    ".vitepress/cache",
+    ".vitepress/dist",
+    "mcp-server/dist"
+  ],
+  "typescript": {
+    "quoteStyle": "preferDouble",
+    "semiColons": "always"
+  },
+  "json": {
+    "indentWidth": 2
+  },
+  "markdown": {},
+  "plugins": [
+    "https://plugins.dprint.dev/typescript-0.95.15.wasm",
+    "https://plugins.dprint.dev/json-0.21.1.wasm",
+    "https://plugins.dprint.dev/markdown-0.21.1.wasm"
+  ]
+}

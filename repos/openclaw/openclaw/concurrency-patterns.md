@@ -53,9 +53,9 @@ if (held) {
   return {
     release: async () => {
       const current = HELD_LOCKS.get(normalizedSessionFile);
-      if (!current) { return; }
+      if (!current) return;
       current.count -= 1;
-      if (current.count > 0) { return; }
+      if (current.count > 0) return;
       HELD_LOCKS.delete(normalizedSessionFile);
       await current.handle.close();
       await fs.rm(current.lockPath, { force: true });
@@ -188,10 +188,10 @@ export async function runWithConcurrency<T>(
   let firstError: unknown = null;
   const workers = Array.from({ length: resolvedLimit }, async () => {
     while (true) {
-      if (firstError) { return; }
+      if (firstError) return;
       const index = next;
       next += 1;
-      if (index >= tasks.length) { return; }
+      if (index >= tasks.length) return;
       try {
         results[index] = await tasks[index]();
       } catch (err) {
@@ -201,7 +201,7 @@ export async function runWithConcurrency<T>(
     }
   });
   await Promise.allSettled(workers);
-  if (firstError) { throw firstError; }
+  if (firstError) throw firstError;
   return results;
 }
 ```

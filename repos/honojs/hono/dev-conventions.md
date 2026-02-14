@@ -61,21 +61,21 @@ PR に対して format と lint の自動修正を行い、修正コミットを
 ```typescript
 // eslint.config.mjs:1-75
 // 型情報依存ルールの全面無効化パターン
-import baseConfig from '@hono/eslint-config'
+import baseConfig from "@hono/eslint-config";
 
 const typeCheckedRules = {
-  '@typescript-eslint/await-thenable': 'off',
-  '@typescript-eslint/no-floating-promises': 'off',
-  '@typescript-eslint/no-unsafe-assignment': 'off',
+  "@typescript-eslint/await-thenable": "off",
+  "@typescript-eslint/no-floating-promises": "off",
+  "@typescript-eslint/no-unsafe-assignment": "off",
   // ... 合計 47 ルールを OFF
-}
+};
 
 export default [
   ...baseConfig,
   {
     rules: typeCheckedRules,
   },
-]
+];
 ```
 
 ```json
@@ -119,15 +119,15 @@ main:
 export const validateExports = (
   source: Record<string, unknown>,
   target: Record<string, unknown>,
-  fileName: string
+  fileName: string,
 ) => {
   // 双方向で検証: package.json → jsr.json、jsr.json → package.json
   Object.keys(source).forEach((sourceEntry) => {
     if (!isEntryInTarget(sourceEntry)) {
-      throw new Error(`Missing "${sourceEntry}" in '${fileName}'`)
+      throw new Error(`Missing "${sourceEntry}" in '${fileName}'`);
     }
-  })
-}
+  });
+};
 ```
 
 ```json
@@ -140,10 +140,10 @@ export const validateExports = (
 // .vitest.config/setup-vitest.ts:1-47
 // Web API のポリフィルをテストセットアップで注入
 if (!globalThis.crypto) {
-  vi.stubGlobal('crypto', nodeCrypto)
-  vi.stubGlobal('CryptoKey', nodeCrypto.webcrypto.CryptoKey)
+  vi.stubGlobal("crypto", nodeCrypto);
+  vi.stubGlobal("CryptoKey", nodeCrypto.webcrypto.CryptoKey);
 }
-vi.stubGlobal('caches', caches)
+vi.stubGlobal("caches", caches);
 ```
 
 ## Good Patterns
@@ -153,18 +153,18 @@ vi.stubGlobal('caches', caches)
 ```javascript
 // eslint.config.mjs — 型チェック系ルールを一括 OFF
 const typeCheckedRules = {
-  '@typescript-eslint/no-floating-promises': 'off',
-  '@typescript-eslint/no-unsafe-assignment': 'off',
+  "@typescript-eslint/no-floating-promises": "off",
+  "@typescript-eslint/no-unsafe-assignment": "off",
   // ...
-}
+};
 ```
 
 - **ビルド成果物のパッケージ整合性を自動検証**: `build/validate-exports.ts` が `package.json` と `jsr.json` のエクスポート定義を双方向で検証し、`publint` がパッケージ構造全体を検証する。エクスポートの追加忘れや不整合をビルド時に即座に検出する。
 
 ```typescript
 // build/build.ts:31
-validateExports(packageJsonExports, jsrJsonExports, 'jsr.json')
-validateExports(jsrJsonExports, packageJsonExports, 'package.json')
+validateExports(packageJsonExports, jsrJsonExports, "jsr.json");
+validateExports(jsrJsonExports, packageJsonExports, "package.json");
 ```
 
 - **PR 単位のパフォーマンス退行検出**: バンドルサイズ、型チェック速度、HTTP ベンチマークを PR ごとに計測し、ベースラインとの差分をコメントで報告する。パフォーマンス退行が「マージ後に気づく」のではなく「PR レビュー中に分かる」。

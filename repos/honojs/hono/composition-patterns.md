@@ -58,48 +58,48 @@
 export const compose = <E extends Env = Env>(
   middleware: [[Function, unknown], unknown][] | [[Function]][],
   onError?: ErrorHandler<E>,
-  onNotFound?: NotFoundHandler<E>
-): ((context: Context, next?: Next) => Promise<Context>) => {
+  onNotFound?: NotFoundHandler<E>,
+): (context: Context, next?: Next) => Promise<Context> => {
   return (context, next) => {
-    let index = -1
-    return dispatch(0)
+    let index = -1;
+    return dispatch(0);
     async function dispatch(i: number): Promise<Context> {
       if (i <= index) {
-        throw new Error('next() called multiple times')
+        throw new Error("next() called multiple times");
       }
-      index = i
-      let res
-      let isError = false
-      let handler
+      index = i;
+      let res;
+      let isError = false;
+      let handler;
       if (middleware[i]) {
-        handler = middleware[i][0][0]
+        handler = middleware[i][0][0];
       } else {
-        handler = (i === middleware.length && next) || undefined
+        handler = (i === middleware.length && next) || undefined;
       }
       if (handler) {
         try {
-          res = await handler(context, () => dispatch(i + 1))
+          res = await handler(context, () => dispatch(i + 1));
         } catch (err) {
           if (err instanceof Error && onError) {
-            context.error = err
-            res = await onError(err, context)
-            isError = true
+            context.error = err;
+            res = await onError(err, context);
+            isError = true;
           } else {
-            throw err
+            throw err;
           }
         }
       } else {
         if (context.finalized === false && onNotFound) {
-          res = await onNotFound(context)
+          res = await onNotFound(context);
         }
       }
       if (res && (context.finalized === false || isError)) {
-        context.res = res
+        context.res = res;
       }
-      return context
+      return context;
     }
-  }
-}
+  };
+};
 ```
 
 ### ファクトリ関数での前計算クロージャ
@@ -108,33 +108,33 @@ export const compose = <E extends Env = Env>(
 // src/middleware/cors/index.ts:63-97
 export const cors = (options?: CORSOptions): MiddlewareHandler => {
   const defaults: CORSOptions = {
-    origin: '*',
-    allowMethods: ['GET', 'HEAD', 'PUT', 'POST', 'DELETE', 'PATCH'],
+    origin: "*",
+    allowMethods: ["GET", "HEAD", "PUT", "POST", "DELETE", "PATCH"],
     allowHeaders: [],
     exposeHeaders: [],
-  }
-  const opts = { ...defaults, ...options }
+  };
+  const opts = { ...defaults, ...options };
 
   // 設定値の型に基づく関数の事前構築 -- リクエストごとに分岐しない
   const findAllowOrigin = ((optsOrigin) => {
-    if (typeof optsOrigin === 'string') {
-      if (optsOrigin === '*') {
-        return () => optsOrigin
+    if (typeof optsOrigin === "string") {
+      if (optsOrigin === "*") {
+        return () => optsOrigin;
       } else {
-        return (origin: string) => (optsOrigin === origin ? origin : null)
+        return (origin: string) => (optsOrigin === origin ? origin : null);
       }
-    } else if (typeof optsOrigin === 'function') {
-      return optsOrigin
+    } else if (typeof optsOrigin === "function") {
+      return optsOrigin;
     } else {
-      return (origin: string) => (optsOrigin.includes(origin) ? origin : null)
+      return (origin: string) => (optsOrigin.includes(origin) ? origin : null);
     }
-  })(opts.origin)
+  })(opts.origin);
 
   return async function cors(c, next) {
-    const allowOrigin = await findAllowOrigin(c.req.header('origin') || '', c)
+    const allowOrigin = await findAllowOrigin(c.req.header("origin") || "", c);
     // ...
-  }
-}
+  };
+};
 ```
 
 ### 単一ハンドラの高速パス
@@ -143,22 +143,21 @@ export const cors = (options?: CORSOptions): MiddlewareHandler => {
 // src/hono-base.ts:423-442
 // Do not `compose` if it has only one handler
 if (matchResult[0].length === 1) {
-  let res: ReturnType<H>
+  let res: ReturnType<H>;
   try {
     res = matchResult[0][0][0][0](c, async () => {
-      c.res = await this.#notFoundHandler(c)
-    })
+      c.res = await this.#notFoundHandler(c);
+    });
   } catch (err) {
-    return this.#handleError(err, c)
+    return this.#handleError(err, c);
   }
   return res instanceof Promise
     ? res
-        .then(
-          (resolved: Response | undefined) =>
-            resolved || (c.finalized ? c.res : this.#notFoundHandler(c))
-        )
-        .catch((err: Error) => this.#handleError(err, c))
-    : (res ?? this.#notFoundHandler(c))
+      .then(
+        (resolved: Response | undefined) => resolved || (c.finalized ? c.res : this.#notFoundHandler(c)),
+      )
+      .catch((err: Error) => this.#handleError(err, c))
+    : (res ?? this.#notFoundHandler(c));
 }
 ```
 
@@ -203,27 +202,27 @@ export const except = (
   condition: string | Condition | (string | Condition)[],
   ...middleware: MiddlewareHandler[]
 ): MiddlewareHandler => {
-  let router: TrieRouter<true> | undefined = undefined
+  let router: TrieRouter<true> | undefined = undefined;
   const conditions = (Array.isArray(condition) ? condition : [condition])
     .map((condition) => {
-      if (typeof condition === 'string') {
-        router ||= new TrieRouter()
-        router.add(METHOD_NAME_ALL, condition, true)
+      if (typeof condition === "string") {
+        router ||= new TrieRouter();
+        router.add(METHOD_NAME_ALL, condition, true);
       } else {
-        return condition
+        return condition;
       }
     })
-    .filter(Boolean) as Condition[]
+    .filter(Boolean) as Condition[];
 
   if (router) {
-    conditions.unshift((c: Context) => !!router?.match(METHOD_NAME_ALL, c.req.path)?.[0]?.[0]?.[0])
+    conditions.unshift((c: Context) => !!router?.match(METHOD_NAME_ALL, c.req.path)?.[0]?.[0]?.[0]);
   }
   // some と every を組み合わせて except を構築
-  const handler = some((c: Context) => conditions.some((cond) => cond(c)), every(...middleware))
+  const handler = some((c: Context) => conditions.some((cond) => cond(c)), every(...middleware));
   return async function except(c, next) {
-    await handler(c, next)
-  }
-}
+    await handler(c, next);
+  };
+};
 ```
 
 ## パターンカタログ
@@ -261,8 +260,8 @@ export const except = (
 export const logger = (fn: PrintFunc = console.log): MiddlewareHandler => {
   return async function logger(c, next) {
     // ...
-  }
-}
+  };
+};
 ```
 
 - **設定値の事前解決**: ファクトリ呼び出し時に設定の型判定と関数構築を完了させ、リクエストハンドラ内では事前構築済みの関数を呼ぶだけにする。CORS ミドルウェアの `findAllowOrigin` は即時実行関数で設定型に応じた最適な比較関数を1回だけ選択する。
@@ -270,34 +269,33 @@ export const logger = (fn: PrintFunc = console.log): MiddlewareHandler => {
 ```typescript
 // src/middleware/cors/index.ts:75-87
 const findAllowOrigin = ((optsOrigin) => {
-  if (typeof optsOrigin === 'string') {
-    if (optsOrigin === '*') {
-      return () => optsOrigin
+  if (typeof optsOrigin === "string") {
+    if (optsOrigin === "*") {
+      return () => optsOrigin;
     } else {
-      return (origin: string) => (optsOrigin === origin ? origin : null)
+      return (origin: string) => (optsOrigin === origin ? origin : null);
     }
-  } else if (typeof optsOrigin === 'function') {
-    return optsOrigin
+  } else if (typeof optsOrigin === "function") {
+    return optsOrigin;
   } else {
-    return (origin: string) => (optsOrigin.includes(origin) ? origin : null)
+    return (origin: string) => (optsOrigin.includes(origin) ? origin : null);
   }
-})(opts.origin)
+})(opts.origin);
 ```
 
 - **合成プリミティブの組み合わせ**: `except` を `some` と `every` の合成で実装する手法。新しいプリミティブを追加せず、既存の合成演算の組み合わせで複雑なロジックを表現する。
 
 ```typescript
 // src/middleware/combine/index.ts:161
-const handler = some((c: Context) => conditions.some((cond) => cond(c)), every(...middleware))
+const handler = some((c: Context) => conditions.some((cond) => cond(c)), every(...middleware));
 ```
 
 - **合成ラッパーの透過性**: `route()` での sub-app 統合時、`COMPOSED_HANDLER` でラップ前の元ハンドラへの参照を保持する。`findTargetHandler` で再帰的にアンラップ可能にすることで、合成が検査可能（inspectable）になっている。
 
 ```typescript
 // src/hono-base.ts:224-226
-handler = async (c: Context, next: Next) =>
-  (await compose([], app.errorHandler)(c, () => r.handler(c, next))).res
-;(handler as any)[COMPOSED_HANDLER] = r.handler
+handler = async (c: Context, next: Next) => (await compose([], app.errorHandler)(c, () => r.handler(c, next))).res;
+(handler as any)[COMPOSED_HANDLER] = r.handler;
 ```
 
 ## Anti-Patterns / 注意点
@@ -308,22 +306,22 @@ handler = async (c: Context, next: Next) =>
 // Bad: next() を条件分岐の両方で呼ぶ
 const middleware = async (c, next) => {
   if (condition) {
-    await next()
+    await next();
     // 何か処理
   }
-  await next() // 条件次第で二重呼び出し
-}
+  await next(); // 条件次第で二重呼び出し
+};
 
 // Better: next() は必ず1回だけ呼ぶ
 const middleware = async (c, next) => {
   if (condition) {
     // 前処理
   }
-  await next()
+  await next();
   if (condition) {
     // 後処理
   }
-}
+};
 ```
 
 - **ファクトリ内でのリクエスト依存処理**: ファクトリ関数内（クロージャの外側）でリクエスト固有の値を参照すると、最初のリクエストの値がすべてのリクエストに共有されてしまう。設定の前計算とリクエスト固有処理の境界を明確にする必要がある。
@@ -331,22 +329,22 @@ const middleware = async (c, next) => {
 ```typescript
 // Bad: ファクトリ内でリクエスト固有の処理を行う
 const myMiddleware = (opts) => {
-  const data = fetchSomething() // 起動時に1度だけ実行される
+  const data = fetchSomething(); // 起動時に1度だけ実行される
   return async (c, next) => {
-    c.set('data', data) // 全リクエストで同じ値
-    await next()
-  }
-}
+    c.set("data", data); // 全リクエストで同じ値
+    await next();
+  };
+};
 
 // Better: リクエスト固有の処理はミドルウェア本体で行う
 const myMiddleware = (opts) => {
-  const config = validateOptions(opts) // 設定の前処理のみ
+  const config = validateOptions(opts); // 設定の前処理のみ
   return async function myMiddleware(c, next) {
-    const data = await fetchSomething(config, c.req) // リクエストごとに実行
-    c.set('data', data)
-    await next()
-  }
-}
+    const data = await fetchSomething(config, c.req); // リクエストごとに実行
+    c.set("data", data);
+    await next();
+  };
+};
 ```
 
 - **合成結果の finalize 漏れ**: `compose` はミドルウェアチェーン内でレスポンスが設定されない場合、`context.finalized` が `false` のまま返却される。`hono-base.ts:449-452` では明示的にこれを検出してエラーとしている。合成結果を使用する側は、必ず finalize 状態を検証すべきである。
@@ -355,8 +353,8 @@ const myMiddleware = (opts) => {
 // src/hono-base.ts:449-452
 if (!context.finalized) {
   throw new Error(
-    'Context is not finalized. Did you forget to return a Response object or `await next()`?'
-  )
+    "Context is not finalized. Did you forget to return a Response object or `await next()`?",
+  );
 }
 ```
 

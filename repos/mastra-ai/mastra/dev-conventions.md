@@ -34,23 +34,23 @@ const has = pkg => {
   }
 };
 
-const hasTypeScript = has('typescript');
-const hasReact = has('react');
-const hasTestingLibrary = has('@testing-library/dom');
-const hasVitest = has('vitest');
+const hasTypeScript = has("typescript");
+const hasReact = has("react");
+const hasTestingLibrary = has("@testing-library/dom");
+const hasVitest = has("vitest");
 ```
 
 各パッケージの `eslint.config.js` は極めてシンプルで、必要な場合のみ上書きを追加する。
 
 ```javascript
 // packages/core/eslint.config.js:1-11
-import { createConfig } from '@internal/lint/eslint';
+import { createConfig } from "@internal/lint/eslint";
 const config = await createConfig();
 
 export default [
   ...config,
   {
-    ignores: ['./*.d.ts', '**/*.d.ts', '!src/**/*.d.ts', '**/test-utils/**'],
+    ignores: ["./*.d.ts", "**/*.d.ts", "!src/**/*.d.ts", "**/test-utils/**"],
   },
 ];
 ```
@@ -122,9 +122,9 @@ ESLint 設定のコメントには、無効にしたルールとその理由が�
 ```javascript
 // packages/core/lint-staged.config.js
 export default {
-  '*.{ts,tsx}': ['eslint --fix --max-warnings=0', 'prettier --write'],
-  '*.{js,jsx}': ['eslint --fix', 'prettier --write'],
-  '*.{json,md,yml,yaml}': ['prettier --write'],
+  "*.{ts,tsx}": ["eslint --fix --max-warnings=0", "prettier --write"],
+  "*.{js,jsx}": ["eslint --fix", "prettier --write"],
+  "*.{json,md,yml,yaml}": ["prettier --write"],
 };
 ```
 
@@ -177,21 +177,25 @@ workspace.filesystem; // LocalFilesystem
 `.claude/commands/` と `.cursor/commands/` に同一のコマンドセットが定義されている。
 
 **コミット規約** (`.claude/commands/commit.md`):
+
 - Conventional commits 必須
 - タイトルに変更概要、本文に詳細と理由
 - コミット後に push
 
 **PR 規約** (`.claude/commands/pr.md`):
+
 - changeset 作成 → PR オープンの二段階ワークフロー
 - PR タイトルは conventional commits 形式 (`fix: title` / `feat(pkg-name): title`)
 - PR 本文は「簡潔で謙虚、花言葉なし」、リスト・見出し不要
 
 **PR レビュー対応** (`.claude/commands/gh-pr-comments.md`):
+
 - CodeRabbit コメントへの対応フロー定型化
 - AI のコメントは「Claude says:」で開始
 - 修正ごとに個別コミット（コメントリンク付き）
 
 **gh-fix-lint** (`.claude/commands/gh-fix-lint.md`):
+
 - 外部コントリビューターの PR ブランチにリント修正を適用する運用フロー
 - フォークへのプッシュまで自動化
 
@@ -255,6 +259,7 @@ const has = pkg => {
 
 ```markdown
 <!-- .claude/commands/pr.md (抜粋) -->
+
 Add a descriptive/concise title, use conventional commits in the title
 (e.g. "fix: title here" or "feat(pkg-name): title here").
 Add a concise, humble PR description without flowery or overly verbose language.
@@ -275,7 +280,7 @@ Add a concise, humble PR description without flowery or overly verbose language.
 // ... すべて同じ内容
 
 // Better: 共有パッケージからインポート
-import { defaultConfig } from '@internal/lint/lint-staged';
+import { defaultConfig } from "@internal/lint/lint-staged";
 export default defaultConfig;
 ```
 

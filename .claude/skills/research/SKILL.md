@@ -24,38 +24,45 @@ allowed-tools: Bash, Read, Write, Glob, Grep, Task
 3. 存在しなければ `ghq get --shallow https://github.com/<org>/<repo>` で取得
 4. 既にローカルに存在する場合は `git -C <repo_path> pull --ff-only` でリモート最新を取得する（失敗しても続行）
 5. `ghq root` と合わせてローカルパスを特定: `$(ghq root)/github.com/<org>/<repo>`
-5. 出力先 `repos/<org>/<repo>/` の存在を確認（既存研究がある場合は Resume 判定 → 後述）
+6. 出力先 `repos/<org>/<repo>/` の存在を確認（既存研究がある場合は Resume 判定 → 後述）
 
 ### Step 2: リポジトリの初期調査
 
 以下の情報を収集する（後のステップで使用）:
 
 **基本メタデータ**（gh CLI で取得）:
+
 ```bash
 gh api repos/<org>/<repo> --jq '{stargazers_count, language, license: .license.spdx_id, description}'
 ```
 
 **ディレクトリ構成**:
+
 - ルートの `ls` と主要ディレクトリの構造を確認
 
 **リポジトリ規模の推定**:
+
 ```bash
 # ソースファイル数と概算行数を取得（Step 3 の視点数決定に使用）
 find <repo_path> -type f \( -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" -o -name "*.py" -o -name "*.rs" -o -name "*.go" -o -name "*.java" \) -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/vendor/*" -not -path "*/dist/*" | wc -l
 ```
+
 - 規模分類: 小規模(~50ファイル) / 中規模(50-200) / 大規模(200+)
 
 **技術スタック特定**:
+
 - package.json, Cargo.toml, go.mod, pyproject.toml 等のプロジェクト定義ファイルを読む
 - ビルドツール、テストフレームワーク、リンター設定を確認
 
 **AI 設定ファイルの調査**:
+
 - `CLAUDE.md`, `AGENTS.md`, `ARCHITECTURE.md`
 - `.claude/` ディレクトリ（settings.json, commands/, agents/ 等）
 - `.clinerules`, `.cursor/`, `.cursorrules`
 - `.github/copilot-instructions.md`
 
 **開発規約の調査**:
+
 - `CONTRIBUTING.md`
 - eslint / prettier / biome 設定ファイル
 - `tsconfig.json`
@@ -68,22 +75,27 @@ find <repo_path> -type f \( -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -na
 Step 2 の情報を基に、分析する視点リストを生成する。
 
 **規模に応じた視点数**:
+
 - 小規模（~50ファイル）: 8-12 個
 - 中規模（50-200ファイル）: 12-16 個
 - 大規模（200+ファイル）: 16-20 個
 
 **各視点には以下を付与する**:
+
 - `name`: 視点名（ケバブケース）
 - `wave`: `1`（コア）または `2`（拡張）
 - `intent`: 1行の分析意図（perspective-writer に渡す。例: "ミドルウェアの合成パターンと実行順序制御の仕組みを明らかにする"）
 
 **Wave 1（コア視点）**: 5-8 個。リポジトリ理解の基盤となる視点:
+
 - `project-structure` — ディレクトリ構成・モジュール分割
 - `architecture` — 全体アーキテクチャ・レイヤー構成
 - `design-philosophy` — 設計思想・哲学・技術選定の根拠
-- + プラクティス軸の視点 2-5 個（例: `code-organization`, `abstraction-patterns`, `performance-techniques`, `type-system-patterns`）
+-
+  - プラクティス軸の視点 2-5 個（例: `code-organization`, `abstraction-patterns`, `performance-techniques`, `type-system-patterns`）
 
 **Wave 2（拡張視点）**: 残り。プラクティス指向の横断的な視点:
+
 - 汎用視点（該当するものを選択）:
   - `error-handling-idioms`, `testing-practices`, `type-system-patterns`, `api-design-practices`
   - `performance-techniques`, `security-practices`, `dependency-management`, `build-and-tooling`
@@ -94,6 +106,7 @@ Step 2 の情報を基に、分析する視点リストを生成する。
   - 悪い例: `router-design`, `middleware-system`, `jsx-engine`（これらは機能分解であり、プラクティスの視点ではない）
 
 **視点選定の基準**:
+
 - 各視点はコードベースを横断的に分析する（特定の機能・モジュールに閉じない）
 - 表面的な視点は避け、技術的に深い視点を選ぶ
 - 「なぜ標準的な方法ではなくこの方法を選んだのか」が問えるテーマを優先する
@@ -166,6 +179,7 @@ perspectives:
 - 「導出ルール」セクションと「適用チェックリスト」セクションが **必須** であることを明記する
 
 **Task プロンプト例**:
+
 ```
 あなたは perspective-writer agent です。
 .claude/agents/perspective-writer.md の指示に従ってください。
@@ -212,6 +226,7 @@ templates/perspective.md を Read で読み、そのフォーマットに従っ�
 5. **それでも存在しない場合**: リトライ（1回限り）
 
 **Task プロンプト例**:
+
 ```
 あなたは synthesis-writer agent です。
 .claude/agents/synthesis-writer.md の指示に従ってください。
@@ -252,6 +267,7 @@ Step 1 で既存研究が検出された場合、ユーザーに選択肢を提�
 3. **キャンセル** — 何もしない
 
 **「続きから再開」の判定ロジック**:
+
 1. `repos/<org>/<repo>/` 内の既存ファイルを Glob で列挙
 2. `meta.yaml` を Read して視点リストを取得
 3. 各視点の `.md` ファイルの存在を確認

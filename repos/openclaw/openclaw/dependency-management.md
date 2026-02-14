@@ -117,8 +117,8 @@ const { getLlama, resolveModelFile, LlamaLogLevel } = await importNodeLlamaCpp()
 ```typescript
 // scripts/sync-plugin-versions.ts:64-71
 if (pkg.version === targetVersion) {
-    skipped.push(pkg.name);
-    continue;
+  skipped.push(pkg.name);
+  continue;
 }
 pkg.version = targetVersion;
 writeFileSync(packagePath, `${JSON.stringify(pkg, null, 2)}\n`);
@@ -152,7 +152,7 @@ AGENTS.md で `@buape/carbon` を更新禁止としている。Carbon は Discor
   "tar": "7.5.7",
   ```
 
-- **workspace:* は devDependencies のみ**: extension のホストパッケージ参照を `devDependencies` に限定し、公開配布時の npm install 互換性を維持する。runtime の互換性宣言が必要な場合は `peerDependencies` で別途範囲指定する。
+- __workspace:_ は devDependencies のみ_*: extension のホストパッケージ参照を `devDependencies` に限定し、公開配布時の npm install 互換性を維持する。runtime の互換性宣言が必要な場合は `peerDependencies` で別途範囲指定する。
   ```jsonc
   // extensions/googlechat/package.json
   "devDependencies": { "openclaw": "workspace:*" },
@@ -173,6 +173,7 @@ AGENTS.md で `@buape/carbon` を更新禁止としている。Carbon は Discor
 - **AI エージェントへの依存変更ガードレール**: AGENTS.md で依存関係変更に関する制約を明文化し、AI が自律的にパッチ適用や overrides 変更を行わないようにする。
   ```markdown
   <!-- AGENTS.md:134-136 -->
+
   - Never update the Carbon dependency.
   - Any dependency with `pnpm.patchedDependencies` must use an exact version (no `^`/`~`).
   - Patching dependencies requires explicit approval; do not do this by default.

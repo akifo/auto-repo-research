@@ -44,7 +44,7 @@ Zod v4 は `~standard.jsonSchema` を内蔵しているが v3 にはない。こ
 // packages/schema-compat/src/standard-schema/standard-schema.ts:101-132
 export function toStandardSchema<T = unknown>(schema: PublicSchema<T>): StandardSchemaWithJSON<T> {
   if (isStandardSchemaWithJSON(schema)) {
-    return schema;                                  // v4 / ArkType はそのまま
+    return schema; // v4 / ArkType はそのまま
   }
   if (isZodV3(schema)) {
     return toStandardSchemaZodV3(schema as ZodType); // v3 にはアダプタで JSON Schema を付与
@@ -67,9 +67,9 @@ v3 用アダプタは `Object.create(zodSchema)` でプロトタイプ継承し�
 export type PublicSchema<Output = unknown, Input = Output> =
   | z4.ZodType<Output, Input>
   | z3.Schema<Output, z3.ZodTypeDef, Input>
-  | Schema<Output>                    // AI SDK Schema
-  | JSONSchema7                       // 素の JSON Schema
-  | StandardSchemaWithJSON<Input, Output>;  // Standard Schema 準拠
+  | Schema<Output> // AI SDK Schema
+  | JSONSchema7 // 素の JSON Schema
+  | StandardSchemaWithJSON<Input, Output>; // Standard Schema 準拠
 ```
 
 ### 4. プロバイダ固有の制約変換と description への移動
@@ -101,7 +101,7 @@ OpenAI の reasoning モデル（o1/o3/o4）は strict mode で `.optional()` �
 ```typescript
 // packages/schema-compat/src/provider-compats/openai.ts:33-51
 if (isOptional(z)(value)) {
-  const innerType = '_def' in value ? value._def.innerType : (value as any)._zod?.def?.innerType;
+  const innerType = "_def" in value ? value._def.innerType : (value as any)._zod?.def?.innerType;
   if (innerType) {
     const processedInner = this.processZodType(innerType);
     return processedInner.nullable().transform((val: any) => (val === null ? undefined : val));
@@ -177,10 +177,10 @@ schema-compat パッケージ自体は `zod/v3` と `zod/v4` のサブパスイ�
 // packages/schema-compat/src/utils.ts:57-69
 export function isZodType(value: unknown): value is ZodType {
   return (
-    typeof value === 'object' && value !== null &&
-    ('_def' in value || '_zod' in value) &&
-    'parse' in value && typeof (value as any).parse === 'function' &&
-    'safeParse' in value && typeof (value as any).safeParse === 'function'
+    typeof value === "object" && value !== null
+    && ("_def" in value || "_zod" in value)
+    && "parse" in value && typeof (value as any).parse === "function"
+    && "safeParse" in value && typeof (value as any).safeParse === "function"
   );
 }
 ```
@@ -215,7 +215,7 @@ return processedInner.nullable().transform((val: any) => (val === null ? undefin
 export function isOptional<Z extends typeof zV3>(z: Z): (v: any) => v is zV3.ZodOptional<any>;
 export function isOptional<Z extends typeof zV4>(z: Z): (v: any) => v is zV4.ZodOptional<any>;
 export function isOptional<Z extends typeof zV3 | typeof zV4>(z: Z) {
-  return (v: any): v is Z['ZodOptional'] => v instanceof z['ZodOptional'];
+  return (v: any): v is Z["ZodOptional"] => v instanceof z["ZodOptional"];
 }
 ```
 
@@ -231,9 +231,9 @@ function isZodSchema(value: unknown): boolean {
 
 // Better: 構造的特徴で判定する
 function isZodSchema(value: unknown): boolean {
-  return typeof value === 'object' && value !== null &&
-    ('_def' in value || '_zod' in value) &&
-    typeof (value as any).safeParse === 'function';
+  return typeof value === "object" && value !== null
+    && ("_def" in value || "_zod" in value)
+    && typeof (value as any).safeParse === "function";
 }
 ```
 

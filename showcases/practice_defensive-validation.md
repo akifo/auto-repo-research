@@ -30,8 +30,8 @@ export function validateToolInput<T = any>(
   schema: SchemaWithValidation<T> | undefined,
   input: unknown,
   toolId?: string,
-): { data: T | unknown; error?: ValidationError<T> } {
-  if (!schema || !('safeParse' in schema)) {
+): { data: T | unknown; error?: ValidationError<T>; } {
+  if (!schema || !("safeParse" in schema)) {
     return { data: input };
   }
 
@@ -60,13 +60,13 @@ export function validateToolInput<T = any>(
 
   // 全段階失敗 — 最初の検証エラーを返す（情報量が最も多い）
   const errorMessages = validation.error.issues
-    .map(e => `- ${e.path?.join('.') || 'root'}: ${e.message}`)
-    .join('\n');
+    .map(e => `- ${e.path?.join(".") || "root"}: ${e.message}`)
+    .join("\n");
   return {
     data: input,
     error: {
       error: true,
-      message: `Tool input validation failed${toolId ? ` for ${toolId}` : ''}...\n${errorMessages}`,
+      message: `Tool input validation failed${toolId ? ` for ${toolId}` : ""}...\n${errorMessages}`,
       validationErrors: validation.error.format(),
     },
   };
@@ -126,8 +126,8 @@ public defaultZodStringHandler(
 ```typescript
 // packages/schema-compat/src/provider-compats/anthropic.ts:36-37
 // Anthropic Claude 3.5 Haiku: min/max のみダウングレード
-if (this.getModel().modelId.includes('claude-3.5-haiku')) {
-  return this.defaultZodStringHandler(value, ['max', 'min']);
+if (this.getModel().modelId.includes("claude-3.5-haiku")) {
+  return this.defaultZodStringHandler(value, ["max", "min"]);
 }
 
 // packages/schema-compat/src/provider-compats/google.ts:41-47
@@ -145,7 +145,7 @@ return this.defaultZodNumberHandler(value);
 // Step 5 の実装: null を除去してリトライ
 function stripNullishValues(input: unknown): unknown {
   if (input === null || input === undefined) return undefined;
-  if (typeof input !== 'object') return input;
+  if (typeof input !== "object") return input;
   if (Array.isArray(input)) {
     return input.map(item => (item === null ? null : stripNullishValues(item)));
   }
@@ -164,8 +164,8 @@ function coerceStringifiedJsonValues(schema: SchemaWithValidation<unknown>, inpu
   // スキーマが配列/オブジェクトを期待しているのに文字列が来た場合、JSON.parse を試みる
   const trimmed = value.trim();
   if (
-    (isZodArray(baseFieldSchema) && trimmed.startsWith('[')) ||
-    (isZodObject(baseFieldSchema) && trimmed.startsWith('{'))
+    (isZodArray(baseFieldSchema) && trimmed.startsWith("["))
+    || (isZodObject(baseFieldSchema) && trimmed.startsWith("{"))
   ) {
     try {
       const parsed = JSON.parse(value);
@@ -231,8 +231,8 @@ function processSchemaForProvider(schema: JSONSchema7) {
     delete schema.minLength;
   }
   if (constraints.length) {
-    schema.description = (schema.description ? schema.description + '\n' : '')
-      + `constraints: ${constraints.join(', ')}`;
+    schema.description = (schema.description ? schema.description + "\n" : "")
+      + `constraints: ${constraints.join(", ")}`;
   }
   return schema;
 }

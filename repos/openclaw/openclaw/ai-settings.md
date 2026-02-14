@@ -39,6 +39,7 @@ AGENTS.md 内に 6 項目のマルチエージェント安全性ルールが明�
 
 ```markdown
 <!-- AGENTS.md:152-157 -->
+
 - **Multi-agent safety:** do **not** create/apply/drop `git stash` entries unless explicitly requested
 - **Multi-agent safety:** when the user says "push", you may `git pull --rebase` to integrate latest changes (never discard other agents' work). When the user says "commit", scope to your changes only.
 - **Multi-agent safety:** do **not** create/remove/modify `git worktree` checkouts unless explicitly requested.
@@ -103,11 +104,11 @@ export function stringEnum<T extends readonly string[]>(
 
 PR のライフサイクルを 3 つの独立したスキルに分離し、各段階で明示的なセーフティガードを設けている:
 
-| スキル | 権限 | 禁止行動 |
-|--------|------|----------|
-| review-pr | Read-only | push, merge, code change, GitHub write |
+| スキル     | 権限                      | 禁止行動                                    |
+| ---------- | ------------------------- | ------------------------------------------- |
+| review-pr  | Read-only                 | push, merge, code change, GitHub write      |
 | prepare-pr | Local write + 承認後 push | push to main, `git add .`, `git clean -fdx` |
-| merge-pr | 承認後 squash merge のみ | `git push`, PR close, worktree削除(merge前) |
+| merge-pr   | 承認後 squash merge のみ  | `git push`, PR close, worktree削除(merge前) |
 
 各スキルは `.local/review.md` / `.local/prep.md` というアーティファクトを介してステートを受け渡す設計で、スキル間の依存関係を明示的なファイルベースの契約で管理している。
 
@@ -154,6 +155,7 @@ ln -s AGENTS.md CLAUDE.md
 
 ```markdown
 <!-- .agents/skills/prepare-pr/SKILL.md:24 -->
+
 - Do not run `git add -A` or `git add .`. Stage only specific files changed.
 ```
 
@@ -173,6 +175,7 @@ fi
 
 ```markdown
 <!-- CONTRIBUTING.md:68-73 -->
+
 - [ ] Mark as AI-assisted in the PR title or description
 - [ ] Note the degree of testing (untested / lightly tested / fully tested)
 - [ ] Include prompts or session logs if possible
@@ -185,25 +188,38 @@ fi
 
 ```markdown
 <!-- Bad: 1ファイルに全セクションを詰め込む -->
+
 # Repository Guidelines
+
 ## Project Structure...
+
 ## Docs Linking...
+
 ## Build, Test...
+
 ## Coding Style...
+
 ## Testing Guidelines...
+
 ## Commit & PR Guidelines...
+
 ## Security...
+
 ## Agent-Specific Notes... (60+ 行)
 ```
 
 ```markdown
 <!-- Better: スコープドファイルに分割 + ルートは要約とリンク -->
+
 # AGENTS.md (root)
+
 ## Quick Reference
+
 - Build: `pnpm build`
 - Test: `pnpm test`
 
 ## Detailed Guides
+
 - [Coding Style](.agents/coding-style.md)
 - [Multi-agent Safety](.agents/multi-agent-safety.md)
 - [PR Workflow](.agents/skills/PR_WORKFLOW.md)

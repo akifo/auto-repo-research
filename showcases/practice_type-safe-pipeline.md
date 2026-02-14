@@ -20,11 +20,11 @@ Hono はミドルウェアチェーンで環境型 `Env` を累積的にイン�
 ```typescript
 // src/utils/types.ts:21
 // 0 extends 1 & T は T が any のときのみ true になるトリック
-export type IfAnyThenEmptyObject<T> = 0 extends 1 & T ? {} : T
+export type IfAnyThenEmptyObject<T> = 0 extends 1 & T ? {} : T;
 
 // src/utils/types.ts:110
 // boolean extends (T extends never ? true : false) は any のとき true
-export type IsAny<T> = boolean extends (T extends never ? true : false) ? true : false
+export type IsAny<T> = boolean extends (T extends never ? true : false) ? true : false;
 ```
 
 ### any フィルター付き型合成
@@ -32,11 +32,11 @@ export type IsAny<T> = boolean extends (T extends never ? true : false) ? true :
 ```typescript
 // src/types.ts:2473-2476
 // ProcessHead: any と基底 Env をフィルタし、具体的な型のみをインターセクションに含める
-type ProcessHead<T> = IfAnyThenEmptyObject<T extends Env ? (Env extends T ? {} : T) : T>
+type ProcessHead<T> = IfAnyThenEmptyObject<T extends Env ? (Env extends T ? {} : T) : T>;
 
 export type IntersectNonAnyTypes<T extends any[]> = T extends [infer Head, ...infer Rest]
   ? ProcessHead<Head> & IntersectNonAnyTypes<Rest>
-  : {}
+  : {};
 ```
 
 ### ミドルウェアチェーンでの型累積
@@ -62,16 +62,14 @@ export type IntersectNonAnyTypes<T extends any[]> = T extends [infer Head, ...in
 export type TypedResponse<
   T = unknown,
   U extends StatusCode = StatusCode,
-  F extends ResponseFormat = T extends string
-    ? 'text'
-    : T extends JSONValue
-      ? 'json'
-      : ResponseFormat,
+  F extends ResponseFormat = T extends string ? "text"
+    : T extends JSONValue ? "json"
+    : ResponseFormat,
 > = {
-  _data: T
-  _status: U
-  _format: F
-}
+  _data: T;
+  _status: U;
+  _format: F;
+};
 ```
 
 ### Template Literal Types によるパス→パラメータ型推論
@@ -79,16 +77,13 @@ export type TypedResponse<
 ```typescript
 // src/types.ts:2409-2423
 type ParamKey<Component> = Component extends `:${infer NameWithPattern}`
-  ? NameWithPattern extends `${infer Name}{${infer Rest}`
-    ? Rest extends `${infer _Pattern}?`
-      ? `${Name}?`
-      : Name
-    : NameWithPattern
-  : never
+  ? NameWithPattern extends `${infer Name}{${infer Rest}` ? Rest extends `${infer _Pattern}?` ? `${Name}?`
+    : Name
+  : NameWithPattern
+  : never;
 
-export type ParamKeys<Path> = Path extends `${infer Component}/${infer Rest}`
-  ? ParamKey<Component> | ParamKeys<Rest>
-  : ParamKey<Path>
+export type ParamKeys<Path> = Path extends `${infer Component}/${infer Rest}` ? ParamKey<Component> | ParamKeys<Rest>
+  : ParamKey<Path>;
 // '/users/:id/posts/:postId' → 'id' | 'postId'
 ```
 
@@ -96,34 +91,33 @@ export type ParamKeys<Path> = Path extends `${infer Component}/${infer Rest}`
 
 ```typescript
 // any フィルターを導入したプラグインチェーン型合成
-type IfAnyThenEmpty<T> = 0 extends 1 & T ? {} : T
+type IfAnyThenEmpty<T> = 0 extends 1 & T ? {} : T;
 
 type MergePluginTypes<T extends unknown[]> = T extends [infer Head, ...infer Rest]
   ? IfAnyThenEmpty<Head> & MergePluginTypes<Rest>
-  : {}
+  : {};
 
 // 使用例: 型パラメータ未指定のプラグインが混在しても安全
 type Result = MergePluginTypes<[
-  { db: Database },     // DB プラグイン
-  any,                  // 型パラメータ未指定のプラグイン (logger 等)
-  { auth: AuthContext }, // 認証プラグイン
-]>
+  { db: Database; }, // DB プラグイン
+  any, // 型パラメータ未指定のプラグイン (logger 等)
+  { auth: AuthContext; }, // 認証プラグイン
+]>;
 // Result = { db: Database } & { auth: AuthContext }
 // any がフィルタされ、db と auth の型が保持される
 
-
 // ファントム型でコンパイル時にステータスを追跡
 type ApiResponse<TData, TStatus extends number = 200> = Response & {
-  _data: TData
-  _status: TStatus
-}
+  _data: TData;
+  _status: TStatus;
+};
 
 function json<T>(data: T): ApiResponse<T, 200> {
-  return new Response(JSON.stringify(data)) as ApiResponse<T, 200>
+  return new Response(JSON.stringify(data)) as ApiResponse<T, 200>;
 }
 
-function notFound(): ApiResponse<{ error: string }, 404> {
-  return new Response(JSON.stringify({ error: 'Not Found' })) as ApiResponse<{ error: string }, 404>
+function notFound(): ApiResponse<{ error: string; }, 404> {
+  return new Response(JSON.stringify({ error: "Not Found" })) as ApiResponse<{ error: string; }, 404>;
 }
 ```
 
@@ -131,31 +125,28 @@ function notFound(): ApiResponse<{ error: string }, 404> {
 
 ```typescript
 // Bad: any をフィルタせずにインターセクション -- 全体が any に崩壊
-type NaiveMerge<T extends unknown[]> = T extends [infer Head, ...infer Rest]
-  ? Head & NaiveMerge<Rest>
-  : {}
+type NaiveMerge<T extends unknown[]> = T extends [infer Head, ...infer Rest] ? Head & NaiveMerge<Rest>
+  : {};
 
 type Result = NaiveMerge<[
-  { db: Database },
-  any,                  // any & { db: Database } = any
-  { auth: AuthContext },
-]>
+  { db: Database; },
+  any, // any & { db: Database } = any
+  { auth: AuthContext; },
+]>;
 // Result = any -- db も auth も消失
 
-
 // Bad: ファントム型プロパティにランタイムでアクセス
-const data = response._data  // undefined at runtime, typed as T
+const data = response._data; // undefined at runtime, typed as T
 
 // Better: 専用のアクセサ経由でランタイム安全にアクセス
-const data = await response.json()  // runtime-safe
-
+const data = await response.json(); // runtime-safe
 
 // Bad: Union → Intersection を手動で書く
-type Combined = PluginA['env'] & PluginB['env'] & PluginC['env']
+type Combined = PluginA["env"] & PluginB["env"] & PluginC["env"];
 // プラグインが増えるたびに手動で追加が必要
 
 // Better: ヘルパー型で自動合成
-type Combined = MergePluginTypes<RegisteredPlugins>
+type Combined = MergePluginTypes<RegisteredPlugins>;
 ```
 
 ## 適用ガイド

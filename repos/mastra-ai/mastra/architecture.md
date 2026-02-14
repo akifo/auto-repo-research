@@ -102,7 +102,7 @@ export type StorageDomains = {
 ```typescript
 // packages/core/src/storage/base.ts:152-166
 const storage = new MastraCompositeStore({
-  id: 'composite',
+  id: "composite",
   default: pgStore,
   domains: {
     memory: libsqlStore.stores?.memory,
@@ -138,8 +138,8 @@ this.stores = {
 const proxy = new Proxy(storage, {
   get(target, prop) {
     const value = target[prop as keyof typeof target];
-    if (typeof value === 'function') {
-      if (prop === 'init') {
+    if (typeof value === "function") {
+      if (prop === "init") {
         return async (...args: unknown[]) => {
           if (!hasInitialized) {
             hasInitialized = Reflect.apply(value, target, args) as Promise<void>;

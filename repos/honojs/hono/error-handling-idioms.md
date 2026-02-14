@@ -53,13 +53,13 @@ Hono のエラーハンドリングは、単一の `HTTPException` クラスを�
 // src/http-exception.ts:46-78
 // フラット例外モデル: サブクラスなし、コンストラクタ引数で分類
 export class HTTPException extends Error {
-  readonly res?: Response
-  readonly status: ContentfulStatusCode
+  readonly res?: Response;
+  readonly status: ContentfulStatusCode;
 
   constructor(status: ContentfulStatusCode = 500, options?: HTTPExceptionOptions) {
-    super(options?.message, { cause: options?.cause })
-    this.res = options?.res
-    this.status = status
+    super(options?.message, { cause: options?.cause });
+    this.res = options?.res;
+    this.status = status;
   }
 
   getResponse(): Response {
@@ -67,12 +67,12 @@ export class HTTPException extends Error {
       const newResponse = new Response(this.res.body, {
         status: this.status,
         headers: this.res.headers,
-      })
-      return newResponse
+      });
+      return newResponse;
     }
     return new Response(this.message, {
       status: this.status,
-    })
+    });
   }
 }
 ```
@@ -82,14 +82,14 @@ export class HTTPException extends Error {
 // ミドルウェアチェーンでのエラー捕捉: Error インスタンスのみハンドリング
 if (handler) {
   try {
-    res = await handler(context, () => dispatch(i + 1))
+    res = await handler(context, () => dispatch(i + 1));
   } catch (err) {
     if (err instanceof Error && onError) {
-      context.error = err
-      res = await onError(err, context)
-      isError = true
+      context.error = err;
+      res = await onError(err, context);
+      isError = true;
     } else {
-      throw err
+      throw err;
     }
   }
 }
@@ -99,20 +99,20 @@ if (handler) {
 // src/hono-base.ts:35-42
 // デフォルト errorHandler: duck typing で getResponse を呼ぶ
 const errorHandler: ErrorHandler = (err, c) => {
-  if ('getResponse' in err) {
-    const res = err.getResponse()
-    return c.newResponse(res.body, res)
+  if ("getResponse" in err) {
+    const res = err.getResponse();
+    return c.newResponse(res.body, res);
   }
-  console.error(err)
-  return c.text('Internal Server Error', 500)
-}
+  console.error(err);
+  return c.text("Internal Server Error", 500);
+};
 ```
 
 ```typescript
 // src/middleware/jwt/jwt.ts:64-74 vs 85-92
 // 設定時エラー（通常の Error）
 if (!options || !options.secret) {
-  throw new Error('JWT auth middleware requires options for "secret"')
+  throw new Error('JWT auth middleware requires options for "secret"');
 }
 
 // リクエスト時エラー（HTTPException + Response 同梱）
@@ -120,10 +120,10 @@ throw new HTTPException(401, {
   message: errDescription,
   res: unauthorizedResponse({
     ctx,
-    error: 'invalid_request',
+    error: "invalid_request",
     errDescription,
   }),
-})
+});
 ```
 
 ```typescript
@@ -131,15 +131,15 @@ throw new HTTPException(401, {
 // ドメイン固有のエラークラスとポスト処理パターン
 class BodyLimitError extends Error {
   constructor(message: string) {
-    super(message)
-    this.name = 'BodyLimitError'
+    super(message);
+    this.name = "BodyLimitError";
   }
 }
 
 // await next() 後に c.error で判定
-await next()
+await next();
 if (c.error instanceof BodyLimitError) {
-  c.res = await onError(c)
+  c.res = await onError(c);
 }
 ```
 
@@ -147,29 +147,29 @@ if (c.error instanceof BodyLimitError) {
 // src/middleware/timeout/index.ts:12-14, 38-57
 // タイムアウトミドルウェア: HTTPException を Promise.race で reject に使う
 const defaultTimeoutException = new HTTPException(504, {
-  message: 'Gateway Timeout',
-})
+  message: "Gateway Timeout",
+});
 
 export const timeout = (
   duration: number,
-  exception: HTTPExceptionFunction | HTTPException = defaultTimeoutException
+  exception: HTTPExceptionFunction | HTTPException = defaultTimeoutException,
 ): MiddlewareHandler => {
   return async function timeout(context, next) {
-    let timer: number | undefined
+    let timer: number | undefined;
     const timeoutPromise = new Promise<void>((_, reject) => {
       timer = setTimeout(() => {
-        reject(typeof exception === 'function' ? exception(context) : exception)
-      }, duration) as unknown as number
-    })
+        reject(typeof exception === "function" ? exception(context) : exception);
+      }, duration) as unknown as number;
+    });
     try {
-      await Promise.race([next(), timeoutPromise])
+      await Promise.race([next(), timeoutPromise]);
     } finally {
       if (timer !== undefined) {
-        clearTimeout(timer)
+        clearTimeout(timer);
       }
     }
-  }
-}
+  };
+};
 ```
 
 ## パターンカタログ
@@ -192,14 +192,13 @@ export const timeout = (
 
 ```typescript
 // src/middleware/bearer-auth/index.ts:140-150
-const res =
-  typeof responseMessage === 'string'
-    ? new Response(responseMessage, { status, headers })
-    : new Response(JSON.stringify(responseMessage), {
-        status,
-        headers: { ...headers, 'content-type': 'application/json' },
-      })
-throw new HTTPException(status, { res })
+const res = typeof responseMessage === "string"
+  ? new Response(responseMessage, { status, headers })
+  : new Response(JSON.stringify(responseMessage), {
+    status,
+    headers: { ...headers, "content-type": "application/json" },
+  });
+throw new HTTPException(status, { res });
 ```
 
 - **cause チェーンによるエラートレーサビリティ**: `HTTPException` のコンストラクタが `Error` のネイティブ `cause` オプションを活用し、元のエラーを保持する。JWT 検証失敗時に検証ライブラリの元エラーを `cause` として渡すことで、デバッグ時にエラーの根本原因を辿れる。
@@ -226,12 +225,12 @@ if (!payload) {
 ```typescript
 // src/hono-base.ts:35-39
 const errorHandler: ErrorHandler = (err, c) => {
-  if ('getResponse' in err) {
-    const res = err.getResponse()
-    return c.newResponse(res.body, res)
+  if ("getResponse" in err) {
+    const res = err.getResponse();
+    return c.newResponse(res.body, res);
   }
   // ...
-}
+};
 ```
 
 ## Anti-Patterns / 注意点
@@ -240,18 +239,18 @@ const errorHandler: ErrorHandler = (err, c) => {
 
 ```typescript
 // Bad: onError ハンドラに到達しない
-app.get('/error-string', () => {
-  throw 'This is Error'  // Error インスタンスではない
-})
+app.get("/error-string", () => {
+  throw "This is Error"; // Error インスタンスではない
+});
 
 // Better: 必ず Error インスタンスを throw する
-app.get('/error', () => {
-  throw new Error('This is Error')
-})
+app.get("/error", () => {
+  throw new Error("This is Error");
+});
 // または HTTP エラーなら HTTPException を使う
-app.get('/error', () => {
-  throw new HTTPException(400, { message: 'Bad Request' })
-})
+app.get("/error", () => {
+  throw new HTTPException(400, { message: "Bad Request" });
+});
 ```
 
 - **エラーハンドラ内での例外未処理**: `onError` ハンドラ内で例外が発生すると、それ自体が `#handleError` で処理されるが、さらにそこで `Error` インスタンスでなければ未処理になる。エラーハンドラは堅牢に書く必要がある。
@@ -259,17 +258,17 @@ app.get('/error', () => {
 ```typescript
 // Bad: エラーハンドラ内で例外を発生させうる
 app.onError((err, c) => {
-  const data = JSON.parse(err.message) // err.message が JSON でなければ例外
-  return c.json(data, 500)
-})
+  const data = JSON.parse(err.message); // err.message が JSON でなければ例外
+  return c.json(data, 500);
+});
 
 // Better: エラーハンドラ内でも防御的に書く
 app.onError((err, c) => {
   if (err instanceof HTTPException) {
-    return err.getResponse()
+    return err.getResponse();
   }
-  return c.text(err.message || 'Internal Server Error', 500)
-})
+  return c.text(err.message || "Internal Server Error", 500);
+});
 ```
 
 ## 導出ルール

@@ -23,13 +23,14 @@ Web フレームワーク Hono のコードベースにおけるインターフ�
 ```typescript
 // src/router.ts:29-52
 export interface Router<T> {
-  name: string
-  add(method: string, path: string, handler: T): void
-  match(method: string, path: string): Result<T>
+  name: string;
+  add(method: string, path: string, handler: T): void;
+  match(method: string, path: string): Result<T>;
 }
 ```
 
 各実装の特性:
+
 - **RegExpRouter**: 全ルートを単一正規表現にコンパイル。高速だが一部パスパターンを非サポート
 - **TrieRouter**: トライ木ベース。全パスパターン対応だが RegExpRouter より低速
 - **LinearRouter**: 配列の線形探索。ルート追加が最速（SSR/SSG 向き）
@@ -87,21 +88,21 @@ export class Hono<...> extends HonoBase<E, S, BasePath> {
 // src/adapter/cloudflare-workers/conninfo.ts:3-7
 export const getConnInfo: GetConnInfo = (c) => ({
   remote: {
-    address: c.req.header('cf-connecting-ip'),
+    address: c.req.header("cf-connecting-ip"),
   },
-})
+});
 
 // src/adapter/deno/conninfo.ts:8-16
 export const getConnInfo: GetConnInfo = (c) => {
-  const { remoteAddr } = c.env
+  const { remoteAddr } = c.env;
   return {
     remote: {
       address: remoteAddr.hostname,
       port: remoteAddr.port,
       transport: remoteAddr.transport,
     },
-  }
-}
+  };
+};
 ```
 
 **ServeStatic の例**: コアミドルウェアは `getContent`・`join`・`isDir` の 3 つのコールバックを受け取り、プラットフォーム非依存なロジック（パストラバーサル防止、MIME タイプ判定、事前圧縮対応）を実装する。各アダプタはこれらのコールバックをプラットフォーム固有の API で埋める:
@@ -110,15 +111,15 @@ export const getConnInfo: GetConnInfo = (c) => {
 // src/adapter/bun/serve-static.ts:11-31
 return async function serveStatic(c, next) {
   const getContent = async (path: string) => {
-    const file = Bun.file(path)
-    return (await file.exists()) ? file : null
-  }
+    const file = Bun.file(path);
+    return (await file.exists()) ? file : null;
+  };
   const isDir = async (path: string) => {
-    const stats = await stat(path)
-    return stats.isDirectory()
-  }
-  return baseServeStatic({ ...options, getContent, join, isDir })(c, next)
-}
+    const stats = await stat(path);
+    return stats.isDirectory();
+  };
+  return baseServeStatic({ ...options, getContent, join, isDir })(c, next);
+};
 ```
 
 ### 4. defineWebSocketHelper によるアダプタ生成の抽象化
@@ -149,7 +150,7 @@ export const upgradeWebSocket: UpgradeWebSocket<WebSocket, any, ...> =
 export interface ContextVariableMap {}
 
 // src/middleware/jwt/index.ts:7-9
-declare module '../..' {
+declare module "../.." {
   interface ContextVariableMap extends JwtVariables {}
 }
 ```
@@ -194,13 +195,13 @@ match(method: string, path: string): Result<T> {
 // src/hono-base.ts:423-427
 // ハンドラが1つだけの場合は compose をスキップする最適化
 if (matchResult[0].length === 1) {
-  let res: ReturnType<H>
+  let res: ReturnType<H>;
   try {
     res = matchResult[0][0][0][0](c, async () => {
-      c.res = await this.#notFoundHandler(c)
-    })
+      c.res = await this.#notFoundHandler(c);
+    });
   } catch (err) {
-    return this.#handleError(err, c)
+    return this.#handleError(err, c);
   }
   // ...
 }
@@ -209,10 +210,10 @@ if (matchResult[0].length === 1) {
 ```typescript
 // src/types.ts:2473-2476
 // ミドルウェアチェーンの型を合成するユーティリティ型
-type ProcessHead<T> = IfAnyThenEmptyObject<T extends Env ? (Env extends T ? {} : T) : T>
+type ProcessHead<T> = IfAnyThenEmptyObject<T extends Env ? (Env extends T ? {} : T) : T>;
 export type IntersectNonAnyTypes<T extends any[]> = T extends [infer Head, ...infer Rest]
   ? ProcessHead<Head> & IntersectNonAnyTypes<Rest>
-  : {}
+  : {};
 ```
 
 ## パターンカタログ
@@ -247,9 +248,9 @@ export type IntersectNonAnyTypes<T extends any[]> = T extends [infer Head, ...in
 ```typescript
 // src/router.ts:29-52
 export interface Router<T> {
-  name: string
-  add(method: string, path: string, handler: T): void
-  match(method: string, path: string): Result<T>
+  name: string;
+  add(method: string, path: string, handler: T): void;
+  match(method: string, path: string): Result<T>;
 }
 ```
 
@@ -257,16 +258,16 @@ export interface Router<T> {
 
 ```typescript
 // src/router/smart-router/router.ts:46
-this.match = router.match.bind(router)
+this.match = router.match.bind(router);
 ```
 
 - **Object.create(null) の一貫使用**: パラメータマップやキャッシュなどの辞書オブジェクトに `Object.create(null)` を一貫して使用し、プロトタイプチェーンの不要な探索を回避する。コードベース全体で 20 箇所以上。
 
 ```typescript
 // src/router/linear-router/router.ts:7
-const emptyParams = Object.create(null)
+const emptyParams = Object.create(null);
 // src/router/reg-exp-router/router.ts:19
-let wildcardRegExpCache: Record<string, RegExp> = Object.create(null)
+let wildcardRegExpCache: Record<string, RegExp> = Object.create(null);
 ```
 
 - **エラー型による能力宣言**: `UnsupportedPathError` を専用のエラー型として定義し、ルーターが「サポートできないパスパターン」を構造的に表明できるようにしている。これにより SmartRouter のフォールバックロジックが `instanceof` で安全に分岐できる。

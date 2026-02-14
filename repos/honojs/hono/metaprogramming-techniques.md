@@ -46,7 +46,7 @@ export type MergePath<A extends string, B extends string> = B extends ''
 // src/types.ts:2474-2476
 export type IntersectNonAnyTypes<T extends any[]> = T extends [infer Head, ...infer Rest]
   ? ProcessHead<Head> & IntersectNonAnyTypes<Rest>
-  : {}
+  : {};
 ```
 
 TypeScript は可変長ジェネリクスの型推論に限界があるため、有限個のオーバーロード展開で対処する。この「N 個までの明示的オーバーロード + フォールバック」パターンは型安全と実用性のトレードオフとして汎用的に適用できる。
@@ -60,17 +60,17 @@ TypeScript は可変長ジェネリクスの型推論に限界があるため、
 const createProxy = (callback: Callback, path: string[]) => {
   const proxy: unknown = new Proxy(() => {}, {
     get(_obj, key) {
-      if (typeof key !== 'string' || key === 'then') {
-        return undefined
+      if (typeof key !== "string" || key === "then") {
+        return undefined;
       }
-      return createProxy(callback, [...path, key])
+      return createProxy(callback, [...path, key]);
     },
     apply(_1, _2, args) {
-      return callback({ path, args })
+      return callback({ path, args });
     },
-  })
-  return proxy
-}
+  });
+  return proxy;
+};
 ```
 
 ランタイムは単なる Proxy なので、サーバー側のルート定義が変われば型エラーが自動的に発生する。コード生成ツール不要で end-to-end の型安全を実現する手法。
@@ -115,11 +115,11 @@ export const html = (
 ```typescript
 // src/helper/css/common.ts:13-19
 export interface CssClassName {
-  [SELECTOR]: string
-  [CLASS_NAME]: string
-  [STYLE_STRING]: string
-  [SELECTORS]: CssClassName[]
-  [EXTERNAL_CLASS_NAMES]: string[]
+  [SELECTOR]: string;
+  [CLASS_NAME]: string;
+  [STYLE_STRING]: string;
+  [SELECTORS]: CssClassName[];
+  [EXTERNAL_CLASS_NAMES]: string[];
 }
 ```
 
@@ -176,15 +176,15 @@ export interface ContextRenderer {}
 
 ```typescript
 // src/utils/html.ts:17-21,40-46
-export type HtmlEscaped = { isEscaped: true; callbacks?: HtmlEscapedCallback[] }
-export type HtmlEscapedString = string & HtmlEscaped
+export type HtmlEscaped = { isEscaped: true; callbacks?: HtmlEscapedCallback[]; };
+export type HtmlEscapedString = string & HtmlEscaped;
 
 export const raw = (value: unknown, callbacks?: HtmlEscapedCallback[]): HtmlEscapedString => {
-  const escapedString = new String(value) as HtmlEscapedString
-  escapedString.isEscaped = true
-  escapedString.callbacks = callbacks
-  return escapedString
-}
+  const escapedString = new String(value) as HtmlEscapedString;
+  escapedString.isEscaped = true;
+  escapedString.callbacks = callbacks;
+  return escapedString;
+};
 ```
 
 - **createMiddleware の identity wrapper**: `createMiddleware`（`src/helper/factory/index.ts:368-375`）は受け取った関数をそのまま返す。ランタイムでは何もしないが、型パラメータを通じて Env/Input/Response 型を明示的にバインドし、IDE の補完と型チェックを有効にする。型推論のためだけに存在する関数というパターン。
@@ -205,16 +205,16 @@ export const createMiddleware = <E extends Env = any, P extends string = string,
 ```typescript
 // Bad: N個ごとにオーバーロードを手書き
 interface Handler {
-  <E1>(h1: H<E1>): Result<E1>
-  <E1, E2>(h1: H<E1>, h2: H<E2>): Result<E1 & E2>
-  <E1, E2, E3>(h1: H<E1>, h2: H<E2>, h3: H<E3>): Result<E1 & E2 & E3>
+  <E1>(h1: H<E1>): Result<E1>;
+  <E1, E2>(h1: H<E1>, h2: H<E2>): Result<E1 & E2>;
+  <E1, E2, E3>(h1: H<E1>, h2: H<E2>, h3: H<E3>): Result<E1 & E2 & E3>;
   // ... x10
 }
 
 // Better（可能な場合）: 可変長タプル型で統一
 type InferEnvs<T extends H[]> = T extends [infer Head extends H<infer E>, ...infer Rest extends H[]]
   ? E & InferEnvs<Rest>
-  : {}
+  : {};
 ```
 
 - **ランタイムの型ブランディングに `as` を多用**: `new String(value) as HtmlEscapedString` のようにプリミティブラッパーに型アサーションを使うケースがある。ブランド型のランタイム表現としてはやむを得ないが、乱用するとコンパイラの安全保証が弱まる。ブランディング関数（`raw` のような）を 1 箇所に集約し、それ以外の箇所では `as` なしで型が通るようにすべき。

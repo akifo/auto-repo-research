@@ -40,9 +40,9 @@ export class MastraBaseError<DOMAIN, CATEGORY> extends Error {
     originalError?: string | Error | MastraBaseError<DOMAIN, CATEGORY> | unknown,
   ) {
     const error = originalError
-      ? getErrorFromUnknown(originalError, { serializeStack: false, fallbackMessage: 'Unknown error' })
+      ? getErrorFromUnknown(originalError, { serializeStack: false, fallbackMessage: "Unknown error" })
       : undefined;
-    const message = errorDefinition.text ?? error?.message ?? 'Unknown error';
+    const message = errorDefinition.text ?? error?.message ?? "Unknown error";
     super(message, { cause: error });
     // ...
     Object.setPrototypeOf(this, new.target.prototype);
@@ -61,12 +61,12 @@ export class MastraBaseError<DOMAIN, CATEGORY> extends Error {
 export class FilesystemError extends Error {
   constructor(message: string, public readonly code: string, public readonly path: string) {
     super(message);
-    this.name = 'FilesystemError';
+    this.name = "FilesystemError";
   }
 }
 export class FileNotFoundError extends FilesystemError {
   constructor(path: string) {
-    super(`File not found: ${path}`, 'ENOENT', path);
+    super(`File not found: ${path}`, "ENOENT", path);
   }
 }
 ```
@@ -164,7 +164,7 @@ static taskNotFound(taskId: string): MastraA2AError {
 ```typescript
 // packages/core/src/storage/utils.ts:212-213
 export function createVectorErrorId(store: StoreName, operation: string, status: string): Uppercase<string> {
-  return createStoreErrorId('vector', store, operation, status);
+  return createStoreErrorId("vector", store, operation, status);
 }
 // 結果例: "MASTRA_VECTOR_PG_UPSERT_EMPTY_VECTORS"
 ```
@@ -270,13 +270,15 @@ export class TripWire<TMetadata = unknown> extends Error {
 
 ```typescript
 // Bad: packages/core/src/utils/fetchWithRetry.ts:44
-if (lastError.message.includes('status: 4')) {
+if (lastError.message.includes("status: 4")) {
   throw lastError;
 }
 
 // Better: ステータスコードをエラーオブジェクトのプロパティとして保持
 class HttpError extends Error {
-  constructor(message: string, public readonly status: number) { super(message); }
+  constructor(message: string, public readonly status: number) {
+    super(message);
+  }
 }
 // catch 時: error instanceof HttpError && error.status >= 400 && error.status < 500
 ```
@@ -290,7 +292,7 @@ const apiErrorStatus = apiError.status || apiError.details?.status || 500;
 
 // Better: 型ガード関数で安全に判定
 function isApiError(error: unknown): error is ApiError {
-  return typeof error === 'object' && error !== null && 'status' in error;
+  return typeof error === "object" && error !== null && "status" in error;
 }
 ```
 

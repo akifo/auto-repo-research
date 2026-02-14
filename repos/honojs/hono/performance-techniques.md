@@ -23,23 +23,23 @@ SmartRouter は複数のルーター候補を受け取り、初回の `match()` 
 ```typescript
 // src/router/smart-router/router.ts:32-49
 for (; i < len; i++) {
-  const router = routers[i]
+  const router = routers[i];
   try {
     for (let i = 0, len = routes.length; i < len; i++) {
-      router.add(...routes[i])
+      router.add(...routes[i]);
     }
-    res = router.match(method, path)
+    res = router.match(method, path);
   } catch (e) {
     if (e instanceof UnsupportedPathError) {
-      continue
+      continue;
     }
-    throw e
+    throw e;
   }
 
-  this.match = router.match.bind(router)  // メソッド置換
-  this.#routers = [router]
-  this.#routes = undefined  // 登録データを GC 対象にする
-  break
+  this.match = router.match.bind(router); // メソッド置換
+  this.#routers = [router];
+  this.#routes = undefined; // 登録データを GC 対象にする
+  break;
 }
 ```
 
@@ -48,24 +48,24 @@ for (; i < len; i++) {
 ```typescript
 // src/router/reg-exp-router/matcher.ts:10-33
 export function match<R extends Router<T>, T>(this: R, method: string, path: string): Result<T> {
-  const matchers: MatcherMap<T> = (this as any).buildAllMatchers()
+  const matchers: MatcherMap<T> = (this as any).buildAllMatchers();
 
   const match = ((method, path) => {
-    const matcher = (matchers[method] || matchers[METHOD_NAME_ALL]) as Matcher<T>
-    const staticMatch = matcher[2][path]
+    const matcher = (matchers[method] || matchers[METHOD_NAME_ALL]) as Matcher<T>;
+    const staticMatch = matcher[2][path];
     if (staticMatch) {
-      return staticMatch
+      return staticMatch;
     }
-    const match = path.match(matcher[0])
+    const match = path.match(matcher[0]);
     if (!match) {
-      return [[], emptyParam]
+      return [[], emptyParam];
     }
-    const index = match.indexOf('', 1)
-    return [matcher[1][index], match]
-  }) as Router<T>['match']
+    const index = match.indexOf("", 1);
+    return [matcher[1][index], match];
+  }) as Router<T>["match"];
 
-  this.match = match  // 以降は buildAllMatchers を呼ばない
-  return match(method, path)
+  this.match = match; // 以降は buildAllMatchers を呼ばない
+  return match(method, path);
 }
 ```
 
@@ -75,9 +75,9 @@ RegExpRouter は静的ルート（パラメータもワイルドカードも含�
 
 ```typescript
 // src/router/reg-exp-router/matcher.ts:17-19
-const staticMatch = matcher[2][path]
+const staticMatch = matcher[2][path];
 if (staticMatch) {
-  return staticMatch
+  return staticMatch;
 }
 ```
 
@@ -100,24 +100,24 @@ for (let i = 0, j = -1, len = routesWithStaticPathFlag.length; i < len; i++) {
 ```typescript
 // src/utils/url.ts:106-134
 export const getPath = (request: Request): string => {
-  const url = request.url
-  const start = url.indexOf('/', url.indexOf(':') + 4)
-  let i = start
+  const url = request.url;
+  const start = url.indexOf("/", url.indexOf(":") + 4);
+  let i = start;
   for (; i < url.length; i++) {
-    const charCode = url.charCodeAt(i)
+    const charCode = url.charCodeAt(i);
     if (charCode === 37) {
       // '%' - パーセントエンコーディングが見つかった場合のみフォールバック
-      const queryIndex = url.indexOf('?', i)
-      const hashIndex = url.indexOf('#', i)
+      const queryIndex = url.indexOf("?", i);
+      const hashIndex = url.indexOf("#", i);
       // ...省略...
-      return tryDecodeURI(path.includes('%25') ? path.replace(/%25/g, '%2525') : path)
+      return tryDecodeURI(path.includes("%25") ? path.replace(/%25/g, "%2525") : path);
     } else if (charCode === 63 || charCode === 35) {
       // '?' or '#'
-      break
+      break;
     }
   }
-  return url.slice(start, i)
-}
+  return url.slice(start, i);
+};
 ```
 
 クエリパラメータ解析も同様に、`URLSearchParams` を使わず `indexOf` ベースの手動パースで実装されている (`src/utils/url.ts:219-300`)。
@@ -130,23 +130,22 @@ export const getPath = (request: Request): string => {
 // src/hono-base.ts:423-442
 // Do not `compose` if it has only one handler
 if (matchResult[0].length === 1) {
-  let res: ReturnType<H>
+  let res: ReturnType<H>;
   try {
     res = matchResult[0][0][0][0](c, async () => {
-      c.res = await this.#notFoundHandler(c)
-    })
+      c.res = await this.#notFoundHandler(c);
+    });
   } catch (err) {
-    return this.#handleError(err, c)
+    return this.#handleError(err, c);
   }
 
   return res instanceof Promise
     ? res
-        .then(
-          (resolved: Response | undefined) =>
-            resolved || (c.finalized ? c.res : this.#notFoundHandler(c))
-        )
-        .catch((err: Error) => this.#handleError(err, c))
-    : (res ?? this.#notFoundHandler(c))
+      .then(
+        (resolved: Response | undefined) => resolved || (c.finalized ? c.res : this.#notFoundHandler(c)),
+      )
+      .catch((err: Error) => this.#handleError(err, c))
+    : (res ?? this.#notFoundHandler(c));
 }
 ```
 
@@ -157,8 +156,8 @@ if (matchResult[0].length === 1) {
 text: TextRespond = (text, arg, headers) => {
   return !this.#preparedHeaders && !this.#status && !arg && !headers && !this.finalized
     ? (new Response(text) as ReturnType<TextRespond>)
-    : (this.#newResponse(text, arg, setDefaultContentType(TEXT_PLAIN, headers)))
-}
+    : (this.#newResponse(text, arg, setDefaultContentType(TEXT_PLAIN, headers)));
+};
 ```
 
 ### Context と HonoRequest の遅延初期化
@@ -175,7 +174,7 @@ get req(): HonoRequest<P, I['out']> {
 
 ```typescript
 // src/context.ts:544
-this.#var ??= new Map()
+this.#var ??= new Map();
 ```
 
 ### プリセットによるバンドルサイズ制御
@@ -184,12 +183,12 @@ this.#var ??= new Map()
 
 ```typescript
 // src/preset/tiny.ts:18
-this.router = new PatternRouter()
+this.router = new PatternRouter();
 
 // src/preset/quick.ts:20-22
 this.router = new SmartRouter({
   routers: [new LinearRouter(), new TrieRouter()],
-})
+});
 ```
 
 `package.json` の exports フィールドで `./tiny` と `./quick` を独立エントリポイントとして公開し、ツリーシェイキングが効く構造にしている。
@@ -200,16 +199,17 @@ PreparedRegExpRouter は正規表現のビルド結果をシリアライズし�
 
 ```typescript
 // src/router/reg-exp-router/prepared-router.ts:95-154
-export const buildInitParams: (params: { paths: string[] })
-  => ConstructorParameters<typeof PreparedRegExpRouter> = ({ paths }) => {
-  const router = new RegExpRouterWithMatcherExport<string>()
+export const buildInitParams: (params: { paths: string[]; }) => ConstructorParameters<typeof PreparedRegExpRouter> = (
+  { paths },
+) => {
+  const router = new RegExpRouterWithMatcherExport<string>();
   for (const path of paths) {
-    router.add(METHOD_NAME_ALL, path, path)
+    router.add(METHOD_NAME_ALL, path, path);
   }
-  const matchers = router.buildAndExportAllMatchers()
+  const matchers = router.buildAndExportAllMatchers();
   // ...relocateMap の構築...
-  return [matchers, relocateMap]
-}
+  return [matchers, relocateMap];
+};
 ```
 
 ## パターンカタログ
@@ -232,22 +232,22 @@ export const buildInitParams: (params: { paths: string[] })
 
 ```typescript
 // src/router/linear-router/router.ts:7
-const emptyParams = Object.create(null)
+const emptyParams = Object.create(null);
 
 // 使用箇所（同ファイル:31, 69 など）
-handlers.push([handler, emptyParams])
+handlers.push([handler, emptyParams]);
 ```
 
 - **charCodeAt による文字コード比較**: 文字列比較 (`===`) の代わりに `charCodeAt` で数値比較を行い、短い文字でも一貫して高速にする。特に単一文字の判定（`/`, `?`, `#`, `*`, `:` など）で効果的。
 
 ```typescript
 // src/router/linear-router/router.ts:42
-const endsWithStar = routePath.charCodeAt(routePath.length - 1) === 42  // '*'
+const endsWithStar = routePath.charCodeAt(routePath.length - 1) === 42; // '*'
 
 // src/utils/url.ts:111-128
-const charCode = url.charCodeAt(i)
+const charCode = url.charCodeAt(i);
 if (charCode === 37) { /* '%' */ }
-else if (charCode === 63 || charCode === 35) { /* '?' or '#' */ break }
+else if (charCode === 63 || charCode === 35) /* '?' or '#' */ break;
 ```
 
 - **ビルド後の中間データ解放**: RegExpRouter は正規表現のビルド完了後に `this.#middleware = this.#routes = undefined` で中間データを解放し、GC が回収できるようにする。
@@ -255,8 +255,8 @@ else if (charCode === 63 || charCode === 35) { /* '?' or '#' */ break }
 ```typescript
 // src/router/reg-exp-router/router.ts:217-219
 // Release cache
-this.#middleware = this.#routes = undefined
-clearWildcardRegExpCache()
+this.#middleware = this.#routes = undefined;
+clearWildcardRegExpCache();
 ```
 
 ## Anti-Patterns / 注意点
@@ -265,11 +265,11 @@ clearWildcardRegExpCache()
 
 ```typescript
 // Bad: リクエストごとにフル URL パース
-const path = new URL(request.url).pathname
+const path = new URL(request.url).pathname;
 
 // Better: 文字列操作でパスだけを抽出（src/utils/url.ts:106-134 の手法）
-const url = request.url
-const start = url.indexOf('/', url.indexOf(':') + 4)
+const url = request.url;
+const start = url.indexOf("/", url.indexOf(":") + 4);
 // charCodeAt で '?' / '#' を検出してスライス
 ```
 
@@ -293,7 +293,7 @@ if (matchResult[0].length === 1) {
 // src/utils/url.ts:319
 // `decodeURIComponent` is a long name.
 // By making it a function, we can use it commonly when minified, reducing the amount of code.
-export const decodeURIComponent_ = decodeURIComponent
+export const decodeURIComponent_ = decodeURIComponent;
 ```
 
 ## 導出ルール

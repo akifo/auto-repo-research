@@ -52,28 +52,30 @@ match(method: string, path: string): Result<T> {
 ```typescript
 // src/router/reg-exp-router/matcher.ts:10-33
 export function match<R extends Router<T>, T>(
-  this: R, method: string, path: string
+  this: R,
+  method: string,
+  path: string,
 ): Result<T> {
   // 初回: 正規表現をビルド
-  const matchers: MatcherMap<T> = (this as any).buildAllMatchers()
+  const matchers: MatcherMap<T> = (this as any).buildAllMatchers();
 
   // 構築済みクロージャを match に差し替え
   const match = ((method, path) => {
-    const matcher = (matchers[method] || matchers[METHOD_NAME_ALL]) as Matcher<T>
-    const staticMatch = matcher[2][path]
+    const matcher = (matchers[method] || matchers[METHOD_NAME_ALL]) as Matcher<T>;
+    const staticMatch = matcher[2][path];
     if (staticMatch) {
-      return staticMatch  // 静的ルートは O(1) で返す
+      return staticMatch; // 静的ルートは O(1) で返す
     }
-    const match = path.match(matcher[0])
+    const match = path.match(matcher[0]);
     if (!match) {
-      return [[], emptyParam]
+      return [[], emptyParam];
     }
-    const index = match.indexOf('', 1)
-    return [matcher[1][index], match]
-  }) as Router<T>['match']
+    const index = match.indexOf("", 1);
+    return [matcher[1][index], match];
+  }) as Router<T>["match"];
 
-  this.match = match  // 2回目以降は buildAllMatchers を呼ばない
-  return match(method, path)
+  this.match = match; // 2回目以降は buildAllMatchers を呼ばない
+  return match(method, path);
 }
 ```
 
@@ -82,51 +84,51 @@ export function match<R extends Router<T>, T>(
 ```typescript
 // 汎用的な Self-Rewriting Method パターン
 class ConfigLoader {
-  #configPath: string
-  #rawConfig: RawConfig | undefined
+  #configPath: string;
+  #rawConfig: RawConfig | undefined;
 
   constructor(configPath: string) {
-    this.#configPath = configPath
+    this.#configPath = configPath;
   }
 
   // 初回呼び出し時に設定を読み込み、最適化された getter に差し替え
   getConfig(): ResolvedConfig {
-    const raw = loadConfigSync(this.#configPath)
-    const resolved = resolveConfig(raw)
+    const raw = loadConfigSync(this.#configPath);
+    const resolved = resolveConfig(raw);
 
     // 自身の getConfig を差し替え -- 以降はファイル読み込み・解析をスキップ
-    this.getConfig = () => resolved
-    this.#rawConfig = undefined  // 中間データを GC 対象に
+    this.getConfig = () => resolved;
+    this.#rawConfig = undefined; // 中間データを GC 対象に
 
-    return resolved
+    return resolved;
   }
 }
 
 // 使用例 -- 利用側は差し替えを意識する必要がない
-const loader = new ConfigLoader('./config.yaml')
-loader.getConfig()  // 1回目: ファイル読み込み + 解析 + メソッド差し替え
-loader.getConfig()  // 2回目以降: 解析済みオブジェクトを即返却
+const loader = new ConfigLoader("./config.yaml");
+loader.getConfig(); // 1回目: ファイル読み込み + 解析 + メソッド差し替え
+loader.getConfig(); // 2回目以降: 解析済みオブジェクトを即返却
 ```
 
 ```typescript
 // Strategy の自己消去パターン -- 複数の候補から最適な実装を選択
 class Serializer {
-  #strategies: SerializeStrategy[]
+  #strategies: SerializeStrategy[];
 
   constructor(strategies: SerializeStrategy[]) {
-    this.#strategies = strategies
+    this.#strategies = strategies;
   }
 
   serialize(data: unknown): string {
     for (const strategy of this.#strategies) {
       if (strategy.canHandle(data)) {
         // 最適な戦略が見つかったら自身を差し替え
-        this.serialize = strategy.serialize.bind(strategy)
-        this.#strategies = []  // 他の候補を GC 対象に
-        return strategy.serialize(data)
+        this.serialize = strategy.serialize.bind(strategy);
+        this.#strategies = []; // 他の候補を GC 対象に
+        return strategy.serialize(data);
       }
     }
-    throw new Error('No suitable serializer found')
+    throw new Error("No suitable serializer found");
   }
 }
 ```
@@ -136,27 +138,27 @@ class Serializer {
 ```typescript
 // Bad: 毎回分岐する -- 初回以降も不要な判定コストが発生
 class ConfigLoader {
-  #config: ResolvedConfig | null = null
+  #config: ResolvedConfig | null = null;
 
   getConfig(): ResolvedConfig {
-    if (this.#config === null) {  // 毎回 null チェック
-      this.#config = resolveConfig(loadConfigSync('./config.yaml'))
+    if (this.#config === null) { // 毎回 null チェック
+      this.#config = resolveConfig(loadConfigSync("./config.yaml"));
     }
-    return this.#config
+    return this.#config;
   }
 }
 
 // Bad: フラグで初期化状態を管理 -- 分岐 + フラグ参照のオーバーヘッド
 class Router {
-  #initialized = false
-  #selectedRouter: RouterImpl | null = null
+  #initialized = false;
+  #selectedRouter: RouterImpl | null = null;
 
   match(method: string, path: string) {
-    if (!this.#initialized) {  // 毎回フラグチェック
-      this.#selectedRouter = this.#selectBestRouter()
-      this.#initialized = true
+    if (!this.#initialized) { // 毎回フラグチェック
+      this.#selectedRouter = this.#selectBestRouter();
+      this.#initialized = true;
     }
-    return this.#selectedRouter!.match(method, path)
+    return this.#selectedRouter!.match(method, path);
   }
 }
 ```

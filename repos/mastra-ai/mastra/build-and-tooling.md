@@ -72,8 +72,14 @@ tsup の `onSuccess` フックから `@internal/types-builder` の `generateType
       "dependsOn": ["^build"],
       "outputs": ["dist/**", "!dist/docs/**"],
       "inputs": [
-        "src/**", "tsup.config.ts", "tsconfig.json", "package.json",
-        "!**/*.md", "!**/*.test.ts", "!**/*.spec.ts", "!**/__tests__/**"
+        "src/**",
+        "tsup.config.ts",
+        "tsconfig.json",
+        "package.json",
+        "!**/*.md",
+        "!**/*.test.ts",
+        "!**/*.spec.ts",
+        "!**/__tests__/**"
       ]
     }
   }
@@ -161,15 +167,15 @@ CLI パッケージは `@internal/playground` の build に明示的に依存す
 ```typescript
 // e2e-tests/pkg-outputs/bundle.test.ts:27-57
 it('should have type="module"', () => {
-  expect(pkgJson.type).toBe('module');
+  expect(pkgJson.type).toBe("module");
 });
 
-it('should use .js and .d.ts extensions when using import', async () => {
+it("should use .js and .d.ts extensions when using import", async () => {
   const exportConfig = pkgJson.exports[importPath] as any;
   expect(exportConfig.import).toBeDefined();
   expect(extname(exportConfig.import.default)).toMatch(/\.js$/);
   expect(exportConfig.import.types).toMatch(/\.d\.ts$/);
-  const pathsOnDisk = await globby(join(__dirname, '..', pkgName, fileOutput[0]));
+  const pathsOnDisk = await globby(join(__dirname, "..", pkgName, fileOutput[0]));
   for (const pathOnDisk of pathsOnDisk) {
     await expect(stat(pathOnDisk)).resolves.toBeDefined();
   }
@@ -185,9 +191,9 @@ it('should use .js and .d.ts extensions when using import', async () => {
 export default defineConfig({
   test: {
     projects: [
-      { test: { name: 'unit:packages/core', include: ['src/**/*.test.ts'], exclude: ['src/**/*.e2e.test.ts'] } },
-      { test: { name: 'e2e:packages/core', include: ['src/**/*.e2e.test.ts'] } },
-      { test: { name: 'typecheck:packages/core', typecheck: { enabled: true, include: ['src/**/*.test-d.ts'] } } },
+      { test: { name: "unit:packages/core", include: ["src/**/*.test.ts"], exclude: ["src/**/*.e2e.test.ts"] } },
+      { test: { name: "e2e:packages/core", include: ["src/**/*.e2e.test.ts"] } },
+      { test: { name: "typecheck:packages/core", typecheck: { enabled: true, include: ["src/**/*.test-d.ts"] } } },
     ],
   },
 });
@@ -199,14 +205,17 @@ export default defineConfig({
 // packages/_types-builder/src/index.js:36-109
 // tsup の onSuccess から呼ばれる型宣言生成 + パス修正処理
 export async function generateTypes(rootDir, bundledPackages = new Set()) {
-  const tscProcess = spawn('npx', ['tsc', '-p', 'tsconfig.build.json'], {
-    cwd: rootDir, stdio: 'inherit', shell: true, env: getFilteredEnv(),
+  const tscProcess = spawn("npx", ["tsc", "-p", "tsconfig.build.json"], {
+    cwd: rootDir,
+    stdio: "inherit",
+    shell: true,
+    env: getFilteredEnv(),
   });
   // .d.ts ファイルの相対インポートに .js 拡張子を付加
-  const dtsFiles = await globby('dist/**/*.d.ts', { cwd: rootDir });
+  const dtsFiles = await globby("dist/**/*.d.ts", { cwd: rootDir });
   for (const dtsFile of dtsFiles) {
     code = code.replace(rgxFrom, (_, p) => {
-      if (!(p.startsWith('./') || p.startsWith('../')) || p.endsWith('.js')) return `'${p}'`;
+      if (!(p.startsWith("./") || p.startsWith("../")) || p.endsWith(".js")) return `'${p}'`;
       try {
         if (statSync(path.join(path.dirname(fullPath), p)).isDirectory()) return `'${p}/index.js'`;
       } catch {}
@@ -220,23 +229,28 @@ export async function generateTypes(rootDir, bundledPackages = new Set()) {
 // packages/_config/src/eslint.js:7-18
 // 依存検出による条件付きルール適用
 const has = pkg => {
-  try { import.meta.resolve(pkg, import.meta.url); return true; }
-  catch { return false; }
+  try {
+    import.meta.resolve(pkg, import.meta.url);
+    return true;
+  } catch {
+    return false;
+  }
 };
-const hasTypeScript = has('typescript');
-const hasReact = has('react');
+const hasTypeScript = has("typescript");
+const hasReact = has("react");
 ```
 
 ```javascript
 // scripts/commonjs-tsc-fixer.js:14-54
 // package.json の exports を解析し、CJS 向け .d.ts エントリポイントを自動生成
 async function writeDtsFiles() {
-  const packageJson = JSON.parse(await readFile(join(rootPath, 'package.json')));
+  const packageJson = JSON.parse(await readFile(join(rootPath, "package.json")));
   for (const [key, value] of Object.entries(packageJson.exports)) {
-    if (key !== '.' && value.require?.types) {
+    if (key !== "." && value.require?.types) {
       // .d.ts ファイルを dist から re-export するスタブを生成
-      await writeFile(targetPath,
-        `export * from './${relative(dirname(targetPath), file).replace('/index.d.ts', '')}';`
+      await writeFile(
+        targetPath,
+        `export * from './${relative(dirname(targetPath), file).replace("/index.d.ts", "")}';`,
       );
     }
   }
@@ -275,9 +289,9 @@ async function writeDtsFiles() {
 
 ```javascript
 // packages/core/eslint.config.js:1-11
-import { createConfig } from '@internal/lint/eslint';
+import { createConfig } from "@internal/lint/eslint";
 const config = await createConfig();
-export default [...config, { ignores: ['./*.d.ts', '**/*.d.ts', '!src/**/*.d.ts'] }];
+export default [...config, { ignores: ["./*.d.ts", "**/*.d.ts", "!src/**/*.d.ts"] }];
 ```
 
 - **Vitest プロジェクト命名規約**: `unit:`, `e2e:`, `typecheck:` プレフィックスで CI のフィルタリングとシャーディングを可能にする。`--project 'unit:*' --shard=1/4` のように組み合わせられる。
@@ -288,13 +302,15 @@ export default [...config, { ignores: ['./*.d.ts', '**/*.d.ts', '!src/**/*.d.ts'
 
 ```typescript
 // Bad: tsup 内蔵 DTS に依存
-export default defineConfig({ entry: ['src/index.ts'], dts: true });
+export default defineConfig({ entry: ["src/index.ts"], dts: true });
 
 // Better: 型生成を分離して制御
 export default defineConfig({
-  entry: ['src/index.ts'],
+  entry: ["src/index.ts"],
   dts: false,
-  onSuccess: async () => { await generateTypes(process.cwd()); },
+  onSuccess: async () => {
+    await generateTypes(process.cwd());
+  },
 });
 ```
 

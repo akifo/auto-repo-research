@@ -25,23 +25,23 @@ SSE・ReadableStream・段階的 JSX レンダリングにおけるストリー�
 
 ```typescript
 // src/helper/streaming/stream.ts:12-14
-const { readable, writable } = new TransformStream()
-const stream = new StreamingApi(writable, readable)
+const { readable, writable } = new TransformStream();
+const stream = new StreamingApi(writable, readable);
 // ...
-return c.newResponse(stream.responseReadable)
+return c.newResponse(stream.responseReadable);
 ```
 
 SSE でもテキストストリームでも同じ構造が繰り返される。差分はヘッダー設定のみである。
 
 ```typescript
 // src/helper/streaming/sse.ts:71-93
-const { readable, writable } = new TransformStream()
-const stream = new SSEStreamingApi(writable, readable)
+const { readable, writable } = new TransformStream();
+const stream = new SSEStreamingApi(writable, readable);
 // SSE 固有のヘッダー
-c.header('Transfer-Encoding', 'chunked')
-c.header('Content-Type', 'text/event-stream')
-c.header('Cache-Control', 'no-cache')
-c.header('Connection', 'keep-alive')
+c.header("Transfer-Encoding", "chunked");
+c.header("Content-Type", "text/event-stream");
+c.header("Cache-Control", "no-cache");
+c.header("Connection", "keep-alive");
 ```
 
 ### WeakMap によるコンテキスト生存保証
@@ -50,9 +50,9 @@ Bun ランタイムではレスポンスを返した時点で `Context` オブ�
 
 ```typescript
 // src/helper/streaming/stream.ts:5,25
-const contextStash: WeakMap<ReadableStream, Context> = new WeakMap()
+const contextStash: WeakMap<ReadableStream, Context> = new WeakMap();
 // ...
-contextStash.set(stream.responseReadable, c)
+contextStash.set(stream.responseReadable, c);
 ```
 
 この WeakMap パターンにより、ストリーム完了後は自然に GC される。強参照で保持するとメモリリークの原因になる。
@@ -64,15 +64,15 @@ Bun の古いバージョンでは `ReadableStream.cancel()` が呼ばれない�
 ```typescript
 // src/helper/streaming/utils.ts:1-11
 export let isOldBunVersion = (): boolean => {
-  const version: string = typeof Bun !== 'undefined' ? Bun.version : undefined
+  const version: string = typeof Bun !== "undefined" ? Bun.version : undefined;
   if (version === undefined) {
-    return false
+    return false;
   }
-  const result = version.startsWith('1.1') || version.startsWith('1.0') || version.startsWith('0.')
+  const result = version.startsWith("1.1") || version.startsWith("1.0") || version.startsWith("0.");
   // Avoid running this check on every call
-  isOldBunVersion = () => result
-  return result
-}
+  isOldBunVersion = () => result;
+  return result;
+};
 ```
 
 この「関数自体を再代入するメモ化」は、ホットパスでの条件分岐コストを初回以降ゼロにする技法であり、ストリーム write のような高頻度呼び出しパスで効果的である。
@@ -86,9 +86,9 @@ SSE プロトコルではデータ内の改行ごとに `data:` プレフィッ�
 const dataLines = (data as string)
   .split(/\r\n|\r|\n/)
   .map((line) => {
-    return `data: ${line}`
+    return `data: ${line}`;
   })
-  .join('\n')
+  .join("\n");
 ```
 
 ### JSX Suspense による段階的レンダリング
@@ -123,8 +123,7 @@ d.replaceWith(c.content)
 
 ```typescript
 // src/utils/compress.ts:10
-export const COMPRESSIBLE_CONTENT_TYPE_REGEX =
-  /^\s*(?:text\/(?!event-stream(?:[;\s]|$))[^;\s]+|...)/i
+export const COMPRESSIBLE_CONTENT_TYPE_REGEX = /^\s*(?:text\/(?!event-stream(?:[;\s]|$))[^;\s]+|...)/i;
 ```
 
 否定先読み `(?!event-stream)` を使った除外は、ホワイトリスト方式より保守的で、新しい text/* タイプが追加されても SSE が誤って圧縮される事故を防ぐ。
@@ -136,7 +135,7 @@ export const COMPRESSIBLE_CONTENT_TYPE_REGEX =
 ```typescript
 // src/utils/concurrent.ts:22-24
 if (concurrency === Infinity) {
-  return { run: async (fn) => fn() }
+  return { run: async (fn) => fn() };
 }
 ```
 
@@ -165,21 +164,21 @@ if (concurrency === Infinity) {
 
 ```typescript
 // src/helper/streaming/stream.ts:27-42
-;(async () => {
+(async () => {
   try {
-    await cb(stream)
+    await cb(stream);
   } catch (e) {
     if (e === undefined) {
       // pipeTo() が reason なしで reject した場合 -- 何もしない
     } else if (e instanceof Error && onError) {
-      await onError(e, stream)
+      await onError(e, stream);
     } else {
-      console.error(e)
+      console.error(e);
     }
   } finally {
-    stream.close()
+    stream.close();
   }
-})()
+})();
 ```
 
 - **SSE エラーイベントの自動送信**: SSE ヘルパーではエラー発生時に `event: error` として SSE メッセージを送信してからストリームを閉じる。クライアント側がエラーを検知できる。
@@ -215,26 +214,26 @@ async pipe(body: ReadableStream) {
 ```typescript
 // Bad: CPU バウンド処理がストリームを詰まらせる
 stream(c, async (stream) => {
-  const result = heavyComputation() // 同期的な重い処理
-  await stream.write(result)
-})
+  const result = heavyComputation(); // 同期的な重い処理
+  await stream.write(result);
+});
 
 // Better: 分割して await を挟み、イベントループに制御を返す
 stream(c, async (stream) => {
   for (const chunk of splitWork(data)) {
-    const result = processChunk(chunk)
-    await stream.write(result)
+    const result = processChunk(chunk);
+    await stream.write(result);
   }
-})
+});
 ```
 
 - **SSE を圧縮ミドルウェアと併用する際の注意**: 圧縮ミドルウェアは `text/event-stream` を除外する設計だが、カスタム Content-Type を設定すると意図せず圧縮が適用される可能性がある。SSE では必ず標準の `text/event-stream` を使う。
 
 ```typescript
 // Bad: カスタム Content-Type により圧縮が適用されうる
-c.header('Content-Type', 'text/x-sse')
+c.header("Content-Type", "text/x-sse");
 // Good: 標準の SSE Content-Type を使う（streamSSE が自動設定）
-streamSSE(c, async (stream) => { /* ... */ })
+streamSSE(c, async (stream) => {/* ... */});
 ```
 
 - **ストリームの二重クローズへの無防備**: `StreamingApi` は `close()` の二重呼び出しを try/catch で吸収するが、`closed` フラグは最初の `close()` でのみ `true` になる。外部から `closed` を参照する場合、タイミングによって不整合が起きうる。abort と close の状態管理は明確に分けるべき。

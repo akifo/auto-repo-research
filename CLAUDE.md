@@ -56,6 +56,7 @@ auto-repo-research/
 ## テンプレート
 
 新しい分析ファイルを作成する際は `templates/` 配下のテンプレートを参照すること:
+
 - `templates/perspective.md` — 視点分析のフォーマット
 - `templates/overview.md` — リポジトリ概要のフォーマット
 - `templates/rules.md` — 導出ルール集のフォーマット

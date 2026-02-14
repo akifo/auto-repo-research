@@ -130,9 +130,9 @@ catalog:
 
 ```typescript
 // auth/clerk/src/index.ts:3-6
-import { verifyJwks } from '@mastra/auth';
-import type { MastraAuthProviderOptions } from '@mastra/core/server';
-import { MastraAuthProvider } from '@mastra/core/server';
+import { verifyJwks } from "@mastra/auth";
+import type { MastraAuthProviderOptions } from "@mastra/core/server";
+import { MastraAuthProvider } from "@mastra/core/server";
 ```
 
 ### 共通ビルド設定と型生成
@@ -141,16 +141,16 @@ import { MastraAuthProvider } from '@mastra/core/server';
 
 ```typescript
 // stores/pg/tsup.config.ts:1-17
-import { generateTypes } from '@internal/types-builder';
-import { defineConfig } from 'tsup';
+import { generateTypes } from "@internal/types-builder";
+import { defineConfig } from "tsup";
 
 export default defineConfig({
-  entry: ['src/index.ts'],
-  format: ['esm', 'cjs'],
+  entry: ["src/index.ts"],
+  format: ["esm", "cjs"],
   clean: true,
   dts: false,
   splitting: true,
-  treeshake: { preset: 'smallest' },
+  treeshake: { preset: "smallest" },
   sourcemap: true,
   onSuccess: async () => {
     await generateTypes(process.cwd());

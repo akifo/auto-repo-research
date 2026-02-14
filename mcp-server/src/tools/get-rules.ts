@@ -4,7 +4,7 @@ import type { ResearchIndex } from "../data/index.js";
 
 export function registerGetRules(
   server: McpServer,
-  index: ResearchIndex
+  index: ResearchIndex,
 ): void {
   server.tool(
     "get_rules",
@@ -40,15 +40,16 @@ export function registerGetRules(
           content: [
             {
               type: "text",
-              text: `条件に一致するルールが見つかりません。(repo: ${repo}, category: ${category ?? "all"}, priority: ${priority ?? "all"})`,
+              text: `条件に一致するルールが見つかりません。(repo: ${repo}, category: ${category ?? "all"}, priority: ${
+                priority ?? "all"
+              })`,
             },
           ],
         };
       }
 
       const lines = rules.map(
-        (r) =>
-          `- \`[${r.priority}]\` ${r.content}\n  - 根拠: ${r.rationale}`
+        (r) => `- \`[${r.priority}]\` ${r.content}\n  - 根拠: ${r.rationale}`,
       );
 
       const text = [
@@ -58,6 +59,6 @@ export function registerGetRules(
       ].join("\n");
 
       return { content: [{ type: "text", text }] };
-    }
+    },
   );
 }

@@ -25,7 +25,7 @@ mastra-ai/mastra は大規模 TypeScript モノレポ（4464 ソースファイ�
 
 ```typescript
 // packages/core/src/index.ts:1
-export { Mastra, type Config } from './mastra';
+export { type Config, Mastra } from "./mastra";
 ```
 
 一方で、`package.json` の `exports` フィールドに 20 以上のサブパスエクスポートが定義されている。これにより利用者は `@mastra/core/agent`, `@mastra/core/storage`, `@mastra/core/voice` のように必要なモジュールだけをインポートする。
@@ -89,14 +89,16 @@ packages:
 // stores/_test-utils/src/factory.ts:28
 export function createTestSuite(storage: MastraStorage, capabilities: TestCapabilities = {}) {
   describe(storage.constructor.name, () => {
-    beforeAll(async () => { await storage.init(); });
+    beforeAll(async () => {
+      await storage.init();
+    });
     // ... 全ドメインのテストを実行
   });
 }
 
 // stores/pg/src/storage/index.test.ts:23-24
 createTestSuite(new PostgresStore(TEST_CONFIG));
-createTestSuite(new PostgresStore({ ...TEST_CONFIG, schemaName: 'my_schema' }));
+createTestSuite(new PostgresStore({ ...TEST_CONFIG, schemaName: "my_schema" }));
 ```
 
 各ストアは `createTestSuite(new XxxStore(config))` の1行で全契約テストを実行できる。ストア固有のテストはその後に追加する。
@@ -138,19 +140,19 @@ export type StorageDomains = {
 
 ```typescript
 // packages/core/src/agent/index.ts:1-15
-export { TripWire } from './trip-wire';
-export { MessageList, convertMessages, aiV5ModelMessageToV2PromptMessage, TypeDetector } from './message-list';
-export type { OutputFormat } from './message-list';
-export * from './types';
-export * from './agent';
-export * from './utils';
+export type { MastraLanguageModel, MastraLegacyLanguageModel } from "../llm/model/shared.types";
+export * from "./agent";
 export type {
   AgentExecutionOptions,
   AgentExecutionOptionsBase,
   InnerAgentExecutionOptions,
   MultiPrimitiveExecutionOptions,
-} from './agent.types';
-export type { MastraLanguageModel, MastraLegacyLanguageModel } from '../llm/model/shared.types';
+} from "./agent.types";
+export { aiV5ModelMessageToV2PromptMessage, convertMessages, MessageList, TypeDetector } from "./message-list";
+export type { OutputFormat } from "./message-list";
+export { TripWire } from "./trip-wire";
+export * from "./types";
+export * from "./utils";
 ```
 
 `export *` と名前付きエクスポートの混在で、公開 API の制御と利便性を両立している。特に `export type` による型のみの再エクスポートは、ランタイムコードと型定義の分離を明示する。
@@ -175,9 +177,9 @@ export class MastraStorage extends MastraCompositeStore {}
 ```typescript
 // packages/memory/src/index.ts:1734-1738
 // Re-export memory processors from @mastra/core for backward compatibility
-export { SemanticRecall, WorkingMemory, MessageHistory } from '@mastra/core/processors';
+export { MessageHistory, SemanticRecall, WorkingMemory } from "@mastra/core/processors";
 // Re-export clone-related types for convenience
-export type { StorageCloneThreadInput, StorageCloneThreadOutput, ThreadCloneMetadata } from '@mastra/core/storage';
+export type { StorageCloneThreadInput, StorageCloneThreadOutput, ThreadCloneMetadata } from "@mastra/core/storage";
 ```
 
 ### フィーチャーフラグによる漸進的機能追加
@@ -187,11 +189,14 @@ export type { StorageCloneThreadInput, StorageCloneThreadOutput, ThreadCloneMeta
 ```typescript
 // packages/core/src/features/index.ts:16-17
 export const coreFeatures = new Set<string>([
-  'observationalMemory', 'asyncBuffering', 'workspaces-v1', 'datasets'
+  "observationalMemory",
+  "asyncBuffering",
+  "workspaces-v1",
+  "datasets",
 ]);
 
 // packages/memory/src/index.ts:1665-1666 (使用側)
-const coreSupportsOM = coreFeatures.has('observationalMemory');
+const coreSupportsOM = coreFeatures.has("observationalMemory");
 ```
 
 これにより、`@mastra/memory` は `@mastra/core` のバージョンに依存する機能を安全にチェックし、未対応なら明確なエラーメッセージを出すことができる。
@@ -272,19 +277,19 @@ createTestSuite(new PostgresStore(TEST_CONFIG));
 
 ```typescript
 // Bad: 全ファイルを export * で連鎖
-export * from './workflow';
-export * from './execution-engine';
-export * from './default';
-export * from './step';
-export * from './types';
-export * from './utils';
+export * from "./default";
+export * from "./execution-engine";
+export * from "./step";
+export * from "./types";
+export * from "./utils";
+export * from "./workflow";
 ```
 
 ```typescript
 // Better: 公開 API を明示的に列挙
-export { Workflow, type WorkflowConfig } from './workflow';
-export { ExecutionEngine } from './execution-engine';
-export type { StepDefinition, StepResult } from './step';
+export { ExecutionEngine } from "./execution-engine";
+export type { StepDefinition, StepResult } from "./step";
+export { Workflow, type WorkflowConfig } from "./workflow";
 ```
 
 mastra 自体では `agent/index.ts` のように名前付きエクスポートと `export *` を混在させており、公開 API の制御度はモジュールごとにばらつきがある。

@@ -64,10 +64,10 @@ export class PineconeFilterTranslator extends BaseFilterTranslator<PineconeVecto
   protected override getSupportedOperators(): OperatorSupport {
     return {
       ...BaseFilterTranslator.DEFAULT_OPERATORS,
-      logical: ['$and', '$or'],         // Pinecone は $not/$nor 非対応
-      array: ['$in', '$all', '$nin'],
-      element: ['$exists'],
-      regex: [],                          // Pinecone は regex 非対応
+      logical: ["$and", "$or"], // Pinecone は $not/$nor 非対応
+      array: ["$in", "$all", "$nin"],
+      element: ["$exists"],
+      regex: [], // Pinecone は regex 非対応
     };
   }
   // ...
@@ -124,11 +124,17 @@ this.stores = {
 // packages/core/src/storage/domains/versioned.ts:124-137
 export abstract class VersionedStorageDomain<
   TEntity extends VersionedEntityBase,
-  TSnapshot, TResolved extends TEntity,
-  TVersion extends VersionBase, TCreateVersion extends CreateVersionInputBase,
+  TSnapshot,
+  TResolved extends TEntity,
+  TVersion extends VersionBase,
+  TCreateVersion extends CreateVersionInputBase,
   TListVersionsInput extends ListVersionsInputBase,
   TListVersionsOutput extends ListVersionsOutputBase<TVersion>,
-  TCreateInput, TUpdateInput, TListInput, TListOutput, TListResolvedOutput,
+  TCreateInput,
+  TUpdateInput,
+  TListInput,
+  TListOutput,
+  TListResolvedOutput,
 > extends StorageDomain {
   protected abstract readonly listKey: string;
   protected abstract readonly versionMetadataFields: string[];

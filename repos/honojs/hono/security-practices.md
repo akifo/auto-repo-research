@@ -25,20 +25,20 @@ Hono のセキュリティミドルウェア群（認証・CORS・CSRF・セキ�
 export const timingSafeEqual = async (
   a: string | object | boolean,
   b: string | object | boolean,
-  hashFunction?: Function
+  hashFunction?: Function,
 ): Promise<boolean> => {
   if (!hashFunction) {
-    hashFunction = sha256
+    hashFunction = sha256;
   }
 
-  const [sa, sb] = await Promise.all([hashFunction(a), hashFunction(b)])
+  const [sa, sb] = await Promise.all([hashFunction(a), hashFunction(b)]);
 
   if (!sa || !sb) {
-    return false
+    return false;
   }
 
-  return sa === sb && a === b
-}
+  return sa === sb && a === b;
+};
 ```
 
 ハッシュ値の比較を先に行い、一致した場合のみ元の値を比較する。ハッシュ値は固定長のため、文字列長の違いから情報が漏洩することを防ぐ。Basic Auth では username と password を `Promise.all` で並列にタイミングセーフ比較している（`src/middleware/basic-auth/index.ts:96-98`）。
@@ -51,16 +51,16 @@ CSRF ミドルウェアは Origin ヘッダーと `Sec-Fetch-Site` ヘッダー�
 // src/middleware/csrf/index.ts:138-150
 return async function csrf(c, next) {
   if (
-    !isSafeMethodRe.test(c.req.method) &&
-    isRequestedByFormElementRe.test(c.req.header('content-type') || 'text/plain') &&
-    !(await isAllowedSecFetchSite(c.req.header('sec-fetch-site'), c)) &&
-    !(await isAllowedOrigin(c.req.header('origin'), c))
+    !isSafeMethodRe.test(c.req.method)
+    && isRequestedByFormElementRe.test(c.req.header("content-type") || "text/plain")
+    && !(await isAllowedSecFetchSite(c.req.header("sec-fetch-site"), c))
+    && !(await isAllowedOrigin(c.req.header("origin"), c))
   ) {
-    const res = new Response('Forbidden', { status: 403 })
-    throw new HTTPException(403, { res })
+    const res = new Response("Forbidden", { status: 403 });
+    throw new HTTPException(403, { res });
   }
-  await next()
-}
+  await next();
+};
 ```
 
 重要な設計判断として、`application/json` リクエストは CSRF チェックの対象外にしている（`isRequestedByFormElementRe` が `application/x-www-form-urlencoded`, `multipart/form-data`, `text/plain` のみにマッチ）。これはブラウザの HTML フォームから送信可能な Content-Type のみを対象にする合理的な絞り込みである。ヘッダーが未設定の場合は一律拒否する（`src/middleware/csrf/index.ts:107-109`, `127-129`）。
@@ -72,15 +72,15 @@ return async function csrf(c, next) {
 ```typescript
 // src/middleware/secure-headers/secure-headers.ts:94-107
 const HEADERS_MAP: HeadersMap = {
-  crossOriginResourcePolicy: ['Cross-Origin-Resource-Policy', 'same-origin'],
-  crossOriginOpenerPolicy: ['Cross-Origin-Opener-Policy', 'same-origin'],
-  referrerPolicy: ['Referrer-Policy', 'no-referrer'],
-  strictTransportSecurity: ['Strict-Transport-Security', 'max-age=15552000; includeSubDomains'],
-  xContentTypeOptions: ['X-Content-Type-Options', 'nosniff'],
-  xFrameOptions: ['X-Frame-Options', 'SAMEORIGIN'],
-  xXssProtection: ['X-XSS-Protection', '0'],
+  crossOriginResourcePolicy: ["Cross-Origin-Resource-Policy", "same-origin"],
+  crossOriginOpenerPolicy: ["Cross-Origin-Opener-Policy", "same-origin"],
+  referrerPolicy: ["Referrer-Policy", "no-referrer"],
+  strictTransportSecurity: ["Strict-Transport-Security", "max-age=15552000; includeSubDomains"],
+  xContentTypeOptions: ["X-Content-Type-Options", "nosniff"],
+  xFrameOptions: ["X-Frame-Options", "SAMEORIGIN"],
+  xXssProtection: ["X-XSS-Protection", "0"],
   // ...
-}
+};
 ```
 
 `boolean | string` のユニオン型でオプションを定義し、`true` でデフォルト値、文字列でカスタム値、`false` で無効化する三段階の制御を実現している（`src/middleware/secure-headers/secure-headers.ts:67` の `overridableHeader` 型）。CSP の Nonce は Context 変数に保存し、ミドルウェアとテンプレートの間で共有する設計をとっている（`src/middleware/secure-headers/secure-headers.ts:137-145`）。
@@ -92,19 +92,21 @@ JWK 検証で対称アルゴリズム（HS256/HS384/HS512）を明示的に拒�
 ```typescript
 // src/utils/jwt/jwt.ts:184-220
 const symmetricAlgorithms: SymmetricAlgorithm[] = [
-  AlgorithmTypes.HS256, AlgorithmTypes.HS384, AlgorithmTypes.HS512,
-]
+  AlgorithmTypes.HS256,
+  AlgorithmTypes.HS384,
+  AlgorithmTypes.HS512,
+];
 
 export const verifyWithJwks = async (token, options, init) => {
   // ...
   if (symmetricAlgorithms.includes(header.alg as SymmetricAlgorithm)) {
-    throw new JwtSymmetricAlgorithmNotAllowed(header.alg)
+    throw new JwtSymmetricAlgorithmNotAllowed(header.alg);
   }
   if (!options.allowedAlgorithms.includes(header.alg as AsymmetricAlgorithm)) {
-    throw new JwtAlgorithmNotAllowed(header.alg, options.allowedAlgorithms)
+    throw new JwtAlgorithmNotAllowed(header.alg, options.allowedAlgorithms);
   }
   // ...
-}
+};
 ```
 
 さらに `verify` 関数ではトークンヘッダーの `alg` と指定されたアルゴリズムの一致を検証し、攻撃者がヘッダーを改竄してアルゴリズムをダウングレードする攻撃を防御している（`src/utils/jwt/jwt.ts:127-129`）。JWT のエラーは 13 種の専用 Error サブクラスで細分化し、デバッグと監査を容易にしている（`src/utils/jwt/types.ts`）。
@@ -131,11 +133,9 @@ Cookie の `__Secure-` / `__Host-` プレフィックスに対する制約を、
 
 ```typescript
 // src/utils/cookie.ts:31-35
-export type CookieConstraint<Name> = Name extends `__Secure-${string}`
-  ? CookieOptions & SecureCookieConstraint
-  : Name extends `__Host-${string}`
-    ? CookieOptions & HostCookieConstraint
-    : CookieOptions
+export type CookieConstraint<Name> = Name extends `__Secure-${string}` ? CookieOptions & SecureCookieConstraint
+  : Name extends `__Host-${string}` ? CookieOptions & HostCookieConstraint
+  : CookieOptions;
 ```
 
 テンプレートリテラル型を使い、Cookie 名に応じて `secure: true` や `path: '/'` を型レベルで必須にしている。加えてランタイムでも同じ制約を検証し、二重の防御を実現している（`src/utils/cookie.ts:144-162`）。
@@ -157,6 +157,7 @@ export type CookieConstraint<Name> = Name extends `__Secure-${string}`
 ## Good Patterns
 
 - **安全なデフォルトの一括有効化**: `secureHeaders()` を引数なしで呼ぶだけで 11 個のセキュリティヘッダー + `X-Powered-By` 削除が有効になる。開発者が個別にヘッダーを知らなくても基本的な保護が得られる設計。
+
 ```typescript
 // src/middleware/secure-headers/secure-headers.ts:109-124
 const DEFAULT_OPTIONS: SecureHeadersOptions = {
@@ -168,22 +169,24 @@ const DEFAULT_OPTIONS: SecureHeadersOptions = {
   xContentTypeOptions: true,
   // ... 全て true
   removePoweredBy: true,
-}
+};
 ```
 
 - **CORS の Vary ヘッダー自動付与**: オリジンが `*` でない場合に `Vary: Origin` を自動で追加し、CDN キャッシュ汚染を防ぐ。OPTIONS レスポンスと通常レスポンスの両方で付与している。
+
 ```typescript
 // src/middleware/cors/index.ts:117-119, 156-158
-if (opts.origin !== '*') {
-  set('Vary', 'Origin')
+if (opts.origin !== "*") {
+  set("Vary", "Origin");
 }
 // ...
-if (opts.origin !== '*') {
-  c.header('Vary', 'Origin', { append: true })
+if (opts.origin !== "*") {
+  c.header("Vary", "Origin", { append: true });
 }
 ```
 
 - **JWT エラーの詳細な型分類**: JWT 検証の失敗理由を 13 種の専用 Error サブクラスに分離し、`error.name` でプログラマティックにハンドリング可能にしている。
+
 ```typescript
 // src/utils/jwt/types.ts — 例の一部
 export class JwtAlgorithmMismatch extends Error { ... }
@@ -193,20 +196,21 @@ export class JwtAlgorithmNotAllowed extends Error { ... }
 ```
 
 - **IP 制限のルール事前コンパイル**: CIDR ルールをビット演算用のバイナリ表現に変換し、静的ルールを `Set` にキャッシュすることで、リクエストごとの評価コストを最小化している。
+
 ```typescript
 // src/middleware/ip-restriction/index.ts:37-113
 const buildMatcher = (rules: IPRestrictionRule[]) => {
-  const staticRules: Set<string> = new Set()
-  const cidrRules: [boolean, bigint, bigint][] = []
+  const staticRules: Set<string> = new Set();
+  const cidrRules: [boolean, bigint, bigint][] = [];
   // ... ルール解析を初期化時に実行
   return (remote) => {
-    if (staticRules.has(remote.addr)) return true  // O(1) ルックアップ
+    if (staticRules.has(remote.addr)) return true; // O(1) ルックアップ
     for (const [isIPv4, addr, mask] of cidrRules) {
-      if ((remoteAddr & mask) === addr) return true  // ビット演算
+      if ((remoteAddr & mask) === addr) return true; // ビット演算
     }
     // ...
-  }
-}
+  };
+};
 ```
 
 ## Anti-Patterns / 注意点
@@ -214,6 +218,7 @@ const buildMatcher = (rules: IPRestrictionRule[]) => {
 - **平文のトークン/パスワード比較**: 認証情報の比較に `===` を直接使うと、文字列の先頭から一致しない文字が見つかった時点で短絡終了するため、タイミング攻撃で秘密情報を推測される危険がある。
 
 Bad:
+
 ```typescript
 // 平文の直接比較（タイミング攻撃に脆弱）
 if (submittedToken === secretToken) {
@@ -222,43 +227,48 @@ if (submittedToken === secretToken) {
 ```
 
 Better:
+
 ```typescript
 // ハッシュ化後の定数時間比較（Hono の実装）
 // src/utils/buffer.ts:29-45
-const [sa, sb] = await Promise.all([sha256(a), sha256(b)])
-return sa === sb && a === b
+const [sa, sb] = await Promise.all([sha256(a), sha256(b)]);
+return sa === sb && a === b;
 ```
 
 - **CORS で `origin: '*'` と `credentials: true` の併用**: CORS で全オリジンを許可しつつ認証情報（Cookie 等）を含むリクエストを受け入れると、ブラウザが拒否する仕様になっているが、サーバー側でこの組み合わせを検出せずに設定ミスが埋もれる。Hono の CORS ミドルウェアはこの検証を行っていない点に注意が必要。
 
 Bad:
+
 ```typescript
-cors({ origin: '*', credentials: true })
+cors({ origin: "*", credentials: true });
 ```
 
 Better:
+
 ```typescript
 cors({
-  origin: ['https://app.example.com', 'https://admin.example.com'],
+  origin: ["https://app.example.com", "https://admin.example.com"],
   credentials: true,
-})
+});
 ```
 
 - **JWT アルゴリズムを検証しない**: トークンヘッダーの `alg` フィールドをそのまま信頼すると、攻撃者が `none` や意図しないアルゴリズムにすり替え可能。Hono は `alg` オプションを必須にし、ヘッダーの値と一致するか検証している。
 
 Bad:
+
 ```typescript
 // ヘッダーの alg をそのまま使う
-const { alg } = decode(token).header
-verify(token, secret, alg)
+const { alg } = decode(token).header;
+verify(token, secret, alg);
 ```
 
 Better:
+
 ```typescript
 // アルゴリズムをサーバー側で指定し、ヘッダーと照合
 // src/utils/jwt/jwt.ts:127-129
 if (header.alg !== alg) {
-  throw new JwtAlgorithmMismatch(alg, header.alg)
+  throw new JwtAlgorithmMismatch(alg, header.alg);
 }
 ```
 

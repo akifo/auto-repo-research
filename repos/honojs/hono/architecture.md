@@ -35,13 +35,13 @@ request.ts   → router.ts (型のみ)
 
 5 種のルーターは同一の `Router<T>` インターフェースを実装する:
 
-| ルーター | 特性 | バンドルサイズへの影響 |
-|---|---|---|
-| RegExpRouter | 高速だが一部パス未対応 | 大 |
-| TrieRouter | 汎用・安定 | 中 |
-| LinearRouter | 登録が速い（初回マッチが遅い） | 小 |
-| PatternRouter | 最小サイズ | 最小 |
-| SmartRouter | 実行時に最適なルーターを選択 | メタルーター |
+| ルーター      | 特性                           | バンドルサイズへの影響 |
+| ------------- | ------------------------------ | ---------------------- |
+| RegExpRouter  | 高速だが一部パス未対応         | 大                     |
+| TrieRouter    | 汎用・安定                     | 中                     |
+| LinearRouter  | 登録が速い（初回マッチが遅い） | 小                     |
+| PatternRouter | 最小サイズ                     | 最小                   |
+| SmartRouter   | 実行時に最適なルーターを選択   | メタルーター           |
 
 `SmartRouter` は初回の `match` 呼び出し時にルーター候補を順に試し、成功したルーターに `this.match` を差し替える（`src/router/smart-router/router.ts:46`）。これにより 2 回目以降のマッチングでは間接呼び出しのオーバーヘッドがゼロになる。
 
@@ -66,9 +66,9 @@ request.ts   → router.ts (型のみ)
 ```typescript
 // src/router.ts:29-52 — コアが定義するルーターインターフェース（2メソッドのみ）
 export interface Router<T> {
-  name: string
-  add(method: string, path: string, handler: T): void
-  match(method: string, path: string): Result<T>
+  name: string;
+  add(method: string, path: string, handler: T): void;
+  match(method: string, path: string): Result<T>;
 }
 ```
 
@@ -77,65 +77,63 @@ export interface Router<T> {
 export class Hono<
   E extends Env = BlankEnv,
   S extends Schema = BlankSchema,
-  BasePath extends string = '/',
+  BasePath extends string = "/",
 > extends HonoBase<E, S, BasePath> {
   constructor(options: HonoOptions<E> = {}) {
-    super(options)
-    this.router =
-      options.router ??
-      new SmartRouter({
+    super(options);
+    this.router = options.router
+      ?? new SmartRouter({
         routers: [new RegExpRouter(), new TrieRouter()],
-      })
+      });
   }
 }
 ```
 
 ```typescript
 // src/router/smart-router/router.ts:38-49 — 初回マッチ時にメソッドを差し替え、以後は直接呼び出し
-res = router.match(method, path)
+res = router.match(method, path);
 // ...
-this.match = router.match.bind(router)
-this.#routers = [router]
-this.#routes = undefined
+this.match = router.match.bind(router);
+this.#routers = [router];
+this.#routes = undefined;
 ```
 
 ```typescript
 // src/hono-base.ts:424-442 — 単一ハンドラーの高速パス（compose をバイパス）
 if (matchResult[0].length === 1) {
-  let res: ReturnType<H>
+  let res: ReturnType<H>;
   try {
     res = matchResult[0][0][0][0](c, async () => {
-      c.res = await this.#notFoundHandler(c)
-    })
+      c.res = await this.#notFoundHandler(c);
+    });
   } catch (err) {
-    return this.#handleError(err, c)
+    return this.#handleError(err, c);
   }
   return res instanceof Promise
     ? res
-        .then(
-          (resolved: Response | undefined) =>
-            resolved || (c.finalized ? c.res : this.#notFoundHandler(c))
-        )
-        .catch((err: Error) => this.#handleError(err, c))
-    : (res ?? this.#notFoundHandler(c))
+      .then(
+        (resolved: Response | undefined) => resolved || (c.finalized ? c.res : this.#notFoundHandler(c)),
+      )
+      .catch((err: Error) => this.#handleError(err, c))
+    : (res ?? this.#notFoundHandler(c));
 }
 ```
 
 ```typescript
 // src/adapter/bun/serve-static.ts:4-31 — アダプターはコアの汎用実装に runtime 固有の関数を注入
-import { serveStatic as baseServeStatic } from '../../middleware/serve-static'
+import { serveStatic as baseServeStatic } from "../../middleware/serve-static";
 
 export const serveStatic = <E extends Env = Env>(
-  options: ServeStaticOptions<E>
+  options: ServeStaticOptions<E>,
 ): MiddlewareHandler => {
   return async function serveStatic(c, next) {
     const getContent = async (path: string) => {
-      const file = Bun.file(path)
-      return (await file.exists()) ? file : null
-    }
-    return baseServeStatic({ ...options, getContent, join, isDir })(c, next)
-  }
-}
+      const file = Bun.file(path);
+      return (await file.exists()) ? file : null;
+    };
+    return baseServeStatic({ ...options, getContent, join, isDir })(c, next);
+  };
+};
 ```
 
 ## パターンカタログ
@@ -171,9 +169,9 @@ export const serveStatic = <E extends Env = Env>(
 ```typescript
 // src/router.ts:29-52
 export interface Router<T> {
-  name: string
-  add(method: string, path: string, handler: T): void
-  match(method: string, path: string): Result<T>
+  name: string;
+  add(method: string, path: string, handler: T): void;
+  match(method: string, path: string): Result<T>;
 }
 ```
 
@@ -181,20 +179,20 @@ export interface Router<T> {
 
 ```typescript
 // src/router/smart-router/router.ts:46-48
-this.match = router.match.bind(router)
-this.#routers = [router]
-this.#routes = undefined
+this.match = router.match.bind(router);
+this.#routers = [router];
+this.#routes = undefined;
 ```
 
 - **Object.create(null) の一貫した使用**: ルーター実装全体で `Object.create(null)` をプロトタイプなしオブジェクト生成に使用し、プロトタイプチェーン走査を回避している。パラメータマップ・静的ルートマップ・キャッシュすべてでこのパターンを徹底している。
 
 ```typescript
 // src/router/reg-exp-router/router.ts:51
-const staticMap: StaticMap<T> = Object.create(null)
+const staticMap: StaticMap<T> = Object.create(null);
 // src/router/trie-router/node.ts:16
-const emptyParams = Object.create(null)
+const emptyParams = Object.create(null);
 // src/router/linear-router/router.ts:7
-const emptyParams = Object.create(null)
+const emptyParams = Object.create(null);
 ```
 
 - **サブクラスではなく関数注入による拡張点の提供**: `serveStatic` がクラス継承ではなく `getContent` 関数の注入でランタイム差異を吸収する。これによりアダプターは 10-30 行で完結する。
@@ -202,16 +200,16 @@ const emptyParams = Object.create(null)
 ```typescript
 // src/adapter/deno/serve-static.ts:8-42
 export const serveStatic = <E extends Env = Env>(
-  options: ServeStaticOptions<E>
+  options: ServeStaticOptions<E>,
 ): MiddlewareHandler => {
   return async function serveStatic(c, next) {
     const getContent = async (path: string) => {
-      const file = await open(path)
-      return file.readable
-    }
-    return baseServeStatic({ ...options, getContent, join, isDir })(c, next)
-  }
-}
+      const file = await open(path);
+      return file.readable;
+    };
+    return baseServeStatic({ ...options, getContent, join, isDir })(c, next);
+  };
+};
 ```
 
 ## Anti-Patterns / 注意点

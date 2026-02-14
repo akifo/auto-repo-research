@@ -4,7 +4,7 @@ import type { ResearchIndex } from "../data/index.js";
 
 export function registerSuggestRules(
   server: McpServer,
-  index: ResearchIndex
+  index: ResearchIndex,
 ): void {
   server.tool(
     "suggest_rules",
@@ -40,7 +40,8 @@ export function registerSuggestRules(
           content: [
             {
               type: "text",
-              text: "条件に一致するルールが見つかりませんでした。language, framework, keywords のいずれかを指定してください。",
+              text:
+                "条件に一致するルールが見つかりませんでした。language, framework, keywords のいずれかを指定してください。",
             },
           ],
         };
@@ -49,13 +50,15 @@ export function registerSuggestRules(
       const header = [
         `# 推奨ルール (${rules.length}件)`,
         "",
-        `> 条件: language=${language ?? "any"}, framework=${framework ?? "any"}, keywords=${keywords?.join(", ") ?? "none"}`,
+        `> 条件: language=${language ?? "any"}, framework=${framework ?? "any"}, keywords=${
+          keywords?.join(", ") ?? "none"
+        }`,
         "",
       ].join("\n");
 
       return {
         content: [{ type: "text", text: header + formatted }],
       };
-    }
+    },
   );
 }

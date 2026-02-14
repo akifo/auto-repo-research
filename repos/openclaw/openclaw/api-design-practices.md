@@ -21,6 +21,7 @@ OpenClaw のゲートウェイ API は、WebSocket ベースの JSON-RPC 風プ�
 プロトコルスキーマの定義は `src/gateway/protocol/schema/` 以下に TypeBox で記述される。TypeBox は JSON Schema 互換のオブジェクトを生成するため、ランタイムバリデーション（AJV）とコード生成の両方で直接利用できる。
 
 スキーマからの生成チェーン:
+
 1. **TypeBox 定義** → `Static<typeof Schema>` で TypeScript 型を導出（`schema/types.ts`）
 2. **TypeBox 定義** → AJV バリデータをコンパイル（`protocol/index.ts`）
 3. **TypeBox 定義** → `scripts/protocol-gen.ts` で JSON Schema ファイルを生成
@@ -158,6 +159,7 @@ export function stringEnum<T extends readonly string[]>(
 ### 6. 複数 API サーフェスの共存（プロトコル変換レイヤー）
 
 Gateway は 3 つの API サーフェスを同時に提供する:
+
 - **WebSocket (JSON-RPC 風)**: ネイティブプロトコル（`server-methods.ts`）
 - **OpenAI Chat Completions 互換 HTTP**: `/v1/chat/completions`（`openai-http.ts`）
 - **OpenResponses 互換 HTTP**: `/v1/responses`（`openresponses-http.ts`, Zod スキーマ）
@@ -202,10 +204,10 @@ export const ConnectParamsSchema = Type.Object(
   {
     minProtocol: Type.Integer({ minimum: 1 }),
     maxProtocol: Type.Integer({ minimum: 1 }),
-    client: Type.Object({ /* ... */ }, { additionalProperties: false }),
+    client: Type.Object({/* ... */}, { additionalProperties: false }),
     // ...
   },
-  { additionalProperties: false },  // 全階層に適用
+  { additionalProperties: false }, // 全階層に適用
 );
 ```
 
@@ -234,10 +236,10 @@ export function errorShape(code: ErrorCode, message: string, opts?) {
 
 ```typescript
 // Bad: バリデーション通過後なのに手動キャスト
-const rawValue = (params as { raw?: unknown }).raw;
+const rawValue = (params as { raw?: unknown; }).raw;
 
 // Better: バリデータの型パラメータを活用し、通過後はキャスト不要にする
-if (!validateConfigSetParams(params)) { return; }
+if (!validateConfigSetParams(params)) return;
 // params は ConfigSetParams 型として推論される
 const { raw } = params;
 ```

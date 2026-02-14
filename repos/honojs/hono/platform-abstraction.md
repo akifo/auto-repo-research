@@ -38,15 +38,15 @@ AWS Lambda アダプターは、API Gateway v1/v2, ALB, VPC Lattice という 4 
 ```typescript
 // src/adapter/aws-lambda/handler.ts:268-279
 export abstract class EventProcessor<E extends LambdaEvent> {
-  protected abstract getPath(event: E): string
-  protected abstract getMethod(event: E): string
-  protected abstract getQueryString(event: E): string
-  protected abstract getHeaders(event: E): Headers
-  protected abstract getCookies(event: E, headers: Headers): void
-  protected abstract setCookiesToResult(result: APIGatewayProxyResult, cookies: string[]): void
+  protected abstract getPath(event: E): string;
+  protected abstract getMethod(event: E): string;
+  protected abstract getQueryString(event: E): string;
+  protected abstract getHeaders(event: E): Headers;
+  protected abstract getCookies(event: E, headers: Headers): void;
+  protected abstract setCookiesToResult(result: APIGatewayProxyResult, cookies: string[]): void;
   // ...
-  createRequest(event: E): Request { /* 共通ロジック */ }
-  async createResult(event: E, res: Response, options): Promise<APIGatewayProxyResult> { /* 共通ロジック */ }
+  createRequest(event: E): Request {/* 共通ロジック */}
+  async createResult(event: E, res: Response, options): Promise<APIGatewayProxyResult> {/* 共通ロジック */}
 }
 ```
 
@@ -59,15 +59,15 @@ export abstract class EventProcessor<E extends LambdaEvent> {
 ```typescript
 // src/adapter/bun/serve-static.ts:11-16 (Bun)
 const getContent = async (path: string) => {
-  const file = Bun.file(path)
-  return (await file.exists()) ? file : null
-}
+  const file = Bun.file(path);
+  return (await file.exists()) ? file : null;
+};
 
 // src/adapter/deno/serve-static.ts:12-20 (Deno)
 const getContent = async (path: string) => {
-  const file = await open(path)  // Deno.open
-  return file.readable
-}
+  const file = await open(path); // Deno.open
+  return file.readable;
+};
 ```
 
 コアの関数シグネチャのコメントに「This middleware is not directly used by the user」（`src/middleware/serve-static/index.ts:33`）と明記されており、ユーザーが直接触るのはアダプター側の薄いラッパーであることが意図的に設計されている。
@@ -104,8 +104,8 @@ HTTP ヘッダーから取得（Cloudflare, Vercel）、サーバー API から�
 ```typescript
 // src/helper/websocket/index.ts:111-113
 export const defineWebSocketHelper = <T = unknown, U = any>(
-  handler: WebSocketHelperDefineHandler<T, U>
-): UpgradeWebSocket<T, U> => { /* ... */ }
+  handler: WebSocketHelperDefineHandler<T, U>,
+): UpgradeWebSocket<T, U> => {/* ... */};
 ```
 
 各アダプターはこのヘルパーを使い、プラットフォーム固有の WebSocket API を `WSContext` に変換する薄い実装だけを書けばよい。
@@ -167,11 +167,9 @@ export class Hono<...> extends HonoBase<...> {
 
 ```typescript
 // src/adapter/vercel/handler.ts:4-8 — 最も薄いアダプター
-export const handle =
-  (app: Hono<any, any, any>) =>
-  (req: Request): Response | Promise<Response> => {
-    return app.fetch(req)
-  }
+export const handle = (app: Hono<any, any, any>) => (req: Request): Response | Promise<Response> => {
+  return app.fetch(req);
+};
 ```
 
 - **プラットフォーム固有 API へのアクセスを `Env` 型ジェネリクスで型安全に提供**: `c.env` 経由でランタイム固有のバインディング（KV Namespace, Deno.env 等）にアクセスできるが、`Env['Bindings']` のジェネリクスによりコンパイル時に型チェックされる。コアには `any` が漏れない。
@@ -179,9 +177,9 @@ export const handle =
 ```typescript
 // src/types.ts:31-34
 export type Env = {
-  Bindings?: Bindings
-  Variables?: Variables
-}
+  Bindings?: Bindings;
+  Variables?: Variables;
+};
 ```
 
 - **ランタイムテストの「最小パターン + 既存テスト信頼」戦略**: `runtime-tests/bun/index.test.tsx:17-18` のコメント「Test just only minimal patterns. Because others are tested well in Cloudflare Workers environment already.」に見られるように、コアのテストを 1 つのランタイムで網羅的に行い、他のランタイムでは差分（ランタイム固有 API の動作）のみをテストする戦略を明示的に採用している。
@@ -194,16 +192,16 @@ export type Env = {
 // Bad: 同一ロジックがアダプター間で重複
 // src/adapter/aws-lambda/handler.ts:669-673
 export const defaultIsContentTypeBinary = (contentType: string): boolean => {
-  return !/^text\/(?:plain|html|css|javascript|csv)|.../.test(contentType)
-}
+  return !/^text\/(?:plain|html|css|javascript|csv)|.../.test(contentType);
+};
 // src/adapter/lambda-edge/handler.ts:191-195
 export const isContentTypeBinary = (contentType: string): boolean => {
-  return !/^(text\/(plain|html|css|javascript|csv).*|...)$/.test(contentType)
-}
+  return !/^(text\/(plain|html|css|javascript|csv).*|...)$/.test(contentType);
+};
 
 // Better: 共通ユーティリティに抽出
 // src/utils/content-type.ts
-export const isContentTypeBinary = (contentType: string): boolean => { /* ... */ }
+export const isContentTypeBinary = (contentType: string): boolean => {/* ... */};
 ```
 
 - **`@ts-expect-error` によるプラットフォーム固有 API の型回避**: Cloudflare Workers の `WebSocketPair`、Bun の `Bun.file` など、プラットフォーム固有 API の呼び出しで `@ts-expect-error` が頻出する。これは「プラットフォーム固有の型定義をアダプターの型スコープに閉じ込める」設計の副作用であるが、型安全性の穴になり得る。プラットフォーム固有の `.d.ts` ファイル（`src/adapter/deno/deno.d.ts` のように）を各アダプターに用意するのが堅牢なアプローチ。

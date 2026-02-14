@@ -48,6 +48,7 @@ Claude Code と Cursor はファイル名・本文がほぼ同一。GitHub Copil
 
 ```markdown
 <!-- .claude/commands/commit.md -->
+
 # Commit
 
 Commit the work you and the user have been doing. Make sure to use
@@ -80,37 +81,43 @@ When you're done committing, push the changes up.
 
 ```markdown
 <!-- .claude/commands/gh-debug-issue.md:13-44 -->
+
 Debugging Github issues has 3 stages. Each stage must be fully
 completed before moving on to the next.
 
 ## Stage 1 "Analyze"
+
 1. The issue description and requirements
 2. Any linked PRs or related issues
 3. Comments and discussion threads
 4. Labels and metadata
 
 ## Stage 2 "Reproduce"
+
 Once you've analyzed the issue:
+
 1. Create an ISSUE_SUMMARY${ISSUE_NUMBER}.md file in the project root
    and add a summary of what you've analyzed so far.
    Do not begin to fix the issue, that isn't our goal.
-...
-3. Ask the user for feedback on your issue summary document.
-...
-4. Now that the user agrees with your findings, write a test...
+   ...
+2. Ask the user for feedback on your issue summary document.
+   ...
+3. Now that the user agrees with your findings, write a test...
    The test MUST fail and clearly show the problem.
-5. If the test is not running properly or is failing for unrelated
+4. If the test is not running properly or is failing for unrelated
    reasons, your task is not finished.
-6. Explain your failing test to the user. They must understand fully,
+5. Explain your failing test to the user. They must understand fully,
    and agree that the test really does reproduce the issue at hand.
 
 ## Stage 3 "Fix it!"
+
 ...
+
 1. Commit the failing test to the current branch
 2. Come up with a plan to fix the issue. Make sure the user agrees
    and is on the same page as you.
-...
-4. If you get stuck, ask the user for help!
+   ...
+3. If you get stuck, ask the user for help!
 
 You MUST first reproduce the issue in a test file, make sure the new
 test is failing (IMPORTANT!) then finally add a code fix.
@@ -122,12 +129,14 @@ test is failing (IMPORTANT!) then finally add a code fix.
 
 ```markdown
 <!-- .claude/commands/gh-pr-comments.md:11 -->
+
 Anytime you make a comment, be sure to start it with "Claude says: "
 and sign off with your name at the end as well
 ```
 
 ```markdown
 <!-- .github/prompts/gh-pr-comments.prompt.md:17 -->
+
 Anytime you make a comment, be sure to start it with "Vscode says: "
 and sign off with your name at the end as well
 ```
@@ -167,7 +176,9 @@ and sign off with your name at the end as well
 
 ```markdown
 <!-- .claude/commands/gh-debug-issue.md の設計 -->
+
 ## Stage 2 "Reproduce"
+
 4. Now that the user agrees with your findings, write a test...
    The test MUST fail and clearly show the problem.
 5. If the test is not running properly or is failing for unrelated
@@ -175,6 +186,7 @@ and sign off with your name at the end as well
 6. Explain your failing test to the user. They must understand fully.
 
 ## Stage 3 "Fix it!"
+
 1. Commit the failing test to the current branch (don't commit the
    summary file)
 2. Come up with a plan to fix the issue. Make sure the user agrees.
@@ -190,9 +202,11 @@ and sign off with your name at the end as well
 
 ```markdown
 <!-- Claude Code 版: Claude says: -->
+
 Anytime you make a comment, be sure to start it with "Claude says: "
 
 <!-- GitHub Copilot 版: Vscode says: -->
+
 Anytime you make a comment, be sure to start it with "Vscode says: "
 ```
 
@@ -224,23 +238,32 @@ PR コメントの発言者を明示することで、どの AI ツールが生�
 
 ```markdown
 <!-- Bad: ゲートなし -->
+
 # Debug Issue
+
 1. Issue を読む
 2. コードを修正する
 3. テストを書く
 4. コミットする
+
 <!-- -> AI が Issue を誤解したまま修正コードを書き、
       テストも修正に合わせて書くため問題が検出されない -->
 ```
 
 ```markdown
 <!-- Good: ステージ制 + ゲート -->
+
 ## Stage 1 "Analyze"
-  -> ユーザー確認ゲート
+
+-> ユーザー確認ゲート
+
 ## Stage 2 "Reproduce"
-  -> 失敗テスト確認ゲート + ユーザー確認ゲート
+
+-> 失敗テスト確認ゲート + ユーザー確認ゲート
+
 ## Stage 3 "Fix"
-  -> ユーザー確認ゲート
+
+-> ユーザー確認ゲート
 ```
 
 **手動コピーで同期を維持する（mastra 自身の課題でもある）:**

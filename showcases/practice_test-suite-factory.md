@@ -21,8 +21,8 @@ mastra は 23 のストレージアダプター（PostgreSQL, LibSQL, MongoDB, D
 
 ```typescript
 // stores/_test-utils/src/factory.ts:1-86
-import { describe, beforeAll, afterAll } from 'vitest';
-import type { MastraStorage } from '@mastra/core/storage';
+import type { MastraStorage } from "@mastra/core/storage";
+import { afterAll, beforeAll, describe } from "vitest";
 
 export type TestCapabilities = {
   /** Whether the adapter supports listing scores by span (defaults to true) */
@@ -38,7 +38,7 @@ export function createTestSuite(storage: MastraStorage, capabilities: TestCapabi
     afterAll(async () => {
       // 各ドメインの dangerouslyClearAll() で後片付け
       const clearList: Promise<void>[] = [];
-      const workflowStorage = await storage.getStore('workflows');
+      const workflowStorage = await storage.getStore("workflows");
       if (workflowStorage) clearList.push(workflowStorage.dangerouslyClearAll());
       // ... 他のドメインも同様
       await Promise.all(clearList);
@@ -63,13 +63,13 @@ export function createTestSuite(storage: MastraStorage, capabilities: TestCapabi
 ```typescript
 // stores/_test-utils/src/vector-factory.ts:48-130
 export interface TestDomains {
-  basicOps?: boolean;         // インデックス CRUD、upsert、query
-  filterOps?: boolean;        // $gt, $lt, $in, $regex 等のフィルタ演算子
-  edgeCases?: boolean;        // 空インデックス、大規模バッチ、並行操作
-  largeBatch?: boolean;       // 1000+ ベクトルの一括操作（edgeCases のサブセット）
-  errorHandling?: boolean;    // 不正入力、パラメータバリデーション
+  basicOps?: boolean; // インデックス CRUD、upsert、query
+  filterOps?: boolean; // $gt, $lt, $in, $regex 等のフィルタ演算子
+  edgeCases?: boolean; // 空インデックス、大規模バッチ、並行操作
+  largeBatch?: boolean; // 1000+ ベクトルの一括操作（edgeCases のサブセット）
+  errorHandling?: boolean; // 不正入力、パラメータバリデーション
   metadataFiltering?: boolean; // メモリシステム互換フィルタリング
-  advancedOps?: boolean;      // フィルタ付き deleteVectors/updateVector
+  advancedOps?: boolean; // フィルタ付き deleteVectors/updateVector
 }
 
 export interface VectorTestConfig {
@@ -77,10 +77,10 @@ export interface VectorTestConfig {
   createIndex: (indexName: string, options?: CreateIndexOptions) => Promise<void>;
   deleteIndex: (indexName: string) => Promise<void>;
   testDomains?: TestDomains;
-  supportsArrayMetadata?: boolean;  // Chroma は false
-  supportsRegex?: boolean;          // LibSQL, Chroma は false
-  supportsNotOperator?: boolean;    // Chroma は false
-  supportsNorOperator?: boolean;    // Chroma, LibSQL は false
+  supportsArrayMetadata?: boolean; // Chroma は false
+  supportsRegex?: boolean; // LibSQL, Chroma は false
+  supportsNotOperator?: boolean; // Chroma は false
+  supportsNorOperator?: boolean; // Chroma, LibSQL は false
   // ... 他の capability フラグ
 }
 
@@ -89,9 +89,11 @@ export function createVectorTestSuite(config: VectorTestConfig) {
 
   describe(config.vector.constructor.name, () => {
     // ドメイン単位で on/off（デフォルトは全て有効）
-    if (testDomains.basicOps !== false)    createBasicOperationsTest(config);
-    if (testDomains.filterOps !== false)   createFilterOperatorsTest(config);
-    if (testDomains.edgeCases !== false)   createEdgeCasesTest(config, { skipLargeBatch: testDomains.largeBatch === false });
+    if (testDomains.basicOps !== false) createBasicOperationsTest(config);
+    if (testDomains.filterOps !== false) createFilterOperatorsTest(config);
+    if (testDomains.edgeCases !== false) {
+      createEdgeCasesTest(config, { skipLargeBatch: testDomains.largeBatch === false });
+    }
     if (testDomains.errorHandling !== false) createErrorHandlingTest(config);
     // ...
   });
@@ -107,7 +109,7 @@ HTTP リクエスト/レスポンスのサイクル全体を検証するファ�
 export function createRouteAdapterTestSuite(config: AdapterTestSuiteConfig) {
   const { suiteName, setupAdapter, executeHttpRequest } = config;
 
-  describe('Route Validation', () => {
+  describe("Route Validation", () => {
     createRouteTestSuite({ routes: SERVER_ROUTES });
   });
 
@@ -115,7 +117,7 @@ export function createRouteAdapterTestSuite(config: AdapterTestSuiteConfig) {
     // パラメータ抽出、スキーマバリデーション、ハンドラ実行、レスポンスフォーマットを検証
     activeRoutes.forEach(route => {
       describe(`${route.method} ${route.path}`, () => {
-        it('should execute with valid request', async () => { /* ... */ });
+        it("should execute with valid request", async () => {/* ... */});
       });
     });
   });
@@ -130,7 +132,7 @@ export function createRouteAdapterTestSuite(config: AdapterTestSuiteConfig) {
 // stores/pg/src/storage/index.test.ts:23-24
 // PostgreSQL: 2 つの構成で同一テストを適用
 createTestSuite(new PostgresStore(TEST_CONFIG));
-createTestSuite(new PostgresStore({ ...TEST_CONFIG, schemaName: 'my_schema' }));
+createTestSuite(new PostgresStore({ ...TEST_CONFIG, schemaName: "my_schema" }));
 ```
 
 ```typescript
@@ -145,13 +147,13 @@ createTestSuite(store, { listScoresBySpan: false });
 createVectorTestSuite({
   vector: libSQLVectorDB,
   createIndex: async (indexName, options) => {
-    await libSQLVectorDB.createIndex({ indexName, dimension: 1536, metric: options?.metric ?? 'cosine' });
+    await libSQLVectorDB.createIndex({ indexName, dimension: 1536, metric: options?.metric ?? "cosine" });
   },
-  deleteIndex: async (indexName) => { /* ... */ },
+  deleteIndex: async (indexName) => {/* ... */},
   testDomains: {
-    largeBatch: false,       // レート制限のため大規模バッチをスキップ
+    largeBatch: false, // レート制限のため大規模バッチをスキップ
   },
-  supportsRegex: false,      // LibSQL は $regex 非対応
+  supportsRegex: false, // LibSQL は $regex 非対応
   supportsContains: false,
   supportsNotOperator: false,
   supportsNorOperator: false,
@@ -166,9 +168,9 @@ createVectorTestSuite({
 // Chroma: プリミティブ型のみ対応という制約を宣言的に表現
 createVectorTestSuite({
   vector: chromaVector,
-  createIndex: async (indexName, options) => { /* ... */ },
-  deleteIndex: async (indexName) => { /* ... */ },
-  supportsArrayMetadata: false,          // プリミティブ型のみ
+  createIndex: async (indexName, options) => {/* ... */},
+  deleteIndex: async (indexName) => {/* ... */},
+  supportsArrayMetadata: false, // プリミティブ型のみ
   supportsNullValues: false,
   supportsExistsOperator: false,
   supportsRegex: false,
@@ -183,15 +185,15 @@ createVectorTestSuite({
 ```typescript
 // server-adapters/hono/src/__tests__/hono-adapter.test.ts:24-39
 // Hono: setupAdapter と executeHttpRequest を渡すだけで全ルートが検証される
-describe('Hono Server Adapter', () => {
+describe("Hono Server Adapter", () => {
   createRouteAdapterTestSuite({
-    suiteName: 'Hono Adapter Integration Tests',
+    suiteName: "Hono Adapter Integration Tests",
     setupAdapter: async (context, options?) => {
       const app = new Hono();
-      const adapter = new MastraServer({ app, mastra: context.mastra, /* ... */ });
+      const adapter = new MastraServer({ app, mastra: context.mastra /* ... */ });
       // ...
     },
-    executeHttpRequest: async (app, request) => { /* ... */ },
+    executeHttpRequest: async (app, request) => {/* ... */},
   });
 });
 ```
@@ -203,25 +205,25 @@ describe('Hono Server Adapter', () => {
 ```typescript
 // Bad: 各アダプターに同じテストを個別に記述
 // stores/pg/src/storage/index.test.ts
-describe('PostgresStore', () => {
-  it('should save and retrieve a workflow', async () => {
-    const workflow = { id: 'test', name: 'Test Workflow', /* ... */ };
+describe("PostgresStore", () => {
+  it("should save and retrieve a workflow", async () => {
+    const workflow = { id: "test", name: "Test Workflow" /* ... */ };
     await pgStore.saveWorkflow(workflow);
-    const result = await pgStore.getWorkflow('test');
+    const result = await pgStore.getWorkflow("test");
     expect(result).toEqual(workflow);
   });
-  it('should save and retrieve a thread', async () => { /* ... */ });
+  it("should save and retrieve a thread", async () => {/* ... */});
   // ... 50+ テストケース
 });
 
 // stores/mongodb/src/storage/index.test.ts
-describe('MongoDBStore', () => {
+describe("MongoDBStore", () => {
   // 同じテストをコピペ — ただし微妙に条件が違ったり、一部テストが抜けたりする
-  it('should save and retrieve a workflow', async () => {
+  it("should save and retrieve a workflow", async () => {
     // PostgreSQL のテストから微妙に仕様が異なる可能性
-    const workflow = { id: 'test', name: 'Test Workflow', /* ... */ };
+    const workflow = { id: "test", name: "Test Workflow" /* ... */ };
     await mongoStore.saveWorkflow(workflow);
-    const result = await mongoStore.getWorkflow('test');
+    const result = await mongoStore.getWorkflow("test");
     expect(result).toEqual(workflow);
   });
   // スレッドのテストが抜けている — 誰も気づかない
@@ -230,19 +232,19 @@ describe('MongoDBStore', () => {
 
 ```typescript
 // Bad: テスト内でアダプター種別の条件分岐
-describe('Vector Store Tests', () => {
-  it('should filter by regex', async () => {
-    if (storeName === 'chroma' || storeName === 'libsql') {
+describe("Vector Store Tests", () => {
+  it("should filter by regex", async () => {
+    if (storeName === "chroma" || storeName === "libsql") {
       // Chroma と LibSQL は regex 非対応なのでスキップ
       return;
     }
     // テスト本体
-    const results = await vector.query({ filter: { name: { $regex: 'test.*' } } });
+    const results = await vector.query({ filter: { name: { $regex: "test.*" } } });
     expect(results.length).toBeGreaterThan(0);
   });
 
-  it('should handle array metadata', async () => {
-    if (storeName === 'chroma') {
+  it("should handle array metadata", async () => {
+    if (storeName === "chroma") {
       // Chroma はプリミティブ型のみ
       return;
     }

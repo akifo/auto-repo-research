@@ -11,7 +11,7 @@ openclaw は「マルチチャネル AI アシスタント」を実現するた�
 
 - **Mediator 集約による疎結合化**: チャネルとエージェントが互いを直接知らず、ゲートウェイが全ての仲介を担うことで N x M の結合を N + M に削減している。これにより新しいチャネル追加がエージェント側に影響しない。根拠: `src/gateway/server.impl.ts` 全体の構成 ― channelManager・nodeRegistry・agentEvent がすべてゲートウェイに集約される。
 
-- **重量実装と軽量メタデータの分離**: チャネルの「何ができるか」(capabilities/dock) と「どう動くか」(plugin implementation) を明確に分離し、共有コードパスでは軽量メタデータのみ参照する。これにより、チャネル実装の import による不要な依存ツリーの読み込みを防ぐ。根拠: `src/channels/dock.ts:86-92` のコメント「keep this module *light*」および `src/channels/plugins/index.ts:8` の「Shared code paths should depend on dock.ts, not from the plugins registry」。
+- **重量実装と軽量メタデータの分離**: チャネルの「何ができるか」(capabilities/dock) と「どう動くか」(plugin implementation) を明確に分離し、共有コードパスでは軽量メタデータのみ参照する。これにより、チャネル実装の import による不要な依存ツリーの読み込みを防ぐ。根拠: `src/channels/dock.ts:86-92` のコメント「keep this module _light_」および `src/channels/plugins/index.ts:8` の「Shared code paths should depend on dock.ts, not from the plugins registry」。
 
 - **設定ファイルによる振る舞い制御**: ルーティング・バインディング・セキュリティポリシーをすべて Zod スキーマで検証されたコンフィグファイルで宣言的に管理する。コードデプロイなしにチャネル→エージェントのマッピングを変更可能にするため。根拠: `src/routing/resolve-route.ts` ではバインディング設定のみからルート解決を行い、ハードコードされたルーティングロジックが存在しない。
 
@@ -128,7 +128,7 @@ export function createGatewayCloseHandler(params: {
   canvasHost: CanvasHostHandler | null;
   stopChannel: (name: ChannelId, accountId?: string) => Promise<void>;
   pluginServices: PluginServicesHandle | null;
-  cron: { stop: () => void };
+  cron: { stop: () => void; };
   heartbeatRunner: HeartbeatRunner;
   // ... (14 dependencies injected)
 }) {
@@ -189,9 +189,16 @@ matchedBy:
 const abort = new AbortController();
 store.aborts.set(id, abort);
 setRuntime(channelId, id, { accountId: id, running: true, lastStartAt: Date.now(), lastError: null });
-const task = startAccount({ cfg, accountId: id, account, runtime: channelRuntimeEnvs[channelId],
-  abortSignal: abort.signal, log, getStatus: () => getRuntime(channelId, id),
-  setStatus: (next) => setRuntime(channelId, id, next) });
+const task = startAccount({
+  cfg,
+  accountId: id,
+  account,
+  runtime: channelRuntimeEnvs[channelId],
+  abortSignal: abort.signal,
+  log,
+  getStatus: () => getRuntime(channelId, id),
+  setStatus: (next) => setRuntime(channelId, id, next),
+});
 ```
 
 ## Anti-Patterns / 注意点

@@ -22,12 +22,12 @@ Mastra（mastra-ai/mastra）は TypeScript 製の AI エージェントフレー
 export type DynamicArgument<T, TRequestContext extends Record<string, any> | unknown = unknown> =
   | T
   | (({
-      requestContext,
-      mastra,
-    }: {
-      requestContext: RequestContext<TRequestContext>;
-      mastra?: Mastra;
-    }) => Promise<T> | T);
+    requestContext,
+    mastra,
+  }: {
+    requestContext: RequestContext<TRequestContext>;
+    mastra?: Mastra;
+  }) => Promise<T> | T);
 ```
 
 ポイントは3つ:
@@ -46,7 +46,7 @@ function resolveMaybePromise<T, R = void>(
   value: T | Promise<T> | PromiseLike<T>,
   cb: (value: T) => R,
 ): R | Promise<R> {
-  if (value instanceof Promise || (value != null && typeof (value as PromiseLike<T>).then === 'function')) {
+  if (value instanceof Promise || (value != null && typeof (value as PromiseLike<T>).then === "function")) {
     return Promise.resolve(value).then(cb);
   }
   return cb(value as T);
@@ -104,25 +104,25 @@ Memory の title 生成設定 (`packages/core/src/memory/types.ts:841-846`) や 
 ```typescript
 // 静的な設定 — テストやプロトタイプに最適
 const agent = new Agent({
-  id: 'my-agent',
-  instructions: 'You are a helpful assistant.',
-  model: 'openai/gpt-4o',
+  id: "my-agent",
+  instructions: "You are a helpful assistant.",
+  model: "openai/gpt-4o",
   tools: { calculator, weather },
 });
 
 // 動的な設定 — マルチテナント本番環境
 const agent = new Agent({
-  id: 'my-agent',
+  id: "my-agent",
   instructions: ({ requestContext }) => {
-    const tenant = requestContext.get('tenantId');
+    const tenant = requestContext.get("tenantId");
     return `You are an assistant for ${tenant}. Follow their guidelines.`;
   },
   model: ({ requestContext }) => {
-    const tier = requestContext.get('tier');
-    return tier === 'premium' ? 'openai/gpt-4o' : 'openai/gpt-4o-mini';
+    const tier = requestContext.get("tier");
+    return tier === "premium" ? "openai/gpt-4o" : "openai/gpt-4o-mini";
   },
   tools: async ({ requestContext, mastra }) => {
-    const tenantId = requestContext.get('tenantId');
+    const tenantId = requestContext.get("tenantId");
     const tenantTools = await loadToolsForTenant(tenantId);
     return { ...baseTools, ...tenantTools };
   },
@@ -137,13 +137,13 @@ API シグネチャは両者で完全に同一。利用者は最初は静的な�
 // Bad: 静的と動的で別の API を用意してしまう
 class Agent {
   constructor(config: {
-    instructions: string;           // 静的専用
-    tools: Record<string, Tool>;    // 静的専用
+    instructions: string; // 静的専用
+    tools: Record<string, Tool>; // 静的専用
   }) {}
 
   // 動的が必要になったら別メソッドを追加...
-  setDynamicInstructions(fn: (ctx: Context) => string) { /* ... */ }
-  setDynamicTools(fn: (ctx: Context) => Record<string, Tool>) { /* ... */ }
+  setDynamicInstructions(fn: (ctx: Context) => string) {/* ... */}
+  setDynamicTools(fn: (ctx: Context) => Record<string, Tool>) {/* ... */}
 }
 
 // 問題点:

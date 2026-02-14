@@ -9,7 +9,7 @@
 
 ## 背景にある原則
 
-- **軽量メタデータと重量実装の分離**: 共有コードパス（ルーティング、認可、コマンド判定）はチャネルの「軽量メタデータ」（`dock.ts` の `ChannelDock`）のみに依存し、チャネル固有の重い実装（モニタ、WebSocket 接続、QR ログイン等）をロードしない。`dock.ts:82-87` のコメント「keep this module *light*」「shared code should import from here, not from the plugins registry」がこの判断を明示している。これにより起動時間と循環依存を抑制できる。
+- **軽量メタデータと重量実装の分離**: 共有コードパス（ルーティング、認可、コマンド判定）はチャネルの「軽量メタデータ」（`dock.ts` の `ChannelDock`）のみに依存し、チャネル固有の重い実装（モニタ、WebSocket 接続、QR ログイン等）をロードしない。`dock.ts:82-87` のコメント「keep this module _light_」「shared code should import from here, not from the plugins registry」がこの判断を明示している。これにより起動時間と循環依存を抑制できる。
 
 - **契約による拡張、条件分岐による拡張の排除**: 新チャネル追加時に `if (channel === "xxx")` の条件分岐を共有ロジックに追加しない。代わりに `ChannelPlugin` 型（`types.plugin.ts`）が 20 以上のアダプタスロットを定義し、チャネルはスロットを実装するだけで機能を宣言する。`ChannelCapabilities` の `chatTypes`, `polls`, `reactions`, `threads` 等のフラグが機能の有無を表現し、共有コードはこのフラグに基づいて振る舞いを切り替える。
 
@@ -122,6 +122,7 @@ const tiers: Array<{...}> = [
 ### 送信制約のチャネル別キャリブレーション
 
 `ChannelDock` の `outbound.textChunkLimit` は各チャネルの制約を反映する:
+
 - Discord: 2000 文字（`dock.ts:189`）
 - IRC: 350 文字（`dock.ts:226`）
 - Telegram / WhatsApp / Slack / Signal: 4000 文字

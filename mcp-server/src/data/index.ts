@@ -1,4 +1,4 @@
-import type { ParsedRule, ResearchData, RepoIndex, ShowcaseEntry } from "../types.js";
+import type { ParsedRule, RepoIndex, ResearchData, ShowcaseEntry } from "../types.js";
 
 export class ResearchIndex {
   private data: ResearchData;
@@ -23,7 +23,7 @@ export class ResearchIndex {
     }));
   }
 
-  listShowcases(): Array<{ name: string; theme: string; label: string }> {
+  listShowcases(): Array<{ name: string; theme: string; label: string; }> {
     return this.data.showcases.map((s) => ({
       name: s.name,
       theme: s.theme,
@@ -42,7 +42,7 @@ export class ResearchIndex {
   getRules(
     repo: string,
     category?: string,
-    priority?: string
+    priority?: string,
   ): ParsedRule[] {
     const repoData = this.findRepo(repo);
     if (!repoData) return [];
@@ -89,8 +89,8 @@ export class ResearchIndex {
     framework?: string;
     keywords?: string[];
     format?: "grouped" | "flat";
-  }): { rules: Array<ParsedRule & { score: number }>; formatted: string } {
-    const scored: Array<ParsedRule & { score: number }> = [];
+  }): { rules: Array<ParsedRule & { score: number; }>; formatted: string; } {
+    const scored: Array<ParsedRule & { score: number; }> = [];
 
     for (const repo of this.data.repos) {
       for (const rule of repo.rules) {
@@ -142,8 +142,8 @@ export class ResearchIndex {
 }
 
 function formatSuggestions(
-  rules: Array<ParsedRule & { score: number }>,
-  format: "grouped" | "flat"
+  rules: Array<ParsedRule & { score: number; }>,
+  format: "grouped" | "flat",
 ): string {
   if (rules.length === 0) return "マッチするルールが見つかりませんでした。";
 
@@ -154,7 +154,7 @@ function formatSuggestions(
   }
 
   // Grouped by category
-  const groups = new Map<string, Array<ParsedRule & { score: number }>>();
+  const groups = new Map<string, Array<ParsedRule & { score: number; }>>();
   for (const rule of rules) {
     const key = rule.category;
     const list = groups.get(key) ?? [];
@@ -165,7 +165,7 @@ function formatSuggestions(
   const sections: string[] = [];
   for (const [category, categoryRules] of groups) {
     const lines = categoryRules.map(
-      (r) => `- \`[${r.priority}]\` ${r.content}\n  - 根拠: ${r.rationale} (from ${r.repo})`
+      (r) => `- \`[${r.priority}]\` ${r.content}\n  - 根拠: ${r.rationale} (from ${r.repo})`,
     );
     sections.push(`## ${category}\n\n${lines.join("\n")}`);
   }

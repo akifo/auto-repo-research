@@ -25,9 +25,9 @@
 
 ```typescript
 // src/router/smart-router/router.ts:46
-this.match = router.match.bind(router)
-this.#routers = [router]
-this.#routes = undefined
+this.match = router.match.bind(router);
+this.#routers = [router];
+this.#routes = undefined;
 ```
 
 この「初回実行時に最適実装を選択し、自身を書き換える」パターンは、起動時の柔軟性とランタイムのパフォーマンスを両立する。
@@ -65,9 +65,9 @@ constructor(options: HonoOptions<E> = {}) {
 ```typescript
 // src/helper/factory/index.ts:363-366
 export const createFactory = <E extends Env = Env, P extends string = string>(init?: {
-  initApp?: InitApp<E>
-  defaultAppOptions?: HonoOptions<E>
-}): Factory<E, P> => new Factory<E, P>(init)
+  initApp?: InitApp<E>;
+  defaultAppOptions?: HonoOptions<E>;
+}): Factory<E, P> => new Factory<E, P>(init);
 ```
 
 `createMiddleware()` は実質的に恒等関数だが（`middleware => middleware`）、型推論を駆動する役割を持つ。実装上の制約（`as` アサーション等）を使わずに型安全を実現する手法として注目に値する。
@@ -99,12 +99,12 @@ return baseServeStatic({
   getContent,
   join,
   isDir,
-})(c, next)
+})(c, next);
 ```
 
 ```typescript
 // src/middleware/serve-static/index.ts:36
-getContent: (path: string, c: Context<E>) => Promise<Data | Response | null>
+getContent: ((path: string, c: Context<E>) => Promise<Data | Response | null>);
 ```
 
 共通ロジックはフレームワーク側に、プラットフォーム依存部分はアダプタ側に分離することで、Deno, Bun, Cloudflare Workers 等で同一の API を提供している。
@@ -115,7 +115,7 @@ getContent: (path: string, c: Context<E>) => Promise<Data | Response | null>
 
 ```typescript
 // src/middleware/request-id/index.ts:5-7
-declare module '../..' {
+declare module "../.." {
   interface ContextVariableMap extends RequestIdVariables {}
 }
 ```
@@ -123,8 +123,8 @@ declare module '../..' {
 ```typescript
 // src/middleware/request-id/request-id.ts:9-11
 export type RequestIdVariables = {
-  requestId: string
-}
+  requestId: string;
+};
 ```
 
 この手法により、ミドルウェアをインポートするだけで `c.get('requestId')` の戻り値型が `string` に推論される。
@@ -138,11 +138,11 @@ export type RequestIdVariables = {
 export const some = (...middleware: (MiddlewareHandler | Condition)[]): MiddlewareHandler => {
   return async function some(c, next) {
     // 最初に成功したミドルウェアで処理を確定
-  }
-}
+  };
+};
 
 // src/middleware/combine/index.ts:161 (except: 除外条件付き適用)
-const handler = some((c: Context) => conditions.some((cond) => cond(c)), every(...middleware))
+const handler = some((c: Context) => conditions.some((cond) => cond(c)), every(...middleware));
 ```
 
 `except()` の内部実装が `some()` と `every()` を組み合わせて実現されている点は、合成可能なプリミティブの設計指針を示している。
@@ -175,21 +175,21 @@ const handler = some((c: Context) => conditions.some((cond) => cond(c)), every(.
 // src/middleware/bearer-auth/index.ts:153
 return async function bearerAuth(c, next) {
   // ...
-}
+};
 ```
 
 - **HTTPException による構造化エラー伝播**: ミドルウェアがエラーを報告する際、`throw new HTTPException(status, { res })` を使い、ステータスコードとレスポンスボディを一体化して伝播する。エラーハンドラ側は `err.getResponse()` で完全なレスポンスを取得でき、エラー処理の責務がミドルウェアに閉じる（`src/http-exception.ts:46-78`）。
 
 ```typescript
 // src/middleware/bearer-auth/index.ts:150
-throw new HTTPException(status, { res })
+throw new HTTPException(status, { res });
 ```
 
 - **コンテキスト変数の型安全な共有**: `c.set()` / `c.get()` と `declare module` による ContextVariableMap 拡張を組み合わせ、ミドルウェア間のデータ共有を型安全に行う。変数名の typo がコンパイル時に検出される。
 
 ```typescript
 // src/middleware/request-id/index.ts:5-7
-declare module '../..' {
+declare module "../.." {
   interface ContextVariableMap extends RequestIdVariables {}
 }
 ```
@@ -198,9 +198,9 @@ declare module '../..' {
 
 ```typescript
 // src/router/smart-router/router.ts:46-48
-this.match = router.match.bind(router)
-this.#routers = [router]
-this.#routes = undefined
+this.match = router.match.bind(router);
+this.#routers = [router];
+this.#routes = undefined;
 ```
 
 ## Anti-Patterns / 注意点
@@ -210,11 +210,11 @@ this.#routes = undefined
 ```typescript
 // Bad: deprecated フィールドが型を肥大化させる
 type BearerAuthOptions = {
-  token: string | string[]
-  /** @deprecated */ noAuthenticationHeaderMessage?: string | object | MessageFunction
-  noAuthenticationHeader?: CustomizedErrorResponseOptions
+  token: string | string[];
+  /** @deprecated */ noAuthenticationHeaderMessage?: string | object | MessageFunction;
+  noAuthenticationHeader?: CustomizedErrorResponseOptions;
   // ... 同様のペアが3組
-}
+};
 ```
 
 ```typescript
@@ -229,10 +229,10 @@ type BearerAuthOptions = BaseBearerAuthOptions & Partial<DeprecatedBearerAuthFie
 
 ```typescript
 // Bad: ミドルウェア未登録時にランタイム警告のみ
-const metrics = c.get('metric')
+const metrics = c.get("metric");
 if (!metrics) {
-  console.warn('Metrics not initialized!')
-  return
+  console.warn("Metrics not initialized!");
+  return;
 }
 ```
 

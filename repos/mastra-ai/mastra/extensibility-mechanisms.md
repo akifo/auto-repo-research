@@ -117,8 +117,8 @@ export class MastraCompositeStore extends MastraBase {
 const proxy = new Proxy(storage, {
   get(target, prop) {
     const value = target[prop as keyof typeof target];
-    if (typeof value === 'function') {
-      if (prop === 'init') {
+    if (typeof value === "function") {
+      if (prop === "init") {
         return async (...args: unknown[]) => {
           if (!hasInitialized) {
             hasInitialized = Reflect.apply(value, target, args) as Promise<void>;
@@ -143,7 +143,7 @@ export class PostgresStore extends MastraCompositeStore {
   stores: StorageDomains;
 
   constructor(config: PostgresStoreConfig) {
-    super({ id: config.id, name: 'PostgresStore', disableInit: config.disableInit });
+    super({ id: config.id, name: "PostgresStore", disableInit: config.disableInit });
     const domainConfig: PgDomainClientConfig = {
       client: this.#db,
       schemaName: this.schema,
@@ -210,12 +210,12 @@ function createUndefinedPrimitiveError(type: ..., value: null | undefined, key?:
 ```typescript
 // packages/core/src/storage/base.ts:16-27
 export type StorageDomains = {
-  workflows: WorkflowsStorage;    // 必須
-  scores: ScoresStorage;          // 必須
-  memory: MemoryStorage;          // 必須
-  observability?: ObservabilityStorage;  // オプショナル
-  agents?: AgentsStorage;               // オプショナル
-  datasets?: DatasetsStorage;           // オプショナル
+  workflows: WorkflowsStorage; // 必須
+  scores: ScoresStorage; // 必須
+  memory: MemoryStorage; // 必須
+  observability?: ObservabilityStorage; // オプショナル
+  agents?: AgentsStorage; // オプショナル
+  datasets?: DatasetsStorage; // オプショナル
   // ...
 };
 ```

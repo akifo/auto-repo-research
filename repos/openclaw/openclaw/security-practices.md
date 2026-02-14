@@ -48,7 +48,7 @@ const ANGLE_BRACKET_MAP: Record<number, string> = {
 
 ```typescript
 // src/agents/sandbox-paths.ts:33-47
-export function resolveSandboxPath(params: { filePath: string; cwd: string; root: string }): {
+export function resolveSandboxPath(params: { filePath: string; cwd: string; root: string; }): {
   resolved: string;
   relative: string;
 } {
@@ -142,14 +142,14 @@ const QUOTE_CHARS = /["']/;
 const BARE_NAME_PATTERN = /^[A-Za-z0-9._+-]+$/;
 
 export function isSafeExecutableValue(value: string | null | undefined): boolean {
-  if (!value) { return false; }
+  if (!value) return false;
   const trimmed = value.trim();
-  if (trimmed.includes("\0")) { return false; }
-  if (CONTROL_CHARS.test(trimmed)) { return false; }
-  if (SHELL_METACHARS.test(trimmed)) { return false; }
-  if (QUOTE_CHARS.test(trimmed)) { return false; }
-  if (isLikelyPath(trimmed)) { return true; }
-  if (trimmed.startsWith("-")) { return false; }
+  if (trimmed.includes("\0")) return false;
+  if (CONTROL_CHARS.test(trimmed)) return false;
+  if (SHELL_METACHARS.test(trimmed)) return false;
+  if (QUOTE_CHARS.test(trimmed)) return false;
+  if (isLikelyPath(trimmed)) return true;
+  if (trimmed.startsWith("-")) return false;
   return BARE_NAME_PATTERN.test(trimmed);
 }
 ```
@@ -159,6 +159,7 @@ export function isSafeExecutableValue(value: string | null | undefined): boolean
 ### 6. CI/CD パイプラインでの多層セキュリティスキャン
 
 pre-commit フックで以下のセキュリティスキャンを実行している:
+
 - `detect-secrets`: 秘匿情報の混入検知（`.secrets.baseline` によるベースライン管理）
 - `zizmor`: GitHub Actions ワークフローのセキュリティ監査
 - `shellcheck`: シェルスクリプトの安全性チェック

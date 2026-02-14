@@ -21,28 +21,28 @@
 
 ## 分析した視点
 
-| # | 視点 | ファイル | 概要 |
-|---|------|---------|------|
-| 1 | Project Structure | project-structure.md | Fat Core + Thin Extensions構成で40以上の内部ドメインを単一パッケージに集約し、Plugin SDKで公開API面を制御 |
-| 2 | Architecture | architecture.md | Gateway Mediatorが全チャネル・エージェント間を仲介し、Dock/Plugin二層抽象化でN+M疎結合を実現 |
-| 3 | Design Philosophy | design-philosophy.md | TypeBoxスキーマをSingle Source of Truthとしクロスプラットフォーム型生成、Rust製ツールチェーンで開発速度を最大化 |
-| 4 | Extensibility Mechanisms | extensibility-mechanisms.md | OpenClawPluginApi Facadeで11種のregisterメソッドを提供し、34+拡張がコア内部を知らず動作 |
-| 5 | Type System Patterns | type-system-patterns.md | TypeBox・Zod・AJVを境界ごとに使い分け、LLM互換stringEnumヘルパーで外部制約に適応 |
-| 6 | Code Organization | code-organization.md | ドット区切りファイル名で論理グルーピング、多層バレルで公開API制御、500LOC上限をCI強制 |
-| 7 | Abstraction Patterns | abstraction-patterns.md | Capability-basedオプショナルインターフェースと遅延importプロキシDIで多チャネル統合を実現 |
-| 8 | Error Handling Idioms | error-handling-idioms.md | 構造化コード付きカスタムエラー型、BFSによるcauseチェーン走査、致命度3段階の未処理rejection分類 |
-| 9 | Testing Practices | testing-practices.md | unit/e2e/liveの3層分類を6設定ファイルで制御、決定論的ポートブロック割り当てで並列テスト安定化 |
-| 10 | Build and Tooling | build-and-tooling.md | Rust製ツール(tsdown/oxlint/oxfmt/tsgo)で全フェーズ高速化、スマート再ビルドで不要なビルドをスキップ |
-| 11 | Performance Techniques | performance-techniques.md | 適応的コンテキストウィンドウ管理、レーンベース並列化、サーキットブレーカー付きバッチフォールバック |
-| 12 | Security Practices | security-practices.md | 多層プロンプトインジェクション防御、宣言的秘匿フィールド管理、タイミング安全な秘密比較の徹底 |
-| 13 | API Design Practices | api-design-practices.md | TypeBox一元定義から4形態を自動生成、冪等性キー必須、ハンドラ冒頭バリデーション+構造化エラー |
-| 14 | Dependency Management | dependency-management.md | overrides+minimumReleaseAge+onlyBuiltDependenciesの三層サプライチェーン防御、workspace:*はdevDeps限定 |
-| 15 | AI Settings | ai-settings.md | AGENTS.md正式名+CLAUDE.mdシンボリックリンク、6項目のマルチエージェント安全性ルール、3段階PRスキル |
-| 16 | Multi-Platform Patterns | multi-platform-patterns.md | TypeBox->JSON Schema->Swiftコード生成パイプライン、CI diff検証、共有パッケージ3層分割 |
-| 17 | Dev Conventions | dev-conventions.md | スコープドコミッターでgit add .禁止、3段階PRパイプライン、AI生成PR歓迎+透明性チェックリスト |
-| 18 | Concurrency Patterns | concurrency-patterns.md | PID検証付きファイルロック、世代番号付きレーンキュー、bindAbortRelayでメモリリーク防止 |
-| 19 | Messaging Integration | messaging-integration-patterns.md | Registry/Dock/Pluginの三層チャネル抽象化、Capabilitiesフラグによる機能ネゴシエーション |
-| 20 | Media Processing | media-processing-patterns.md | 多段MIME検出、環境適応型バックエンド切替、withTempDirスコープ付きクリーンアップの徹底 |
+| #  | 視点                     | ファイル                          | 概要                                                                                                            |
+| -- | ------------------------ | --------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| 1  | Project Structure        | project-structure.md              | Fat Core + Thin Extensions構成で40以上の内部ドメインを単一パッケージに集約し、Plugin SDKで公開API面を制御       |
+| 2  | Architecture             | architecture.md                   | Gateway Mediatorが全チャネル・エージェント間を仲介し、Dock/Plugin二層抽象化でN+M疎結合を実現                    |
+| 3  | Design Philosophy        | design-philosophy.md              | TypeBoxスキーマをSingle Source of Truthとしクロスプラットフォーム型生成、Rust製ツールチェーンで開発速度を最大化 |
+| 4  | Extensibility Mechanisms | extensibility-mechanisms.md       | OpenClawPluginApi Facadeで11種のregisterメソッドを提供し、34+拡張がコア内部を知らず動作                         |
+| 5  | Type System Patterns     | type-system-patterns.md           | TypeBox・Zod・AJVを境界ごとに使い分け、LLM互換stringEnumヘルパーで外部制約に適応                                |
+| 6  | Code Organization        | code-organization.md              | ドット区切りファイル名で論理グルーピング、多層バレルで公開API制御、500LOC上限をCI強制                           |
+| 7  | Abstraction Patterns     | abstraction-patterns.md           | Capability-basedオプショナルインターフェースと遅延importプロキシDIで多チャネル統合を実現                        |
+| 8  | Error Handling Idioms    | error-handling-idioms.md          | 構造化コード付きカスタムエラー型、BFSによるcauseチェーン走査、致命度3段階の未処理rejection分類                  |
+| 9  | Testing Practices        | testing-practices.md              | unit/e2e/liveの3層分類を6設定ファイルで制御、決定論的ポートブロック割り当てで並列テスト安定化                   |
+| 10 | Build and Tooling        | build-and-tooling.md              | Rust製ツール(tsdown/oxlint/oxfmt/tsgo)で全フェーズ高速化、スマート再ビルドで不要なビルドをスキップ              |
+| 11 | Performance Techniques   | performance-techniques.md         | 適応的コンテキストウィンドウ管理、レーンベース並列化、サーキットブレーカー付きバッチフォールバック              |
+| 12 | Security Practices       | security-practices.md             | 多層プロンプトインジェクション防御、宣言的秘匿フィールド管理、タイミング安全な秘密比較の徹底                    |
+| 13 | API Design Practices     | api-design-practices.md           | TypeBox一元定義から4形態を自動生成、冪等性キー必須、ハンドラ冒頭バリデーション+構造化エラー                     |
+| 14 | Dependency Management    | dependency-management.md          | overrides+minimumReleaseAge+onlyBuiltDependenciesの三層サプライチェーン防御、workspace:*はdevDeps限定           |
+| 15 | AI Settings              | ai-settings.md                    | AGENTS.md正式名+CLAUDE.mdシンボリックリンク、6項目のマルチエージェント安全性ルール、3段階PRスキル               |
+| 16 | Multi-Platform Patterns  | multi-platform-patterns.md        | TypeBox->JSON Schema->Swiftコード生成パイプライン、CI diff検証、共有パッケージ3層分割                           |
+| 17 | Dev Conventions          | dev-conventions.md                | スコープドコミッターでgit add .禁止、3段階PRパイプライン、AI生成PR歓迎+透明性チェックリスト                     |
+| 18 | Concurrency Patterns     | concurrency-patterns.md           | PID検証付きファイルロック、世代番号付きレーンキュー、bindAbortRelayでメモリリーク防止                           |
+| 19 | Messaging Integration    | messaging-integration-patterns.md | Registry/Dock/Pluginの三層チャネル抽象化、Capabilitiesフラグによる機能ネゴシエーション                          |
+| 20 | Media Processing         | media-processing-patterns.md      | 多段MIME検出、環境適応型バックエンド切替、withTempDirスコープ付きクリーンアップの徹底                           |
 
 ## 特に注目すべき知見
 

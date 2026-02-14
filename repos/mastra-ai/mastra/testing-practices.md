@@ -29,7 +29,9 @@ mastra のテスト戦略の中核は `_test-utils` パッケージに集約さ�
 // stores/_test-utils/src/factory.ts:28-86
 export function createTestSuite(storage: MastraStorage, capabilities: TestCapabilities = {}) {
   describe(storage.constructor.name, () => {
-    beforeAll(async () => { await storage.init(); });
+    beforeAll(async () => {
+      await storage.init();
+    });
     afterAll(async () => {
       // dangerouslyClearAll for each domain
       await Promise.all(clearList);
@@ -50,14 +52,14 @@ export function createTestSuite(storage: MastraStorage, capabilities: TestCapabi
 ```typescript
 // stores/pg/src/storage/index.test.ts:23-24
 createTestSuite(new PostgresStore(TEST_CONFIG));
-createTestSuite(new PostgresStore({ ...TEST_CONFIG, schemaName: 'my_schema' }));
+createTestSuite(new PostgresStore({ ...TEST_CONFIG, schemaName: "my_schema" }));
 ```
 
 LibSQL でも同一パターン:
 
 ```typescript
 // stores/libsql/src/storage/index.test.ts:26-35
-const libsql = new LibSQLStore({ id: 'libsql-test-store', url: TEST_DB_URL });
+const libsql = new LibSQLStore({ id: "libsql-test-store", url: TEST_DB_URL });
 const mastra = new Mastra({ storage: libsql });
 createTestSuite(mastra.getStorage()!);
 ```
@@ -81,7 +83,7 @@ export interface TestDomains {
 ```typescript
 // server-adapters/_test-utils/src/route-adapter-test-suite.ts:27-53
 export function createRouteAdapterTestSuite(config: AdapterTestSuiteConfig) {
-  describe('Route Validation', () => {
+  describe("Route Validation", () => {
     createRouteTestSuite({ routes: SERVER_ROUTES });
   });
   describe(suiteName, () => {
@@ -99,9 +101,9 @@ export function createRouteAdapterTestSuite(config: AdapterTestSuiteConfig) {
 export default defineConfig({
   test: {
     projects: [
-      { test: { name: 'unit:packages/core', include: ['src/**/*.test.ts'], exclude: ['src/**/*.e2e.test.ts'] } },
-      { test: { name: 'e2e:packages/core', include: ['src/**/*.e2e.test.ts'] } },
-      { test: { name: 'typecheck:packages/core', typecheck: { enabled: true, include: ['src/**/*.test-d.ts'] } } },
+      { test: { name: "unit:packages/core", include: ["src/**/*.test.ts"], exclude: ["src/**/*.e2e.test.ts"] } },
+      { test: { name: "e2e:packages/core", include: ["src/**/*.e2e.test.ts"] } },
+      { test: { name: "typecheck:packages/core", typecheck: { enabled: true, include: ["src/**/*.test-d.ts"] } } },
     ],
   },
 });
@@ -111,9 +113,9 @@ export default defineConfig({
 
 ```typescript
 // packages/core/src/agent/agent-types.test-d.ts:14-31
-describe('Agent Type Tests', () => {
-  it('should allow Zod schema in AgentExecutionOptions.structuredOutput', () => {
-    const mySchema = z.object({ status: z.enum(['error', 'success']), message: z.string() });
+describe("Agent Type Tests", () => {
+  it("should allow Zod schema in AgentExecutionOptions.structuredOutput", () => {
+    const mySchema = z.object({ status: z.enum(["error", "success"]), message: z.string() });
     const options: AgentExecutionOptions<z.infer<typeof mySchema>> = {
       structuredOutput: { schema: mySchema },
     };
@@ -133,7 +135,10 @@ async function discoverProjects(): Promise<TestProjectConfiguration[]> {
   for (const configPath of configPaths) {
     if (EXCLUDED_DIRS.has(projectDir)) continue;
     const hasNestedProjects = /test:\s*\{[\s\S]*?projects:\s*\[/.test(configContent);
-    if (!hasNestedProjects) { projects.push(projectDir); continue; }
+    if (!hasNestedProjects) {
+      projects.push(projectDir);
+      continue;
+    }
     // Vite の config loader で動的に読み込み、プロジェクトを展開
     const loaded = await loadConfigFromFile({} as any, absolutePath);
     // ... nested projects を root パス付きで展開
@@ -149,14 +154,17 @@ E2E テストは Vitest の `globalSetup` でローカル npm レジストリを
 ```typescript
 // e2e-tests/commonjs/setup.ts:12-50
 export default async function setup(project: TestProject) {
-  const tag = 'commonjs-e2e-test';
+  const tag = "commonjs-e2e-test";
   const teardown = await prepareMonorepo(rootDir, globby, tag);
   const port = await getPort();
   const registry = await startRegistry(verdaccioPath, port, registryLocation);
-  project.provide('tag', tag);
-  project.provide('registry', registry.toString());
+  project.provide("tag", tag);
+  project.provide("registry", registry.toString());
   await publishPackages([...filters], tag, rootDir, registry);
-  return () => { teardown(); registry.kill(); };
+  return () => {
+    teardown();
+    registry.kill();
+  };
 }
 ```
 
@@ -167,11 +175,13 @@ export default async function setup(project: TestProject) {
 describe.for(
   allPackages.filter(pkg => !globalIgnore.includes(pkg.packageJson.name))
     .map(pkg => [pkg.packageJson.name, pkg.packageJson] as const),
-)('%s', async ([pkgName, pkgJson]) => {
-  it('should have type="module"', () => { expect(pkgJson.type).toBe('module'); });
-  describe.concurrent.for(imports)('%s', async ([importPath]) => {
-    it('should use .js and .d.ts extensions when using import', async () => { /* ... */ });
-    it('should use .cjs and .d.ts extensions when using require', async () => { /* ... */ });
+)("%s", async ([pkgName, pkgJson]) => {
+  it('should have type="module"', () => {
+    expect(pkgJson.type).toBe("module");
+  });
+  describe.concurrent.for(imports)("%s", async ([importPath]) => {
+    it("should use .js and .d.ts extensions when using import", async () => {/* ... */});
+    it("should use .cjs and .d.ts extensions when using require", async () => {/* ... */});
   });
 });
 ```
@@ -182,12 +192,12 @@ LLM バージョン（v1/v2/v3）をまたいだテストは、テストスイ�
 
 ```typescript
 // packages/core/src/agent/agent.test.ts:50,7596-7597
-function agentTests({ version }: { version: 'v1' | 'v2' }) {
+function agentTests({ version }: { version: "v1" | "v2"; }) {
   // ... hundreds of tests using MockLanguageModelV1 or MockLanguageModelV2
 }
-describe('Agent Tests', () => {
-  agentTests({ version: 'v1' });
-  agentTests({ version: 'v2' });
+describe("Agent Tests", () => {
+  agentTests({ version: "v1" });
+  agentTests({ version: "v2" });
 });
 ```
 
@@ -195,13 +205,13 @@ Mock 生成は共通ヘルパーに集約:
 
 ```typescript
 // packages/core/src/agent/__tests__/mock-model.ts:26-42
-export function getSingleDummyResponseModel(version: 'v1' | 'v2' | 'v3') {
-  if (version === 'v1') {
-    return new MockLanguageModelV1({ doGenerate: async () => ({ /* ... */ }) });
-  } else if (version === 'v2') {
-    return new MockLanguageModelV2({ doGenerate: async () => ({ /* ... */ }) });
+export function getSingleDummyResponseModel(version: "v1" | "v2" | "v3") {
+  if (version === "v1") {
+    return new MockLanguageModelV1({ doGenerate: async () => ({/* ... */}) });
+  } else if (version === "v2") {
+    return new MockLanguageModelV2({ doGenerate: async () => ({/* ... */}) });
   }
-  return new MockLanguageModelV3({ doGenerate: async () => ({ /* ... */ }) });
+  return new MockLanguageModelV3({ doGenerate: async () => ({/* ... */}) });
 }
 ```
 
@@ -211,10 +221,10 @@ export function getSingleDummyResponseModel(version: 'v1' | 'v2' | 'v3') {
 // packages/memory/vitest.config.ts:6-12
 export default defineConfig({
   test: {
-    name: 'unit:packages/memory',
+    name: "unit:packages/memory",
     isolate: false,
     // smaller output to save token space when LLMs run tests
-    reporters: 'dot',
+    reporters: "dot",
     bail: 1,
   },
 });
@@ -246,11 +256,11 @@ services:
 ```typescript
 // stores/pg/src/storage/test-utils.ts:10-17
 export const TEST_CONFIG: PostgresStoreConfig = {
-  host: process.env.POSTGRES_HOST || 'localhost',
+  host: process.env.POSTGRES_HOST || "localhost",
   port: Number(process.env.POSTGRES_PORT) || 5434,
-  database: process.env.POSTGRES_DB || 'postgres',
-  user: process.env.POSTGRES_USER || 'postgres',
-  password: process.env.POSTGRES_PASSWORD || 'postgres',
+  database: process.env.POSTGRES_DB || "postgres",
+  user: process.env.POSTGRES_USER || "postgres",
+  password: process.env.POSTGRES_PASSWORD || "postgres",
 };
 ```
 
@@ -277,10 +287,10 @@ export const TEST_CONFIG: PostgresStoreConfig = {
 ```typescript
 // stores/_test-utils/src/vector-factory.ts:48-65
 export interface TestDomains {
-  basicOps?: boolean;      // on/off でドメイン単位の制御
+  basicOps?: boolean; // on/off でドメイン単位の制御
   filterOps?: boolean;
   edgeCases?: boolean;
-  largeBatch?: boolean;    // edgeCases のサブセットを個別制御
+  largeBatch?: boolean; // edgeCases のサブセットを個別制御
 }
 ```
 

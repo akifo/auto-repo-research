@@ -20,26 +20,26 @@ Mastra は Gatsby チーム出身の開発者が構築した AI エージェン�
 
 ## 分析した視点
 
-| # | 視点 | ファイル | 概要 |
-|---|------|---------|------|
-| 1 | Project Structure | project-structure.md | 90超パッケージをカテゴリ別トップレベルディレクトリに分割し、@internal/*スコープとpnpm catalogで一貫管理 |
-| 2 | Architecture | architecture.md | Mastraクラスを中央レジストリとした4層構造で、Proxy遅延初期化とNoOpパターンを活用 |
-| 3 | Design Philosophy | design-philosophy.md | 薄いコア+プラガブル周辺、DynamicArgument型による静的/動的統一、AI SDKベンダリング戦略 |
-| 4 | Abstraction Patterns | abstraction-patterns.md | 三層継承とフィルタ翻訳Interpreterで50超アダプターを統一インターフェースで管理 |
-| 5 | Type System Patterns | type-system-patterns.md | Zodスキーマ駆動型設計、ブランド型によるsuspend安全性、条件型でのAPI分岐を高度に活用 |
-| 6 | Code Organization | code-organization.md | メインエントリ1行+20超サブパスエクスポートで最小公開面を実現、@deprecatedエイリアスで段階的移行 |
-| 7 | Extensibility Mechanisms | extensibility-mechanisms.md | abstract class+中央レジストリ+自動DIの三位一体で50超プラグインの拡張メカニズムを統一 |
-| 8 | Error Handling Idioms | error-handling-idioms.md | ドメイン×カテゴリの構造化エラー、unknown正規化ユーティリティ、5段階バリデーションフォールバック |
-| 9 | Testing Practices | testing-practices.md | テストスイートファクトリとcapabilityフラグで20超アダプターに統一テストを適用、CI差分実行を徹底 |
-| 10 | API Design Practices | api-design-practices.md | 設定オブジェクト+createXxxファクトリ+Fluent Builderで型推論を活かしたDX重視のAPI設計 |
-| 11 | Build and Tooling | build-and-tooling.md | tsup(dts:false)+カスタム型生成+Turborepo二層タスク定義で80超パッケージのビルドを統一 |
-| 12 | Dependency Management | dependency-management.md | pnpm catalog+npm aliasing+カスタムchangeset CLIで100超パッケージの依存とバージョンを自動管理 |
-| 13 | Dev Conventions | dev-conventions.md | @internal/lintで共有ESLint設定を一元化、依存検出による条件付きルール適用で異種パッケージに対応 |
-| 14 | AI Settings | ai-settings.md | 階層的CLAUDE.md、MCP ドキュメントサーバー、スキルの遅延ロード、ステージ制ワークフロー |
-| 15 | Concurrency Patterns | concurrency-patterns.md | branded type付きsuspend/resume、安全性制約による並行度自動降格、debounce+staleness永続化 |
-| 16 | Schema Validation Patterns | schema-validation-patterns.md | Zod v3/v4互換のduck typing、プロバイダ別Strategy変換、5段階フォールバック入力正規化 |
-| 17 | Composability Patterns | composability-patterns.md | createStepで異種コンポーネントをStep統一変換、Workflow自体がStepを実装するComposite構造 |
-| 18 | CI/CD | ci-cd.md | Turboハッシュ変更検出+workflow_runチェーン+Trusted Actionsで大規模モノレポCIを安全に自動化 |
+| #  | 視点                       | ファイル                      | 概要                                                                                                    |
+| -- | -------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------- |
+| 1  | Project Structure          | project-structure.md          | 90超パッケージをカテゴリ別トップレベルディレクトリに分割し、@internal/*スコープとpnpm catalogで一貫管理 |
+| 2  | Architecture               | architecture.md               | Mastraクラスを中央レジストリとした4層構造で、Proxy遅延初期化とNoOpパターンを活用                        |
+| 3  | Design Philosophy          | design-philosophy.md          | 薄いコア+プラガブル周辺、DynamicArgument型による静的/動的統一、AI SDKベンダリング戦略                   |
+| 4  | Abstraction Patterns       | abstraction-patterns.md       | 三層継承とフィルタ翻訳Interpreterで50超アダプターを統一インターフェースで管理                           |
+| 5  | Type System Patterns       | type-system-patterns.md       | Zodスキーマ駆動型設計、ブランド型によるsuspend安全性、条件型でのAPI分岐を高度に活用                     |
+| 6  | Code Organization          | code-organization.md          | メインエントリ1行+20超サブパスエクスポートで最小公開面を実現、@deprecatedエイリアスで段階的移行         |
+| 7  | Extensibility Mechanisms   | extensibility-mechanisms.md   | abstract class+中央レジストリ+自動DIの三位一体で50超プラグインの拡張メカニズムを統一                    |
+| 8  | Error Handling Idioms      | error-handling-idioms.md      | ドメイン×カテゴリの構造化エラー、unknown正規化ユーティリティ、5段階バリデーションフォールバック         |
+| 9  | Testing Practices          | testing-practices.md          | テストスイートファクトリとcapabilityフラグで20超アダプターに統一テストを適用、CI差分実行を徹底          |
+| 10 | API Design Practices       | api-design-practices.md       | 設定オブジェクト+createXxxファクトリ+Fluent Builderで型推論を活かしたDX重視のAPI設計                    |
+| 11 | Build and Tooling          | build-and-tooling.md          | tsup(dts:false)+カスタム型生成+Turborepo二層タスク定義で80超パッケージのビルドを統一                    |
+| 12 | Dependency Management      | dependency-management.md      | pnpm catalog+npm aliasing+カスタムchangeset CLIで100超パッケージの依存とバージョンを自動管理            |
+| 13 | Dev Conventions            | dev-conventions.md            | @internal/lintで共有ESLint設定を一元化、依存検出による条件付きルール適用で異種パッケージに対応          |
+| 14 | AI Settings                | ai-settings.md                | 階層的CLAUDE.md、MCP ドキュメントサーバー、スキルの遅延ロード、ステージ制ワークフロー                   |
+| 15 | Concurrency Patterns       | concurrency-patterns.md       | branded type付きsuspend/resume、安全性制約による並行度自動降格、debounce+staleness永続化                |
+| 16 | Schema Validation Patterns | schema-validation-patterns.md | Zod v3/v4互換のduck typing、プロバイダ別Strategy変換、5段階フォールバック入力正規化                     |
+| 17 | Composability Patterns     | composability-patterns.md     | createStepで異種コンポーネントをStep統一変換、Workflow自体がStepを実装するComposite構造                 |
+| 18 | CI/CD                      | ci-cd.md                      | Turboハッシュ変更検出+workflow_runチェーン+Trusted Actionsで大規模モノレポCIを安全に自動化              |
 
 ## 特に注目すべき知見
 

@@ -25,20 +25,20 @@ Hono の `app.get().post().put()` チェーンは、各 HTTP メソッド呼び�
 
 ```typescript
 // src/hono-base.ts:129-141
-const allMethods = [...METHODS, METHOD_NAME_ALL_LOWERCASE]
+const allMethods = [...METHODS, METHOD_NAME_ALL_LOWERCASE];
 allMethods.forEach((method) => {
   this[method] = (args1: string | H, ...args: H[]) => {
-    if (typeof args1 === 'string') {
-      this.#path = args1
+    if (typeof args1 === "string") {
+      this.#path = args1;
     } else {
-      this.#addRoute(method, this.#path, args1)
+      this.#addRoute(method, this.#path, args1);
     }
     args.forEach((handler) => {
-      this.#addRoute(method, this.#path, handler)
-    })
-    return this as any
-  }
-})
+      this.#addRoute(method, this.#path, handler);
+    });
+    return this as any;
+  };
+});
 ```
 
 第1引数が `string` か `Function` かで分岐するユニオン型引数パターンにより、`app.get('/path', handler)` と `app.get(handler)` の両方を同じメソッドで受け付ける。これはユーザーの記述量を減らすが、型安全性を維持するために `HandlerInterface` で 10 以上のオーバーロードを定義する必要がある。
@@ -52,16 +52,16 @@ allMethods.forEach((method) => {
 text: TextRespond = (
   text: string,
   arg?: ContentfulStatusCode | ResponseOrInit,
-  headers?: HeaderRecord
+  headers?: HeaderRecord,
 ): ReturnType<TextRespond> => {
   return !this.#preparedHeaders && !this.#status && !arg && !headers && !this.finalized
     ? (new Response(text) as ReturnType<TextRespond>)
     : (this.#newResponse(
-        text,
-        arg,
-        setDefaultContentType(TEXT_PLAIN, headers)
-      ) as ReturnType<TextRespond>)
-}
+      text,
+      arg,
+      setDefaultContentType(TEXT_PLAIN, headers),
+    ) as ReturnType<TextRespond>);
+};
 ```
 
 これは「便利 API は抽象化のコストをゼロに近づけるべき」という原則の表れ。ホットパスの条件分岐で不要なオブジェクト生成を回避している。
@@ -106,20 +106,20 @@ export const bearerAuth = (options: BearerAuthOptions): MiddlewareHandler => { .
 const createProxy = (callback: Callback, path: string[]) => {
   const proxy: unknown = new Proxy(() => {}, {
     get(_obj, key) {
-      if (typeof key !== 'string' || key === 'then') {
-        return undefined
+      if (typeof key !== "string" || key === "then") {
+        return undefined;
       }
-      return createProxy(callback, [...path, key])
+      return createProxy(callback, [...path, key]);
     },
     apply(_1, _2, args) {
       return callback({
         path,
         args,
-      })
+      });
     },
-  })
-  return proxy
-}
+  });
+  return proxy;
+};
 ```
 
 `key === 'then'` のチェック（16行目）は、`await` 時に `thenable` として扱われないための防御。この Proxy パターンにより `client.api.users.$get()` のような記述が可能になり、サーバー側の型定義がそのままクライアント側の型として伝搬する。
@@ -195,9 +195,9 @@ export const except = (
 
 ```typescript
 // src/types.ts:77-96
-export type Handler<E, P, I, R> = (c: Context<E, P, I>, next: Next) => R
-export type MiddlewareHandler<E, P, I, R> = (c: Context<E, P, I>, next: Next) => Promise<R | void>
-export type H<E, P, I, R> = Handler<E, P, I, R> | MiddlewareHandler<E, P, I, R>
+export type Handler<E, P, I, R> = (c: Context<E, P, I>, next: Next) => R;
+export type MiddlewareHandler<E, P, I, R> = (c: Context<E, P, I>, next: Next) => Promise<R | void>;
+export type H<E, P, I, R> = Handler<E, P, I, R> | MiddlewareHandler<E, P, I, R>;
 ```
 
 - **名前付き関数式でスタックトレースを明示**: 全ミドルウェアが `return async function cors(c, next)` のように名前付き関数式を使い、デバッグ時のスタックトレースを読みやすくしている。
@@ -249,7 +249,7 @@ export const testClient = <T extends Hono<any, Schema, string>>(app: T, ...): Cl
 
 ```typescript
 // Bad: src/hono-base.ts:139
-return this as any  // 型チェックがここで途切れる
+return this as any; // 型チェックがここで途切れる
 
 // Better: ジェネリック型パラメータを正確に返す
 // （ただし TypeScript の制約上、this の型を正確に返すのは困難な場合がある）

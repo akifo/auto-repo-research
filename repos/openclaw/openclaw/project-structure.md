@@ -30,6 +30,7 @@ packages:
 ```
 
 各層の役割は明確に分離されている:
+
 - **`.` (ルート)**: CLI + Gateway + 全コアロジック。`src/` 配下に 40 以上のドメインディレクトリを持つが、全て単一の `openclaw` パッケージ内
 - **`ui`**: Web UI（Lit Web Components）。独立した `vite.config.ts` と `vitest.config.ts` を持つ
 - **`packages/*`**: 互換性 shim（`clawdbot`, `moltbot`）。旧名称からの移行用
@@ -96,8 +97,10 @@ extensions/<name>/
   "openclaw": {
     "extensions": ["./index.ts"],
     "channel": {
-      "id": "matrix", "label": "Matrix",
-      "docsPath": "/channels/matrix", "order": 70
+      "id": "matrix",
+      "label": "Matrix",
+      "docsPath": "/channels/matrix",
+      "order": 70
     },
     "install": { "npmSpec": "@openclaw/matrix" }
   }
@@ -135,6 +138,7 @@ TypeScript のプロトコル定義から Swift の型を自動生成するス�
 
 ```markdown
 # skills/github/SKILL.md (frontmatter)
+
 ---
 name: github
 description: "Interact with GitHub using the `gh` CLI..."
@@ -185,7 +189,7 @@ const jiti = createJiti(import.meta.url, {
 // src/plugins/discovery.ts:53-59
 function resolvePackageExtensions(manifest: PackageManifest): string[] {
   const raw = getPackageManifestMetadata(manifest)?.extensions;
-  if (!Array.isArray(raw)) { return []; }
+  if (!Array.isArray(raw)) return [];
   return raw.map((entry) => (typeof entry === "string" ? entry.trim() : "")).filter(Boolean);
 }
 ```

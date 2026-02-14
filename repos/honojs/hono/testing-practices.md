@@ -28,33 +28,33 @@ Hono は `HonoBase` クラスに `request()` メソッドを組み込み、テ�
 request = (
   input: RequestInfo | URL,
   requestInit?: RequestInit,
-  Env?: E['Bindings'] | {},
-  executionCtx?: ExecutionContext
+  Env?: E["Bindings"] | {},
+  executionCtx?: ExecutionContext,
 ): Response | Promise<Response> => {
   if (input instanceof Request) {
-    return this.fetch(requestInit ? new Request(input, requestInit) : input, Env, executionCtx)
+    return this.fetch(requestInit ? new Request(input, requestInit) : input, Env, executionCtx);
   }
-  input = input.toString()
+  input = input.toString();
   return this.fetch(
     new Request(
-      /^https?:\/\//.test(input) ? input : `http://localhost${mergePath('/', input)}`,
-      requestInit
+      /^https?:\/\//.test(input) ? input : `http://localhost${mergePath("/", input)}`,
+      requestInit,
     ),
     Env,
-    executionCtx
-  )
-}
+    executionCtx,
+  );
+};
 ```
 
 これにより、テストはサーバー起動・ポート確保・ソケットクローズのオーバーヘッドなしで動作する。
 
 ```typescript
 // src/middleware/cors/index.test.ts:4-7
-const app = new Hono()
-app.use('/api/*', cors())
+const app = new Hono();
+app.use("/api/*", cors());
 // ...
-const res = await app.request('http://localhost/api/foo')
-expect(res.status).toBe(200)
+const res = await app.request("http://localhost/api/foo");
+expect(res.status).toBe(200);
 ```
 
 ### testClient — 型安全な RPC スタイルテスト
@@ -65,22 +65,22 @@ expect(res.status).toBe(200)
 // src/helper/testing/index.ts:16-27
 export const testClient = <T extends Hono<any, Schema, string>>(
   app: T,
-  Env?: ExtractEnv<T>['Bindings'] | {},
+  Env?: ExtractEnv<T>["Bindings"] | {},
   executionCtx?: ExecutionContext,
-  options?: Omit<ClientRequestOptions, 'fetch'>
-): UnionToIntersection<Client<T, 'http://localhost'>> => {
+  options?: Omit<ClientRequestOptions, "fetch">,
+): UnionToIntersection<Client<T, "http://localhost">> => {
   const customFetch = (input: RequestInfo | URL, init?: RequestInit) => {
-    return app.request(input, init, Env, executionCtx)
-  }
-  return hc<typeof app, 'http://localhost'>('http://localhost', { ...options, fetch: customFetch })
-}
+    return app.request(input, init, Env, executionCtx);
+  };
+  return hc<typeof app, "http://localhost">("http://localhost", { ...options, fetch: customFetch });
+};
 ```
 
 ```typescript
 // src/helper/testing/index.test.ts:5-8
-const app = new Hono().get('/search', (c) => c.json({ hello: 'world' }))
-const res = await testClient(app).search.$get()
-expect(await res.json()).toEqual({ hello: 'world' })
+const app = new Hono().get("/search", (c) => c.json({ hello: "world" }));
+const res = await testClient(app).search.$get();
+expect(await res.json()).toEqual({ hello: "world" });
 ```
 
 ### ランタイム分離テストの二層構造
@@ -92,12 +92,13 @@ expect(await res.json()).toEqual({ hello: 'world' })
 ```typescript
 // vitest.config.ts:26-27
 projects: [
-  './runtime-tests/*/vitest.config.ts',
+  "./runtime-tests/*/vitest.config.ts",
   // ... main project, jsx-runtime-default, jsx-runtime-dom
-]
+];
 ```
 
 **ランタイム別の戦略差異**:
+
 - **workerd**: `wrangler` の `unstable_dev` で実際の Worker インスタンスを起動しテスト（`runtime-tests/workerd/index.test.ts:8-14`）
 - **Deno**: `Deno.test()` + `@std/assert` でネイティブテストランナーを使用（`runtime-tests/deno/hono.test.ts`）
 - **Bun**: Vitest 互換 API で `Bun.serve()` を使った実サーバーテスト（`runtime-tests/bun/index.test.tsx:386-392`）
@@ -112,8 +113,8 @@ projects: [
 ```typescript
 // .vitest.config/setup-vitest.ts:7-10
 if (!globalThis.crypto) {
-  vi.stubGlobal('crypto', nodeCrypto)
-  vi.stubGlobal('CryptoKey', nodeCrypto.webcrypto.CryptoKey)
+  vi.stubGlobal("crypto", nodeCrypto);
+  vi.stubGlobal("CryptoKey", nodeCrypto.webcrypto.CryptoKey);
 }
 ```
 
@@ -128,16 +129,16 @@ Cache API のモックも最小限の実装で、`match`/`put`/`keys` のみを�
 runTest({
   skip: [
     {
-      reason: 'UnsupportedPath',
+      reason: "UnsupportedPath",
       tests: [
-        'Duplicate param name > parent',
-        'Duplicate param name > child',
+        "Duplicate param name > parent",
+        "Duplicate param name > child",
         // ...
       ],
     },
   ],
   newRouter: () => new RegExpRouter(),
-})
+});
 ```
 
 ### カバレッジの多ランタイム統合
@@ -178,10 +179,10 @@ coverage:
 
 ```typescript
 // src/hono.test.ts:77-82
-const res = await app.request('http://localhost/hello')
-expect(res).not.toBeNull()
-expect(res.status).toBe(200)
-expect(await res.text()).toBe('hello')
+const res = await app.request("http://localhost/hello");
+expect(res).not.toBeNull();
+expect(res.status).toBe(200);
+expect(await res.text()).toBe("hello");
 ```
 
 - **ランタイムテストの「最小パターン」原則**: 各ランタイムテストは基本動作・環境変数・ランタイム固有機能（WebSocket, ServeStatic 等）のみを検証し、ミドルウェアのロジックテストはメインテストに委譲する。これにより、ランタイムテスト追加のコストが低く保たれる。
@@ -197,9 +198,9 @@ expect(await res.text()).toBe('hello')
 ```typescript
 // runtime-tests/fastly/index.test.ts:7-9
 beforeAll(() => {
-  vi.stubGlobal('fastly', true)
-  vi.stubGlobal('navigator', undefined)
-})
+  vi.stubGlobal("fastly", true);
+  vi.stubGlobal("navigator", undefined);
+});
 ```
 
 - **宣言的スキップによる共通テストの柔軟な適用**: 共通テストスイートに `skip` 配列を渡すことで、各実装の制約をテストコード内に文書化しつつ、対応可能なケースは自動的に全実装で検証される。
@@ -221,14 +222,14 @@ skip: [
 ```typescript
 // Bad: ランタイムテストにミドルウェアロジックの詳細テストを含める
 // runtime-tests/bun/index.test.tsx — JWT/BasicAuth テストがメインテストと重複
-describe('JWT Auth Middleware', () => { /* ... 同じテストがメインにも存在 */ })
+describe("JWT Auth Middleware", () => {/* ... 同じテストがメインにも存在 */});
 
 // Better: ランタイム固有の動作のみテスト
-describe('Bun-specific', () => {
-  it('returns correct runtime key', () => {
-    expect(getRuntimeKey()).toBe('bun')
-  })
-})
+describe("Bun-specific", () => {
+  it("returns correct runtime key", () => {
+    expect(getRuntimeKey()).toBe("bun");
+  });
+});
 ```
 
 - **セットアップファイルへの暗黙的な依存**: `.vitest.config/setup-vitest.ts` で `crypto` と `caches` をグローバルに注入するため、テストファイル単体を読んでも依存関係が見えない。これはテストの可読性を損なうリスクがある。

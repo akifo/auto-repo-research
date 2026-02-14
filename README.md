@@ -51,10 +51,10 @@ Step 7: 完了報告 + /showcase 案内
 
 ### エージェント構成
 
-| エージェント | 役割 |
-|------------|------|
+| エージェント           | 役割                                                                         |
+| ---------------------- | ---------------------------------------------------------------------------- |
 | **perspective-writer** | 特定の視点にフォーカスしてリポジトリを分析し、構造化された分析ファイルを生成 |
-| **synthesis-writer** | 全視点を横断的に読み取り、overview.md / meta.yaml / rules.md を生成 |
+| **synthesis-writer**   | 全視点を横断的に読み取り、overview.md / meta.yaml / rules.md を生成          |
 
 ## ディレクトリ構成
 
@@ -109,12 +109,12 @@ cd mcp-server && npm install && npm run build
 
 ### 提供ツール
 
-| ツール | 説明 | 主要パラメータ |
-|--------|------|--------------|
-| `list_research` | 研究済みリポジトリと showcase の一覧 | なし |
-| `get_rules` | 特定リポジトリのルール取得 | `repo` (必須), `category?`, `priority?` |
-| `get_showcase` | showcase ドキュメント取得 | `name` (必須) |
-| `search_rules` | キーワードで全リポジトリ横断検索 | `query` (必須), `priority?` |
+| ツール          | 説明                                               | 主要パラメータ                                    |
+| --------------- | -------------------------------------------------- | ------------------------------------------------- |
+| `list_research` | 研究済みリポジトリと showcase の一覧               | なし                                              |
+| `get_rules`     | 特定リポジトリのルール取得                         | `repo` (必須), `category?`, `priority?`           |
+| `get_showcase`  | showcase ドキュメント取得                          | `name` (必須)                                     |
+| `search_rules`  | キーワードで全リポジトリ横断検索                   | `query` (必須), `priority?`                       |
 | `suggest_rules` | プロジェクトの技術スタックに合ったルールを自動提案 | `language?`, `framework?`, `keywords?`, `format?` |
 
 ### 使用例

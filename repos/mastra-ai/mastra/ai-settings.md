@@ -93,7 +93,7 @@ if they don't... tag "@coderabbitai" in your response
 ```typescript
 // packages/mcp-docs-server/src/tools/embedded-docs.ts:156-199
 export const getMastraHelpTool = {
-  name: 'getMastraHelp',
+  name: "getMastraHelp",
   description: `...
     ## LOCAL PACKAGE DOCS (Recommended for Development)
     SOURCE: Your installed @mastra packages in node_modules
@@ -165,7 +165,9 @@ model: claude-opus-4-5
 {
   "permissions": {
     "allow": [
-      "Read(./**)", "Edit(./**)", "Write(./**)",
+      "Read(./**)",
+      "Edit(./**)",
+      "Write(./**)",
       "Bash(npx prettier:*)",
       "Bash(pnpm run docusaurus build:*)",
       "Bash(rm ./src/content/**)"

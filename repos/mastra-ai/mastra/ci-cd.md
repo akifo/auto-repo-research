@@ -84,6 +84,7 @@ PR のコードをチェックアウトした後、ベースブランチから�
 `fixed` グループにより、core/server/deployer は常に同一バージョンで公開される。これはこれらのパッケージ間の密結合を認めつつ、ユーザーにとってのバージョン不整合を防ぐ設計判断である。
 
 リリースフロー:
+
 1. PR に changeset ファイルを含める
 2. main マージ時に `version-packages.yml` が changeset/action でバージョン PR を自動作成
 3. バージョン PR マージ時のコミットメッセージ `chore: version packages` を npm-publish.yml が検知し、alpha タグで自動公開

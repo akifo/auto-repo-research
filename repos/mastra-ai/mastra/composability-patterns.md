@@ -38,7 +38,7 @@ export function createStep(params: any, agentOrToolOptions?: any): Step<any, any
   if (isProcessor(params)) {
     return createStepFromProcessor(params);
   }
-  throw new Error('Invalid input: expected StepParams, Agent, ToolStep, or Processor');
+  throw new Error("Invalid input: expected StepParams, Agent, ToolStep, or Processor");
 }
 ```
 
@@ -121,8 +121,8 @@ export async function getRoutingAgent({ requestContext, agent, routingConfig }) 
   const toolsToUse = await agent.listTools({ requestContext });
 
   return new Agent({
-    id: 'routing-agent',
-    name: 'Routing Agent',
+    id: "routing-agent",
+    name: "Routing Agent",
     instructions: `You are a router in a network of specialized AI agents.
       ## Available Agents in Network
       ${agentList}
@@ -158,9 +158,9 @@ export class ProcessorRunner {
 export type DynamicArgument<T, TRequestContext extends Record<string, any> | unknown = unknown> =
   | T
   | (({ requestContext, mastra }: {
-      requestContext: RequestContext<TRequestContext>;
-      mastra?: Mastra;
-    }) => Promise<T> | T);
+    requestContext: RequestContext<TRequestContext>;
+    mastra?: Mastra;
+  }) => Promise<T> | T);
 ```
 
 Agent の `tools`, `instructions`, `memory`, `model`, `agents`, `workflows`, `workspace` 等の設定項目がこの型を使う。リクエストごとに異なるツールセットを返したり、ユーザーのロールに応じてインストラクションを変えたりする動的合成を、型レベルで自然に表現している。`resolveMaybePromise` ヘルパー（`agent.ts:101-107`）により、同期・非同期のどちらの値でも統一的に処理される。
@@ -169,7 +169,7 @@ Agent の `tools`, `instructions`, `memory`, `model`, `agents`, `workflows`, `wo
 
 ```typescript
 // packages/core/src/tool-loop-agent/index.ts:36-47
-export function toolLoopAgentToMastraAgent(agent: ToolLoopAgentLike, options?: { fallbackName?: string }) {
+export function toolLoopAgentToMastraAgent(agent: ToolLoopAgentLike, options?: { fallbackName?: string; }) {
   const processor = new ToolLoopAgentProcessor(agent);
   const agentConfig = processor.getAgentConfig();
   const id = agentConfig.id || options?.fallbackName || `tool-loop-agent-${generateId()}`;
@@ -253,8 +253,8 @@ export type DynamicArgument<T, TRequestContext> =
 ```typescript
 // Bad: 同名ツールがあると後者が勝つ
 return this.formatTools({
-  ...assignedTools,    // { search: ... }
-  ...workspaceTools,   // { search: ... } ← assignedTools の search を上書き
+  ...assignedTools, // { search: ... }
+  ...workspaceTools, // { search: ... } ← assignedTools の search を上書き
 });
 
 // Better: 衝突を検出して警告を出す、またはプレフィックス付きで名前空間を分離する

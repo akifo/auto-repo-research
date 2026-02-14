@@ -5,11 +5,14 @@
     "docs:dev": "vitepress dev",
     "docs:build": "vitepress build",
     "docs:preview": "vitepress preview",
+    "fmt": "dprint fmt",
+    "fmt:check": "dprint check",
     "mcp:build": "cd mcp-server && npm run build",
     "mcp:start": "node mcp-server/dist/index.js"
   },
   "devDependencies": {
-    "vitepress": "^1.6",
-    "js-yaml": "^4.1"
+    "dprint": "^0.51.1",
+    "js-yaml": "^4.1",
+    "vitepress": "^1.6"
   }
 }

@@ -4,7 +4,7 @@ import type { ResearchIndex } from "../data/index.js";
 
 export function registerSearchRules(
   server: McpServer,
-  index: ResearchIndex
+  index: ResearchIndex,
 ): void {
   server.tool(
     "search_rules",
@@ -32,7 +32,7 @@ export function registerSearchRules(
 
       const lines = results.map(
         (r) =>
-          `- \`[${r.priority}]\` ${r.content}\n  - カテゴリ: ${r.category} | リポ: ${r.repo}\n  - 根拠: ${r.rationale}`
+          `- \`[${r.priority}]\` ${r.content}\n  - カテゴリ: ${r.category} | リポ: ${r.repo}\n  - 根拠: ${r.rationale}`,
       );
 
       const text = [
@@ -42,6 +42,6 @@ export function registerSearchRules(
       ].join("\n");
 
       return { content: [{ type: "text", text }] };
-    }
+    },
   );
 }

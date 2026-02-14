@@ -12,6 +12,7 @@
 ## 入力
 
 プロンプトで以下の情報が渡される:
+
 - `org`: GitHub organization 名
 - `repo`: リポジトリ名
 - `research_dir`: 研究データのディレクトリパス（`repos/<org>/<repo>/`）

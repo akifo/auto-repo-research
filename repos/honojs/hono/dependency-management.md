@@ -22,19 +22,19 @@ JWT の署名・検証を `jsonwebtoken` や `jose` に頼らず、`crypto.subtl
 
 ```typescript
 // src/utils/jwt/jws.ts:36
-return await crypto.subtle.sign(algorithm, cryptoKey, data)
+return await crypto.subtle.sign(algorithm, cryptoKey, data);
 ```
 
 ```typescript
 // src/utils/jwt/jws.ts:47
-return await crypto.subtle.verify(algorithm, cryptoKey, signature, data)
+return await crypto.subtle.verify(algorithm, cryptoKey, signature, data);
 ```
 
 Cookie 署名にも同じパターンを適用している。
 
 ```typescript
 // src/utils/cookie.ts:41
-return await crypto.subtle.importKey('raw', secretBuf, algorithm, false, ['sign', 'verify'])
+return await crypto.subtle.importKey("raw", secretBuf, algorithm, false, ["sign", "verify"]);
 ```
 
 ETag ミドルウェアでは `crypto.subtle.digest` をデフォルトの digest 生成器として使用しつつ、`crypto.subtle` が利用不可能な場合のフォールバックも考慮している。
@@ -42,8 +42,7 @@ ETag ミドルウェアでは `crypto.subtle.digest` をデフォルトの diges
 ```typescript
 // src/middleware/etag/index.ts:42-43
 if (crypto && crypto.subtle) {
-  generator = (body: Uint8Array<ArrayBuffer>) =>
-    crypto.subtle.digest({ name: 'SHA-1' }, body)
+  generator = (body: Uint8Array<ArrayBuffer>) => crypto.subtle.digest({ name: "SHA-1" }, body);
 }
 ```
 
@@ -54,23 +53,23 @@ if (crypto && crypto.subtle) {
 ```typescript
 // src/utils/url.ts:106-134
 export const getPath = (request: Request): string => {
-  const url = request.url
-  const start = url.indexOf('/', url.indexOf(':') + 4)
-  let i = start
+  const url = request.url;
+  const start = url.indexOf("/", url.indexOf(":") + 4);
+  let i = start;
   for (; i < url.length; i++) {
-    const charCode = url.charCodeAt(i)
+    const charCode = url.charCodeAt(i);
     if (charCode === 37) {
       // '%' - percent encoding path
-      const queryIndex = url.indexOf('?', i)
-      const hashIndex = url.indexOf('#', i)
+      const queryIndex = url.indexOf("?", i);
+      const hashIndex = url.indexOf("#", i);
       // ...
     } else if (charCode === 63 || charCode === 35) {
       // '?' or '#'
-      break
+      break;
     }
   }
-  return url.slice(start, i)
-}
+  return url.slice(start, i);
+};
 ```
 
 クエリパラメータの取得でも `URLSearchParams` を使わず、手動で `indexOf` ベースの解析を行っている（`src/utils/url.ts:219-300`）。コメントで「optimized for unencoded key」と明記されており、パフォーマンスを意識した分岐が設計されている。
@@ -96,13 +95,13 @@ FormData のパースに `new Response()` を経由するパターンで、Web A
 // src/utils/buffer.ts:55-65
 export const bufferToFormData = (
   arrayBuffer: ArrayBuffer,
-  contentType: string
+  contentType: string,
 ): Promise<FormData> => {
   const response = new Response(arrayBuffer, {
-    headers: { 'Content-Type': contentType },
-  })
-  return response.formData()
-}
+    headers: { "Content-Type": contentType },
+  });
+  return response.formData();
+};
 ```
 
 ### CompressionStream / ReadableStream の活用
@@ -111,31 +110,33 @@ Compress ミドルウェアでは `CompressionStream`（Web Standard）を使い
 
 ```typescript
 // src/middleware/compress/index.ts:62-63
-const stream = new CompressionStream(encoding)
-ctx.res = new Response(ctx.res.body.pipeThrough(stream), ctx.res)
+const stream = new CompressionStream(encoding);
+ctx.res = new Response(ctx.res.body.pipeThrough(stream), ctx.res);
 ```
 
 Body Limit ミドルウェアでは `ReadableStream` を使ってストリーミングでサイズを監視し、閾値を超えた時点でエラーを発行する。
 
 ```typescript
 // src/middleware/body-limit/index.ts:93-114
-const rawReader = c.req.raw.body.getReader()
+const rawReader = c.req.raw.body.getReader();
 const reader = new ReadableStream({
   async start(controller) {
     try {
       for (;;) {
-        const { done, value } = await rawReader.read()
-        if (done) { break }
-        size += value.length
+        const { done, value } = await rawReader.read();
+        if (done) break;
+        size += value.length;
         if (size > maxSize) {
-          controller.error(new BodyLimitError(ERROR_MESSAGE))
-          break
+          controller.error(new BodyLimitError(ERROR_MESSAGE));
+          break;
         }
-        controller.enqueue(value)
+        controller.enqueue(value);
       }
-    } finally { controller.close() }
+    } finally {
+      controller.close();
+    }
   },
-})
+});
 ```
 
 ### TextEncoder/TextDecoder のシングルトン化
@@ -144,8 +145,8 @@ const reader = new ReadableStream({
 
 ```typescript
 // src/utils/jwt/utf8.ts:6-7
-export const utf8Encoder: TextEncoder = new TextEncoder()
-export const utf8Decoder: TextDecoder = new TextDecoder()
+export const utf8Encoder: TextEncoder = new TextEncoder();
+export const utf8Decoder: TextDecoder = new TextDecoder();
 ```
 
 ### Object.create(null) によるプロトタイプ汚染回避
@@ -154,13 +155,13 @@ export const utf8Decoder: TextDecoder = new TextDecoder()
 
 ```typescript
 // src/router/trie-router/node.ts:16
-const emptyParams = Object.create(null)
+const emptyParams = Object.create(null);
 ```
 
 ```typescript
 // src/router/reg-exp-router/router.ts:128-129
-this.#middleware = { [METHOD_NAME_ALL]: Object.create(null) }
-this.#routes = { [METHOD_NAME_ALL]: Object.create(null) }
+this.#middleware = { [METHOD_NAME_ALL]: Object.create(null) };
+this.#routes = { [METHOD_NAME_ALL]: Object.create(null) };
 ```
 
 ### minify を意識した変数エイリアス
@@ -171,7 +172,7 @@ this.#routes = { [METHOD_NAME_ALL]: Object.create(null) }
 // src/utils/url.ts:317-319
 // `decodeURIComponent` is a long name.
 // By making it a function, we can use it commonly when minified, reducing the amount of code.
-export const decodeURIComponent_ = decodeURIComponent
+export const decodeURIComponent_ = decodeURIComponent;
 ```
 
 ### ランタイム固有 API の隔離パターン
@@ -181,16 +182,15 @@ export const decodeURIComponent_ = decodeURIComponent
 ```typescript
 // src/helper/adapter/index.ts:50-84
 export const getRuntimeKey = (): Runtime => {
-  const global = globalThis as any
-  const userAgentSupported =
-    typeof navigator !== 'undefined' && typeof navigator.userAgent === 'string'
+  const global = globalThis as any;
+  const userAgentSupported = typeof navigator !== "undefined" && typeof navigator.userAgent === "string";
   if (userAgentSupported) {
     for (const [runtimeKey, userAgent] of Object.entries(knownUserAgents)) {
-      if (checkUserAgentEquals(userAgent)) { return runtimeKey as Runtime }
+      if (checkUserAgentEquals(userAgent)) return runtimeKey as Runtime;
     }
   }
   // ... fallback chain
-}
+};
 ```
 
 ### Preset パターンによるバンドルサイズの段階的制御
@@ -239,22 +239,22 @@ export class Hono<...> extends HonoBase<E, S, BasePath> {
 // Bad: アプリケーションレベルで JWT を自前実装
 const sign = (payload, secret) => {
   // 独自の Base64 + HMAC 実装...
-}
+};
 
 // Better: ライブラリ/フレームワークが提供する機能を使い、
 // 自前実装はライブラリ/フレームワーク側に限定する
-import { sign } from 'hono/utils/jwt'
+import { sign } from "hono/utils/jwt";
 ```
 
 - **最適化のために可読性を犠牲にしすぎる**: `getPath` の `charCodeAt` ベースのパースは高速だが、`new URL()` と比べて意図が読み取りにくい。ホットパス以外では可読性を優先すべき。Hono では `getPath` がリクエストごとに呼ばれるため正当化されるが、月に 1 回呼ばれる関数に適用するのは過剰最適化。
 
 ```typescript
 // Bad: すべての URL パースを手動で行う
-const path = url.slice(url.indexOf('/', url.indexOf(':') + 4), url.indexOf('?'))
+const path = url.slice(url.indexOf("/", url.indexOf(":") + 4), url.indexOf("?"));
 
 // Better: ホットパスのみ手動パース、それ以外は new URL() を使う
-const url = new URL(request.url)
-const path = url.pathname
+const url = new URL(request.url);
+const path = url.pathname;
 ```
 
 ## 導出ルール

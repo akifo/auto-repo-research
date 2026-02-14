@@ -47,7 +47,7 @@ Workflow は `createWorkflow({...}).then(step1).then(step2).commit()` という 
 ```typescript
 // examples/workflow-with-separate-steps/src/mastra/workflows/index.ts:82-96
 export const myWorkflow = createWorkflow({
-  id: 'my-workflow',
+  id: "my-workflow",
   inputSchema: z.object({ inputValue: z.number() }),
   outputSchema: z.object({ isEven: z.boolean() }),
 })
@@ -104,9 +104,9 @@ Agent の設定値は `DynamicArgument<T>` 型で統一されている。これ�
 export type DynamicArgument<T, TRequestContext extends Record<string, any> | unknown = unknown> =
   | T
   | (({ requestContext, mastra }: {
-      requestContext: RequestContext<TRequestContext>;
-      mastra?: Mastra;
-    }) => Promise<T> | T);
+    requestContext: RequestContext<TRequestContext>;
+    mastra?: Mastra;
+  }) => Promise<T> | T);
 ```
 
 Agent の `instructions`, `tools`, `model`, `memory`, `workflows`, `scorers` 等のプロパティがすべてこの型を使う:
@@ -126,11 +126,11 @@ workflows?: DynamicArgument<Record<string, Workflow<...>>>;
 
 ```typescript
 // examples/ ディレクトリより収集した実際の import パス
-import { Mastra } from '@mastra/core/mastra';
-import { Agent } from '@mastra/core/agent';
-import { createTool } from '@mastra/core/tools';
-import { createStep, createWorkflow } from '@mastra/core/workflows';
-import { createScorer } from '@mastra/core/evals';
+import { Agent } from "@mastra/core/agent";
+import { createScorer } from "@mastra/core/evals";
+import { Mastra } from "@mastra/core/mastra";
+import { createTool } from "@mastra/core/tools";
+import { createStep, createWorkflow } from "@mastra/core/workflows";
 ```
 
 サブパスごとに `index.ts` が公開 API のみを re-export するため、内部モジュールへの直接アクセスを防ぎつつ Tree Shaking を有効にしている。
@@ -162,8 +162,15 @@ text: `Cannot add ${typeLabel}: ${typeLabel} is ${value === null ? 'null' : 'und
 ```typescript
 // packages/core/src/tools/validation.ts:10-20
 const SENSITIVE_KEYS = new Set([
-  MASTRA_RESOURCE_ID_KEY, MASTRA_THREAD_ID_KEY,
-  'apiKey', 'api_key', 'token', 'secret', 'password', 'credential', 'authorization',
+  MASTRA_RESOURCE_ID_KEY,
+  MASTRA_THREAD_ID_KEY,
+  "apiKey",
+  "api_key",
+  "token",
+  "secret",
+  "password",
+  "credential",
+  "authorization",
 ]);
 ```
 
@@ -229,9 +236,9 @@ export class RequestContext<Values extends Record<string, any> | unknown = unkno
 export type DynamicArgument<T, TRequestContext = unknown> =
   | T
   | (({ requestContext, mastra }: {
-      requestContext: RequestContext<TRequestContext>;
-      mastra?: Mastra;
-    }) => Promise<T> | T);
+    requestContext: RequestContext<TRequestContext>;
+    mastra?: Mastra;
+  }) => Promise<T> | T);
 ```
 
 - **エラーメッセージ品質への投資**: `createUndefinedPrimitiveError` では `{ ...config }` スプレッドでゲッターが消える問題を具体的にエラーメッセージで指摘している。また `createStep` では「better error messages」のために意図的にフォールバックオーバーロードを追加している。
@@ -242,7 +249,9 @@ return new MastraError({
   id: errorId,
   domain: ErrorDomain.MASTRA,
   category: ErrorCategory.USER,
-  text: `Cannot add ${typeLabel}: ${typeLabel} is ${value === null ? 'null' : 'undefined'}. This may occur if config was spread ({ ...config }) and the original object had getters or non-enumerable properties.`,
+  text: `Cannot add ${typeLabel}: ${typeLabel} is ${
+    value === null ? "null" : "undefined"
+  }. This may occur if config was spread ({ ...config }) and the original object had getters or non-enumerable properties.`,
   details: { status: 400, ...(key && { key }) },
 });
 ```
@@ -292,8 +301,13 @@ export class Mastra<
 ```typescript
 // packages/core/src/workflows/workflow.ts:1440-1450
 return this as unknown as Workflow<
-  TEngineType, TSteps, TWorkflowId, TState, TInput, TOutput,
-  TSchemaOut,  // ← 前ステップの出力型で更新
+  TEngineType,
+  TSteps,
+  TWorkflowId,
+  TState,
+  TInput,
+  TOutput,
+  TSchemaOut, // ← 前ステップの出力型で更新
   TRequestContext
 >;
 ```
@@ -305,7 +319,7 @@ return this as unknown as Workflow<
 ```typescript
 // packages/core/src/workflows/workflow.ts:1988-1994
 if (!this.executionGraph.steps) {
-  throw new Error('Uncommitted step flow changes detected. Call .commit() to register the steps.');
+  throw new Error("Uncommitted step flow changes detected. Call .commit() to register the steps.");
 }
 ```
 

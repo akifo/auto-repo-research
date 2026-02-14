@@ -23,11 +23,11 @@
 
 テスト分類をファイル名サフィックスで表現する:
 
-| 分類 | サフィックス | 実行タイミング | 外部依存 |
-|------|------------|-------------|---------|
-| Unit | `*.test.ts` | 常時（`pnpm test`） | なし |
-| E2E | `*.e2e.test.ts` | CI / 手動（`pnpm test:e2e`） | ビルド成果物・サーバ |
-| Live | `*.live.test.ts` | 手動のみ（`LIVE=1 pnpm test:live`） | 実 API キー |
+| 分類 | サフィックス     | 実行タイミング                      | 外部依存             |
+| ---- | ---------------- | ----------------------------------- | -------------------- |
+| Unit | `*.test.ts`      | 常時（`pnpm test`）                 | なし                 |
+| E2E  | `*.e2e.test.ts`  | CI / 手動（`pnpm test:e2e`）        | ビルド成果物・サーバ |
+| Live | `*.live.test.ts` | 手動のみ（`LIVE=1 pnpm test:live`） | 実 API キー          |
 
 この分類は Vitest の config include/exclude で実行スコープを機械的に制御できる。
 
@@ -40,7 +40,7 @@
 import { defineConfig } from "vitest/config";
 import baseConfig from "./vitest.config.ts";
 
-const baseTest = (baseConfig as { test?: { include?: string[]; exclude?: string[] } }).test ?? {};
+const baseTest = (baseConfig as { test?: { include?: string[]; exclude?: string[]; }; }).test ?? {};
 const include = (
   baseTest.include ?? ["src/**/*.test.ts", "extensions/**/*.test.ts", "test/format-error.test.ts"]
 ).filter((pattern) => !pattern.includes("extensions/"));

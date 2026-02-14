@@ -74,22 +74,22 @@ export const getConnInfo: GetConnInfo = (c) => {
 ```typescript
 // src/utils/url.ts:106-134
 export const getPath = (request: Request): string => {
-  const url = request.url
-  const start = url.indexOf('/', url.indexOf(':') + 4)
-  let i = start
+  const url = request.url;
+  const start = url.indexOf("/", url.indexOf(":") + 4);
+  let i = start;
   for (; i < url.length; i++) {
-    const charCode = url.charCodeAt(i)
+    const charCode = url.charCodeAt(i);
     if (charCode === 37) { // '%'
       // percent encoding がある場合のみ indexOf にフォールバック
-      const queryIndex = url.indexOf('?', i)
-      const hashIndex = url.indexOf('#', i)
+      const queryIndex = url.indexOf("?", i);
+      const hashIndex = url.indexOf("#", i);
       // ...
     } else if (charCode === 63 || charCode === 35) { // '?' or '#'
-      break
+      break;
     }
   }
-  return url.slice(start, i)
-}
+  return url.slice(start, i);
+};
 ```
 
 `charCode` 比較によるバイト単位の走査、percent encoding がない場合（大多数のケース）は `indexOf` すら呼ばない最適化が施されている。同様に `context.ts` の `text()` メソッドもヘッダやステータスが未設定の場合は `new Response(text)` を直接返す fast path を持つ（`src/context.ts:677-684`）。
@@ -100,16 +100,16 @@ export const getPath = (request: Request): string => {
 
 ```typescript
 // src/router/reg-exp-router/router.ts:17
-const nullMatcher: Matcher<any> = [/^$/, [], Object.create(null)]
+const nullMatcher: Matcher<any> = [/^$/, [], Object.create(null)];
 
 // src/router/trie-router/node.ts:16
-const emptyParams = Object.create(null)
+const emptyParams = Object.create(null);
 
 // src/router/linear-router/router.ts:7
-const emptyParams = Object.create(null)
+const emptyParams = Object.create(null);
 
 // src/router/pattern-router/router.ts:6
-const emptyParams = Object.create(null)
+const emptyParams = Object.create(null);
 ```
 
 通常のオブジェクトリテラル `{}` はプロトタイプチェーンを持つため、`hasOwnProperty` チェックが必要になり、V8 の hidden class 最適化にも影響する。`Object.create(null)` はプロトタイプを持たない純粋なハッシュマップとして機能する。
@@ -200,22 +200,22 @@ export class Hono<...> extends HonoBase<...> {
 request = (
   input: RequestInfo | URL,
   requestInit?: RequestInit,
-  Env?: E['Bindings'] | {},
-  executionCtx?: ExecutionContext
+  Env?: E["Bindings"] | {},
+  executionCtx?: ExecutionContext,
 ): Response | Promise<Response> => {
   if (input instanceof Request) {
-    return this.fetch(requestInit ? new Request(input, requestInit) : input, Env, executionCtx)
+    return this.fetch(requestInit ? new Request(input, requestInit) : input, Env, executionCtx);
   }
-  input = input.toString()
+  input = input.toString();
   return this.fetch(
     new Request(
-      /^https?:\/\//.test(input) ? input : `http://localhost${mergePath('/', input)}`,
-      requestInit
+      /^https?:\/\//.test(input) ? input : `http://localhost${mergePath("/", input)}`,
+      requestInit,
     ),
     Env,
-    executionCtx
-  )
-}
+    executionCtx,
+  );
+};
 ```
 
 - **ランタイム固有のコードを Adapter としてサブパスに分離する**: `hono/cloudflare-workers`, `hono/bun`, `hono/deno` など、ランタイム固有のコードは package.json の `exports` でサブパスとして公開する。コア (`hono`) はランタイム非依存を保ち、ユーザーは必要なアダプタだけを import する。ツリーシェイキングにも有利。
@@ -239,25 +239,25 @@ request = (
 ```typescript
 // Bad: 毎リクエストで URL オブジェクトを生成
 const getPath = (request: Request): string => {
-  return new URL(request.url).pathname
-}
+  return new URL(request.url).pathname;
+};
 
 // Better: 文字列操作でパスだけを抽出 (Hono の実装)
 const getPath = (request: Request): string => {
-  const url = request.url
-  const start = url.indexOf('/', url.indexOf(':') + 4)
+  const url = request.url;
+  const start = url.indexOf("/", url.indexOf(":") + 4);
   // charCode 比較で '?' や '#' を検出し slice で返す
-}
+};
 ```
 
 - **共通辞書での {} リテラル使用**: ルートパラメータなどの頻繁にアクセスされるオブジェクトに `{}` を使うと、プロトタイプチェーンの走査コストが発生し、`__proto__` や `constructor` がキーとして衝突するリスクもある。
 
 ```typescript
 // Bad: プロトタイプチェーン付きオブジェクト
-const params: Record<string, string> = {}
+const params: Record<string, string> = {};
 
 // Better: プロトタイプなしの純粋辞書
-const params: Record<string, string> = Object.create(null)
+const params: Record<string, string> = Object.create(null);
 ```
 
 ## 導出ルール

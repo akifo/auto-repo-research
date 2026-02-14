@@ -148,10 +148,10 @@ private async runBatchWithFallback<T>(params: {
 // scripts/test-parallel.mjs:123-149
 const localWorkers = Math.max(4, Math.min(16, os.cpus().length));
 const maxWorkersForRun = (name) => {
-  if (resolvedOverride) { return resolvedOverride; }
-  if (isCI && !isMacOS) { return null; }
-  if (isCI && isMacOS) { return 1; }
-  if (name === "unit-isolated") { return 1; }
+  if (resolvedOverride) return resolvedOverride;
+  if (isCI && !isMacOS) return null;
+  if (isCI && isMacOS) return 1;
+  if (name === "unit-isolated") return 1;
   // ...
   return defaultUnitWorkers;
 };
@@ -165,8 +165,8 @@ const maxWorkersForRun = (name) => {
 // src/media/image-ops.ts:17-22
 function prefersSips(): boolean {
   return (
-    process.env.OPENCLAW_IMAGE_BACKEND === "sips" ||
-    (process.env.OPENCLAW_IMAGE_BACKEND !== "sharp" && isBun() && process.platform === "darwin")
+    process.env.OPENCLAW_IMAGE_BACKEND === "sips"
+    || (process.env.OPENCLAW_IMAGE_BACKEND !== "sharp" && isBun() && process.platform === "darwin")
   );
 }
 ```
@@ -183,9 +183,9 @@ if (held) {
   return {
     release: async () => {
       const current = HELD_LOCKS.get(normalizedSessionFile);
-      if (!current) { return; }
+      if (!current) return;
       current.count -= 1;
-      if (current.count > 0) { return; }
+      if (current.count > 0) return;
       HELD_LOCKS.delete(normalizedSessionFile);
       await current.handle.close();
       await fs.rm(current.lockPath, { force: true });
@@ -235,24 +235,30 @@ setCommandLaneConcurrency(CommandLane.Subagent, resolveSubagentMaxConcurrent(cfg
 
 ```typescript
 // Bad: 推定値を直接使う
-if (estimatedTokens > contextWindow) { compact(); }
+if (estimatedTokens > contextWindow) compact();
 
 // Better: 安全マージンを適用する
 const safeEstimate = estimatedTokens * SAFETY_MARGIN;
-if (safeEstimate > contextWindow * maxHistoryShare) { compact(); }
+if (safeEstimate > contextWindow * maxHistoryShare) compact();
 ```
 
 - **並列タスクの一律エラー無視**: `runWithConcurrency` のメディア版はエラーをログして続行するが、致命的エラー（認証失敗など）も飲み込んでしまう。エラー種別を判別し、回復可能なものだけを無視すべき。
 
 ```typescript
 // Bad: 全エラーを無視
-try { results[index] = await tasks[index](); } catch (err) { /* log only */ }
+try {
+  results[index] = await tasks[index]();
+} catch (err) { /* log only */ }
 
 // Better: 回復不能なエラーは伝搬する
-try { results[index] = await tasks[index](); }
-catch (err) {
-  if (isRetryableError(err)) { log.warn(err); }
-  else { firstError = err; return; }
+try {
+  results[index] = await tasks[index]();
+} catch (err) {
+  if (isRetryableError(err)) log.warn(err);
+  else {
+    firstError = err;
+    return;
+  }
 }
 ```
 

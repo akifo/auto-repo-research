@@ -26,20 +26,16 @@ Hono は Template Literal Types の再帰分解で URL パスからパラメー�
 ```typescript
 // src/types.ts:2409-2423
 type ParamKey<Component> = Component extends `:${infer NameWithPattern}`
-  ? NameWithPattern extends `${infer Name}{${infer Rest}`
-    ? Rest extends `${infer _Pattern}?`
-      ? `${Name}?`
-      : Name
-    : NameWithPattern
-  : never
+  ? NameWithPattern extends `${infer Name}{${infer Rest}` ? Rest extends `${infer _Pattern}?` ? `${Name}?`
+    : Name
+  : NameWithPattern
+  : never;
 
-export type ParamKeys<Path> = Path extends `${infer Component}/${infer Rest}`
-  ? ParamKey<Component> | ParamKeys<Rest>
-  : ParamKey<Path>
+export type ParamKeys<Path> = Path extends `${infer Component}/${infer Rest}` ? ParamKey<Component> | ParamKeys<Rest>
+  : ParamKey<Path>;
 
-export type ParamKeyToRecord<T extends string> = T extends `${infer R}?`
-  ? Record<R, string | undefined>
-  : { [K in T]: string }
+export type ParamKeyToRecord<T extends string> = T extends `${infer R}?` ? Record<R, string | undefined>
+  : { [K in T]: string; };
 ```
 
 この結果を `AddParam` で入力型に合成し、ハンドラの `c.req.param()` が正確な型を返す。`/users/:id` なら `{ id: string }`、`:name{[a-z]+}?` なら `{ name: string | undefined }` になる。
@@ -50,10 +46,10 @@ export type ParamKeyToRecord<T extends string> = T extends `${infer R}?`
 
 ```typescript
 // src/types.ts:2474-2476
-type ProcessHead<T> = IfAnyThenEmptyObject<T extends Env ? (Env extends T ? {} : T) : T>
+type ProcessHead<T> = IfAnyThenEmptyObject<T extends Env ? (Env extends T ? {} : T) : T>;
 export type IntersectNonAnyTypes<T extends any[]> = T extends [infer Head, ...infer Rest]
   ? ProcessHead<Head> & IntersectNonAnyTypes<Rest>
-  : {}
+  : {};
 ```
 
 `ProcessHead` は `any` や基底 `Env` 型をフィルタし、具体的な型パラメータのみをインターセクションに含める。これにより、型パラメータを指定しないミドルウェア（`poweredBy()` 等）がチェーンに混在しても型合成が壊れない。
@@ -67,16 +63,14 @@ export type IntersectNonAnyTypes<T extends any[]> = T extends [infer Head, ...in
 export type TypedResponse<
   T = unknown,
   U extends StatusCode = StatusCode,
-  F extends ResponseFormat = T extends string
-    ? 'text'
-    : T extends JSONValue
-      ? 'json'
-      : ResponseFormat,
+  F extends ResponseFormat = T extends string ? "text"
+    : T extends JSONValue ? "json"
+    : ResponseFormat,
 > = {
-  _data: T
-  _status: U
-  _format: F
-}
+  _data: T;
+  _status: U;
+  _format: F;
+};
 ```
 
 `c.json()` は `Response & TypedResponse<JSONParsed<T>, U, 'json'>` を返し、`c.text()` は `Response & TypedResponse<T, U, 'text'>` を返す。条件型のデフォルトパラメータにより、フォーマットの明示指定なしでも正しいフォーマット型が推論される。
@@ -87,26 +81,35 @@ export type TypedResponse<
 
 ```typescript
 // src/types.ts:2211-2240
-export type ToSchema<M extends string, P extends string, I extends Input | Input['in'], RorO> =
-  IsAny<RorO> extends true
-    ? { [K in P]: { [K2 in M as AddDollar<K2>]: { input: AddParam<ExtractInput<I>, P>; output: {}; outputFormat: ResponseFormat; status: StatusCode } } }
-    : [RorO] extends [never] ? {}
-    : [RorO] extends [Promise<void>] ? {}
-    : { [K in P]: { [K2 in M as AddDollar<K2>]: Simplify<{ input: AddParam<ExtractInput<I>, P> } & ToSchemaOutput<RorO, I>> } }
+export type ToSchema<M extends string, P extends string, I extends Input | Input["in"], RorO> = IsAny<RorO> extends true
+  ? {
+    [K in P]: {
+      [K2 in M as AddDollar<K2>]: {
+        input: AddParam<ExtractInput<I>, P>;
+        output: {};
+        outputFormat: ResponseFormat;
+        status: StatusCode;
+      };
+    };
+  }
+  : [RorO] extends [never] ? {}
+  : [RorO] extends [Promise<void>] ? {}
+  : {
+    [K in P]: {
+      [K2 in M as AddDollar<K2>]: Simplify<{ input: AddParam<ExtractInput<I>, P>; } & ToSchemaOutput<RorO, I>>;
+    };
+  };
 ```
 
 RPC クライアント側では `Client<T, Prefix>` が `HonoBase` から Schema `S` を `infer` で抽出し、`PathToChain` で `/users/:id/posts` のようなパスをネストされたオブジェクト型に変換する。
 
 ```typescript
 // src/client/types.ts:292-299
-export type Client<T, Prefix extends string> =
-  T extends HonoBase<any, infer S, any>
-    ? S extends Record<infer K, Schema>
-      ? K extends string
-        ? PathToChain<Prefix, K, S>
-        : never
-      : never
+export type Client<T, Prefix extends string> = T extends HonoBase<any, infer S, any>
+  ? S extends Record<infer K, Schema> ? K extends string ? PathToChain<Prefix, K, S>
     : never
+  : never
+  : never;
 ```
 
 ### 5. Declaration Merging による外部拡張パターン
@@ -115,9 +118,9 @@ export type Client<T, Prefix extends string> =
 
 ```typescript
 // src/middleware/jwt/index.ts:5-9
-import type {} from '../..'
+import type {} from "../..";
 
-declare module '../..' {
+declare module "../.." {
   interface ContextVariableMap extends JwtVariables {}
 }
 ```
@@ -130,21 +133,22 @@ declare module '../..' {
 
 ```typescript
 // src/utils/types.ts:53-83
-export type JSONParsed<T, TError = bigint | ReadonlyArray<bigint>> = T extends { toJSON(): infer J }
+export type JSONParsed<T, TError = bigint | ReadonlyArray<bigint>> = T extends { toJSON(): infer J; }
   ? (() => J) extends () => JSONPrimitive ? J
-    : (() => J) extends () => { toJSON(): unknown } ? {}
-    : JSONParsed<J, TError>
+  : (() => J) extends () => { toJSON(): unknown; } ? {}
+  : JSONParsed<J, TError>
   : T extends JSONPrimitive ? T
   : T extends InvalidJSONValue ? never
-  : T extends ReadonlyArray<unknown>
-    ? { [K in keyof T]: JSONParsed<InvalidToNull<T[K]>, TError> }
-    : T extends Set<unknown> | Map<unknown, unknown> | Record<string, never> ? {}
-    : T extends object
-      ? T[keyof T] extends TError ? never
-      : { [K in keyof OmitSymbolKeys<T> as IsInvalid<T[K]> extends true ? never : K]:
-          boolean extends IsInvalid<T[K]> ? JSONParsed<T[K], TError> | undefined : JSONParsed<T[K], TError> }
-    : T extends unknown ? T extends TError ? never : JSONValue
-    : never
+  : T extends ReadonlyArray<unknown> ? { [K in keyof T]: JSONParsed<InvalidToNull<T[K]>, TError>; }
+  : T extends Set<unknown> | Map<unknown, unknown> | Record<string, never> ? {}
+  : T extends object ? T[keyof T] extends TError ? never
+    : {
+      [K in keyof OmitSymbolKeys<T> as IsInvalid<T[K]> extends true ? never : K]: boolean extends IsInvalid<T[K]>
+        ? JSONParsed<T[K], TError> | undefined
+        : JSONParsed<T[K], TError>;
+    }
+  : T extends unknown ? T extends TError ? never : JSONValue
+  : never;
 ```
 
 ### 7. バリデーター統合による入出力型の自動推論
@@ -174,46 +178,48 @@ export const validator = <
 ```typescript
 // src/utils/types.ts:21
 // any ガードユーティリティ: 0 extends 1 & T が any のときのみ true になるトリック
-export type IfAnyThenEmptyObject<T> = 0 extends 1 & T ? {} : T
+export type IfAnyThenEmptyObject<T> = 0 extends 1 & T ? {} : T;
 ```
 
 ```typescript
 // src/utils/types.ts:110
 // boolean extends (T extends never ? true : false) は any のとき true になる
-export type IsAny<T> = boolean extends (T extends never ? true : false) ? true : false
+export type IsAny<T> = boolean extends (T extends never ? true : false) ? true : false;
 ```
 
 ```typescript
 // src/utils/types.ts:12-16
 // Union → Intersection 変換: 関数パラメータの反変性を利用
 export type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
-  k: infer I
-) => void ? I : never
+  k: infer I,
+) => void ? I
+  : never;
 ```
 
 ```typescript
 // src/client/types.ts:275-290
 // パスの '/' 区切りを再帰的にネストされたオブジェクト型に変換
 type PathToChain<Prefix extends string, Path extends string, E extends Schema, Original extends string = Path> =
-  Path extends `/${infer P}`
-    ? PathToChain<Prefix, P, E, Path>
-    : Path extends `${infer P}/${infer R}`
-      ? { [K in P]: PathToChain<Prefix, R, E, Original> }
-      : { [K in Path extends '' ? 'index' : Path]: ClientRequest<Prefix, Original, E extends Record<string, unknown> ? E[Original] : never> }
+  Path extends `/${infer P}` ? PathToChain<Prefix, P, E, Path>
+    : Path extends `${infer P}/${infer R}` ? { [K in P]: PathToChain<Prefix, R, E, Original>; }
+    : {
+      [K in Path extends "" ? "index" : Path]: ClientRequest<
+        Prefix,
+        Original,
+        E extends Record<string, unknown> ? E[Original] : never
+      >;
+    };
 ```
 
 ```typescript
 // src/types.ts:2321-2335
 // パスの結合を型レベルで行う（重複 '/' の処理を含む）
-export type MergePath<A extends string, B extends string> = B extends ''
-  ? MergePath<A, '/'>
-  : A extends '' ? B
-  : A extends '/' ? B
-  : A extends `${infer P}/`
-    ? B extends `/${infer Q}` ? `${P}/${Q}` : `${P}/${B}`
-    : B extends `/${infer Q}`
-      ? Q extends '' ? A : `${A}/${Q}`
-      : `${A}/${B}`
+export type MergePath<A extends string, B extends string> = B extends "" ? MergePath<A, "/">
+  : A extends "" ? B
+  : A extends "/" ? B
+  : A extends `${infer P}/` ? B extends `/${infer Q}` ? `${P}/${Q}` : `${P}/${B}`
+  : B extends `/${infer Q}` ? Q extends "" ? A : `${A}/${Q}`
+  : `${A}/${B}`;
 ```
 
 ## パターンカタログ
@@ -241,10 +247,10 @@ export type MergePath<A extends string, B extends string> = B extends ''
 - **`any` フィルター付き型合成**: `IntersectNonAnyTypes` は各型パラメータの `any` を `{}` に変換してからインターセクションを取る。型パラメータを指定しないジェネリック関数が混在しても、合成結果が `any` に崩壊しない。
   ```typescript
   // src/types.ts:2473-2476
-  type ProcessHead<T> = IfAnyThenEmptyObject<T extends Env ? (Env extends T ? {} : T) : T>
+  type ProcessHead<T> = IfAnyThenEmptyObject<T extends Env ? (Env extends T ? {} : T) : T>;
   export type IntersectNonAnyTypes<T extends any[]> = T extends [infer Head, ...infer Rest]
     ? ProcessHead<Head> & IntersectNonAnyTypes<Rest>
-    : {}
+    : {};
   ```
 
 - **条件型デフォルトによる自動分類**: `TypedResponse` のフォーマットパラメータ `F` は、`T extends string ? 'text' : T extends JSONValue ? 'json' : ResponseFormat` というデフォルト値を持つ。ユーザーがフォーマットを明示しなくてもレスポンス型から自動推論される。
@@ -261,17 +267,17 @@ export type MergePath<A extends string, B extends string> = B extends ''
   ```typescript
   // src/context.ts:90-93
   interface Get<E extends Env> {
-    <Key extends keyof E['Variables']>(key: Key): E['Variables'][Key]
-    <Key extends keyof ContextVariableMap>(key: Key): ContextVariableMap[Key]
+    <Key extends keyof E["Variables"]>(key: Key): E["Variables"][Key];
+    <Key extends keyof ContextVariableMap>(key: Key): ContextVariableMap[Key];
   }
   ```
 
 - **HTTP メソッドに応じたバリデーション対象の制限**: `ValidationTargetByMethod<M>` が GET/HEAD リクエストでは `form`/`json` を除外する。RFC に基づく制約を型レベルで強制することで、無効な組み合わせをコンパイル時に排除する。
   ```typescript
   // src/validator/validator.ts:10-12
-  type ValidationTargetByMethod<M> = M extends 'get' | 'head'
+  type ValidationTargetByMethod<M> = M extends "get" | "head"
     ? Exclude<keyof ValidationTargets, ValidationTargetKeysWithBody>
-    : keyof ValidationTargets
+    : keyof ValidationTargets;
   ```
 
 ## Anti-Patterns / 注意点
@@ -286,22 +292,22 @@ export type MergePath<A extends string, B extends string> = B extends ''
 
   Bad:
   ```typescript
-  const data = response._data // undefined at runtime, typed as T
+  const data = response._data; // undefined at runtime, typed as T
   ```
   Better:
   ```typescript
-  const data = await response.json() // runtime-safe, typed via ClientResponse<T>
+  const data = await response.json(); // runtime-safe, typed via ClientResponse<T>
   ```
 
 - **`any` の意図的使用と汚染リスク**: `Handler` や `H` 型のデフォルトジェネリクスには `any` が使われている（`E extends Env = any`）。これはユーザーが型パラメータを省略した場合の利便性のためだが、`IntersectNonAnyTypes` のような防御機構なしに使うと型安全性が崩壊する。
 
   Bad:
   ```typescript
-  type Combined = SomeEnv & any // always any
+  type Combined = SomeEnv & any; // always any
   ```
   Better:
   ```typescript
-  type Combined = IntersectNonAnyTypes<[SomeEnv, MaybeAny]> // any is filtered to {}
+  type Combined = IntersectNonAnyTypes<[SomeEnv, MaybeAny]>; // any is filtered to {}
   ```
 
 ## 導出ルール

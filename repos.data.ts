@@ -1,41 +1,41 @@
-import { defineLoader } from 'vitepress'
-import fs from 'node:fs'
-import path from 'node:path'
-import yaml from 'js-yaml'
+import yaml from "js-yaml";
+import fs from "node:fs";
+import path from "node:path";
+import { defineLoader } from "vitepress";
 
 export interface RepoData {
-  org: string
-  repo: string
-  url: string
-  stars: number
-  language: string
-  description: string
-  analyzed_at: string
-  perspectiveCount: number
+  org: string;
+  repo: string;
+  url: string;
+  stars: number;
+  language: string;
+  description: string;
+  analyzed_at: string;
+  perspectiveCount: number;
 }
 
-declare const data: RepoData[]
-export { data }
+declare const data: RepoData[];
+export { data };
 
 export default defineLoader({
-  watch: ['repos/**/meta.yaml'],
+  watch: ["repos/**/meta.yaml"],
 
   load(): RepoData[] {
-    const reposDir = path.resolve(__dirname, 'repos')
-    if (!fs.existsSync(reposDir)) return []
+    const reposDir = path.resolve(__dirname, "repos");
+    if (!fs.existsSync(reposDir)) return [];
 
-    const repos: RepoData[] = []
+    const repos: RepoData[] = [];
 
     for (const org of fs.readdirSync(reposDir)) {
-      const orgDir = path.join(reposDir, org)
-      if (!fs.statSync(orgDir).isDirectory()) continue
+      const orgDir = path.join(reposDir, org);
+      if (!fs.statSync(orgDir).isDirectory()) continue;
 
       for (const repo of fs.readdirSync(orgDir)) {
-        const metaPath = path.join(orgDir, repo, 'meta.yaml')
-        if (!fs.existsSync(metaPath)) continue
+        const metaPath = path.join(orgDir, repo, "meta.yaml");
+        if (!fs.existsSync(metaPath)) continue;
 
-        const raw = fs.readFileSync(metaPath, 'utf-8')
-        const meta = yaml.load(raw) as Record<string, unknown>
+        const raw = fs.readFileSync(metaPath, "utf-8");
+        const meta = yaml.load(raw) as Record<string, unknown>;
 
         repos.push({
           org,
@@ -48,10 +48,10 @@ export default defineLoader({
           perspectiveCount: Array.isArray(meta.perspectives)
             ? meta.perspectives.length
             : 0,
-        })
+        });
       }
     }
 
-    return repos.sort((a, b) => b.stars - a.stars)
+    return repos.sort((a, b) => b.stars - a.stars);
   },
-})
+});

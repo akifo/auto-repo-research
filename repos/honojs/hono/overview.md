@@ -21,26 +21,26 @@ Hono は「Web Standards（Request/Response）を唯一の境界契約とし、�
 
 ## 分析した視点
 
-| # | 視点 | ファイル | 概要 |
-|---|------|---------|------|
-| 1 | プロジェクト構成 | project-structure.md | exports とディレクトリ構造の 1:1 対応、Facade 隠蔽、プリセットパターン |
-| 2 | アーキテクチャ | architecture.md | Web Standards コア、Router Strategy、関数注入 Template Method、compose CoR |
-| 3 | 設計哲学 | design-philosophy.md | 最大公約数としての Web Standards、ゼロ依存、ホットパス最適化、サイズ制御 |
-| 4 | 型システムパターン | type-system-patterns.md | Template Literal Types パス推論、any フィルター型合成、ファントム型、Declaration Merging |
-| 5 | 合成パターン | composition-patterns.md | onion-ring ミドルウェア、next() ガード、クロージャ事前計算、論理演算合成 |
-| 6 | 抽象化パターン | abstraction-patterns.md | 2 メソッド最小インターフェース、コールバック注入、能力宣言エラー型 |
-| 7 | プラットフォーム抽象 | platform-abstraction.md | 9 ランタイム対応、handle(app) 統一、EventProcessor、getContent 注入 |
-| 8 | エラーハンドリング | error-handling-idioms.md | HTTPException フラット例外、Response 同梱、cause チェーン、設定時/リクエスト時分離 |
-| 9 | テスト | testing-practices.md | app.request() サーバーレス、testClient、コア+差分二層構造、型テスト |
-| 10 | パフォーマンス | performance-techniques.md | メソッド自己書き換え、O(1) 静的ルート、charCodeAt パース、compose バイパス |
-| 11 | API 設計 | api-design-practices.md | Fluent API、ファストパス最適化、遅延初期化、Proxy RPC クライアント |
-| 12 | ビルド・ツーリング | build-and-tooling.md | ESM/CJS 並行ビルド、エクスポート相互検証、publint、パフォーマンス計測 |
-| 13 | 拡張メカニズム | extensibility-mechanisms.md | 抽象基底+プリセット、ファクトリ統一シグネチャ、declare module 拡張 |
-| 14 | 依存管理 | dependency-management.md | ゼロ依存、Web Crypto API、手動パース、TextEncoder シングルトン |
-| 15 | セキュリティ | security-practices.md | タイミングセーフ比較、安全デフォルト、JWT アルゴリズム検証、型レベル Cookie 制約 |
-| 16 | ストリーミング | streaming-patterns.md | TransformStream ペア、StreamingApi Facade、onAbort Observer、SSE/Suspense |
-| 17 | 開発規約 | dev-conventions.md | ESLint/tsc 責務分離、autofix CI、.tool-versions、パフォーマンス退行検出 |
-| 18 | メタプログラミング | metaprogramming-techniques.md | 型レベルパス合成、Proxy RPC、カスタム JSX、Symbol プロトコル、AST 後処理 |
+| #  | 視点                 | ファイル                      | 概要                                                                                     |
+| -- | -------------------- | ----------------------------- | ---------------------------------------------------------------------------------------- |
+| 1  | プロジェクト構成     | project-structure.md          | exports とディレクトリ構造の 1:1 対応、Facade 隠蔽、プリセットパターン                   |
+| 2  | アーキテクチャ       | architecture.md               | Web Standards コア、Router Strategy、関数注入 Template Method、compose CoR               |
+| 3  | 設計哲学             | design-philosophy.md          | 最大公約数としての Web Standards、ゼロ依存、ホットパス最適化、サイズ制御                 |
+| 4  | 型システムパターン   | type-system-patterns.md       | Template Literal Types パス推論、any フィルター型合成、ファントム型、Declaration Merging |
+| 5  | 合成パターン         | composition-patterns.md       | onion-ring ミドルウェア、next() ガード、クロージャ事前計算、論理演算合成                 |
+| 6  | 抽象化パターン       | abstraction-patterns.md       | 2 メソッド最小インターフェース、コールバック注入、能力宣言エラー型                       |
+| 7  | プラットフォーム抽象 | platform-abstraction.md       | 9 ランタイム対応、handle(app) 統一、EventProcessor、getContent 注入                      |
+| 8  | エラーハンドリング   | error-handling-idioms.md      | HTTPException フラット例外、Response 同梱、cause チェーン、設定時/リクエスト時分離       |
+| 9  | テスト               | testing-practices.md          | app.request() サーバーレス、testClient、コア+差分二層構造、型テスト                      |
+| 10 | パフォーマンス       | performance-techniques.md     | メソッド自己書き換え、O(1) 静的ルート、charCodeAt パース、compose バイパス               |
+| 11 | API 設計             | api-design-practices.md       | Fluent API、ファストパス最適化、遅延初期化、Proxy RPC クライアント                       |
+| 12 | ビルド・ツーリング   | build-and-tooling.md          | ESM/CJS 並行ビルド、エクスポート相互検証、publint、パフォーマンス計測                    |
+| 13 | 拡張メカニズム       | extensibility-mechanisms.md   | 抽象基底+プリセット、ファクトリ統一シグネチャ、declare module 拡張                       |
+| 14 | 依存管理             | dependency-management.md      | ゼロ依存、Web Crypto API、手動パース、TextEncoder シングルトン                           |
+| 15 | セキュリティ         | security-practices.md         | タイミングセーフ比較、安全デフォルト、JWT アルゴリズム検証、型レベル Cookie 制約         |
+| 16 | ストリーミング       | streaming-patterns.md         | TransformStream ペア、StreamingApi Facade、onAbort Observer、SSE/Suspense                |
+| 17 | 開発規約             | dev-conventions.md            | ESLint/tsc 責務分離、autofix CI、.tool-versions、パフォーマンス退行検出                  |
+| 18 | メタプログラミング   | metaprogramming-techniques.md | 型レベルパス合成、Proxy RPC、カスタム JSX、Symbol プロトコル、AST 後処理                 |
 
 ## 特に注目すべき知見
 

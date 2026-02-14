@@ -11,6 +11,7 @@
 ## 入力
 
 プロンプトで以下の情報が渡される:
+
 - `perspective`: 分析する視点の名前（例: `architecture`, `error-handling`）
 - `intent`: この視点で何を明らかにしたいかの1行サマリー（分析の方向性を示す）
 - `org`: GitHub organization 名

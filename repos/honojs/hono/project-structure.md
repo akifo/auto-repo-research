@@ -23,13 +23,13 @@
 
 ソースコードは `src/` 直下に 5 つの主要カテゴリディレクトリを持つ。
 
-| ディレクトリ | 役割 | 粒度の基準 |
-|---|---|---|
-| `adapter/` | ランタイム固有の統合コード | ランタイムごとに 1 ディレクトリ |
-| `middleware/` | リクエスト/レスポンスパイプラインの横断的関心事 | 機能ごとに 1 ディレクトリ |
-| `helper/` | ユーティリティ的な機能拡張 | 機能ごとに 1 ディレクトリ |
-| `router/` | ルーティングアルゴリズムの実装 | アルゴリズムごとに 1 ディレクトリ |
-| `utils/` | 内部ユーティリティ関数 | ファイル単位（ディレクトリなし） |
+| ディレクトリ  | 役割                                            | 粒度の基準                        |
+| ------------- | ----------------------------------------------- | --------------------------------- |
+| `adapter/`    | ランタイム固有の統合コード                      | ランタイムごとに 1 ディレクトリ   |
+| `middleware/` | リクエスト/レスポンスパイプラインの横断的関心事 | 機能ごとに 1 ディレクトリ         |
+| `helper/`     | ユーティリティ的な機能拡張                      | 機能ごとに 1 ディレクトリ         |
+| `router/`     | ルーティングアルゴリズムの実装                  | アルゴリズムごとに 1 ディレクトリ |
+| `utils/`      | 内部ユーティリティ関数                          | ファイル単位（ディレクトリなし）  |
 
 `middleware/` と `helper/` の違いは、前者がミドルウェアシグネチャ `(c, next) => ...` を返す関数、後者はそれ以外の補助機能（`testClient`、`getRuntimeKey` など）である。この区別により、ユーザーは `app.use()` に渡せるモジュールか否かを import パスから判断できる。
 
@@ -39,15 +39,15 @@
 
 ```typescript
 // src/router/reg-exp-router/index.ts:5-7
-export { RegExpRouter } from './router'
-export { PreparedRegExpRouter, buildInitParams, serializeInitParams } from './prepared-router'
+export { buildInitParams, PreparedRegExpRouter, serializeInitParams } from "./prepared-router";
+export { RegExpRouter } from "./router";
 ```
 
 ```typescript
 // src/adapter/cloudflare-workers/index.ts:5-8
-export { serveStatic } from './serve-static-module'
-export { upgradeWebSocket } from './websocket'
-export { getConnInfo } from './conninfo'
+export { getConnInfo } from "./conninfo";
+export { serveStatic } from "./serve-static-module";
+export { upgradeWebSocket } from "./websocket";
 ```
 
 各 `index.ts` は公開 API の「門番」として機能し、内部のファイル構造を隠蔽する。`router.ts`、`matcher.ts`、`trie.ts` といった実装詳細は直接エクスポートされない。
@@ -127,8 +127,8 @@ export const cors = (options?: CORSOptions): MiddlewareHandler => {
   // ... 設定のマージ・クロージャ変数の準備 ...
   return async function cors(c, next) {
     // ... 実行時ロジック ...
-  }
-}
+  };
+};
 ```
 
 ```typescript
@@ -136,8 +136,8 @@ export const cors = (options?: CORSOptions): MiddlewareHandler => {
 export const logger = (fn: PrintFunc = console.log): MiddlewareHandler => {
   return async function logger(c, next) {
     // ...
-  }
-}
+  };
+};
 ```
 
 返される関数に名前（`function cors`, `function logger`）を付けているのは、スタックトレースでの識別を容易にするためである。
@@ -148,19 +148,19 @@ export const logger = (fn: PrintFunc = console.log): MiddlewareHandler => {
 // build/build.ts:75-88
 const cjsConfig: BuildOptions = {
   ...commonOptions,
-  outbase: './src',
-  outdir: './dist/cjs',
-  format: 'cjs',
-}
+  outbase: "./src",
+  outdir: "./dist/cjs",
+  format: "cjs",
+};
 
 const esmConfig: BuildOptions = {
   ...commonOptions,
   bundle: true,
-  outbase: './src',
-  outdir: './dist',
-  format: 'esm',
-  plugins: [addExtension('.js')],
-}
+  outbase: "./src",
+  outdir: "./dist",
+  format: "esm",
+  plugins: [addExtension(".js")],
+};
 ```
 
 CJS 出力を `dist/cjs/` に分離し、そのディレクトリに `{"type": "commonjs"}` の `package.json` を配置する（`package.cjs.json` をコピー）。これにより、Node.js のモジュール解決が ESM/CJS を正しく判別できる。`package.json` の各エクスポートは `types`/`import`/`require` の 3 条件を明示する。
@@ -172,21 +172,21 @@ CJS 出力を `dist/cjs/` に分離し、そのディレクトリに `{"type": "
 export const validateExports = (
   source: Record<string, unknown>,
   target: Record<string, unknown>,
-  fileName: string
+  fileName: string,
 ) => {
   // ...
   Object.keys(source).forEach((sourceEntry) => {
     if (!isEntryInTarget(sourceEntry)) {
-      throw new Error(`Missing "${sourceEntry}" in '${fileName}'`)
+      throw new Error(`Missing "${sourceEntry}" in '${fileName}'`);
     }
-  })
-}
+  });
+};
 ```
 
 ```typescript
 // build/build.ts:31
-validateExports(packageJsonExports, jsrJsonExports, 'jsr.json')
-validateExports(jsrJsonExports, packageJsonExports, 'package.json')
+validateExports(packageJsonExports, jsrJsonExports, "jsr.json");
+validateExports(jsrJsonExports, packageJsonExports, "package.json");
 ```
 
 ビルド時に `package.json` と `jsr.json` のエクスポート定義を双方向に検証する。一方にあって他方にないエクスポートがあればビルドエラーとなる。複数レジストリ対応で起こりがちなエクスポートの不整合を防ぐ仕組みである。
@@ -197,16 +197,16 @@ validateExports(jsrJsonExports, packageJsonExports, 'package.json')
 
 ```typescript
 // src/helper/conninfo/types.ts:45
-export type GetConnInfo = (c: Context) => ConnInfo
+export type GetConnInfo = (c: Context) => ConnInfo;
 ```
 
 ```typescript
 // src/adapter/cloudflare-workers/conninfo.ts:3-6
 export const getConnInfo: GetConnInfo = (c) => ({
   remote: {
-    address: c.req.header('cf-connecting-ip'),
+    address: c.req.header("cf-connecting-ip"),
   },
-})
+});
 ```
 
 ```typescript
@@ -247,14 +247,14 @@ export const getConnInfo: GetConnInfo = (c: Context) => {
 // src/middleware/cors/index.ts:99
 return async function cors(c, next) {
   // ...
-}
+};
 ```
 
 ```typescript
 // src/middleware/basic-auth/index.ts:86
 return async function basicAuth(ctx, next) {
   // ...
-}
+};
 ```
 
 無名関数 `async (c, next) => { ... }` ではなく `async function cors(c, next) { ... }` とすることで、エラー発生時に `cors` というスタックフレーム名が表示される。
@@ -265,8 +265,8 @@ return async function basicAuth(ctx, next) {
 
 ```typescript
 // build/build.ts:31-32
-validateExports(packageJsonExports, jsrJsonExports, 'jsr.json')
-validateExports(jsrJsonExports, packageJsonExports, 'package.json')
+validateExports(packageJsonExports, jsrJsonExports, "jsr.json");
+validateExports(jsrJsonExports, packageJsonExports, "package.json");
 ```
 
 - **private フィールドのビルド後除去**: TypeScript の `#` private フィールドは `.d.ts` に出力されるとユーザーの型チェックに不要なノイズとなる。ビルド後に AST パーサーで自動除去する。
@@ -289,7 +289,7 @@ export async function removePrivateFields(files: string[]) {
 
 ```typescript
 // Better: validate-exports.ts による自動検証で不整合を防止
-validateExports(packageJsonExports, jsrJsonExports, 'jsr.json')
+validateExports(packageJsonExports, jsrJsonExports, "jsr.json");
 ```
 
 この課題に対し、ビルドスクリプト内の `validateExports` が安全網として機能している。理想的にはエクスポート定義を単一の設定から自動生成する方がよいが、現状は検証による整合性保証で対処している。

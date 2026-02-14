@@ -1,13 +1,7 @@
+import yaml from "js-yaml";
 import fs from "node:fs";
 import path from "node:path";
-import yaml from "js-yaml";
-import type {
-  ParsedRule,
-  RepoMeta,
-  RepoIndex,
-  ShowcaseEntry,
-  ResearchData,
-} from "../types.js";
+import type { ParsedRule, RepoIndex, RepoMeta, ResearchData, ShowcaseEntry } from "../types.js";
 
 function parseRules(rulesRaw: string, repo: string): ParsedRule[] {
   const rules: ParsedRule[] = [];
@@ -28,7 +22,7 @@ function parseRules(rulesRaw: string, repo: string): ParsedRule[] {
 
     // Rule line: - `[MUST]` content / - `[SHOULD]` content / - `[AVOID]` content
     const ruleMatch = trimmed.match(
-      /^- `\[(MUST|SHOULD|AVOID)\]` (.+)/
+      /^- `\[(MUST|SHOULD|AVOID)\]` (.+)/,
     );
     if (ruleMatch) {
       rules.push({
@@ -106,7 +100,7 @@ function loadShowcases(baseDir: string): ShowcaseEntry[] {
 
     const content = fs.readFileSync(
       path.join(showcasesDir, file),
-      "utf-8"
+      "utf-8",
     );
 
     showcases.push({ name, theme, label, content });
