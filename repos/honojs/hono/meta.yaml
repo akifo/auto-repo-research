@@ -1,0 +1,81 @@
+url: https://github.com/honojs/hono
+stars: 28779
+language: TypeScript
+license: MIT
+description: "Web framework built on Web Standards"
+analyzed_at: "2026-02-14"
+local_path: /Users/akiho/github/github.com/honojs/hono
+
+perspectives:
+  - name: project-structure
+    file: project-structure.md
+    summary: ""
+  - name: dev-conventions
+    file: dev-conventions.md
+    summary: ""
+  - name: architecture
+    file: architecture.md
+    summary: ""
+  - name: error-handling
+    file: error-handling.md
+    summary: ""
+  - name: testing-strategy
+    file: testing-strategy.md
+    summary: ""
+  - name: type-system
+    file: type-system.md
+    summary: ""
+  - name: api-design
+    file: api-design.md
+    summary: ""
+  - name: performance
+    file: performance.md
+    summary: ""
+  - name: security
+    file: security.md
+    summary: ""
+  - name: dependency-management
+    file: dependency-management.md
+    summary: ""
+  - name: build-system
+    file: build-system.md
+    summary: "Bun + esbuild のカスタムビルドで ESM/CJS デュアル出力。addExtension プラグインによる .js 拡張子付与、package.cjs.json パターン、package.json/jsr.json のエクスポート双方向検証、oxc-parser による .d.ts プライベートフィールド除去、publint バリデーション"
+  - name: ci-cd
+    file: ci-cd.md
+    summary: ""
+  - name: router-design
+    file: router-design.md
+    summary: "Strategy パターンによる 5 種ルーター実装（RegExpRouter/TrieRouter/SmartRouter/PatternRouter/LinearRouter）の設計分析。メソッド自己差し替え・UnsupportedPathError による自動フォールバック・共通テストスイートの仕組み"
+  - name: middleware-system
+    file: middleware-system.md
+    summary: ""
+  - name: adapter-pattern
+    file: adapter-pattern.md
+    summary: ""
+  - name: web-standards
+    file: web-standards.md
+    summary: "Fetch API (Request/Response) ベースのエントリーポイント設計、Web Crypto API による暗号処理、Streams API (TransformStream/ReadableStream) によるストリーミング、Service Worker 互換の FetchEvent 抽象化、ボディキャッシュ機構の詳細分析"
+  - name: jsx-engine
+    file: jsx-engine.md
+    summary: ""
+  - name: context-design
+    file: context-design.md
+    summary: ""
+  - name: preset-system
+    file: preset-system.md
+    summary: ""
+  - name: client-rpc
+    file: client-rpc.md
+    summary: ""
+  - name: validator-system
+    file: validator-system.md
+    summary: ""
+  - name: streaming
+    file: streaming.md
+    summary: ""
+  - name: multi-runtime-testing
+    file: multi-runtime-testing.md
+    summary: ""
+  - name: helper-utilities
+    file: helper-utilities.md
+    summary: ""
