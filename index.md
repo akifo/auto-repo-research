@@ -16,6 +16,7 @@ hero:
 
 <script setup>
 import { data as repos } from './repos.data'
+import { withBase } from 'vitepress'
 </script>
 
 <div class="vp-doc" style="padding: 0 24px;">
@@ -26,7 +27,7 @@ import { data as repos } from './repos.data'
   <a
     v-for="r in repos"
     :key="`${r.org}/${r.repo}`"
-    :href="`/repos/${r.org}/${r.repo}/`"
+    :href="withBase(`/repos/${r.org}/${r.repo}/`)"
     class="repo-card"
   >
     <h3>{{ r.org }}/{{ r.repo }}</h3>
