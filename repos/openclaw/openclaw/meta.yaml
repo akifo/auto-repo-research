@@ -1,0 +1,110 @@
+url: https://github.com/openclaw/openclaw
+stars: 193327
+language: TypeScript
+license: MIT
+description: "Your own personal AI assistant. Any OS. Any Platform. The lobster way."
+analyzed_at: "2026-02-14"
+local_path: /Users/akiho/github/github.com/openclaw/openclaw
+scale: large
+
+perspectives:
+  - name: project-structure
+    file: project-structure.md
+    wave: 1
+    intent: "Monorepoワークスペース構成・パッケージ境界・ディレクトリレイアウト戦略を分析する"
+    summary: "Fat Core + Thin Extensions構成で40以上の内部ドメインを単一パッケージに集約し、Plugin SDKで公開API面を制御"
+  - name: architecture
+    file: architecture.md
+    wave: 1
+    intent: "ゲートウェイ中心のレイヤー構成と依存方向、チャネル抽象化の仕組みを明らかにする"
+    summary: "Gateway Mediatorが全チャネル・エージェント間を仲介し、Dock/Plugin二層抽象化でN+M疎結合を実現"
+  - name: design-philosophy
+    file: design-philosophy.md
+    wave: 1
+    intent: "マルチプラットフォーム・マルチチャネル対応の設計思想と技術選定の根拠を探る"
+    summary: "TypeBoxスキーマをSingle Source of Truthとしクロスプラットフォーム型生成、Rust製ツールチェーンで開発速度を最大化"
+  - name: extensibility-mechanisms
+    file: extensibility-mechanisms.md
+    wave: 1
+    intent: "プラグイン・スキル・チャネル拡張の仕組みと契約ベースの拡張パターンを分析する"
+    summary: "OpenClawPluginApi Facadeで11種のregisterメソッドを提供し、34+拡張がコア内部を知らず動作"
+  - name: type-system-patterns
+    file: type-system-patterns.md
+    wave: 1
+    intent: "TypeBox/Zod/プロトコル生成による型安全性確保パターンを体系化する"
+    summary: "TypeBox・Zod・AJVを境界ごとに使い分け、LLM互換stringEnumヘルパーで外部制約に適応"
+  - name: code-organization
+    file: code-organization.md
+    wave: 1
+    intent: "ファイル分割規約・バレルパターン・モジュール境界設計を横断的に分析する"
+    summary: "ドット区切りファイル名で論理グルーピング、多層バレルで公開API制御、500LOC上限をCI強制"
+  - name: abstraction-patterns
+    file: abstraction-patterns.md
+    wave: 1
+    intent: "DI・ファクトリ・アダプタ等の共通抽象化パターンと適用戦略を明らかにする"
+    summary: "Capability-basedオプショナルインターフェースと遅延importプロキシDIで多チャネル統合を実現"
+  - name: error-handling-idioms
+    file: error-handling-idioms.md
+    wave: 2
+    intent: "エラー処理のイディオム・エラー型設計・リカバリ戦略を分析する"
+    summary: "構造化コード付きカスタムエラー型、BFSによるcauseチェーン走査、致命度3段階の未処理rejection分類"
+  - name: testing-practices
+    file: testing-practices.md
+    wave: 2
+    intent: "Vitest活用・テスト戦略・カバレッジ設計・テスト分類を体系化する"
+    summary: "unit/e2e/liveの3層分類を6設定ファイルで制御、決定論的ポートブロック割り当てで並列テスト安定化"
+  - name: build-and-tooling
+    file: build-and-tooling.md
+    wave: 2
+    intent: "tsdown/oxlint/oxfmt/pnpmのビルドパイプラインとツールチェーン選定を分析する"
+    summary: "Rust製ツール(tsdown/oxlint/oxfmt/tsgo)で全フェーズ高速化、スマート再ビルドで不要なビルドをスキップ"
+  - name: performance-techniques
+    file: performance-techniques.md
+    wave: 2
+    intent: "並列処理・ワーカー管理・メモリ効率化・コンパクション等の最適化手法を分析する"
+    summary: "適応的コンテキストウィンドウ管理、レーンベース並列化、サーキットブレーカー付きバッチフォールバック"
+  - name: security-practices
+    file: security-practices.md
+    wave: 2
+    intent: "サンドボックス・認証・入力バリデーション・セキュリティ設計を分析する"
+    summary: "多層プロンプトインジェクション防御、宣言的秘匿フィールド管理、タイミング安全な秘密比較の徹底"
+  - name: api-design-practices
+    file: api-design-practices.md
+    wave: 2
+    intent: "ゲートウェイAPI・プロトコル設計・スキーマ駆動開発パターンを分析する"
+    summary: "TypeBox一元定義から4形態を自動生成、冪等性キー必須、ハンドラ冒頭バリデーション+構造化エラー"
+  - name: dependency-management
+    file: dependency-management.md
+    wave: 2
+    intent: "pnpm overrides/patches・peer deps管理・依存関係の制約管理を分析する"
+    summary: "overrides+minimumReleaseAge+onlyBuiltDependenciesの三層サプライチェーン防御、workspace:*はdevDeps限定"
+  - name: ai-settings
+    file: ai-settings.md
+    wave: 2
+    intent: "AGENTS.md設計・マルチエージェント安全性ルール・AI開発規約の体系を分析する"
+    summary: "AGENTS.md正式名+CLAUDE.mdシンボリックリンク、6項目のマルチエージェント安全性ルール、3段階PRスキル"
+  - name: multi-platform-patterns
+    file: multi-platform-patterns.md
+    wave: 2
+    intent: "Node/Bun/Swift/Kotlin横断のクロスプラットフォーム対応パターンを分析する"
+    summary: "TypeBox→JSON Schema→Swiftコード生成パイプライン、CI diff検証、共有パッケージ3層分割"
+  - name: dev-conventions
+    file: dev-conventions.md
+    wave: 2
+    intent: "コミット規約・PRワークフロー・コードスタイル・開発規約を分析する"
+    summary: "スコープドコミッターでgit add .禁止、3段階PRパイプライン、AI生成PR歓迎+透明性チェックリスト"
+  - name: concurrency-patterns
+    file: concurrency-patterns.md
+    wave: 2
+    intent: "マルチエージェント安全性・プロセス管理・非同期処理パターンを分析する"
+    summary: "PID検証付きファイルロック、世代番号付きレーンキュー、bindAbortRelayでメモリリーク防止"
+  - name: messaging-integration-patterns
+    file: messaging-integration-patterns.md
+    wave: 2
+    intent: "マルチチャネルメッセージング統合パターンと共通インターフェース設計を分析する"
+    summary: "Registry/Dock/Pluginの三層チャネル抽象化、Capabilitiesフラグによる機能ネゴシエーション"
+  - name: media-processing-patterns
+    file: media-processing-patterns.md
+    wave: 2
+    intent: "画像・PDF・TTS・メディア変換パイプラインのパターンを分析する"
+    summary: "多段MIME検出、環境適応型バックエンド切替、withTempDirスコープ付きクリーンアップの徹底"
