@@ -58,6 +58,7 @@ allowed-tools: Bash, Read, Write, Glob, Grep
    - **適用ガイド**: いつ使うか、注意点、カスタマイズポイント
    - **参考**: 元の分析ファイルへのリンク
 3. `showcases/<theme>_<name>.md` に Write で出力する
+4. `showcases/index.md` に新しい showcase へのリンクを追記する（該当 theme セクションのテーブルに行追加）
 
 ### Step 4: 完了報告
 
