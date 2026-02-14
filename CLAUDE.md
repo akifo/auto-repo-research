@@ -50,6 +50,8 @@ auto-repo-research/
 - `/showcase <theme> <name>` — 研究結果から実用的な知見を抽出し、showcase ファイルを生成する
 - `npm run docs:dev` — VitePress ローカルプレビュー
 - `npm run docs:build` — サイトビルド
+- `npm run fmt` — dprint でフォーマット
+- `npm run fmt:check` — フォーマットチェック
 - `npm run mcp:build` — MCP サーバーのビルド
 - `npm run mcp:start` — MCP サーバーの起動（stdio トランスポート）
 
