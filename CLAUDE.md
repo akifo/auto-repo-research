@@ -58,6 +58,6 @@ auto-repo-research/
 
 ## NEVER FORGET
 
-- `repos/` 配下は蓄積データであり、削除禁止
+- `repos/` 配下は蓄積データであり、削除禁止（`/research` 再実行時にユーザーが「最初からやり直す」を選択した場合のみ例外）
 - `meta.yaml` は視点追加時に必ず更新すること
 - perspective-writer agent はリポジトリのコードを変更しない（Read-only 分析）
