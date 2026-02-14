@@ -197,6 +197,21 @@
 | 109 | [lapce/lapce](https://github.com/lapce/lapce) | Rope データ構造による大規模テキスト編集、OpenGL レンダリング、WASI プラグインシステム |
 | 110 | [mastra-ai/mastra](https://github.com/mastra-ai/mastra) | TypeScript AI エージェントフレームワーク、ワークフローグラフ設計、ツール統合抽象化 |
 
+## AI Automation
+
+| # | リポジトリ | 抽出できそうなプラクティス |
+|---|-----------|-------------------------|
+| 111 | [n8n-io/n8n](https://github.com/n8n-io/n8n) | ノードベースワークフローアーキテクチャ、400+ 統合のプラグイン設計、型安全なワークフロー定義 |
+| 112 | [infiniflow/ragflow](https://github.com/infiniflow/ragflow) | Deep Document Understanding、ハイブリッド検索（ベクトル+全文）、RAG パイプラインのモジュール化 |
+| 113 | [FoundationAgents/MetaGPT](https://github.com/FoundationAgents/MetaGPT) | SOP（標準作業手順）のコード化、ロールベースマルチエージェント設計、中間結果検証機構 |
+| 114 | [pathwaycom/pathway](https://github.com/pathwaycom/pathway) | リアルタイムストリーム処理アーキテクチャ、増分更新メカニズム、Python + Rust バックエンド連携 |
+| 115 | [microsoft/autogen](https://github.com/microsoft/autogen) | 会話型マルチエージェント設計、LLM ツール/関数呼び出しインターフェース、フレームワーク移行戦略 |
+| 116 | [crewAIInc/crewAI](https://github.com/crewAIInc/crewAI) | 軽量エージェント協調設計、タスク委譲と結果統合パターン、YAML ベース宣言的定義 |
+| 117 | [Aider-AI/aider](https://github.com/Aider-AI/aider) | コードベースマッピングによるコンテキスト構築、Git ワークフロー統合、ベンチマーク駆動開発 |
+| 118 | [BerriAI/litellm](https://github.com/BerriAI/litellm) | 100+ LLM の統一インターフェース（プロバイダ抽象化）、コスト追跡/ガードレール、負荷分散/フォールバック |
+| 119 | [stanfordnlp/dspy](https://github.com/stanfordnlp/dspy) | シグネチャ・モジュール・オプティマイザの3層アーキテクチャ、プロンプト自動最適化、モジュラー AI パイプライン |
+| 120 | [continuedev/continue](https://github.com/continuedev/continue) | IDE 拡張アーキテクチャ（VS Code/JetBrains）、ローカル LLM 対応のプライバシー設計、カスタムモデル統合 |
+
 ---
 
 ## 選定基準
