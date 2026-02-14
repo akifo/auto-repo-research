@@ -50,6 +50,34 @@ function loadRepos(): RepoEntry[] {
   return repos
 }
 
+function loadShowcases(): DefaultTheme.SidebarItem[] {
+  const showcasesDir = path.resolve(__dirname, '..', 'showcases')
+  if (!fs.existsSync(showcasesDir)) return []
+
+  const groups: Record<string, DefaultTheme.SidebarItem[]> = {}
+
+  for (const file of fs.readdirSync(showcasesDir)) {
+    if (!file.endsWith('.md') || file === 'index.md') continue
+
+    const name = file.replace(/\.md$/, '')
+    const underscoreIdx = name.indexOf('_')
+    const theme = underscoreIdx !== -1 ? name.slice(0, underscoreIdx) : 'other'
+    const label = underscoreIdx !== -1 ? name.slice(underscoreIdx + 1) : name
+
+    if (!groups[theme]) groups[theme] = []
+    groups[theme].push({
+      text: label,
+      link: `/showcases/${name}`,
+    })
+  }
+
+  return Object.entries(groups).map(([theme, items]) => ({
+    text: theme,
+    collapsed: false,
+    items,
+  }))
+}
+
 function generateSidebar(repos: RepoEntry[]): DefaultTheme.SidebarMulti {
   const sidebar: DefaultTheme.SidebarMulti = {}
 
@@ -75,6 +103,16 @@ function generateSidebar(repos: RepoEntry[]): DefaultTheme.SidebarMulti {
       {
         text: `${org}/${repo}`,
         items,
+      },
+    ]
+  }
+
+  const showcaseItems = loadShowcases()
+  if (showcaseItems.length) {
+    sidebar['/showcases/'] = [
+      {
+        text: 'Showcases',
+        items: showcaseItems,
       },
     ]
   }
