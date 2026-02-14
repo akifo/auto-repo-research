@@ -9,5 +9,12 @@ Thumbs.db
 .idea/
 .vscode/
 
+# Node
+node_modules/
+
+# VitePress
+.vitepress/cache/
+.vitepress/dist/
+
 # Claude Code local settings
 .claude/settings.local.json
