@@ -182,6 +182,21 @@
 | 99 | [lodash/lodash](https://github.com/lodash/lodash) | ユーティリティライブラリ設計、遅延評価チェーン、モジュール分割戦略 |
 | 100 | [excalidraw/excalidraw](https://github.com/excalidraw/excalidraw) | Canvas ベース描画設計、コラボレーション、状態管理、オフライン対応 |
 
+## 最近話題のプロジェクト（2025後半〜2026年初頭）
+
+| # | リポジトリ | 抽出できそうなプラクティス |
+|---|-----------|-------------------------|
+| 101 | [openclaw/openclaw](https://github.com/openclaw/openclaw) | マルチチャネル統合アーキテクチャ（13+ プラットフォーム）、ローカルファーストゲートウェイ、セッション分離設計 |
+| 102 | [deepseek-ai/DeepSeek-R1](https://github.com/deepseek-ai/DeepSeek-R1) | MoE アーキテクチャ（671B 中 37B 活性化）、知識蒸留パイプライン、強化学習ベース学習戦略 |
+| 103 | [langgenius/dify](https://github.com/langgenius/dify) | エージェントワークフロー設計、マルチテナント Kubernetes アーキテクチャ、50+ ツールのプラグイン統合 |
+| 104 | [open-webui/open-webui](https://github.com/open-webui/open-webui) | Svelte + FastAPI スタック、ベクター DB 抽象化（9種対応）、エンタープライズ認証層（LDAP/OAuth） |
+| 105 | [zed-industries/zed](https://github.com/zed-industries/zed) | カスタム GPU UI フレームワーク（GPUI）、大規模 Rust crates 構成、Tree-sitter 統合 |
+| 106 | [mendableai/firecrawl](https://github.com/mendableai/firecrawl) | AI ファースト Web スクレイピング設計、自然言語ベース抽出（ゼロセレクター）、バッチ非同期パイプライン |
+| 107 | [All-Hands-AI/OpenHands](https://github.com/All-Hands-AI/OpenHands) | モノリスから SDK へのリファクタリング、オプトインサンドボックス、ベンチマーク駆動開発（SWE-bench） |
+| 108 | [vllm-project/vllm](https://github.com/vllm-project/vllm) | テンソル/パイプライン/データ並列化戦略、ハードウェア抽象化プラグイン、高スループット推論最適化 |
+| 109 | [lapce/lapce](https://github.com/lapce/lapce) | Rope データ構造による大規模テキスト編集、OpenGL レンダリング、WASI プラグインシステム |
+| 110 | [mastra-ai/mastra](https://github.com/mastra-ai/mastra) | TypeScript AI エージェントフレームワーク、ワークフローグラフ設計、ツール統合抽象化 |
+
 ---
 
 ## 選定基準
