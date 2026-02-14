@@ -162,6 +162,7 @@ export default defineConfig({
   srcExclude: [
     'templates/**',
     '.claude/**',
+    'mcp-server/**',
     'CLAUDE.md',
     'README.md',
   ],

@@ -16,5 +16,9 @@ node_modules/
 .vitepress/cache/
 .vitepress/dist/
 
+# MCP Server
+mcp-server/dist/
+mcp-server/node_modules/
+
 # Claude Code local settings
 .claude/settings.local.json

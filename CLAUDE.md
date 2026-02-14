@@ -27,6 +27,14 @@ auto-repo-research/
 │       └── <視点>.md   # 視点ごとの分析ファイル
 ├── showcases/          # テーマ別の知見ドキュメント
 │   └── <theme>_<name>.md
+├── mcp-server/         # MCP サーバー（研究データを外部公開）
+│   ├── src/
+│   │   ├── index.ts    # エントリポイント
+│   │   ├── types.ts    # 型定義
+│   │   ├── data/       # データローダー・インデックス
+│   │   └── tools/      # ツール実装（5つ）
+│   ├── package.json
+│   └── tsconfig.json
 └── .claude/
     ├── agents/
     │   ├── perspective-writer.md
@@ -42,6 +50,8 @@ auto-repo-research/
 - `/showcase <theme> <name>` — 研究結果から実用的な知見を抽出し、showcase ファイルを生成する
 - `npm run docs:dev` — VitePress ローカルプレビュー
 - `npm run docs:build` — サイトビルド
+- `npm run mcp:build` — MCP サーバーのビルド
+- `npm run mcp:start` — MCP サーバーの起動（stdio トランスポート）
 
 ## テンプレート
 

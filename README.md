@@ -82,6 +82,49 @@ auto-repo-research/
         └── showcase/SKILL.md
 ```
 
+## MCP サーバー
+
+蓄積した研究データを他プロジェクトの Claude Code から直接参照できる MCP サーバーを同梱している。
+
+### セットアップ
+
+```bash
+cd mcp-server && npm install && npm run build
+```
+
+### Claude Code への接続
+
+`~/.claude/settings.json` に以下を追加:
+
+```json
+{
+  "mcpServers": {
+    "repo-research": {
+      "command": "node",
+      "args": ["/absolute/path/to/auto-repo-research/mcp-server/dist/index.js"]
+    }
+  }
+}
+```
+
+### 提供ツール
+
+| ツール | 説明 | 主要パラメータ |
+|--------|------|--------------|
+| `list_research` | 研究済みリポジトリと showcase の一覧 | なし |
+| `get_rules` | 特定リポジトリのルール取得 | `repo` (必須), `category?`, `priority?` |
+| `get_showcase` | showcase ドキュメント取得 | `name` (必須) |
+| `search_rules` | キーワードで全リポジトリ横断検索 | `query` (必須), `priority?` |
+| `suggest_rules` | プロジェクトの技術スタックに合ったルールを自動提案 | `language?`, `framework?`, `keywords?`, `format?` |
+
+### 使用例
+
+他プロジェクトの Claude Code から:
+
+- 「このプロジェクトに合ったルールを提案して」→ `suggest_rules` が技術スタックに合致するルールをスコアリングして返す
+- 「ミドルウェア設計のベストプラクティスを教えて」→ `search_rules` でキーワード横断検索
+- 「Hono のエラーハンドリングルールを見せて」→ `get_rules` でリポ指定＋カテゴリフィルタ
+
 ## 前提ツール
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — スキル実行環境
