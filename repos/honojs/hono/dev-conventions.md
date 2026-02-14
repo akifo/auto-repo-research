@@ -54,7 +54,7 @@ CI は機能別に明確にジョブを分離している:
 
 ### autofix.ci によるフォーマット自動修正
 
-PR に対して format と lint の自動修正を行い、修正コミットを自動プッシュする。ドラフト PR はスキップする（`if: ${{ !github.event.pull_request.draft }}`）。concurrency 制御で同一ブランチへの並行実行を防止している。
+PR に対して format と lint の自動修正を行い、修正コミットを自動プッシュする。ドラフト PR はスキップする（<code v-pre>if: ${{ !github.event.pull_request.draft }}</code>）。concurrency 制御で同一ブランチへの並行実行を防止している。
 
 ## コード例
 
