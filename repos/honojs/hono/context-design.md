@@ -5,30 +5,70 @@
 
 ## 概要
 
-Hono の `Context` クラスは、HTTP リクエスト/レスポンスの処理を単一オブジェクトに統合する中心的な設計要素である。Express の `req`/`res` 分離モデルとは異なり、1 つの `c` オブジェクトからリクエスト情報の取得・レスポンスの生成・リクエストスコープ変数の管理・ランタイム環境へのアクセスをすべて行える。TypeScript のジェネリクスを活用した 3 層の型パラメータ `<E, P, I>` により、環境バインディング・パスパラメータ・入力データすべてがコンパイル時に型安全に扱えるように設計されている。
+Hono の `Context` クラスは、HTTP リクエスト/レスポンスのライフサイクルを1つのオブジェクトに集約し、ミドルウェアチェーン全体で共有されるリクエストスコープのコンテナである。特に注目に値するのは、`c.set()`/`c.get()` による型安全な変数ストアの設計で、TypeScript の Declaration Merging と条件付き型を組み合わせて、ランタイムの `Map<unknown, unknown>` に対してコンパイル時の型安全性を実現している。この二重レイヤー（`Env['Variables']` と `ContextVariableMap`）の設計は、アプリケーション固有の型定義とライブラリ提供の型定義を両立させる巧みなアプローチである。
+
+## 設計思想
+
+- **リクエストスコープの最小コスト原則**: Context はリクエストごとに `new` されるため、コンストラクタでの初期化を最小限にしている。`#req`（HonoRequest）、`#var`（変数ストア）、`#preparedHeaders` はすべて遅延初期化であり、使われなければアロケーションが発生しない。根拠: `src/context.ts:291` で `#req` は `undefined` 初期化、`src/context.ts:306` で `#var` も `undefined` 初期化、`src/context.ts:357` で `get req()` が `??=` で遅延生成する。
+
+- **型安全性とランタイム柔軟性の分離**: 変数ストアの実体は `Map<unknown, unknown>` だが、TypeScript の型レベルでは `Env['Variables']` または `ContextVariableMap` による厳密なキー/値マッピングが強制される。これにより、ランタイムのオーバーヘッドをゼロに保ちながらコンパイル時の安全性を確保している。根拠: `src/context.ts:306` と `src/context.ts:90-103` の Get/Set インタフェース定義。
+
+- **段階的型付け（Progressive Typing）**: `IsAny<E>` による条件分岐で、型パラメータが `any`（未指定）の場合は `ContextVariableMap & Record<string, any>` にフォールバックし、明示的に型が指定された場合はその型のみを許可する。これにより「まず動かす、次に型を足す」という段階的開発を可能にしている。根拠: `src/context.ts:536-543` と `src/context.ts:561-568`。
+
+- **単一 Context、複数アクセスパターン**: 同じ変数ストアに対して `c.set()`/`c.get()` のメソッドアクセスと `c.var` のプロパティアクセスという2つの API を提供している。`c.var` は `Readonly` でラップされた読み取り専用ビューであり、ハンドラでの参照用、`c.set()`/`c.get()` はミドルウェアでの読み書き用という使い分けを型レベルで示唆している。根拠: `src/context.ts:582-592`。
 
 ## 設計・実装の詳細
 
-### Context クラスの 3 層型パラメータ
+### Context のライフサイクル
 
-Context クラスは 3 つのジェネリクス型パラメータで構成される。
+Context オブジェクトは `hono-base.ts` の `#dispatch` メソッドで各リクエストごとに生成される。
 
-```ts
-// src/context.ts:283-289
-export class Context<
-  E extends Env = any,
-  P extends string = any,
-  I extends Input = {},
->
+```typescript
+// src/hono-base.ts:415-421
+const c = new Context(request, {
+  path,
+  matchResult,
+  env,
+  executionCtx,
+  notFoundHandler: this.#notFoundHandler,
+})
 ```
 
-- **`E extends Env`**: 環境型。`Bindings`（Cloudflare Workers の KV、D1 等のランタイムバインディング）と `Variables`（リクエストスコープ変数）を定義する
-- **`P extends string`**: パスパターン文字列。`'/users/:id'` のようなリテラル型からパスパラメータの型を自動推論する
-- **`I extends Input`**: バリデーション入力。`in`（入力データ）と `out`（バリデーション済みデータ）を保持する
+生成された Context は `compose()` 関数を通じてミドルウェアチェーン全体で共有される。`compose()` は koa-compose に基づいたオニオン構造で、同一の `context` オブジェクトを全ミドルウェアに渡す。
 
-`Env` 型は以下のように定義され、ユーザーがアプリケーション固有の型を注入するインターフェースを提供する。
+```typescript
+// src/compose.ts:49-51
+if (handler) {
+  try {
+    res = await handler(context, () => dispatch(i + 1))
+```
 
-```ts
+ライフサイクルの終了は `context.finalized = true` で示される。`c.res` のセッターが呼ばれるとフラグが立ち、以降のミドルウェアでレスポンスが確定済みであることを示す。
+
+```typescript
+// src/context.ts:404-424
+set res(_res: Response | undefined) {
+  if (this.#res && _res) {
+    _res = new Response(_res.body, _res)
+    for (const [k, v] of this.#res.headers.entries()) {
+      if (k === 'content-type') {
+        continue
+      }
+      // ... set-cookie の特殊処理
+    }
+  }
+  this.#res = _res
+  this.finalized = true
+}
+```
+
+### 型安全な変数ストアの二重レイヤー設計
+
+変数ストアの型安全性は2つの異なるメカニズムで実現されている。
+
+**レイヤー1: `Env['Variables']`（アプリケーション固有型）**
+
+```typescript
 // src/types.ts:31-34
 export type Env = {
   Bindings?: Bindings
@@ -36,79 +76,115 @@ export type Env = {
 }
 ```
 
-### HonoRequest のラッパー設計と遅延初期化
+アプリケーション開発者が `new Hono<{ Variables: { id: number; title: string } }>()` のように型パラメータを指定すると、`c.set('id', ...)` と `c.get('id')` の型がそれに従って推論される。
 
-Context は生の `Request` オブジェクトを保持し、`c.req` アクセス時に初めて `HonoRequest` を生成する遅延初期化パターンを採用している。
+```typescript
+// src/hono.test.ts:2344-2370
+type Variables = { id: number; title: string }
+const app = new Hono<{ Variables: Variables }>()
 
-```ts
-// src/context.ts:290-291
-#rawRequest: Request
-#req: HonoRequest<P, I['out']> | undefined
+app.use('*', async (c, next) => {
+  c.set('id', 123)      // number のみ許可
+  c.set('title', 'Hello') // string のみ許可
+  await next()
+})
+app.get('/', (c) => {
+  const id = c.get('id')       // 型: number
+  const title = c.get('title') // 型: string
+  return c.text(`${id} is ${title}`)
+})
+```
 
-// src/context.ts:356-359
+**レイヤー2: `ContextVariableMap`（Declaration Merging によるグローバル型拡張）**
+
+```typescript
+// src/context.ts:52
+export interface ContextVariableMap {}
+```
+
+この空のインタフェースは Declaration Merging のターゲットとして設計されている。ミドルウェアライブラリが自身の変数を型レベルで登録できる。
+
+```typescript
+// src/middleware/request-id/index.ts:5-7
+declare module '../..' {
+  interface ContextVariableMap extends RequestIdVariables {}
+}
+```
+
+```typescript
+// src/middleware/jwt/index.ts:7-9
+declare module '../..' {
+  interface ContextVariableMap extends JwtVariables {}
+}
+```
+
+**二重レイヤーの統合: Get/Set インタフェースのオーバーロード**
+
+```typescript
+// src/context.ts:90-103
+interface Get<E extends Env> {
+  <Key extends keyof E['Variables']>(key: Key): E['Variables'][Key]
+  <Key extends keyof ContextVariableMap>(key: Key): ContextVariableMap[Key]
+}
+
+interface Set<E extends Env> {
+  <Key extends keyof E['Variables']>(key: Key, value: E['Variables'][Key]): void
+  <Key extends keyof ContextVariableMap>(key: Key, value: ContextVariableMap[Key]): void
+}
+```
+
+2つのオーバーロードにより、`Env['Variables']` で定義されたキーと `ContextVariableMap` で定義されたキーの両方が型安全にアクセスできる。
+
+**`IsAny` による分岐**
+
+型パラメータ `E` が `any`（Context のデフォルト）の場合、`Env['Variables']` の keyof は `string | number | symbol` となり全てのキーを受け入れてしまう。これを防ぐため `IsAny<E>` で分岐し、`any` の場合は `ContextVariableMap & Record<string, any>` を使用する。
+
+```typescript
+// src/context.ts:536-543
+set: Set<
+  IsAny<E> extends true
+    ? {
+        Variables: ContextVariableMap & Record<string, any>
+      }
+    : E
+> = (key: string, value: unknown) => {
+  this.#var ??= new Map()
+  this.#var.set(key, value)
+}
+```
+
+```typescript
+// src/utils/types.ts:110
+export type IsAny<T> = boolean extends (T extends never ? true : false) ? true : false
+```
+
+### 遅延初期化パターン
+
+Context は複数のフィールドで `??=`（Nullish Coalescing Assignment）を使った遅延初期化を採用している。
+
+```typescript
+// src/context.ts:357 - HonoRequest の遅延生成
 get req(): HonoRequest<P, I['out']> {
   this.#req ??= new HonoRequest(this.#rawRequest, this.#path, this.#matchResult)
   return this.#req
 }
-```
 
-`HonoRequest` は `Request` のラッパーであり、`c.req.param()`, `c.req.query()`, `c.req.header()` など型安全なアクセサを提供する。特に `c.req.param()` はパス文字列のリテラル型からパラメータ名を推論する。
+// src/context.ts:544 - 変数 Map の遅延生成
+this.#var ??= new Map()
 
-```ts
-// src/request.ts:94-99
-param<P2 extends ParamKeys<P> = ParamKeys<P>>(key: P2 extends `${infer _}?` ? never : P2): string
-param<P2 extends RemoveQuestion<ParamKeys<P>> = RemoveQuestion<ParamKeys<P>>>(
-  key: P2
-): string | undefined
-param(key: string): string | undefined
-param<P2 extends string = P>(): Simplify<UnionToIntersection<ParamKeyToRecord<ParamKeys<P2>>>>
-```
-
-### リクエストボディのキャッシュ機構
-
-`HonoRequest` はリクエストボディの読み取り結果をキャッシュし、同一リクエスト内で複数回ボディにアクセスしても問題が生じない設計になっている。
-
-```ts
-// src/request.ts:69
-bodyCache: BodyCache = {}
-
-// src/request.ts:218-237
-#cachedBody = (key: keyof Body) => {
-  const { bodyCache, raw } = this
-  const cachedBody = bodyCache[key]
-  if (cachedBody) {
-    return cachedBody
-  }
-  const anyCachedKey = Object.keys(bodyCache)[0]
-  if (anyCachedKey) {
-    return (bodyCache[anyCachedKey as keyof Body] as Promise<BodyInit>).then((body) => {
-      if (anyCachedKey === 'json') {
-        body = JSON.stringify(body)
-      }
-      return new Response(body)[key]()
-    })
-  }
-  return (bodyCache[key] = raw[key]())
+// src/context.ts:394-396 - Response の遅延生成
+get res(): Response {
+  return (this.#res ||= new Response(null, {
+    headers: (this.#preparedHeaders ??= new Headers()),
+  }))
 }
 ```
 
-異なるフォーマットでの読み取り（例: 先に `json()` → 後に `text()`）にも対応し、キャッシュ済みのデータから新しい `Response` オブジェクトを経由して変換する。
+### c.text() のファストパス
 
-### レスポンス生成メソッドの設計
+`c.text()` には、ヘッダーもステータスも設定されていない場合に `#newResponse` を経由せず直接 `new Response(text)` を返すファストパスがある。
 
-Context は Content-Type に応じた便利メソッド群を提供する。
-
-| メソッド | Content-Type | 備考 |
-|---|---|---|
-| `c.text()` | `text/plain; charset=UTF-8` | ファストパス最適化あり |
-| `c.json()` | `application/json` | `JSON.stringify` 内蔵 |
-| `c.html()` | `text/html; charset=UTF-8` | `Promise<string>` 対応 |
-| `c.body()` | 手動指定 | 低レベル API |
-| `c.redirect()` | - | Location ヘッダ自動設定 |
-
-`c.text()` には特筆すべきファストパス最適化が施されている。
-
-```ts
+```typescript
 // src/context.ts:672-684
 text: TextRespond = (
   text: string,
@@ -125,24 +201,15 @@ text: TextRespond = (
 }
 ```
 
-事前にヘッダやステータスが設定されていなければ、ヘッダマージを完全にスキップして `new Response(text)` を直接返す。これにより、単純なテキストレスポンスのオーバーヘッドを最小化している。
+### c.var の読み取り専用ビュー
 
-### リクエストスコープ変数（c.set / c.get / c.var）
+`c.var` は `Object.fromEntries(this.#var)` で毎回新しいオブジェクトを生成し、`Readonly<>` 型でラップされている。
 
-ミドルウェア間のデータ受け渡しには、`c.set()` / `c.get()` / `c.var` の 3 つの API が用意されている。内部的には `Map` で管理される。
-
-```ts
-// src/context.ts:306
-#var: Map<unknown, unknown> | undefined
-
-// src/context.ts:536-546
-set: Set<...> = (key: string, value: unknown) => {
-  this.#var ??= new Map()
-  this.#var.set(key, value)
-}
-
+```typescript
 // src/context.ts:582-592
-get var(): Readonly<...> {
+get var(): Readonly<
+  ContextVariableMap & (IsAny<E['Variables']> extends true ? Record<string, any> : E['Variables'])
+> {
   if (!this.#var) {
     return {} as any
   }
@@ -150,21 +217,33 @@ get var(): Readonly<...> {
 }
 ```
 
-型安全性は `E['Variables']` ジェネリクス と `ContextVariableMap` インターフェースの 2 経路で確保される。
+これにより、ハンドラ側から `c.var.foo = 'bar'` のような直接代入を型レベルで禁止している。ただし `Object.fromEntries` は毎回新しいオブジェクトを生成するため、頻繁にアクセスするとコスト増になる点に注意。
 
-```ts
-// src/context.ts:90-93
-interface Get<E extends Env> {
-  <Key extends keyof E['Variables']>(key: Key): E['Variables'][Key]
-  <Key extends keyof ContextVariableMap>(key: Key): ContextVariableMap[Key]
-}
-```
+## パターンカタログ
 
-### ContextVariableMap による declare module 拡張
+- **Mediator パターン** (分類: 振る舞い)
+  - 解決する問題: ミドルウェア間の直接的な依存を排除し、Context を介した間接的なデータ受け渡しを実現する
+  - 適用条件: 複数のミドルウェアが順序付きで実行され、後続のミドルウェアが前のミドルウェアの結果を参照する必要がある場合
+  - コード例: `src/compose.ts:49-51` でハンドラに同一の context を渡し、`src/middleware/jwt/jwt.ts:154` で `ctx.set('jwtPayload', payload)` によりデータを伝播
+  - 注意点: Context に何でも詰め込むと God Object 化するため、変数名の衝突や責務の肥大化に注意
 
-ミドルウェアが独自の変数を型安全に登録するための仕組みとして、TypeScript の `declare module` による interface マージが活用されている。
+- **Lazy Initialization パターン** (分類: 生成)
+  - 解決する問題: リクエストごとのオブジェクト生成コストを使用時まで遅延させる
+  - 適用条件: 全てのリクエストが全てのフィールドを使うわけではないホットパス
+  - コード例: `src/context.ts:357` の `this.#req ??=`, `src/context.ts:544` の `this.#var ??=`
+  - 注意点: フィールド間の依存関係があると初期化順の問題が生じうる
 
-```ts
+- **Module Augmentation パターン** (分類: TypeScript 固有/構造)
+  - 解決する問題: サードパーティミドルウェアが型情報を Context に安全に追加できるようにする
+  - 適用条件: プラグイン/ミドルウェアアーキテクチャで、コアの型定義を変更せずに拡張したい場合
+  - コード例: `src/context.ts:52` の空 `interface ContextVariableMap {}` と `src/middleware/jwt/index.ts:7-9` の Declaration Merging
+  - 注意点: グローバルな型空間を汚染するため、キー名の衝突リスクがある
+
+## Good Patterns
+
+- **空インタフェースを Declaration Merging のフックとして活用**: `ContextVariableMap` を空インタフェースとしてエクスポートし、ミドルウェアが `declare module` で型を追加できるようにしている。これによりコアの型定義を変更せずにエコシステム全体の型安全性を実現している。
+
+```typescript
 // src/context.ts:52
 export interface ContextVariableMap {}
 
@@ -172,323 +251,129 @@ export interface ContextVariableMap {}
 declare module '../..' {
   interface ContextVariableMap extends RequestIdVariables {}
 }
+// RequestIdVariables = { requestId: string }
+```
 
-// src/middleware/jwt/index.ts:7-9
-declare module '../..' {
-  interface ContextVariableMap extends JwtVariables {}
+- **オーバーロードによるローカル型とグローバル型の統合**: Get/Set インタフェースの2つのオーバーロードにより、アプリケーション固有の型（`Env['Variables']`）とグローバルな型（`ContextVariableMap`）を統合している。開発者はどちらの定義方法を使っても同じ `c.get()`/`c.set()` API で型安全にアクセスできる。
+
+```typescript
+// src/context.ts:90-93
+interface Get<E extends Env> {
+  <Key extends keyof E['Variables']>(key: Key): E['Variables'][Key]
+  <Key extends keyof ContextVariableMap>(key: Key): ContextVariableMap[Key]
 }
 ```
 
-これにより、`requestId()` ミドルウェアを使うと `c.get('requestId')` が `string` 型として自動補完される。ユーザーは `Env['Variables']` を明示的に定義しなくても、ミドルウェアの import だけで型情報が伝搬する。
+- **Private フィールド（`#`）による内部状態の完全隠蔽**: `#rawRequest`, `#var`, `#res`, `#status` などすべての内部状態に ES2022 private fields を使用し、外部からのアクセスとプロトタイプチェーン汚染を完全に防いでいる。公開 API は getter/setter とメソッドのみ。
 
-### finalized フラグとミドルウェアチェーン
-
-`c.finalized` はレスポンスが確定済みかを追跡するフラグで、`c.res = res` セッター呼び出し時に `true` になる。
-
-```ts
-// src/context.ts:404-424
-set res(_res: Response | undefined) {
-  if (this.#res && _res) {
-    _res = new Response(_res.body, _res)
-    for (const [k, v] of this.#res.headers.entries()) {
-      if (k === 'content-type') {
-        continue
-      }
-      // set-cookie の特殊処理
-      // ...
-    }
-  }
-  this.#res = _res
-  this.finalized = true
-}
-```
-
-`compose()` 関数内で、ハンドラの戻り値が Response であり `finalized === false` の場合にのみ `c.res` を設定する。これにより、先行ミドルウェアで既にレスポンスが確定済みなら上書きされないことが保証される。
-
-```ts
-// src/compose.ts:67-69
-if (res && (context.finalized === false || isError)) {
-  context.res = res
-}
-```
-
-`#dispatch` メソッドでは、`finalized === false` のまま compose が完了するとエラーを投げる。
-
-```ts
-// src/hono-base.ts:449-452
-if (!context.finalized) {
-  throw new Error(
-    'Context is not finalized. Did you forget to return a Response object or `await next()`?'
-  )
-}
-```
-
-### res セッターのヘッダマージ戦略
-
-`c.res` のセッターは既存レスポンスのヘッダを新レスポンスにマージする。ただし以下のルールに従う。
-
-1. `content-type` はマージしない（新レスポンスの Content-Type を優先）
-2. `set-cookie` は `getSetCookie()` で個別に取得し、`append` で追加する（複数 Cookie の保持）
-3. その他のヘッダは `set` でマージする
-
-```ts
-// src/context.ts:405-423
-set res(_res: Response | undefined) {
-  if (this.#res && _res) {
-    _res = new Response(_res.body, _res)
-    for (const [k, v] of this.#res.headers.entries()) {
-      if (k === 'content-type') {
-        continue
-      }
-      if (k === 'set-cookie') {
-        const cookies = this.#res.headers.getSetCookie()
-        _res.headers.delete('set-cookie')
-        for (const cookie of cookies) {
-          _res.headers.append('set-cookie', cookie)
-        }
-      } else {
-        _res.headers.set(k, v)
-      }
-    }
-  }
-  this.#res = _res
-  this.finalized = true
-}
-```
-
-### context-storage: AsyncLocalStorage によるコンテキスト共有
-
-`contextStorage()` ミドルウェアは Node.js の `AsyncLocalStorage` を使い、ハンドラ関数の引数 `c` を介さずに任意の場所からコンテキストにアクセス可能にする。
-
-```ts
-// src/middleware/context-storage/index.ts:10
-const asyncLocalStorage = new AsyncLocalStorage<Context>()
-
-// src/middleware/context-storage/index.ts:43-47
-export const contextStorage = (): MiddlewareHandler => {
-  return async function contextStorage(c, next) {
-    await asyncLocalStorage.run(c, next)
-  }
-}
-
-// src/middleware/context-storage/index.ts:53-58
-export const getContext = <E extends Env = Env>(): Context<E> => {
-  const context = tryGetContext<E>()
-  if (!context) {
-    throw new Error('Context is not available')
-  }
-  return context
-}
-```
-
-これにより、ユーティリティ関数やサービス層で `c` を引数に渡さずにリクエストコンテキストを参照できる。
-
-### バリデーション結果との統合
-
-`c.req.valid(target)` メソッドは、`validator()` ミドルウェアでバリデーション済みのデータを型安全に取得する。バリデーションミドルウェアが `addValidatedData()` でデータを蓄積し、ハンドラ内で `valid()` で取り出す。
-
-```ts
-// src/validator/validator.ts:168
-c.req.addValidatedData(target, res as never)
-
-// src/request.ts:333-335
-valid<T extends keyof I & keyof ValidationTargets>(target: T): InputToDataByTarget<I, T>
-valid(target: keyof ValidationTargets) {
-  return this.#validatedData[target] as unknown
-}
-```
-
-型の推論は `Input` ジェネリクスの `out` フィールドを通じて、バリデーション関数の戻り値型からハンドラ内の `c.req.valid('json')` の型まで一貫して伝搬する。
-
-### 環境バインディング（c.env）と ExecutionContext
-
-`c.env` はランタイム固有の環境バインディング（Cloudflare Workers の KV, D1, R2 等）にアクセスするプロパティである。`E['Bindings']` 型で型安全に参照できる。
-
-`c.executionCtx` は Cloudflare Workers の `ExecutionContext`（`waitUntil()`, `passThroughOnException()`）を提供する。存在しない環境でアクセスすると即座に Error を throw する設計で、フェイルファストを重視している。
-
-```ts
-// src/context.ts:381-387
-get executionCtx(): ExecutionContext {
-  if (this.#executionCtx) {
-    return this.#executionCtx as ExecutionContext
-  } else {
-    throw Error('This context has no ExecutionContext')
-  }
-}
-```
-
-### 単一ハンドラの最適化
-
-`#dispatch` メソッドでは、マッチ結果がハンドラ 1 つだけの場合に `compose()` を経由せず直接実行するファストパスが存在する。
-
-```ts
-// src/hono-base.ts:423-442
-if (matchResult[0].length === 1) {
-  let res: ReturnType<H>
-  try {
-    res = matchResult[0][0][0][0](c, async () => {
-      c.res = await this.#notFoundHandler(c)
-    })
-  } catch (err) {
-    return this.#handleError(err, c)
-  }
-  return res instanceof Promise
-    ? res
-        .then(
-          (resolved: Response | undefined) =>
-            resolved || (c.finalized ? c.res : this.#notFoundHandler(c))
-        )
-        .catch((err: Error) => this.#handleError(err, c))
-    : (res ?? this.#notFoundHandler(c))
-}
-```
-
-ミドルウェアのない単純なルートでは `compose()` のオーバーヘッドを回避し、同期的なレスポンス返却も可能にしている。
-
-## コード例
-
-### 型安全な環境定義とコンテキスト利用
-
-```ts
-// 使用例（テストコードから抽出）
-// src/context.test.ts:308-317
-const req = new Request('http://localhost/')
-const key = 'a-secret-key'
-const ctx = new Context(req, {
-  env: {
-    API_KEY: key,
-  },
-})
-expect(ctx.env.API_KEY).toBe(key)
-```
-
-### ミドルウェアによる変数の設定と取得
-
-```ts
-// src/middleware/request-id/request-id.ts:41-59
-export const requestId = ({
-  limitLength = 255,
-  headerName = 'X-Request-Id',
-  generator = () => crypto.randomUUID(),
-}: RequestIdOptions = {}): MiddlewareHandler => {
-  return async function requestId(c, next) {
-    let reqId = headerName ? c.req.header(headerName) : undefined
-    if (!reqId || reqId.length > limitLength || /[^\w\-=]/.test(reqId)) {
-      reqId = generator(c)
-    }
-    c.set('requestId', reqId)
-    if (headerName) {
-      c.header(headerName, reqId)
-    }
-    await next()
-  }
-}
-```
-
-### context-storage による関数外からのコンテキスト参照
-
-```ts
-// src/middleware/context-storage/index.test.ts:11-28
-const app = new Hono<Env>()
-
-app.use(contextStorage())
-app.use(async (c, next) => {
-  c.set('message', 'Hono is hot!!')
-  await next()
-})
-app.get('/', (c) => {
-  return c.text(getMessage())
-})
-
-const getMessage = () => {
-  return getContext<Env>().var.message
-}
-```
-
-## Good Patterns
-
-- **統合コンテキストオブジェクト**: `req`/`res` を分離せず 1 つの `c` に統合することで、ハンドラの引数が 1 つで済み、ミドルウェア間のデータ共有も同一オブジェクト上で完結する。Express の `(req, res, next)` パターンと比較して、認知負荷が低くコード量が減る。
-
-```ts
-// Express パターン
-app.get('/', (req, res) => {
-  res.set('Content-Type', 'text/plain')
-  res.status(200).send('Hello')
-})
-
-// Hono パターン
-app.get('/', (c) => {
-  return c.text('Hello')
-})
-```
-
-- **Private fields による内部状態の保護**: `#rawRequest`, `#req`, `#var`, `#status`, `#res` 等すべて ECMAScript private fields で宣言されている。継承やモンキーパッチによる予期しないアクセスを防ぎ、API の安定性を保証している。
-
-```ts
-// src/context.ts:290-291, 306, 325-331
+```typescript
+// src/context.ts:290-334
 #rawRequest: Request
 #req: HonoRequest<P, I['out']> | undefined
 #var: Map<unknown, unknown> | undefined
 #status: StatusCode | undefined
+#executionCtx: FetchEventLike | ExecutionContext | undefined
 #res: Response | undefined
-#preparedHeaders: Headers | undefined
 ```
 
-- **declare module による型拡張パターン**: ミドルウェアが `ContextVariableMap` を拡張する `declare module` パターンにより、ライブラリ側のミドルウェアをインポートするだけで型が自動的に伝搬する。ユーザーが手動で `Variables` 型を維持する負担がない。
+- **ミドルウェアが型付き Variables を `type` でエクスポート**: JWT, Request ID, Language, Timing 等の各ミドルウェアは、`c.set()` で書き込むキーの型を Variables 型としてエクスポートしている。これによりユーザーが `new Hono<{ Variables: JwtVariables }>()` として明示的に型を取り込むことも可能。
 
-```ts
-// src/middleware/timing/index.ts:6-8
-declare module '../..' {
-  interface ContextVariableMap extends TimingVariables {}
+```typescript
+// src/middleware/jwt/jwt.ts:18-20
+export type JwtVariables<T = any> = {
+  jwtPayload: T
+}
+
+// src/middleware/request-id/request-id.ts:9-11
+export type RequestIdVariables = {
+  requestId: string
 }
 ```
-
-- **レスポンス生成のファストパス最適化**: `c.text()` でヘッダ・ステータスの事前設定がない場合に `new Response(text)` を直接返す最適化。エッジコンピューティング環境で重要なレイテンシ削減を実現している。
 
 ## Anti-Patterns / 注意点
 
-- **c.var の毎回オブジェクト生成**: `c.var` ゲッターは呼び出すたびに `Object.fromEntries(this.#var)` で新しいオブジェクトを生成する。ループ内で頻繁にアクセスすると不要なオブジェクト生成コストが発生する。
+- **c.var の頻繁なアクセスによるオブジェクト生成コスト**: `c.var` は getter 内で `Object.fromEntries(this.#var)` を毎回呼ぶため、アクセスのたびに新しいオブジェクトが生成される。ループ内やホットパスで繰り返し `c.var` を参照すると不要なアロケーションが発生する。
 
-```ts
-// Bad: ループ内で c.var を繰り返し参照
+```typescript
+// Bad: ループ内で c.var を繰り返しアクセス
 for (const item of items) {
-  doSomething(c.var.config) // 毎回 Object.fromEntries が実行される
+  processItem(item, c.var.config) // 毎回 Object.fromEntries が走る
 }
 
-// Better: 一度変数に取り出す
+// Better: 変数にキャッシュする、または c.get() を使う
 const config = c.get('config')
 for (const item of items) {
-  doSomething(config)
+  processItem(item, config)
 }
 ```
 
-- **context-storage の環境依存性**: `contextStorage()` は `node:async_hooks` の `AsyncLocalStorage` に依存するため、Cloudflare Workers（nodejs_compat が必要）や Deno 以外のエッジランタイムでは利用できない可能性がある。使用前にランタイム対応を確認する必要がある。
+- **ContextVariableMap のキー名衝突**: 複数のミドルウェアが同じキー名で異なる型を `ContextVariableMap` に登録すると、TypeScript の Declaration Merging ではプロパティが交差型（intersection）になり、実用上は `never` 型になりうる。
 
-```ts
-// Bad: ランタイムを確認せずに context-storage を使用
-import { contextStorage } from 'hono/context-storage' // 一部ランタイムで失敗
+```typescript
+// Bad: 異なるミドルウェアが同じキー名を使う
+// middleware-a
+declare module 'hono' {
+  interface ContextVariableMap { user: { id: string } }
+}
+// middleware-b
+declare module 'hono' {
+  interface ContextVariableMap { user: { name: string } }
+}
+// 結果: c.get('user') の型は { id: string } & { name: string }
 
-// Better: ランタイム対応を確認するか、c を引数で渡すフォールバックを検討
+// Better: プレフィックスで名前空間を分ける
+declare module 'hono' {
+  interface ContextVariableMap { authUser: { id: string } }
+}
 ```
 
-- **ExecutionContext 未設定時の throw**: `c.executionCtx` は環境が提供しない場合に即座に Error を throw する。テスト環境や非 Workers ランタイムで予期せずクラッシュする可能性がある。
+- **`await next()` 前後での c.res アクセスの落とし穴**: `c.res` の getter は初回アクセス時に空の Response を生成する。`await next()` の前に `c.res` にアクセスすると、後続ハンドラが返した Response に前の空 Response のヘッダーがマージされる可能性がある。
 
-```ts
-// Bad: テスト環境で直接 c.executionCtx にアクセス
-const ctx = new Context(req)
-ctx.executionCtx.waitUntil(promise) // Error: This context has no ExecutionContext
+```typescript
+// Bad: next() 前に c.res にアクセスして空 Response を生成
+app.use('*', async (c, next) => {
+  c.res.headers.set('X-Before', 'true') // 空 Response が生成される
+  await next()
+})
 
-// Better: テスト時は明示的に executionCtx をモックする
-const ctx = new Context(req, {
-  executionCtx: { waitUntil: vi.fn(), passThroughOnException: vi.fn(), props: {} },
-  env: {},
+// Better: c.header() を使う（#preparedHeaders に蓄積され、最終 Response に反映）
+app.use('*', async (c, next) => {
+  c.header('X-Before', 'true')
+  await next()
 })
 ```
 
-## 自分のプロジェクトへの適用
+## 導出ルール
 
-- [ ] リクエスト/レスポンスを統合したコンテキストクラスを設計する際、Hono のように Private fields でカプセル化し、ゲッター経由の遅延初期化パターンを採用する
-- [ ] ミドルウェアが型安全に変数を登録できるよう、`declare module` による interface マージパターン（`ContextVariableMap` 方式）を検討する
-- [ ] レスポンス生成の高頻度パスでは、Hono の `c.text()` のように条件分岐でヘッダマージをスキップするファストパスを導入する
-- [ ] バリデーション結果をコンテキストに蓄積し、ハンドラで型安全に取得する `addValidatedData` / `valid()` パターンを自前のフレームワークに組み込む
-- [ ] `AsyncLocalStorage` を使ったコンテキスト共有は、サービス層やユーティリティ関数への `c` の引き回しを排除する有効な手段として、ランタイム要件を確認の上で導入を検討する
+> このセクションは必須。synthesis-writer が rules.md 生成時に参照する。
+
+- `[MUST]` リクエストスコープのコンテキストオブジェクトでは、使用頻度の低いフィールドを遅延初期化（`??=`）する
+  - 根拠: Hono は `#req`, `#var`, `#preparedHeaders` をすべて遅延初期化しており、使われないフィールドのアロケーションコストをゼロにしている（`src/context.ts:306,357,394`）
+
+- `[MUST]` ミドルウェアが共有コンテキストに書き込む変数は、型レベルでキーと値の型を宣言する
+  - 根拠: Hono は `Env['Variables']` と `ContextVariableMap` の二重レイヤーで型安全性を確保し、ランタイムの `Map<unknown, unknown>` に対してコンパイル時の型チェックを実現している（`src/context.ts:90-103`）
+
+- `[SHOULD]` プラグイン/ミドルウェアの型拡張ポイントには空インタフェースと Declaration Merging を使う
+  - 根拠: Hono の `ContextVariableMap` は空インタフェースとして定義され、JWT/RequestID/Language 等のミドルウェアが `declare module` で型を追加する仕組みを実現している（`src/context.ts:52`, `src/middleware/jwt/index.ts:7-9`）
+
+- `[SHOULD]` コンテキストの変数ストアには読み取り専用ビューと書き込み API を分離して提供する
+  - 根拠: `c.var` は `Readonly<>` でラップされた参照専用、`c.set()`/`c.get()` はミドルウェアでの読み書き用と使い分けており、ハンドラからの不正な書き込みを型レベルで防止している（`src/context.ts:582-592`）
+
+- `[SHOULD]` ホットパス（リクエストごとの処理）のレスポンスメソッドには条件分岐によるファストパスを設ける
+  - 根拠: `c.text()` はヘッダー/ステータスが未設定の場合に `#newResponse` を経由せず直接 `new Response(text)` を返すファストパスを持ち、最も一般的なケースのオーバーヘッドを最小化している（`src/context.ts:677`）
+
+- `[AVOID]` グローバルな型空間（Declaration Merging）で汎用的なキー名を使う
+  - 根拠: `ContextVariableMap` は全ミドルウェアが共有するグローバル型空間であり、`user` や `data` のような汎用名はキー衝突による intersection 型の問題を引き起こす。Hono の公式ミドルウェアは `jwtPayload`, `requestId`, `language` のように具体的な名前を使用している
+
+- `[AVOID]` `c.var` のような変換コストを伴う getter をループ内で繰り返し呼ぶ
+  - 根拠: `c.var` は `Object.fromEntries(this.#var)` を毎回実行するため、アクセスごとに新しいオブジェクトが生成される（`src/context.ts:591`）
+
+## 適用チェックリスト
+
+- [ ] リクエストスコープのオブジェクトで、使用頻度の低いフィールドに遅延初期化（`??=`）を適用しているか
+- [ ] ミドルウェア/プラグイン間のデータ受け渡しに使う変数ストアが型安全か（キーと値の型が定義されているか）
+- [ ] 型拡張ポイント（プラグインが型を追加できる口）を空インタフェースとして提供しているか
+- [ ] 変数ストアの読み取り専用ビューと書き込み API が適切に分離されているか
+- [ ] ホットパスの処理に不要なオブジェクト生成や関数呼び出しがないか（ファストパスの検討）
+- [ ] Declaration Merging で使用するキー名がミドルウェア固有の具体的な名前か（衝突リスクの確認）
+- [ ] ES private fields（`#`）を使って内部状態を隠蔽し、公開 API を getter/setter/メソッドに限定しているか

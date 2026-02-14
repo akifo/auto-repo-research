@@ -1,235 +1,79 @@
-# Preset System
+# preset-system
 
 > リポジトリ: honojs/hono
 > 分析日: 2026-02-14
 
 ## 概要
 
-Hono のプリセットシステムは、抽象基底クラス `HonoBase` を継承しコンストラクタでルーター構成を差し替えるだけで、バンドルサイズ・ルーティング性能・対応パターンの異なる複数のビルドバリアントを提供する仕組みである。`hono`（デフォルト）、`hono/tiny`、`hono/quick` の 3 プリセットが存在し、package.json の `exports` フィールドを通じてサブパスインポートとして公開されている。継承 + コンストラクタ DI という極めてシンプルなパターンでありながら、ルーター 5 種類を自在に組み合わせる柔軟性を実現しており、フレームワーク設計のリファレンスとして注目に値する。
+Hono は単一の `HonoBase` 抽象基盤クラスの上に、ルーター構成だけを差し替えた複数のプリセット（`Hono`, `Hono/tiny`, `Hono/quick`）を提供している。各プリセットは独立した `package.json` exports エントリポイントを持ち、使わないルーターのコードがバンドルに含まれない tree-shaking 設計を実現している。この「基盤は共通、戦略だけ差し替え」のアーキテクチャは、バンドルサイズ・ルーティング性能・機能網羅性のトレードオフをユーザーに委ねるライブラリ設計の好例である。
+
+## 設計思想
+
+- **ルーターは戦略であり、フレームワークのコアではない**: HonoBase はルーティングアルゴリズムを一切知らない。`Router<T>` インターフェースに依存し、コンストラクタで注入されたルーターに委譲するだけである（`src/hono-base.ts:118`, `src/hono-base.ts:413`）。これによりルーターの追加・差し替えがフレームワーク本体に影響しない。
+
+- **デフォルトは最強、選択肢は軽量**: デフォルトの `Hono` クラスは SmartRouter + RegExpRouter + TrieRouter という最も機能が充実した構成を採用する（`src/hono.ts:28-32`）。一方、`hono/tiny` は PatternRouter のみ（`src/preset/tiny.ts:18`）、`hono/quick` は SmartRouter + LinearRouter + TrieRouter（`src/preset/quick.ts:20-22`）と、それぞれ特化した軽量構成を提供する。ユーザーが明示的に選ばない限り、最も安全な選択が自動適用される。
+
+- **遅延決定による性能最適化**: SmartRouter は初回の `match()` 呼び出し時に、配下ルーターを順に試し、成功したルーターに `this.match` を差し替える（`src/router/smart-router/router.ts:46`）。RegExpRouter も初回 `match()` 時に正規表現をビルドし、以降は `this.match` をビルド済み関数で上書きする（`src/router/reg-exp-router/matcher.ts:31`）。起動時コストを実行時の最初のリクエストまで先送りする設計。
+
+- **エントリポイント分離による tree-shaking 保証**: 各プリセットは `package.json` の `exports` フィールドで独立したエントリポイントを持つ（`"./tiny"`, `"./quick"`）。`import { Hono } from 'hono/tiny'` と書くと `src/preset/tiny.ts` だけが解決され、RegExpRouter や SmartRouter のコードはバンドラーの tree-shaking によって除外される。
 
 ## 設計・実装の詳細
 
-### アーキテクチャ全体像
+### プリセット構成の比較
 
-プリセットシステムは以下の 3 層で構成される。
+| プリセット | import パス | ルーター構成 | 特徴 |
+|---|---|---|---|
+| Hono (デフォルト) | `hono` | SmartRouter(RegExpRouter, TrieRouter) | 最高性能、全パスパターン対応 |
+| Quick | `hono/quick` | SmartRouter(LinearRouter, TrieRouter) | 起動が速い、短寿命向け |
+| Tiny | `hono/tiny` | PatternRouter のみ | 最小バンドル、単純ルート向け |
 
-1. **Router インターフェース** (`src/router.ts`) -- `add()` / `match()` / `name` を定義する共通契約
-2. **HonoBase 抽象クラス** (`src/hono-base.ts`) -- ルーティング登録・ディスパッチ・ミドルウェア合成などフレームワークのコアロジックを実装。`router` プロパティは `!` で宣言のみ行い、サブクラスに初期化を委ねる
-3. **プリセットクラス** (`src/hono.ts`, `src/preset/tiny.ts`, `src/preset/quick.ts`) -- `HonoBase` を継承し、コンストラクタでルーター構成を確定する
+### HonoBase: ルーターに依存しない基盤設計
 
-```
-Router (interface)
-  |
-  +-- RegExpRouter    ← 正規表現コンパイル、最速
-  +-- TrieRouter      ← Trie 木、フォールバック用
-  +-- LinearRouter    ← 線形走査、登録コスト O(1)
-  +-- PatternRouter   ← 最小実装、バンドルサイズ最小
-  +-- SmartRouter     ← 委譲ルーター、最初の match で最適なルーターを自動選択
-
-HonoBase (abstract-like class)
-  |
-  +-- Hono (default)  = SmartRouter(RegExpRouter, TrieRouter)
-  +-- Hono (tiny)     = PatternRouter
-  +-- Hono (quick)    = SmartRouter(LinearRouter, TrieRouter)
-```
-
-### ルーターインターフェースによる差し替え可能性
-
-`Router<T>` インターフェースは `add` と `match` の 2 メソッドのみを要求する最小契約である。
+`HonoBase`（`src/hono-base.ts`）は `class Hono` として定義されているが、コンストラクタ内でルーターを生成しない。`router` プロパティは `!` アサーション付きで宣言されており（`src/hono-base.ts:118`）、サブクラスのコンストラクタで設定される前提の設計である。
 
 ```typescript
-// src/router.ts:29-52
-export interface Router<T> {
-  name: string
-  add(method: string, path: string, handler: T): void
-  match(method: string, path: string): Result<T>
-}
-```
-
-`Result<T>` 型は 2 つのフォーマットを許容する union 型で設計されている。`ParamIndexMap` + `ParamStash` 方式（RegExpRouter が使用）はメモリ効率を、`Params` 方式（LinearRouter, PatternRouter が使用）はシンプルさを優先する。
-
-```typescript
-// src/router.ts:98
-export type Result<T> = [[T, ParamIndexMap][], ParamStash] | [[T, Params][]]
-```
-
-### HonoBase: ルーター非依存のコアロジック
-
-`HonoBase`（実際のクラス名は `Hono`、`src/hono-base.ts` に定義）はルーターの具象型を知らない。`router` プロパティは `!`（definite assignment assertion）で宣言され、サブクラスのコンストラクタで初期化される。
-
-```typescript
-// src/hono-base.ts:118
+// src/hono-base.ts:116-118
+/*
+  This class is like an abstract class and does not have a router.
+  To use it, inherit the class and implement router in the constructor.
+*/
 router!: Router<[H, RouterRoute]>
 ```
 
-コンストラクタでは `options` から `strict` を除いた残りを `Object.assign(this, optionsWithoutStrict)` でプロパティに展開する。これにより `options.router` が指定されていればそれが `this.router` に代入される。
+この設計により、HonoBase のコードはどのルーター実装にも import 依存を持たない。TypeScript では `abstract class` を使う方法もあるが、HonoBase は敢えて通常クラスにしている。これは `export { Hono as HonoBase }` のエイリアスから推測するに、型の互換性とプリセット間の差し替え容易性を優先した判断と思われる（推測）。
+
+### SmartRouter: 自己書き換えによるルーター選択
+
+SmartRouter は初回 `match()` 時に、コンストラクタで受け取った候補ルーターを順に試す。各ルーターに全ルートを `add()` し、`match()` を試み、`UnsupportedPathError` がスローされたら次のルーターにフォールバックする。
 
 ```typescript
-// src/hono-base.ts:170-172
-const { strict, ...optionsWithoutStrict } = options
-Object.assign(this, optionsWithoutStrict)
-this.getPath = (strict ?? true) ? (options.getPath ?? getPath) : getPathNoStrict
-```
-
-### 3 つのプリセットの実装
-
-各プリセットは `HonoBase` を継承してコンストラクタでルーター構成を注入するだけのシンプルな実装である。
-
-**デフォルト (`src/hono.ts`)** -- SmartRouter + RegExpRouter + TrieRouter
-
-```typescript
-// src/hono.ts:26-33
-constructor(options: HonoOptions<E> = {}) {
-  super(options)
-  this.router =
-    options.router ??
-    new SmartRouter({
-      routers: [new RegExpRouter(), new TrieRouter()],
-    })
-}
-```
-
-`options.router` が渡されればそれを使い、なければ SmartRouter のデフォルト構成を適用する。ユーザーは `new Hono({ router: new RegExpRouter() })` のようにルーターを直接指定することもできる。
-
-**tiny (`src/preset/tiny.ts`)** -- PatternRouter のみ
-
-```typescript
-// src/preset/tiny.ts:16-19
-constructor(options: HonoOptions<E> = {}) {
-  super(options)
-  this.router = new PatternRouter()
-}
-```
-
-`options.router` による上書きを許容しない点が特徴的である。PatternRouter は約 60 行の最小実装で、各ルートを個別の正規表現として保持し線形走査する。
-
-**quick (`src/preset/quick.ts`)** -- SmartRouter + LinearRouter + TrieRouter
-
-```typescript
-// src/preset/quick.ts:18-23
-constructor(options: HonoOptions<E> = {}) {
-  super(options)
-  this.router = new SmartRouter({
-    routers: [new LinearRouter(), new TrieRouter()],
-  })
-}
-```
-
-### SmartRouter: 遅延選択による自動最適化
-
-SmartRouter はプリセットシステムの中核を担う委譲パターンの実装である。初回の `match()` 呼び出し時に、保持するルーター候補を順番に試し、`UnsupportedPathError` を投げないルーターを「勝者」として選定する。
-
-```typescript
-// src/router/smart-router/router.ts:21-60
-match(method: string, path: string): Result<T> {
-  if (!this.#routes) {
-    throw new Error('Fatal error')
-  }
-
-  const routers = this.#routers
-  const routes = this.#routes
-
-  const len = routers.length
-  let i = 0
-  let res
-  for (; i < len; i++) {
-    const router = routers[i]
-    try {
-      for (let i = 0, len = routes.length; i < len; i++) {
-        router.add(...routes[i])
-      }
-      res = router.match(method, path)
-    } catch (e) {
-      if (e instanceof UnsupportedPathError) {
-        continue
-      }
-      throw e
+// src/router/smart-router/router.ts:32-49
+for (; i < len; i++) {
+  const router = routers[i]
+  try {
+    for (let i = 0, len = routes.length; i < len; i++) {
+      router.add(...routes[i])
     }
-
-    this.match = router.match.bind(router)  // match メソッド自体を差し替え
-    this.#routers = [router]
-    this.#routes = undefined  // ルート定義を GC 対象に
-    break
+    res = router.match(method, path)
+  } catch (e) {
+    if (e instanceof UnsupportedPathError) {
+      continue
+    }
+    throw e
   }
-  // ...
+
+  this.match = router.match.bind(router)
+  this.#routers = [router]
+  this.#routes = undefined
+  break
 }
 ```
 
-注目すべき最適化:
-- **メソッド差し替え**: `this.match = router.match.bind(router)` で 2 回目以降は SmartRouter の `match` を完全にバイパスする
-- **メモリ解放**: 選定後に `this.#routes = undefined` で蓄積したルート定義を解放する
-- **名前の更新**: `this.name = 'SmartRouter + ${this.activeRouter.name}'` でデバッグ時に選定結果を確認可能
+注目すべきは `this.match = router.match.bind(router)`（46行目）で、SmartRouter 自身の `match` メソッドを選択されたルーターの `match` で上書きしている。2回目以降の `match()` 呼び出しでは SmartRouter のルーター選択ロジックは完全にバイパスされ、選択済みルーターが直接呼ばれる。`this.#routes = undefined` で蓄積したルート情報もGC対象にしている。
 
-### UnsupportedPathError によるフォールバック機構
+### RegExpRouter: 二段階の遅延コンパイル
 
-各ルーターは自身が対応できないパスパターンに遭遇すると `UnsupportedPathError` を投げる。SmartRouter はこれを捕捉して次のルーターを試行する。
-
-- **RegExpRouter**: 曖昧なパスパターン（例: `/entry/:id` と `/entry/entries` の競合）で投げる
-- **LinearRouter**: ラベル(`:param`) とワイルドカード(`*`) を同時に含むパスで投げる
-- **PatternRouter**: 正規表現の構築に失敗した場合（例: 重複パラメータ名 `/:id/:id`）で投げる
-
-```typescript
-// src/router/linear-router/router.ts:136-138
-} else if (hasLabel && hasStar) {
-  throw new UnsupportedPathError()
-}
-```
-
-### package.json exports によるサブパスインポート
-
-各プリセットは package.json の `exports` フィールドで独立したエントリポイントとして公開される。
-
-```json
-// package.json:58-67
-"./tiny": {
-  "types": "./dist/types/preset/tiny.d.ts",
-  "import": "./dist/preset/tiny.js",
-  "require": "./dist/cjs/preset/tiny.js"
-},
-"./quick": {
-  "types": "./dist/types/preset/quick.d.ts",
-  "import": "./dist/preset/quick.js",
-  "require": "./dist/cjs/preset/quick.js"
-}
-```
-
-利用者は `import { Hono } from 'hono/tiny'` のように書くだけでプリセットを切り替えられる。全プリセットが同じ `Hono` クラス名をエクスポートするため、インポートパスの変更だけで済む。
-
-### 各ルーターの特性比較
-
-| ルーター | 登録コスト | マッチコスト | バンドルサイズ | 制限事項 |
-|---------|-----------|------------|-------------|---------|
-| RegExpRouter | 高（Trie 構築 + 正規表現コンパイル） | O(1)（単一正規表現） | 大 | 曖昧パスで UnsupportedPathError |
-| TrieRouter | 中（Trie ノード挿入） | O(パス長) | 中 | なし（全パターン対応） |
-| LinearRouter | O(1)（配列 push） | O(n)（全ルート走査） | 小 | `:param` + `*` の併用不可 |
-| PatternRouter | 中（RegExp 構築） | O(n)（全ルート走査） | 最小（約 60 行） | 重複パラメータ名不可 |
-| SmartRouter | 遅延（初回 match 時） | 選定ルーターに委譲 | ルーター合計 | 候補全滅で Fatal error |
-
-## コード例
-
-### getRouterName でプリセットの確認
-
-```typescript
-// src/helper/dev/index.ts:76-79
-export const getRouterName = <E extends Env>(app: Hono<E>): string => {
-  app.router.match('GET', '/')
-  return app.router.name
-}
-```
-
-`match()` を呼ぶことで SmartRouter の遅延選択をトリガーし、選定後のルーター名を返す。テストで活用されている。
-
-```typescript
-// src/preset/quick.test.ts:4-8
-describe('hono/quick preset', () => {
-  it('Should have SmartRouter + LinearRouter', async () => {
-    const app = new Hono()
-    expect(getRouterName(app)).toBe('SmartRouter + LinearRouter')
-  })
-})
-```
-
-### RegExpRouter の match メソッド自己書き換え
+RegExpRouter の `match` プロパティは `matcher.ts` の `match` 関数で初期化されている（`src/router/reg-exp-router/router.ts:206`）。この関数は初回呼び出し時に `this.buildAllMatchers()` で全ルートを単一の正規表現にコンパイルし、コンパイル結果を使うクロージャで `this.match` を上書きする。
 
 ```typescript
 // src/router/reg-exp-router/matcher.ts:10-33
@@ -250,30 +94,72 @@ export function match<R extends Router<T>, T>(this: R, method: string, path: str
     return [matcher[1][index], match]
   }) as Router<T>['match']
 
-  this.match = match  // 自身の match を最適化版に差し替え
+  this.match = match
   return match(method, path)
 }
 ```
 
-初回呼び出し時にマッチャーをビルドし、2 回目以降はビルド済みマッチャーを直接使うクロージャに `this.match` を差し替える。SmartRouter と同じ「メソッド自己書き換え」パターンが使われている。
+SmartRouter と RegExpRouter の二段階で自己書き換えが起こる。デフォルトプリセットでは: (1) 初回リクエストで SmartRouter が RegExpRouter を選択し `match` を差し替え → (2) RegExpRouter の `match` が正規表現をビルドし、ビルド済みの高速 `match` で自身を差し替え。
 
-## Good Patterns
+### UnsupportedPathError: ルーター間の能力差の表現
 
-- **最小インターフェースによる差し替え可能性**: `Router<T>` インターフェースが `add` と `match` の 2 メソッドだけを要求することで、5 種類のルーターを完全に互換にしている。新しいルーターを追加するコストが極めて低い。インターフェースが小さいほど実装の自由度が高くなるという原則の好例である。
+各ルーターは対応できないパスパターンに遭遇すると `UnsupportedPathError` をスローする。これが SmartRouter のフォールバック機構を駆動する。
 
-```typescript
-// src/router.ts:29-52
-export interface Router<T> {
-  name: string
-  add(method: string, path: string, handler: T): void
-  match(method: string, path: string): Result<T>
+- `RegExpRouter`: 特定の正規表現パターンの組み合わせで Trie 構築に失敗した場合（`src/router/reg-exp-router/router.ts:64`）
+- `LinearRouter`: ラベル付きパラメータとワイルドカードの同時使用（`src/router/linear-router/router.ts:137`）
+- `PatternRouter`: 無効な正規表現パターン（`src/router/pattern-router/router.ts:40`）
+
+### package.json exports による依存グラフの分離
+
+```jsonc
+// package.json (抜粋)
+{
+  "exports": {
+    ".": { "import": "./dist/index.js" },        // SmartRouter + RegExpRouter + TrieRouter
+    "./tiny": { "import": "./dist/preset/tiny.js" },  // PatternRouter のみ
+    "./quick": { "import": "./dist/preset/quick.js" }, // SmartRouter + LinearRouter + TrieRouter
+    "./hono-base": { "import": "./dist/hono-base.js" } // 基盤のみ（ルーターなし）
+  }
 }
 ```
 
-- **コンストラクタ DI による宣言的なプリセット定義**: 各プリセットクラスは 20 行未満で、コンストラクタでルーター構成を宣言するだけ。ロジックの重複がゼロで、新しいプリセットの追加が容易である。継承の良い使い方の実例。
+`hono/tiny` をインポートすると、依存グラフは `preset/tiny.ts` → `hono-base.ts` + `pattern-router/router.ts` のみで完結する。RegExpRouter（Trie, Node, Matcher を含む複数ファイル構成）や SmartRouter のコードは一切読み込まれない。esbuild によるビルド（`build/build.ts`）では各 `.ts` ファイルが独立した `.js` にトランスパイルされるため、バンドラー側の tree-shaking が確実に機能する。
+
+### ルーターの性能特性
+
+各ルーターのマッチングアルゴリズムは根本的に異なる:
+
+- **RegExpRouter**: 全ルートを単一の正規表現にコンパイル。マッチングは O(1) に近い（正規表現エンジン依存）。静的パスはハッシュマップ参照。初期ビルドコストが高い。
+- **TrieRouter**: Trie 木による前方一致。すべてのパスパターンに対応可能なフォールバック用。
+- **LinearRouter**: ルートを登録順に線形探索。マッチングは O(n) だが、`add()` が O(1) で起動が最速。Cloudflare Workers のような短寿命環境向け。
+- **PatternRouter**: 各ルートを個別の正規表現に変換し線形探索。最小実装だが O(n) マッチング。
+
+## パターンカタログ
+
+- **Strategy パターン** (分類: 振る舞い)
+  - 解決する問題: ルーティングアルゴリズムをフレームワーク本体から分離し、交換可能にする
+  - 適用条件: アルゴリズムの選択がユーザーの環境・要件に依存する場合
+  - コード例: `src/router.ts:29-52`（`Router<T>` インターフェース）、`src/hono-base.ts:118`（Context が Strategy を保持）
+  - 注意点: Hono では GoF の Strategy と異なり、コンストラクタでの注入ではなくクラス継承で Strategy を固定している。これはプリセットという「推奨構成」を型安全に提供するため。
+
+- **Template Method パターン** (分類: 振る舞い)
+  - 解決する問題: リクエスト処理の骨格（dispatch）は共通化しつつ、ルーティング部分だけをサブクラスに委ねる
+  - 適用条件: 処理フローの大部分が共通で、一部ステップだけが変動する場合
+  - コード例: `src/hono-base.ts:400-460`（`#dispatch` が骨格、`this.router.match` が可変ステップ）
+  - 注意点: TypeScript の `abstract` を使わず `!` アサーションで実現。ランタイムの保護がないため、ルーター未設定での使用はエラーになる。
+
+- **Self-Modifying Method パターン** (分類: パフォーマンス最適化、既知パターン外)
+  - 解決する問題: 初回のみ必要な処理（ルーター選択、正規表現コンパイル）を後続呼び出しから排除する
+  - 適用条件: 高頻度呼び出しメソッドの初回にのみ重いセットアップが必要な場合
+  - コード例: `src/router/smart-router/router.ts:46`、`src/router/reg-exp-router/matcher.ts:31`
+  - 注意点: メソッドの上書きはデバッグを困難にする。呼び出しのたびに異なる関数が実行されるため、プロファイリング時に注意が必要。
+
+## Good Patterns
+
+- **プリセットによる段階的構成の提供**: ユーザーに「デフォルト / 高速起動 / 最小バンドル」の3択を提供し、import パスを変えるだけで切り替えられる設計。各プリセットは十数行のクラスで、コンストラクタにルーター構成を書くだけ。
 
 ```typescript
-// src/preset/tiny.ts:11-20 (全体で 20 行)
+// src/preset/tiny.ts:11-20 (全体で20行)
 export class Hono<
   E extends Env = BlankEnv,
   S extends Schema = BlankSchema,
@@ -286,58 +172,55 @@ export class Hono<
 }
 ```
 
-- **UnsupportedPathError によるグレースフルフォールバック**: ルーターが「自分には処理できない」ことを型付き例外で明示的に宣言し、SmartRouter がそれを捕捉して次のルーターに委譲する。例外を制御フローとして活用するが、初回 match のみで発生するため性能への影響はない。
+- **UnsupportedPathError による graceful degradation**: ルーターが対応できないパスパターンをエラーとしてではなく、フォールバックの契機として使用。SmartRouter は `catch (e) { if (e instanceof UnsupportedPathError) continue }` で次候補に切り替える（`src/router/smart-router/router.ts:39-43`）。
 
-```typescript
-// src/router/smart-router/router.ts:39-42
-} catch (e) {
-  if (e instanceof UnsupportedPathError) {
-    continue
-  }
-  throw e
-}
-```
-
-- **メソッド自己書き換えによるゼロコスト抽象化**: SmartRouter と RegExpRouter の両方で、初回 match 後に `this.match` を最適化版に差し替える。2 回目以降は選択ロジックもビルドロジックも実行されない。ランタイムのオーバーヘッドを初回のみに閉じ込める優れた最適化。
-
-```typescript
-// src/router/smart-router/router.ts:46-48
-this.match = router.match.bind(router)
-this.#routers = [router]
-this.#routes = undefined
-```
+- **exports フィールドによる物理的なコード分離**: 論理的なモジュール分割だけでなく、`package.json` の `exports` で物理的なエントリポイントを分離。`hono/tiny` が `hono` のルーターコードを含まないことを、インフラレベルで保証している。
 
 ## Anti-Patterns / 注意点
 
-- **tiny プリセットで options.router が無視される**: デフォルトの `Hono` は `options.router ??` でユーザー指定ルーターを受け付けるが、`tiny` と `quick` は `super(options)` の後に `this.router` を無条件で上書きしている。`Object.assign` でセットされたルーターが直後に消される。
+- **プリセットの暗黙的なルーター制限を見落とす**: `hono/tiny` で `PatternRouter` が `UnsupportedPathError` をスローするパスパターン（特定の正規表現構文）を使うと、SmartRouter によるフォールバックがないためランタイムエラーになる。Tiny プリセットには SmartRouter が含まれないため。
 
 ```typescript
-// Bad: tiny プリセットでは options.router が無視される
+// Bad: tiny プリセットで複雑なパスパターンを使う
 import { Hono } from 'hono/tiny'
-const app = new Hono({ router: new RegExpRouter() })
-// this.router は PatternRouter になる（RegExpRouter ではない）
+const app = new Hono()
+app.get('/user/:id{[0-9]+}', handler)  // PatternRouter でも動くが、
+// 非対応パターンに遭遇するとフォールバックなしでクラッシュ
 
-// Better: デフォルトプリセットと同じ ?? パターンを使う
-constructor(options: HonoOptions<E> = {}) {
-  super(options)
-  this.router = options.router ?? new PatternRouter()
-}
+// Better: 複雑なルーティングが必要ならデフォルトプリセットを使う
+import { Hono } from 'hono'
+const app = new Hono()
+app.get('/user/:id{[0-9]+}', handler)  // SmartRouter が適切なルーターを自動選択
 ```
 
-- **SmartRouter の候補全滅時のエラーメッセージが不十分**: 全ルーターが `UnsupportedPathError` を投げた場合、`throw new Error('Fatal error')` という情報量の少ないメッセージになる。どのルーターが何のパスで失敗したかの情報が失われる。
+- **自己書き換えメソッドのデバッグ困難性**: SmartRouter と RegExpRouter の `match` メソッドは初回呼び出し後に別の関数に差し替わる。ブレークポイントを SmartRouter の `match` に設定しても、2回目以降のリクエストではヒットしない。パフォーマンス上の利点は大きいが、問題調査時に混乱を招く可能性がある。
 
-```typescript
-// src/router/smart-router/router.ts:52-55
-if (i === len) {
-  // not found
-  throw new Error('Fatal error')
-}
-```
+## 導出ルール
 
-## 自分のプロジェクトへの適用
+- `[MUST]` ライブラリのコアとアルゴリズムは interface で分離し、コアがアルゴリズムの具象クラスを直接 import しない構造にする
+  - 根拠: HonoBase は `Router<T>` インターフェースにのみ依存し、5種類のルーター実装を一切 import していない（`src/hono-base.ts:10`）。これにより tree-shaking とプリセット分離が成立している。
 
-- [ ] フレームワークやライブラリで「戦略の差し替え」が必要な場合、最小インターフェース + コンストラクタ DI のパターンを採用する。インターフェースは 2-3 メソッドに抑え、実装の自由度を最大化する
-- [ ] バンドルサイズが重要なエッジ環境向けに、package.json `exports` でサブパスインポートを定義し、軽量バリアントを提供する（例: `my-lib/lite`）
-- [ ] 初期化コストの高い処理（正規表現コンパイル、データ構造構築など）は「メソッド自己書き換え」パターンで初回のみに閉じ込め、2 回目以降のオーバーヘッドをゼロにする
-- [ ] 戦略パターンの自動選択が必要な場合、SmartRouter の「UnsupportedPathError でフォールバック」方式を参考にする。各戦略が「自分にはできない」ことを例外で明示し、コーディネーターが次の候補に委譲する
-- [ ] 同じクラス名（`Hono`）で異なるプリセットをエクスポートする手法を参考に、利用者側のコード変更をインポートパスの変更だけに抑える API 設計を目指す
+- `[MUST]` 複数の構成プリセットを提供する場合、各プリセットを独立した `package.json` exports エントリポイントとして公開し、使用しないコードがバンドルに含まれないことを物理的に保証する
+  - 根拠: `"./tiny"`, `"./quick"` の各エントリポイントが独立した依存グラフを形成し、バンドラーに頼らず未使用ルーターの除外を保証している（`package.json:58-67`）。
+
+- `[SHOULD]` デフォルト構成は最も安全で高機能なものにし、軽量構成は明示的なオプトインとする
+  - 根拠: `import { Hono } from 'hono'` は SmartRouter + RegExpRouter + TrieRouter の最も堅牢な構成。Tiny/Quick は明示的に `hono/tiny`, `hono/quick` と書かないと選択されない（`src/hono.ts:27-33`）。
+
+- `[SHOULD]` 高頻度呼び出しメソッドの初回セットアップは遅延実行とし、メソッド自体をビルド済み関数で差し替えて後続呼び出しのオーバーヘッドを排除する
+  - 根拠: SmartRouter のルーター選択（`src/router/smart-router/router.ts:46`）と RegExpRouter の正規表現コンパイル（`src/router/reg-exp-router/matcher.ts:31`）が初回のみ実行され、以降は差し替え後の高速パスが使われる。
+
+- `[SHOULD]` アルゴリズム実装が対応できない入力には専用のエラー型（例: `UnsupportedPathError`）を定義し、上位レイヤーがフォールバック判断に利用できるようにする
+  - 根拠: SmartRouter は `UnsupportedPathError` を catch して次のルーターに切り替える。通常の `Error` では意図的な「非対応」と予期せぬ「バグ」を区別できない（`src/router/smart-router/router.ts:39-43`）。
+
+- `[AVOID]` 軽量プリセットに SmartRouter（フォールバック機構）なしのルーターを組み込む場合、対応パスパターンの制約をドキュメントで明示しないまま公開すること
+  - 根拠: `hono/tiny` は PatternRouter 単体であり、非対応パターンで `UnsupportedPathError` が直接ユーザーに到達する。SmartRouter のようなフォールバック層がないため、制約の明示が必要（`src/preset/tiny.ts:18`）。
+
+## 適用チェックリスト
+
+- [ ] ライブラリのコアロジックと交換可能なアルゴリズム部分を interface で分離しているか
+- [ ] 複数のビルド構成（フル / 軽量 / 最小）がある場合、`package.json` exports で独立したエントリポイントを定義しているか
+- [ ] デフォルトの構成が「最も安全で機能が充実したもの」になっているか（軽量構成がデフォルトになっていないか）
+- [ ] 初回のみ必要な重いセットアップ処理を、遅延実行や自己書き換えで後続呼び出しから排除しているか
+- [ ] アルゴリズムの「非対応」と「バグ」を区別するための専用エラー型を定義しているか
+- [ ] 軽量プリセットの機能制限・対応範囲をドキュメントに明記しているか
+- [ ] 各エントリポイントからの依存グラフが意図通りに分離されているか（バンドルサイズの測定で検証）

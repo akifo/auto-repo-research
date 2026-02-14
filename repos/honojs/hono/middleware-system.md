@@ -1,17 +1,68 @@
-# Middleware System
+# middleware-system
 
 > リポジトリ: honojs/hono
 > 分析日: 2026-02-14
 
 ## 概要
 
-Hono のミドルウェアシステムは koa-compose にインスパイアされた非同期 dispatch chain をコアに持ち、`(c: Context, next: Next) => Promise<Response | void>` という統一的なシグネチャで全ミドルウェアを定義する。25種の組み込みミドルウェアを備えながら、コア部分はわずか73行の `compose.ts` に収められている。単一ハンドラ時の compose 省略最適化、`COMPOSED_HANDLER` によるサブアプリの事前合成、`combine` モジュールによる論理的なミドルウェア合成（some/every/except）など、シンプルさとパフォーマンスの両立が注目に値する。
+Hono のミドルウェアシステムは、Koa の `koa-compose` に由来する onion 型（タマネギ型）の合成モデルを採用している。`compose` 関数はわずか 73 行で、再帰的な `dispatch` 関数を使い、ミドルウェアチェーン全体を単一の非同期関数に合成する。`next()` の呼び出しが制御の分岐点となり、リクエストの前処理と後処理を一つの関数内で記述できる点が最大の特徴である。この設計は 25 の組み込みミドルウェアすべてに一貫して適用されており、ミドルウェアの合成可能性（composability）を最優先に設計されたアーキテクチャとして注目に値する。
+
+## 設計思想
+
+- **合成可能性の最大化**: `compose` の戻り値自体がミドルウェアと同じシグネチャ `(context, next?) => Promise<Context>` を満たすため、合成結果を再び合成に入力できる。テストでも `compose w/ other compositions` として検証されている（`src/compose.test.ts:626-649`）。この再帰的合成可能性により、`every`/`some`/`except` のような高階ミドルウェアが `compose` を内部で再利用して構築されている。
+
+- **単一 Context による状態共有**: ミドルウェアチェーン全体で同一の `Context` オブジェクトを共有し、追加のイベントバスやメッセージングを必要としない。`context.set()` / `context.get()` による型安全な変数の受け渡しと、`context.res` への Response 設定という 2 つの通信チャネルのみに限定することで、暗黙的な結合を防いでいる。
+
+- **最小限の抽象 -- ゼロオーバーヘッド志向**: 単一ハンドラの場合は `compose` を呼ばずに直接実行する最適化が `hono-base.ts:424-442` に実装されている。また `compose` 自体も配列のコピーやイテレータを使わず、インデックスベースの再帰で実装されており、ランタイムのアロケーションを最小化している。
+
+- **フェイル・ファスト + グレースフル・デグラデーション**: `next()` の二重呼び出しは即座に例外を投げる（`compose.ts:33-35`）一方、ハンドラのエラーは `onError` コールバックで回復可能としている。未到達のハンドラ（`next()` を呼ばないミドルウェアの後続）は `onNotFound` に委譲される。この 3 段階の制御により、開発者のミスは早期検出しつつ、ランタイムエラーはユーザーに適切なレスポンスを返す。
 
 ## 設計・実装の詳細
 
-### コアとなる compose 関数
+### compose 関数の実行モデル
 
-ミドルウェアチェーンの心臓部は `src/compose.ts` の `compose` 関数である。koa-compose のアルゴリズムをベースに、再帰的な `dispatch` 関数でチェーンを構築する。
+`compose` は、ミドルウェア配列を受け取り、クロージャで `index` 変数をキャプチャした `dispatch` 関数を返す。`dispatch(0)` から開始し、各ミドルウェアが `next()` を呼ぶと `dispatch(i + 1)` が実行される。
+
+```
+dispatch(0) → middleware[0](ctx, () => dispatch(1))
+                  ↓ await next()
+              dispatch(1) → middleware[1](ctx, () => dispatch(2))
+                                ↓ await next()
+                            dispatch(2) → middleware[2](ctx, () => dispatch(3))
+                                              ↓ (no more middleware)
+                                          onNotFound or return
+                            ← post-processing of middleware[2]
+              ← post-processing of middleware[1]
+          ← post-processing of middleware[0]
+```
+
+この再帰構造が onion 型を実現する。`await next()` より前がリクエストの下り（inbound）処理、後がレスポンスの上り（outbound）処理となる。
+
+### next() の二重呼び出し防止
+
+`index` 変数が「これまでに到達した最大の dispatch インデックス」を記録する。`dispatch(i)` の先頭で `i <= index` なら、同じまたは前のステップに戻ろうとしていることを意味し、即座にエラーを投げる。
+
+### レスポンスの確定メカニズム（finalized フラグ）
+
+`Context.res` への setter が呼ばれると `finalized = true` が設定される（`src/context.ts:404-424`）。`compose` 内では、レスポンスが返された場合かつ `context.finalized === false` の場合のみ `context.res` を更新する（`compose.ts:67-69`）。これにより、先に Response を確定したミドルウェアの結果が、後のミドルウェアによって意図せず上書きされることを防ぐ。ただし `isError` 時はエラーハンドラの結果で上書きを許可する。
+
+### 単一ハンドラ最適化
+
+`hono-base.ts:424` で `matchResult[0].length === 1` の場合、`compose` を呼ばず直接ハンドラを実行する。同期ハンドラの場合は Promise を生成せず、非同期の場合のみ `.then().catch()` チェーンを使う。これにより、ミドルウェアなしの単純なルートでは不要なオーバーヘッドを完全に排除する。
+
+### combine: ミドルウェアの論理合成
+
+`src/middleware/combine/index.ts` は `compose` を基盤として、ミドルウェアの論理結合を提供する:
+
+- **`every(...middlewares)`**: 全ミドルウェアを `compose` で直列実行。一つでもエラーを投げれば全体がエラーになる（AND 結合）
+- **`some(...middlewares)`**: 先頭から順に試行し、最初に成功したミドルウェアを採用する（OR 結合）
+- **`except(condition, ...middlewares)`**: 条件に一致する場合はスキップ、それ以外は `every` で実行。`some` と `every` の組み合わせで実装
+
+`every` は内部で `compose` を直接呼び出し、`routeIndex` を保存・復元することでパラメータ解決が壊れないようにしている。
+
+## コード例
+
+### compose 関数の全体（73 行の核心）
 
 ```typescript
 // src/compose.ts:15-73
@@ -67,63 +118,58 @@ export const compose = <E extends Env = Env>(
 }
 ```
 
-設計上の要点:
-- `index` 変数で `next()` の多重呼び出しを検出する
-- `onError` と `onNotFound` をチェーン末尾のフォールバックとして組み込む
-- `context.finalized` フラグでレスポンス確定済みかどうかを判断し、不要なレスポンス上書きを防ぐ
-- ミドルウェア配列が空になったとき、外部から渡された `next` を呼ぶことでサブアプリのネストを実現する
-
-### ミドルウェアの型システム
-
-`MiddlewareHandler` と `Handler` は明確に分離されている。
+### onion 型の実行順序を証明するテスト
 
 ```typescript
-// src/types.ts:36
-export type Next = () => Promise<void>
-
-// src/types.ts:77-82
-export type Handler<
-  E extends Env = any, P extends string = any,
-  I extends Input = BlankInput, R extends HandlerResponse<any> = any,
-> = (c: Context<E, P, I>, next: Next) => R
-
-// src/types.ts:84-89
-export type MiddlewareHandler<
-  E extends Env = any, P extends string = string,
-  I extends Input = {}, R extends HandlerResponse<any> = Response,
-> = (c: Context<E, P, I>, next: Next) => Promise<R | void>
-
-// src/types.ts:91-96
-export type H<...> = Handler<...> | MiddlewareHandler<...>
+// src/compose.test.ts:363-401
+it('should get executed order one by one', async () => {
+  const arr: number[] = []
+  stack.push(
+    buildMiddlewareTuple(async (_context: Context, next: Next) => {
+      arr.push(1)
+      await next()
+      arr.push(6)
+    })
+  )
+  stack.push(
+    buildMiddlewareTuple(async (_context: Context, next: Next) => {
+      arr.push(2)
+      await next()
+      arr.push(5)
+    })
+  )
+  stack.push(
+    buildMiddlewareTuple(async (_context: Context, next: Next) => {
+      arr.push(3)
+      await next()
+      arr.push(4)
+    })
+  )
+  await compose(stack)(new Context(new Request('http://localhost/')))
+  expect(arr).toEqual([1, 2, 3, 4, 5, 6])
+})
 ```
 
-`Handler` はレスポンスを返す終端ハンドラ、`MiddlewareHandler` は `await next()` で次のハンドラに制御を渡すものという意味的な区別がある。ただし型レベルでは `H` で統合され、ルーティング登録時にはどちらも受け入れられる。
-
-### app.use() によるミドルウェア登録
+### logger ミドルウェア -- onion 型の典型パターン
 
 ```typescript
-// src/hono-base.ts:157-168
-this.use = (arg1: string | MiddlewareHandler<any>, ...handlers: MiddlewareHandler<any>[]) => {
-  if (typeof arg1 === 'string') {
-    this.#path = arg1
-  } else {
-    this.#path = '*'
-    handlers.unshift(arg1)
+// src/middleware/logger/index.ts:81-95
+export const logger = (fn: PrintFunc = console.log): MiddlewareHandler => {
+  return async function logger(c, next) {
+    const { method, url } = c.req
+    const path = url.slice(url.indexOf('/', 8))
+    await log(fn, LogPrefix.Incoming, method, path)
+    const start = Date.now()
+    await next()
+    await log(fn, LogPrefix.Outgoing, method, path, c.res.status, time(start))
   }
-  handlers.forEach((handler) => {
-    this.#addRoute(METHOD_NAME_ALL, this.#path, handler)
-  })
-  return this as any
 }
 ```
 
-パス指定なしの場合は `*`（全パス一致）が暗黙的に設定される。`METHOD_NAME_ALL` で全 HTTP メソッドに対して登録される。
-
-### 単一ハンドラ時の compose 省略最適化
+### 単一ハンドラ最適化
 
 ```typescript
-// src/hono-base.ts:423-442
-// Do not `compose` if it has only one handler
+// src/hono-base.ts:424-442
 if (matchResult[0].length === 1) {
   let res: ReturnType<H>
   try {
@@ -144,143 +190,68 @@ if (matchResult[0].length === 1) {
 }
 ```
 
-マッチしたハンドラが1つだけの場合、`compose` を経由せず直接ハンドラを呼び出す。これにより、ミドルウェアなしのルートで不要な Promise チェーンのオーバーヘッドを排除している。
+## パターンカタログ
 
-### COMPOSED_HANDLER によるサブアプリ合成の最適化
+- **Chain of Responsibility** (分類: 振る舞い)
+  - 解決する問題: リクエスト処理を複数のハンドラに分離し、各ハンドラが処理を続行するか中断するかを決定する
+  - 適用条件: 複数の横断的関心事（認証、ロギング、エラー処理等）を順序付けて適用する必要がある場合
+  - コード例: `src/compose.ts:49-51` -- `await handler(context, () => dispatch(i + 1))` で次のハンドラへの委譲を明示的に制御
+  - 注意点: 古典的な Chain of Responsibility は「処理できるハンドラが見つかったら終了」だが、Hono の onion 型は `next()` により後続への委譲と復帰後の処理の両方を可能にする拡張版
 
-```typescript
-// src/hono-base.ts:220-226
-if (app.errorHandler === errorHandler) {
-  handler = r.handler
-} else {
-  handler = async (c: Context, next: Next) =>
-    (await compose([], app.errorHandler)(c, () => r.handler(c, next))).res
-  ;(handler as any)[COMPOSED_HANDLER] = r.handler
-}
-```
+- **Decorator** (分類: 構造)
+  - 解決する問題: ハンドラの前後に振る舞いを追加する
+  - 適用条件: レスポンスヘッダの追加（powered-by, CORS）、レスポンスの変換（ETag, compress）等
+  - コード例: `src/middleware/etag/index.ts:84-123` -- `await next()` の後にレスポンスを検査し ETag ヘッダを追加・304 に変換
+  - 注意点: ミドルウェアがデコレータとして機能するには、`await next()` を必ず呼ぶ必要がある
 
-`route()` でサブアプリを合成する際、カスタム errorHandler を持つ場合はラッパーハンドラを生成する。`COMPOSED_HANDLER` プロパティに元のハンドラを保持することで、`findTargetHandler` を通じてネストされた合成を解決できる。
+- **Composite** (分類: 構造)
+  - 解決する問題: 複数のミドルウェアを一つのミドルウェアとして扱う
+  - 適用条件: 条件付きミドルウェア適用、ミドルウェアのグルーピング
+  - コード例: `src/middleware/combine/index.ts:99-117` -- `every` が `compose` を使ってミドルウェア配列を単一ミドルウェアに合成
+  - 注意点: `routeIndex` の保存・復元が必要（パラメータ解決のコンテキストが狂うため）
 
-```typescript
-// src/utils/handler.ts:8-15
-export const isMiddleware = (handler: Function) => handler.length > 1
-export const findTargetHandler = (handler: Function): Function => {
-  return (handler as any)[COMPOSED_HANDLER]
-    ? findTargetHandler((handler as any)[COMPOSED_HANDLER])
-    : handler
-}
-```
+## Good Patterns
 
-`isMiddleware` は引数の数（`c` のみ = ハンドラ、`c, next` = ミドルウェア）で判別するシンプルなヒューリスティクスである。
-
-### combine モジュールによる論理的なミドルウェア合成
-
-`src/middleware/combine/index.ts` は `some`、`every`、`except` の3つの合成ユーティリティを提供する。
-
-**some**: OR 条件。最初に成功したミドルウェアの結果を採用する。
+- **Factory 関数パターンによるミドルウェア生成**: 全 25 の組み込みミドルウェアが、オプションを受け取って `MiddlewareHandler` を返す factory 関数として実装されている。これにより設定のクロージャキャプチャ、遅延初期化、型安全なオプション検証が統一的に行える。
 
 ```typescript
-// src/middleware/combine/index.ts:38-68
-export const some = (...middleware: (MiddlewareHandler | Condition)[]): MiddlewareHandler => {
-  return async function some(c, next) {
-    let isNextCalled = false
-    const wrappedNext = () => {
-      isNextCalled = true
-      return next()
-    }
-    let lastError: unknown
-    for (const handler of middleware) {
-      try {
-        const result = await handler(c, wrappedNext)
-        if (result === true && !c.finalized) {
-          await wrappedNext()
-        } else if (result === false) {
-          lastError = new Error('No successful middleware found')
-          continue
-        }
-        lastError = undefined
-        break
-      } catch (error) {
-        lastError = error
-        if (isNextCalled) { break }
-      }
-    }
-    if (lastError) { throw lastError }
+// src/middleware/cors/index.ts:63-73
+export const cors = (options?: CORSOptions): MiddlewareHandler => {
+  const defaults: CORSOptions = {
+    origin: '*',
+    allowMethods: ['GET', 'HEAD', 'PUT', 'POST', 'DELETE', 'PATCH'],
+    allowHeaders: [],
+    exposeHeaders: [],
   }
+  const opts = { ...defaults, ...options }
+  // findAllowOrigin を一度だけ構築（クロージャキャプチャ）
+  const findAllowOrigin = ((optsOrigin) => { /* ... */ })(opts.origin)
+  return async function cors(c, next) { /* ... */ }
 }
 ```
 
-**every**: AND 条件。全ミドルウェアを `compose` で直列実行する。
+- **名前付き関数式によるデバッグ容易性**: ミドルウェアは `return async function logger(c, next) { ... }` のように名前付き関数式で返される。スタックトレースにミドルウェア名が表示されるため、デバッグが容易になる。
 
 ```typescript
-// src/middleware/combine/index.ts:99-117
-export const every = (...middleware: (MiddlewareHandler | Condition)[]): MiddlewareHandler => {
-  return async function every(c, next) {
-    const currentRouteIndex = c.req.routeIndex
-    await compose(
-      middleware.map((m) => [[
-        async (c: Context, next: Next) => {
-          c.req.routeIndex = currentRouteIndex
-          const res = await m(c, next)
-          if (res === false) { throw new Error('Unmet condition') }
-          return res
-        },
-      ]])
-    )(c, next)
-  }
-}
+// src/middleware/body-limit/index.ts:68
+return async function bodyLimit(c, next) { /* ... */ }
+// src/middleware/bearer-auth/index.ts:153
+return async function bearerAuth(c, next) { /* ... */ }
 ```
 
-**except**: 条件に一致しない場合のみミドルウェアを適用する。パス文字列や関数で条件を指定できる。
+- **HTTPException による早期中断**: 認証ミドルウェアは検証失敗時に `HTTPException` を throw し、`next()` を呼ばずにチェーンを中断する。`HTTPException` は `getResponse()` メソッドを持ち、エラーハンドラが Response に変換できる。
 
 ```typescript
-// src/middleware/combine/index.ts:141-165
-export const except = (
-  condition: string | Condition | (string | Condition)[],
-  ...middleware: MiddlewareHandler[]
-): MiddlewareHandler => {
-  // 文字列条件は TrieRouter でパスマッチングに変換
-  // some(条件判定, every(...middleware)) で実装
-  const handler = some(
-    (c: Context) => conditions.some((cond) => cond(c)),
-    every(...middleware)
-  )
-  return async function except(c, next) { await handler(c, next) }
+// src/middleware/bearer-auth/index.ts:150
+throw new HTTPException(status, { res })
+// src/hono-base.ts:36-41 -- エラーハンドラで getResponse を利用
+if ('getResponse' in err) {
+  const res = err.getResponse()
+  return c.newResponse(res.body, res)
 }
 ```
 
-### Context を通じたミドルウェア間のデータ共有
-
-ミドルウェア間のデータ受け渡しは `c.set()` / `c.get()` / `c.var` で行う。
-
-```typescript
-// src/context.ts:536-546
-set: Set<...> = (key: string, value: unknown) => {
-  this.#var ??= new Map()
-  this.#var.set(key, value)
-}
-
-// src/context.ts:583-592
-get var(): Readonly<ContextVariableMap & ...> {
-  if (!this.#var) { return {} as any }
-  return Object.fromEntries(this.#var)
-}
-```
-
-型安全性のために、ミドルウェアは `ContextVariableMap` の declaration merging を利用する。
-
-```typescript
-// src/middleware/request-id/index.ts:5-7
-declare module '../..' {
-  interface ContextVariableMap extends RequestIdVariables {}
-}
-```
-
-これにより、`import 'hono/request-id'` するだけで `c.var.requestId` が型補完される。
-
-### context-storage による非同期コンテキスト共有
-
-`AsyncLocalStorage` を使い、ミドルウェアチェーン外のヘルパー関数からも Context にアクセス可能にする。
+- **contextStorage による AsyncLocalStorage 活用**: `await asyncLocalStorage.run(c, next)` の一行で、ミドルウェアチェーン内の任意の深さから `getContext()` でコンテキストにアクセスできる。onion 型の `next()` が AsyncLocalStorage のスコープと自然に整合する好例。
 
 ```typescript
 // src/middleware/context-storage/index.ts:43-47
@@ -291,172 +262,89 @@ export const contextStorage = (): MiddlewareHandler => {
 }
 ```
 
-### ミドルウェアの「前処理/後処理」パターン
-
-`await next()` の前後でロジックを分割するのが Hono ミドルウェアの基本パターンである。
-
-```typescript
-// src/middleware/logger/index.ts:82-95 (前処理 + 後処理)
-export const logger = (fn: PrintFunc = console.log): MiddlewareHandler => {
-  return async function logger(c, next) {
-    const { method, url } = c.req
-    const path = url.slice(url.indexOf('/', 8))
-    await log(fn, LogPrefix.Incoming, method, path)     // 前処理: リクエストログ
-    const start = Date.now()
-    await next()                                         // 次のハンドラに委譲
-    await log(fn, LogPrefix.Outgoing, method, path,      // 後処理: レスポンスログ
-      c.res.status, time(start))
-  }
-}
-```
-
-## コード例
-
-### ファクトリ関数による型安全なミドルウェア作成
-
-```typescript
-// src/helper/factory/index.ts:368-375
-export const createMiddleware = <
-  E extends Env = any, P extends string = string,
-  I extends Input = {}, R extends HandlerResponse<any> | void = void,
->(
-  middleware: MiddlewareHandler<E, P, I, R extends void ? Response : R>
-): MiddlewareHandler<E, P, I, R extends void ? Response : R> => middleware
-```
-
-`createMiddleware` は実質的にアイデンティティ関数だが、TypeScript の型推論を支援する。ミドルウェアの `Env` 型を明示することで、`c.env` や `c.var` の型が正しく推論される。
-
-### HTTPException によるミドルウェアからのエラー応答
-
-```typescript
-// src/middleware/bearer-auth/index.ts:153-206
-return async function bearerAuth(c, next) {
-  const headerToken = c.req.header(options.headerName || HEADER)
-  if (!headerToken) {
-    await throwHTTPException(c, 401, /* ... */)
-  } else {
-    const match = regexp.exec(headerToken)
-    if (!match) {
-      await throwHTTPException(c, 400, /* ... */)
-    } else {
-      // トークン検証
-      if (!equal) {
-        await throwHTTPException(c, 401, /* ... */)
-      }
-    }
-  }
-  await next()
-}
-```
-
-`HTTPException` は `getResponse()` メソッドを持ち、`hono-base.ts` の `errorHandler` がこれを検出してカスタムレスポンスを返す。
-
-```typescript
-// src/hono-base.ts:35-42
-const errorHandler: ErrorHandler = (err, c) => {
-  if ('getResponse' in err) {
-    const res = err.getResponse()
-    return c.newResponse(res.body, res)
-  }
-  console.error(err)
-  return c.text('Internal Server Error', 500)
-}
-```
-
-## Good Patterns
-
-- **ファクトリパターンによるミドルウェア生成**: 全ての組み込みミドルウェアはオプションを受け取り `MiddlewareHandler` を返すファクトリ関数で実装されている。設定をクロージャに閉じ込めることで、ミドルウェアインスタンスごとに独立した設定を持てる。`cors()`, `bearerAuth({ token })`, `timeout(5000)` のように呼び出し時の意図が明確になる。
-
-```typescript
-// src/middleware/cors/index.ts:63-70
-export const cors = (options?: CORSOptions): MiddlewareHandler => {
-  const defaults: CORSOptions = { origin: '*', allowMethods: ['GET', 'HEAD', 'PUT', 'POST', 'DELETE', 'PATCH'], ... }
-  const opts = { ...defaults, ...options }
-  // findAllowOrigin をクロージャで事前計算
-  const findAllowOrigin = ((optsOrigin) => { /* ... */ })(opts.origin)
-  return async function cors(c, next) { /* opts を参照 */ }
-}
-```
-
-- **名前付き関数式によるデバッグ支援**: 全ての組み込みミドルウェアが `return async function cors(c, next)` のように名前付き関数式を使用している。スタックトレースやデバッガでミドルウェア名が表示されるため、問題の特定が容易になる。
-
-```typescript
-// src/middleware/powered-by/index.ts:30-35
-export const poweredBy = (options?: PoweredByOptions): MiddlewareHandler => {
-  return async function poweredBy(c, next) {  // 名前付き関数式
-    await next()
-    c.res.headers.set('X-Powered-By', options?.serverName ?? 'Hono')
-  }
-}
-```
-
-- **Declaration Merging による型安全なコンテキスト変数**: ミドルウェアが `ContextVariableMap` を拡張することで、import するだけで `c.var` に型が付く。ミドルウェア利用者が明示的に `Variables` 型を指定する必要がない。
-
-```typescript
-// src/middleware/timing/index.ts:6-8
-declare module '../..' {
-  interface ContextVariableMap extends TimingVariables {}
-}
-```
-
-- **単一ハンドラ最適化**: マッチ結果が1つのハンドラだけの場合、`compose` を完全にスキップして直接呼び出す。多くのルートはミドルウェアなしで1つのハンドラだけを持つため、これが大幅なパフォーマンス改善になる。
-
 ## Anti-Patterns / 注意点
 
-- **`next()` の呼び忘れ**: ミドルウェアで `await next()` を呼び忘れると、後続のハンドラが実行されず、`Context is not finalized` エラーになる。compose.ts の `context.finalized === false` チェックがこれを検出する。
+- **next() の await 忘れ**: `next()` は `Promise<void>` を返す。`await` なしで呼ぶと、後続ミドルウェアの完了を待たずに後処理が実行され、onion 型の実行順序が崩れる。
 
 ```typescript
-// Bad: next() を呼ばずレスポンスも返さない
+// Bad: レスポンスが確定する前に後処理が走る
 const bad: MiddlewareHandler = async (c, next) => {
-  c.set('key', 'value')
-  // await next() を忘れた
+  next() // await なし
+  c.res.headers.set('X-After', 'value') // next() の完了前に実行される
 }
 
-// Better: 必ず next() を呼ぶか、レスポンスを返す
-const better: MiddlewareHandler = async (c, next) => {
-  c.set('key', 'value')
+// Better: await で順序を保証する
+const good: MiddlewareHandler = async (c, next) => {
+  await next()
+  c.res.headers.set('X-After', 'value') // 後続の処理がすべて完了してから実行
+}
+```
+
+- **next() の呼び忘れによるチェーン中断**: ミドルウェアが `next()` を呼ばないと後続のミドルウェアやハンドラが実行されない。意図的な中断（認証失敗等）以外では必ず `await next()` を呼ぶ必要がある。`compose.test.ts:403-438` のテストで、`next()` を呼ばないミドルウェアの後の処理がスキップされることが検証されている。
+
+```typescript
+// Bad: 意図せず後続を遮断
+const bad: MiddlewareHandler = async (c, next) => {
+  c.set('data', 'value')
+  // next() を呼び忘れ -- 後続ハンドラが実行されない
+}
+
+// Better: 前処理後に next() で委譲
+const good: MiddlewareHandler = async (c, next) => {
+  c.set('data', 'value')
   await next()
 }
 ```
 
-- **`next()` の多重呼び出し**: compose.ts の `i <= index` チェックが `next() called multiple times` エラーを投げる。条件分岐で next() を複数回呼ぶコードは壊れる。
+- **finalized 後のレスポンス上書き**: `context.res` への代入で `finalized = true` が設定された後、別のミドルウェアが再度 `context.res` に代入すると、先のレスポンスが失われる。`compose` は `finalized === false` のときのみ自動設定するが、明示的な代入は保護されない。
 
 ```typescript
-// Bad: 条件分岐の両方で next() を呼ぶ可能性
+// Bad: 後処理で無条件にレスポンスを上書き
 const bad: MiddlewareHandler = async (c, next) => {
   await next()
-  if (c.res.status === 404) {
-    await next()  // Error: next() called multiple times
-  }
+  c.res = new Response('overwritten') // 先行ミドルウェアの結果を破壊
 }
 
-// Better: next() は一度だけ。後処理で条件分岐する
-const better: MiddlewareHandler = async (c, next) => {
+// Better: finalized を確認してから操作
+const good: MiddlewareHandler = async (c, next) => {
   await next()
-  if (c.res.status === 404) {
-    c.res = c.text('Custom 404', 404)
-  }
+  // レスポンスヘッダの追加は安全（bodyは変更しない）
+  c.res.headers.set('X-Custom', 'value')
 }
 ```
 
-- **後処理での headers 操作と finalized の関係**: `c.finalized` が true になった後に `c.header()` を呼ぶと、内部で Response オブジェクトが複製される（`src/context.ts:506-508`）。パフォーマンスに影響するため、可能な限りレスポンス確定前にヘッダを設定する。
+## 導出ルール
 
-```typescript
-// src/context.ts:506-508
-header: SetHeaders = (name, value, options): void => {
-  if (this.finalized) {
-    this.#res = new Response((this.#res as Response).body, this.#res)  // 複製が発生
-  }
-  // ...
-}
-```
+> このセクションは必須。最低 3 個のルールを記載すること。synthesis-writer が rules.md 生成時に参照する。
 
-## 自分のプロジェクトへの適用
+- `[MUST]` onion 型ミドルウェアでは `next()` の戻り値を必ず `await` すること
+  - 根拠: `await` なしでは後続ミドルウェアの完了を待たず後処理が実行され、レスポンスの変更やエラーハンドリングが正しく動作しない（`compose.test.ts:363-401` で実行順序 `[1,2,3,4,5,6]` が保証される前提）
 
-- [ ] ミドルウェアをファクトリ関数パターンで設計する（オプション → クロージャ → ハンドラ関数を返す）
-- [ ] 名前付き関数式 `return async function myMiddleware(c, next)` を使い、スタックトレースの可読性を確保する
-- [ ] ミドルウェア間のデータ共有は Context のような共有オブジェクトを介し、グローバル状態を避ける
-- [ ] `some`/`every`/`except` のような論理的なミドルウェア合成ユーティリティを用意し、認証/認可の条件分岐を宣言的に記述する
-- [ ] koa-compose 型の dispatch chain を採用する場合、`next()` の多重呼び出し防止ガードを必ず実装する
-- [ ] `ContextVariableMap` の declaration merging パターンを参考に、ミドルウェアが利用者の型定義を自動拡張する仕組みを検討する
-- [ ] 単一ハンドラ最適化のように、ホットパスで不要な抽象化層をバイパスするパフォーマンス戦略を検討する
+- `[MUST]` ミドルウェア合成関数（compose）は `next()` の二重呼び出しを検出して例外を投げること
+  - 根拠: Hono の `compose.ts:33-35` は `index` の単調増加をチェックし、二重呼び出しで即座にエラーを投げる。これがないと同じミドルウェアの再実行やレスポンスの二重送信が発生する
+
+- `[SHOULD]` ミドルウェアファクトリは設定をクロージャにキャプチャし、リクエストごとの再計算を避けること
+  - 根拠: Hono の全組み込みミドルウェア（cors, bearer-auth 等）がこのパターンを採用し、正規表現のコンパイルやオプションのマージを初期化時に一度だけ行っている（`src/middleware/bearer-auth/index.ts:114-117`）
+
+- `[SHOULD]` 単一ハンドラのケースでは合成をバイパスし、直接実行する最適化を実装すること
+  - 根拠: `hono-base.ts:424-442` で `matchResult[0].length === 1` の場合に `compose` をスキップし、同期ハンドラでは Promise 生成すら回避している
+
+- `[SHOULD]` ミドルウェアの返却関数には名前付き関数式を使い、スタックトレースでの識別を容易にすること
+  - 根拠: Hono の全ミドルウェアが `return async function middlewareName(c, next) { ... }` パターンを採用（`logger/index.ts:82`, `bearerAuth/index.ts:153` 等）
+
+- `[AVOID]` ミドルウェア内で `context.res` を無条件に上書きすること。ヘッダ追加は安全だが、body やステータスの変更は `finalized` 状態を確認すべき
+  - 根拠: `context.ts:404-424` で `set res` が `finalized = true` を設定するため、先行ミドルウェアの結果を意図せず破壊するリスクがある
+
+- `[AVOID]` ミドルウェアチェーンの中断を暗黙的に行うこと。中断する場合は `HTTPException` を throw するか、Response を return して意図を明示すべき
+  - 根拠: `next()` を呼ばないだけの暗黙的中断は、後続ハンドラの未実行が検出しづらい。Hono の認証ミドルウェアは全て `HTTPException` による明示的中断を採用している（`bearer-auth/index.ts:150`）
+
+## 適用チェックリスト
+
+- [ ] ミドルウェアの `next()` が全箇所で `await` されているか確認する
+- [ ] compose 関数に `next()` の二重呼び出し検出（インデックスの単調増加チェック）を実装しているか
+- [ ] ミドルウェアファクトリがリクエスト時ではなく初期化時にオプションを処理しているか
+- [ ] 単一ハンドラ最適化（compose バイパス）を実装し、ベンチマークで効果を確認したか
+- [ ] エラー中断に `HTTPException` 相当のメカニズム（ステータスコードとレスポンスを持つ例外）を用意しているか
+- [ ] ミドルウェアの返却関数に名前を付けてスタックトレースの可読性を確保しているか
+- [ ] レスポンスの確定状態（finalized 相当のフラグ）を管理し、意図しない上書きを防いでいるか
+- [ ] ミドルウェアの論理合成（every/some/except 相当）が必要な箇所を洗い出したか

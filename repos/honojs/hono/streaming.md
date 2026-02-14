@@ -5,108 +5,96 @@
 
 ## 概要
 
-Hono のストリーミングは Web Standards（ReadableStream / WritableStream / TransformStream）を基盤とした 3 層アーキテクチャで構成される。低レベルの `StreamingApi` クラス、3 種のヘルパー関数（`stream` / `streamText` / `streamSSE`）、そして JSX ストリーミングレンダリング（`Suspense` + `renderToReadableStream`）という階層設計が特徴的。ランタイム差異（特に Bun）を吸収する工夫や、SSE プロトコルの正確な実装、Out-of-Order Streaming による JSX の段階的レンダリングなど、実用的なパターンが豊富に含まれている。
+Hono のストリーミング実装を SSE / ReadableStream 抽象化 / TransformStream 活用 / JSX Streaming SSR の観点から分析する。
+Hono は Web Standard API（ReadableStream, TransformStream, WritableStream）のみを基盤とし、Node.js 固有の Stream API に一切依存しない設計を貫いている。この選択により、Cloudflare Workers・Deno・Bun・AWS Lambda など異なるランタイムで同一のストリーミングコードが動作する。
+さらに、低レベルの Stream API を `StreamingApi` クラスで抽象化し、ユーザーに `write()`/`close()` という直感的なインターフェースを提供している点が特徴的である。
+
+## 設計思想
+
+- **Web Standards First**: `ReadableStream` / `TransformStream` / `WritableStream` のみを使用し、ランタイム固有の Stream API（Node.js streams, Bun.Serve 固有 API 等）を内部実装に持ち込まない。これにより「Write once, run anywhere」を実現している（`src/utils/stream.ts` 全体、`src/helper/streaming/stream.ts` 全体）。
+
+- **Writer-Oriented Abstraction（書き込み側中心の抽象化）**: ユーザーは `ReadableStream` の pull/start コールバックではなく、`StreamingApi` の `write()` / `writeln()` / `close()` という命令的 API を通じてストリームに書き込む。Web Standard の ReadableStream は「データを引っ張る（pull）」モデルだが、サーバーサイドのストリーミング応答では「データを押し出す（push）」モデルの方が自然であるため、TransformStream を仲介として push 型 API を構築している（`src/utils/stream.ts:21-44`）。
+
+- **Graceful Degradation for Runtime Differences**: ランタイム間の挙動差異（例: Bun 旧バージョンの `cancel()` 未呼び出し問題）をヘルパー内部で吸収し、ユーザーコードに影響を与えない。ランタイム差異の検出結果はメモ化して毎回のチェックコストを回避する（`src/helper/streaming/utils.ts:1-11`）。
+
+- **Fail-Silent Write, Explicit Error Callback**: `write()` / `close()` は内部で例外を握りつぶし、エラーハンドリングが必要な場合は `stream()` / `streamSSE()` の第3引数 `onError` コールバックで一元管理する。これにより、クライアント切断時にアプリケーションコードが予期せず中断するのを防いでいる（`src/utils/stream.ts:46-56`, `src/helper/streaming/stream.ts:28-41`）。
 
 ## 設計・実装の詳細
 
-### 3 層ストリーミングアーキテクチャ
+### TransformStream を仲介した Push 型ストリーミング
 
-Hono のストリーミングは以下の 3 層で構成される。
+Hono のストリーミングの核心は `TransformStream` の活用にある。`stream()` / `streamSSE()` は内部で `new TransformStream()` を生成し、その `writable` 側を `StreamingApi` に渡して書き込みインターフェースとし、`readable` 側を `Response` のボディとして返す。
 
-**Layer 1: StreamingApi（コアクラス）**
-`src/utils/stream.ts` に定義される基底クラス。`TransformStream` を使い、`WritableStream` 側に書き込み、`ReadableStream` 側をレスポンスボディとして返す。`write` / `writeln` / `close` / `pipe` / `sleep` / `abort` / `onAbort` といったプリミティブを提供する。
-
-**Layer 2: ヘルパー関数（stream / streamText / streamSSE）**
-`src/helper/streaming/` 配下に定義。`StreamingApi` をラップし、Context から Response 生成までのライフサイクルを管理する。各ヘルパーは適切な HTTP ヘッダーを自動設定する。
-
-**Layer 3: JSX ストリーミング（Suspense + renderToReadableStream）**
-`src/jsx/streaming.ts` に定義。React-like な `Suspense` コンポーネントで非同期コンテンツを段階的にストリーミングする Out-of-Order Streaming を実現する。
-
-### TransformStream を介した読み書き分離パターン
-
-`StreamingApi` は `TransformStream` の writable 側と readable 側を分離して保持する。readable 側はさらに新しい `ReadableStream` でラップし、`cancel` イベントでクライアント切断を検知する。
-
-```typescript
-// src/utils/stream.ts:21-44
-constructor(writable: WritableStream, _readable: ReadableStream) {
-  this.writable = writable
-  this.writer = writable.getWriter()
-  this.encoder = new TextEncoder()
-
-  const reader = _readable.getReader()
-
-  // クライアント切断時に reader をキャンセル
-  this.abortSubscribers.push(async () => {
-    await reader.cancel()
-  })
-
-  this.responseReadable = new ReadableStream({
-    async pull(controller) {
-      const { done, value } = await reader.read()
-      done ? controller.close() : controller.enqueue(value)
-    },
-    cancel: () => {
-      this.abort()
-    },
-  })
-}
+```
+ユーザーコード → StreamingApi.write() → WritableStream → [TransformStream] → ReadableStream → Response.body → クライアント
 ```
 
-この設計により、外部から `responseReadable` の cancel が呼ばれると `abort()` が発火し、登録済みの全 `abortSubscribers` が呼び出される。
+この設計の重要なポイントは、`StreamingApi` のコンストラクタで `_readable` から reader を取得し、それを新しい `ReadableStream`（`responseReadable`）で包んでいることである。これにより、クライアントが `responseReadable` を `cancel()` したときに `StreamingApi.abort()` が呼ばれる仕組みを実現している。
 
-### ヘルパー関数のライフサイクル管理
+### SSE (Server-Sent Events) の実装
 
-`stream()` ヘルパーは即座に Response を返しつつ、非同期でコールバックを実行する「Fire-and-Forget」パターンを使う。
+`SSEStreamingApi` は `StreamingApi` を継承し、`writeSSE()` メソッドを追加する。SSE プロトコルのフォーマット（`event:`, `data:`, `id:`, `retry:` フィールド + `\n\n` 区切り）を内部で組み立てる。
+
+特筆すべきは、`data` フィールドが `string | Promise<string>` を受け付け、さらに JSX 要素も渡せる点である。これは `resolveCallback()` を通じて HTML エスケープ済み文字列に変換する仕組みによる。また、複数行の `data` は SSE 仕様に従い `data:` プレフィックスを行ごとに付与し、`\r\n` / `\r` / `\n` のすべての改行コードを正しく処理する。
+
+### JSX Streaming SSR (Suspense + renderToReadableStream)
+
+`renderToReadableStream()` は JSX ツリーを `ReadableStream<Uint8Array>` に変換する。`Suspense` コンポーネントと組み合わせることで、React の Streaming SSR と類似した段階的レンダリングを実現する。
+
+動作フロー:
+1. 同期的にレンダリングできる部分（fallback を含む）を最初のチャンクとして送信
+2. 非同期コンテンツが解決されたら、`<template>` + `<script>` タグで置換用 HTML を後続チャンクとして送信
+3. クライアント側のインライン JavaScript が `<template>` の内容でプレースホルダーを差し替える
+
+この仕組みはコールバックチェーン（`HtmlEscapedCallbackPhase.BeforeStream` → `HtmlEscapedCallbackPhase.Stream`）によって制御され、ネストした `Suspense` も再帰的に処理される。
+
+### Context 参照の WeakMap 保持
+
+`stream()` と `streamSSE()` の両方で `contextStash: WeakMap<ReadableStream, Context>` が使用される。これは Bun 環境において、`Response` を返した時点で `Context` オブジェクトが GC される問題への対策である。`WeakMap` を使うことでメモリリークを防ぎつつ、ストリーミング完了まで `Context` を保持する。
+
+### ランタイム差異の吸収（Bun 旧バージョン対策）
+
+Bun v1.1.27 未満では `ReadableStream` の `cancel()` が `Bun.serve()` の Response に対して呼ばれないバグがあった。Hono はこれを検出し、代替として `req.raw.signal` の `abort` イベントリスナーでストリームの中断を処理する。バージョン判定結果は `isOldBunVersion` 関数内でクロージャにキャッシュされ、2回目以降の呼び出しコストをゼロにしている。
+
+## コード例
+
+### StreamingApi: TransformStream を仲介した Push 型抽象化
 
 ```typescript
-// src/helper/streaming/stream.ts:7-45
-export const stream = (
-  c: Context,
-  cb: (stream: StreamingApi) => Promise<void>,
-  onError?: (e: Error, stream: StreamingApi) => Promise<void>
-): Response => {
-  const { readable, writable } = new TransformStream()
-  const stream = new StreamingApi(writable, readable)
+// src/utils/stream.ts:6-44
+export class StreamingApi {
+  private writer: WritableStreamDefaultWriter<Uint8Array>
+  private encoder: TextEncoder
+  private writable: WritableStream
+  private abortSubscribers: (() => void | Promise<void>)[] = []
+  responseReadable: ReadableStream
 
-  // Bun 互換性対応
-  if (isOldBunVersion()) {
-    c.req.raw.signal.addEventListener('abort', () => {
-      if (!stream.closed) {
-        stream.abort()
-      }
+  constructor(writable: WritableStream, _readable: ReadableStream) {
+    this.writable = writable
+    this.writer = writable.getWriter()
+    this.encoder = new TextEncoder()
+
+    const reader = _readable.getReader()
+
+    // クライアント切断時に reader をキャンセルし、
+    // writeSSE が無限にブロックされるのを防ぐ
+    this.abortSubscribers.push(async () => {
+      await reader.cancel()
+    })
+
+    this.responseReadable = new ReadableStream({
+      async pull(controller) {
+        const { done, value } = await reader.read()
+        done ? controller.close() : controller.enqueue(value)
+      },
+      cancel: () => {
+        this.abort()
+      },
     })
   }
-
-  // Bun では Response 返却後に Context が破棄されるため WeakMap で保持
-  contextStash.set(stream.responseReadable, c)
-  ;(async () => {
-    try {
-      await cb(stream)
-    } catch (e) {
-      if (e === undefined) {
-        // ReadableStream のキャンセルで pipeTo が undefined で reject する場合
-      } else if (e instanceof Error && onError) {
-        await onError(e, stream)
-      } else {
-        console.error(e)
-      }
-    } finally {
-      stream.close()
-    }
-  })()
-
-  return c.newResponse(stream.responseReadable)
-}
 ```
 
-ポイントは 3 つある:
-1. **即時 Response 返却**: IIFE で非同期処理を起動し、`stream.responseReadable` を即座に Response として返す
-2. **finally での確実なクローズ**: コールバックの成否に関わらず `stream.close()` が呼ばれる
-3. **undefined 例外の無視**: `stream.abort()` 経由で `pipeTo` が undefined で reject するケースを正しくハンドリングする
-
-### SSE プロトコルの正確な実装
-
-`SSEStreamingApi` は `StreamingApi` を継承し、SSE フォーマットの `writeSSE` メソッドを追加する。
+### SSE メッセージフォーマットの組み立て
 
 ```typescript
 // src/helper/streaming/sse.ts:18-38
@@ -133,204 +121,50 @@ async writeSSE(message: SSEMessage) {
 }
 ```
 
-注目すべき点:
-- **改行コードの正規化**: `\r\n` / `\r` / `\n` すべてを正しく `data:` プレフィックス付き複数行に変換
-- **SSE フィールド順序**: event → data → id → retry の順で出力
-- **JSX サポート**: `resolveCallback` を通すことで、`data` フィールドに JSX 要素や `Promise<string>` を直接渡せる
-- **エラー時のイベント送信**: `onError` ハンドラ実行後に `event: error` を SSE で送信する
-
-`streamSSE` は SSE に必要な 4 つのヘッダーを自動設定する:
+### stream() ヘルパーのライフサイクル管理
 
 ```typescript
-// src/helper/streaming/sse.ts:86-89
-c.header('Transfer-Encoding', 'chunked')
-c.header('Content-Type', 'text/event-stream')
-c.header('Cache-Control', 'no-cache')
-c.header('Connection', 'keep-alive')
-```
-
-### JSX Out-of-Order Streaming
-
-`Suspense` コンポーネントと `renderToReadableStream` の組み合わせで、React-like な Out-of-Order Streaming を実現する。
-
-1. **初回チャンク**: fallback HTML + `<template id="H:N">` プレースホルダーを送信
-2. **解決後チャンク**: 実コンテンツを `<template data-hono-target="H:N">` に格納し、インラインスクリプトでプレースホルダーを置換
-
-```typescript
-// src/jsx/streaming.ts:86-113
-// fallback + placeholder を返却
-return raw(`<template id="H:${index}"></template>${fallbackStr}<!--/$-->`, [
-  ...(fallbackStr.callbacks || []),
-  ({ phase, buffer, context }) => {
-    if (phase === HtmlEscapedCallbackPhase.BeforeStream) {
-      return
-    }
-    return Promise.all(resArray).then(async (htmlArray) => {
-      // ... 解決後の HTML を生成
-      let html = buffer
-        ? ''
-        : `<template data-hono-target="H:${index}">${content}</template><script${
-            nonce ? ` nonce="${nonce}"` : ''
-          }>
-((d,c,n) => {
-c=d.currentScript.previousSibling
-d=d.getElementById('H:${index}')
-if(!d)return
-do{n=d.nextSibling;n.remove()}while(n.nodeType!=8||n.nodeValue!='/$')
-d.replaceWith(c.content)
-})(document)
-</script>`
-      // ...
-    })
-  },
-])
-```
-
-インラインスクリプトは最小限（約 150 バイト）で、DOM 操作のみを行う:
-1. `<template>` からコンテンツを取得
-2. 対応する placeholder を ID で検索
-3. placeholder からコメントノード `<!--/$-->` までを削除
-4. `<template>` のコンテンツで置換
-
-### ランタイム互換性レイヤー
-
-Bun v1.1.27 未満では `ReadableStream` の `cancel()` が正しく呼ばれない問題があり、`AbortSignal` で代替する。
-
-```typescript
-// src/helper/streaming/utils.ts:1-11
-export let isOldBunVersion = (): boolean => {
-  const version: string = typeof Bun !== 'undefined' ? Bun.version : undefined
-  if (version === undefined) {
-    return false
-  }
-  const result = version.startsWith('1.1') || version.startsWith('1.0') || version.startsWith('0.')
-  // 毎回チェックを避けるため関数自体を結果で上書き
-  isOldBunVersion = () => result
-  return result
-}
-```
-
-自己書き換えパターン（memoization by self-replacement）により、初回呼び出し後はバージョンチェックのコストがゼロになる。
-
-### 圧縮ミドルウェアとの連携
-
-`src/utils/compress.ts` の `COMPRESSIBLE_CONTENT_TYPE_REGEX` は `text/event-stream` を明示的に除外している。SSE ストリームは圧縮するとバッファリングが発生し、リアルタイム性が損なわれるため、これは正しい設計判断。
-
-### Context の WeakMap 保持
-
-Bun では `Response` を返した時点で `Context` オブジェクトが GC される可能性がある。`contextStash` (WeakMap) で `ReadableStream` をキーに `Context` を保持することで、ストリーミング完了まで Context が生存することを保証する。
-
-```typescript
-// src/helper/streaming/stream.ts:5
-const contextStash: WeakMap<ReadableStream, Context> = new WeakMap<ReadableStream, Context>()
-
-// src/helper/streaming/stream.ts:25
-contextStash.set(stream.responseReadable, c)
-```
-
-`WeakMap` を使うことで、ストリーミング完了後は `ReadableStream` と共に自然に GC される。
-
-## コード例
-
-### 基本的な stream ヘルパーの使用
-
-```typescript
-// src/helper/streaming/stream.test.ts:12-17
-const res = stream(c, async (stream) => {
-  for (let i = 0; i < 3; i++) {
-    await stream.write(new Uint8Array([i]))
-    await stream.sleep(1)
-  }
-})
-```
-
-### SSE ストリーミングの使用
-
-```typescript
-// src/helper/streaming/sse.test.tsx:15-25
-const res = streamSSE(c, async (stream) => {
-  let id = 0
-  const maxIterations = 5
-
-  while (id < maxIterations) {
-    const message = `Message\nIt is ${id}`
-    await stream.writeSSE({ data: message, event: 'time-update', id: String(id++) })
-    await stream.sleep(10)
-  }
-})
-```
-
-### Suspense + renderToReadableStream
-
-```typescript
-// src/jsx/streaming.test.tsx:22-36
-const Content = () => {
-  const content = new Promise<HtmlEscapedString>((resolve) =>
-    setTimeout(() => resolve(<h1>Hello</h1>), 10)
-  )
-  return content
-}
-
-const stream = renderToReadableStream(
-  <Suspense fallback={<p>Loading...</p>}>
-    <Content />
-  </Suspense>
-)
-```
-
-### クライアント切断のハンドリング
-
-```typescript
-// src/helper/streaming/stream.test.ts:28-47
-const res = stream(c, async (stream) => {
-  stream.onAbort(() => {
-    aborted = true
-  })
-  for (let i = 0; i < 3; i++) {
-    await stream.write(new Uint8Array([i]))
-    await stream.sleep(1)
-  }
-})
-// reader.cancel() でクライアント切断をシミュレート
-```
-
-### JSX Renderer ミドルウェアでのストリーミング有効化
-
-```typescript
-// src/middleware/jsx-renderer/index.ts:60-73
-if (options?.stream) {
-  if (options.stream === true) {
-    c.header('Transfer-Encoding', 'chunked')
-    c.header('Content-Type', 'text/html; charset=UTF-8')
-    c.header('Content-Encoding', 'Identity')
-  } else {
-    for (const [key, value] of Object.entries(options.stream)) {
-      c.header(key, value)
-    }
-  }
-  return c.body(renderToReadableStream(body))
-}
-```
-
-## Good Patterns
-
-- **階層化された抽象**: 低レベル `StreamingApi` → ヘルパー関数 → JSX ストリーミングの 3 層構造。各層が明確な責務を持ち、上位層は下位層を組み合わせて機能を構築する。`streamText` が `stream` を呼び、`stream` が `StreamingApi` を使う、という委譲チェーンが簡潔。
-
-```typescript
-// src/helper/streaming/text.ts:6-15
-export const streamText = (
+// src/helper/streaming/stream.ts:7-45
+export const stream = (
   c: Context,
   cb: (stream: StreamingApi) => Promise<void>,
   onError?: (e: Error, stream: StreamingApi) => Promise<void>
 ): Response => {
-  c.header('Content-Type', TEXT_PLAIN)
-  c.header('X-Content-Type-Options', 'nosniff')
-  c.header('Transfer-Encoding', 'chunked')
-  return stream(c, cb, onError)
+  const { readable, writable } = new TransformStream()
+  const stream = new StreamingApi(writable, readable)
+
+  // Bun 旧バージョンの cancel() 未呼び出し問題への対策
+  if (isOldBunVersion()) {
+    c.req.raw.signal.addEventListener('abort', () => {
+      if (!stream.closed) {
+        stream.abort()
+      }
+    })
+  }
+
+  // Bun で Context が GC されるのを防ぐ
+  contextStash.set(stream.responseReadable, c)
+  ;(async () => {
+    try {
+      await cb(stream)
+    } catch (e) {
+      if (e === undefined) {
+        // StreamingApi による読み取りキャンセル時は何もしない
+      } else if (e instanceof Error && onError) {
+        await onError(e, stream)
+      } else {
+        console.error(e)
+      }
+    } finally {
+      stream.close()
+    }
+  })()
+
+  return c.newResponse(stream.responseReadable)
 }
 ```
 
-- **自己書き換えによる遅延メモ化**: `isOldBunVersion` は初回呼び出し時にバージョンチェックを行い、関数自体を結果を返すだけの関数に置き換える。条件分岐のコストを初回のみに限定する巧妙なパターン。
+### ランタイム判定のメモ化パターン
 
 ```typescript
 // src/helper/streaming/utils.ts:1-11
@@ -340,26 +174,37 @@ export let isOldBunVersion = (): boolean => {
     return false
   }
   const result = version.startsWith('1.1') || version.startsWith('1.0') || version.startsWith('0.')
+  // 2回目以降のチェックを回避するため関数自体を結果で上書き
   isOldBunVersion = () => result
   return result
 }
 ```
 
-- **WeakMap によるライフサイクル管理**: `ReadableStream` をキーにした WeakMap で Context を保持し、ストリーミング完了後に自然に GC される。明示的な cleanup コードが不要で、メモリリークのリスクがない。
+## パターンカタログ
+
+- **Adapter パターン** (分類: 構造)
+  - 解決する問題: Web Standard の ReadableStream (pull 型) をサーバーサイドで直感的に使えるようにする
+  - 適用条件: push 型の書き込みインターフェースが必要なストリーミング応答
+  - コード例: `src/utils/stream.ts:6-96` — `StreamingApi` が `TransformStream` を仲介し、`write()` / `close()` という命令的 API を提供
+  - 注意点: 内部で `TransformStream` を1つ追加するため、バッファリングが1段増える
+
+- **Template Method パターン** (分類: 振る舞い)
+  - 解決する問題: ストリーミング応答のライフサイクル（open → write → error handling → close）を統一する
+  - 適用条件: 異なる種類のストリーミング（raw / text / SSE）で共通のライフサイクル管理が必要
+  - コード例: `src/helper/streaming/stream.ts:7-45` の `stream()` が骨格を定義し、`text.ts:6-15` の `streamText()` と `sse.ts:66-94` の `streamSSE()` がヘッダー設定等を特殊化
+  - 注意点: SSE は `run()` を別関数に切り出しており、厳密な Template Method ではなく変形適用
+
+- **Observer パターン** (分類: 振る舞い)
+  - 解決する問題: クライアント切断をストリーミングロジック内で検知する
+  - 適用条件: ストリーム中断時にリソース解放やログ出力が必要
+  - コード例: `src/utils/stream.ts:82-95` — `onAbort()` でリスナーを登録し、`abort()` で全リスナーを一斉通知
+  - 注意点: `abort()` は冪等（2回目以降は何もしない）に実装されている
+
+## Good Patterns
+
+- **Fail-Silent Write**: `StreamingApi.write()` と `close()` は内部例外を `catch` で握りつぶし、クライアント切断時にアプリケーションコードが中断しないようにしている。エラーが必要な場合は `onError` コールバックという明示的な経路が用意されている。
 
 ```typescript
-// src/helper/streaming/stream.ts:5
-const contextStash: WeakMap<ReadableStream, Context> = new WeakMap<ReadableStream, Context>()
-```
-
-- **最小インラインスクリプトによる DOM 置換**: Suspense の Out-of-Order Streaming で使われるインラインスクリプトは約 150 バイトに収まり、外部ライブラリへの依存がない。`document.getElementById` と DOM 走査のみで置換を完結させる。
-
-## Anti-Patterns / 注意点
-
-- **write エラーの暗黙的な無視**: `StreamingApi.write()` は例外を catch して何もしない。書き込み失敗を検知したい場合、利用者は自前で `ReadableStream` を構築する必要がある。
-
-```typescript
-// Bad: エラーが silent に握りつぶされる
 // src/utils/stream.ts:46-56
 async write(input: Uint8Array | string): Promise<StreamingApi> {
   try {
@@ -374,46 +219,108 @@ async write(input: Uint8Array | string): Promise<StreamingApi> {
 }
 ```
 
+- **Self-Replacing Function（自己書き換え関数）によるメモ化**: `isOldBunVersion()` は初回呼び出し時に判定結果を計算した後、関数自体を結果を返すだけの関数に置き換える。条件分岐のコストをゼロにしつつ、グローバル変数を避けたエレガントな手法。
+
 ```typescript
-// Better: エラーハンドリングが必要な場合は自前のストリームを使う
-const { readable, writable } = new TransformStream()
-const writer = writable.getWriter()
-try {
-  await writer.write(encoder.encode(data))
-} catch (e) {
-  // 明示的にエラーを処理する
-  logger.error('Stream write failed', e)
+// src/helper/streaming/utils.ts:1-11
+export let isOldBunVersion = (): boolean => {
+  // ... 判定ロジック ...
+  isOldBunVersion = () => result  // 関数自体を結果で上書き
+  return result
 }
 ```
 
-- **SSE の Content-Type 圧縮除外を見落とす可能性**: `text/event-stream` を圧縮から除外する処理は `compress.ts` の正規表現に埋め込まれている。カスタム圧縮ミドルウェアを作る際にこの除外を忘れると、SSE がバッファリングされてリアルタイム性が失われる。
+- **WeakMap による GC セーフな参照保持**: `contextStash` は `WeakMap<ReadableStream, Context>` で実装されており、ストリーミング完了後に `ReadableStream` が GC されれば `Context` も自動で解放される。明示的な cleanup コードが不要。
 
 ```typescript
-// Bad: カスタム圧縮で text/event-stream を除外し忘れる
-app.use('*', async (c, next) => {
-  await next()
-  // 全レスポンスを圧縮 → SSE が壊れる
-  c.res = new Response(c.res.body?.pipeThrough(new CompressionStream('gzip')))
+// src/helper/streaming/stream.ts:5
+const contextStash: WeakMap<ReadableStream, Context> = new WeakMap<ReadableStream, Context>()
+// ...
+contextStash.set(stream.responseReadable, c)
+```
+
+- **SSE の data フィールド改行処理**: SSE 仕様ではデータ内の改行は `data:` プレフィックスを繰り返す必要がある。`/\r\n|\r|\n/` で3種類の改行コードすべてを正しく分割し、仕様準拠のメッセージを生成している。
+
+```typescript
+// src/helper/streaming/sse.ts:20-25
+const dataLines = (data as string)
+  .split(/\r\n|\r|\n/)
+  .map((line) => {
+    return `data: ${line}`
+  })
+  .join('\n')
+```
+
+## Anti-Patterns / 注意点
+
+- **ストリーミング応答への ETag / 圧縮ミドルウェア適用**: ETag ミドルウェアはレスポンスボディ全体のハッシュを計算するため、ストリーミング応答のバッファリングを引き起こす。Hono の圧縮正規表現は `text/event-stream` を明示的に除外している（`src/utils/compress.ts:10`）が、ETag はユーザーが適用範囲を制御する必要がある。
+
+```typescript
+// Bad: SSE エンドポイントに ETag を適用
+app.use('/*', etag())
+app.get('/events', (c) => {
+  return streamSSE(c, async (stream) => { /* ... */ })
+})
+
+// Better: SSE エンドポイントを ETag の適用範囲から除外
+app.use('/api/*', etag())
+app.get('/events', (c) => {
+  return streamSSE(c, async (stream) => { /* ... */ })
 })
 ```
 
+- **onError コールバックなしでの例外無視**: `stream()` / `streamSSE()` に `onError` を渡さない場合、エラーは `console.error` に出力されるだけで、クライアントにはエラーが通知されない。特に SSE では `onError` で `event: error` を送信する設計になっているため、省略するとクライアント側のエラーハンドリングが機能しない。
+
 ```typescript
-// Better: SSE のContent-Type を確認して除外する
-app.use('*', async (c, next) => {
-  await next()
-  const contentType = c.res.headers.get('Content-Type')
-  if (contentType?.includes('text/event-stream')) return
-  // 圧縮処理
+// Bad: onError を省略
+streamSSE(c, async (stream) => {
+  const data = await fetchExternalAPI() // 例外が発生しても握りつぶされる
+  await stream.writeSSE({ data })
+})
+
+// Better: onError でクライアントにエラーを通知
+streamSSE(c, async (stream) => {
+  const data = await fetchExternalAPI()
+  await stream.writeSSE({ data })
+}, async (err, stream) => {
+  await stream.writeSSE({ event: 'error', data: err.message })
 })
 ```
 
-- **Suspense の suspenseCounter がグローバル**: `suspenseCounter` はモジュールレベルのグローバル変数であり、リクエスト間で共有される。サーバーレス環境では問題にならないが、長寿命プロセスではカウンタが増加し続ける。ただし ID の一意性が目的であるため、実用上は問題にならない。
+## 導出ルール
 
-## 自分のプロジェクトへの適用
+- `[MUST]` ストリーミング応答は Web Standard API（ReadableStream / TransformStream）のみで実装し、ランタイム固有の Stream API に依存しない
+  - 根拠: Hono は全ストリーミング実装を Web Standards で統一し、Cloudflare Workers・Deno・Bun・Node.js で同一コードを動作させている（`src/utils/stream.ts` 全体）
 
-- [ ] `stream` / `streamText` / `streamSSE` の 3 種のヘルパーを参考に、用途別のストリーミングヘルパーを設計する（汎用 → テキスト → SSE の階層化パターン）
-- [ ] `TransformStream` + `ReadableStream` ラッパーによる読み書き分離パターンを、自前のストリーミング実装に適用する
-- [ ] SSE 実装時は改行コード正規化（`\r\n` / `\r` / `\n`）を忘れずに処理する
-- [ ] Out-of-Order Streaming が必要な場合、Hono の `Suspense` のプレースホルダー + インラインスクリプト置換パターンを参考にする
-- [ ] ストリーミングレスポンスの Context 保持に WeakMap を使い、明示的 cleanup を不要にするパターンを取り入れる
-- [ ] クライアント切断検知には `ReadableStream.cancel` と `AbortSignal` の両方を対応させ、ランタイム差異を吸収する
+- `[MUST]` SSE レスポンスには `Content-Type: text/event-stream`, `Cache-Control: no-cache`, `Connection: keep-alive`, `Transfer-Encoding: chunked` の4ヘッダーを設定する
+  - 根拠: `streamSSE()` が毎回これら4ヘッダーを明示的に設定しており、テストでも検証されている（`src/helper/streaming/sse.ts:86-89`）
+
+- `[MUST]` SSE の data フィールド内の改行は `\r\n` / `\r` / `\n` のすべてを `data:` プレフィックス付き複数行に変換する
+  - 根拠: SSE 仕様（EventSource）では改行はメッセージ区切りと解釈されるため、data 内の改行は `data:` を繰り返す必要がある（`src/helper/streaming/sse.ts:20-25`）
+
+- `[SHOULD]` Push 型ストリーミングが必要な場合、TransformStream を仲介して WritableStream 側に書き込む設計にする
+  - 根拠: ReadableStream の `pull()` コールバック内で非同期データを待つよりも、TransformStream の writable 側に `write()` する方がサーバーサイドのユースケースに自然に合致する（`src/utils/stream.ts:21-44`）
+
+- `[SHOULD]` ストリーミング API の `write()` / `close()` は例外を内部で吸収し、エラーハンドリングは専用のコールバック経路で提供する
+  - 根拠: クライアント切断は正常系の一部であり、`write()` が例外を投げるとアプリケーションコードに不要な try-catch が必要になる（`src/utils/stream.ts:46-56`）
+
+- `[SHOULD]` ランタイム差異の検出結果はメモ化（Self-Replacing Function 等）してホットパスのコストをゼロにする
+  - 根拠: `isOldBunVersion()` は初回呼び出し後に関数自体を結果で上書きし、以降のオーバーヘッドを排除している（`src/helper/streaming/utils.ts:9`）
+
+- `[SHOULD]` GC されるべきオブジェクトへの一時的な参照保持には `WeakMap` を使い、ストリーム完了後の自動解放を保証する
+  - 根拠: `contextStash` が `WeakMap<ReadableStream, Context>` で実装され、ストリーミング完了後のメモリリークを防止している（`src/helper/streaming/stream.ts:5`）
+
+- `[AVOID]` ストリーミング応答に ETag・圧縮などボディ全体を必要とするミドルウェアを適用する
+  - 根拠: Hono の圧縮正規表現は `text/event-stream` を明示的に除外しており、ストリーミングとバッファリング系ミドルウェアの非互換性が設計レベルで認識されている（`src/utils/compress.ts:10`）
+
+## 適用チェックリスト
+
+- [ ] ストリーミング応答の実装に Web Standard API（ReadableStream / TransformStream）を使用しているか
+- [ ] SSE エンドポイントに必要な4ヘッダー（Content-Type, Cache-Control, Connection, Transfer-Encoding）を設定しているか
+- [ ] SSE の data フィールド内の改行コード（CR, LF, CRLF）を正しく処理しているか
+- [ ] ストリームの `write()` / `close()` がクライアント切断時に例外を投げないようになっているか
+- [ ] クライアント切断を検知して未完了の処理（DB 接続、外部 API 呼び出し等）をキャンセルする仕組みがあるか（`onAbort` 相当）
+- [ ] ストリーミングヘルパーの `onError` コールバックを実装し、エラーをクライアントに通知しているか
+- [ ] ストリーミング応答が ETag・圧縮ミドルウェアの適用範囲から除外されているか
+- [ ] ランタイム差異（Bun / Deno / Node.js の挙動の違い）を吸収する仕組みが内部に閉じ込められているか
+- [ ] 一時的なオブジェクト参照の保持に `WeakMap` を使い、ストリーム完了後のメモリリークを防いでいるか

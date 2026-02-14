@@ -5,46 +5,91 @@
 
 ## 概要
 
-Hono はルーティング速度、バンドルサイズ、型チェック速度の3軸でパフォーマンスを設計・計測している。5種のルーターを目的別に使い分ける戦略、ミドルウェアチェーンの最適化、遅延初期化による不要コスト回避など、多層的なパフォーマンス戦略が注目に値する。CI でバンドルサイズと HTTP スループットの回帰を PR ごとに自動検出する仕組みも実用的。
+Hono のルーター性能最適化・正規表現コンパイル戦略・ベンチマーク基盤を分析する。Hono は 5 種類のルーターを持ち、それぞれ登録時コスト・マッチ時コスト・対応パターンの制約が異なる。中核の `RegExpRouter` は全ルートを単一の正規表現にコンパイルし、O(1) に近いマッチング性能を実現する。ルーター選択を自動化する `SmartRouter` や、リクエストディスパッチ時の単一ハンドラ最適化など、フレームワーク全体で多層的な性能チューニングが施されている。
+
+## 設計思想
+
+- **「ルーティングのコストをビルド時に移す」原則**: `RegExpRouter` は全ルートを Trie 構造に挿入し、最終的に単一の正規表現にコンパイルする。マッチング時は 1 回の `RegExp.exec()` でルート特定とパラメータ抽出を同時に行う。ランタイムコストを初回ビルド時に前払いし、リクエストごとの計算を最小化する設計。根拠: `src/router/reg-exp-router/trie.ts:49-73` の `buildRegExp()` が単一の RegExp を生成する。
+
+- **「静的ルートはハッシュマップで O(1) にする」原則**: 動的パラメータを含まないルートは `StaticMap`（`Object.create(null)` で生成したプロトタイプなしオブジェクト）に格納し、正規表現マッチの前にハッシュマップ参照で即座に返す。全ルートが静的の場合、正規表現は一切実行されない。根拠: `src/router/reg-exp-router/matcher.ts:17-19` で `staticMatch` を先に確認する。
+
+- **「ルーター選択は自動化し、ユーザーに判断させない」原則**: `SmartRouter` は初回マッチ時に登録済みルーターを優先度順に試行し、成功したルーターに `match` メソッドをバインドする。以降のリクエストはフォールバック不要。ユーザーがルーターの特性を理解する必要なく最適なルーターが選ばれる。根拠: `src/router/smart-router/router.ts:46` で `this.match = router.match.bind(router)` と置換する。
+
+- **「プロトタイプチェーンを排除する」原則**: ルーター全体で `Object.create(null)` を一貫して使用し、プロトタイプチェーン探索のオーバーヘッドを排除する。ルーター内部のハッシュマップ、パラメータオブジェクト、静的マップすべてで適用されている。根拠: `src/router` 配下で 19 箇所使用されている。
 
 ## 設計・実装の詳細
 
-### 5種ルーターによるトレードオフの明示的分離
+### 5 つのルーターの性能特性
 
-Hono は単一の「最適解」を提供するのではなく、ルーティングアルゴリズムごとに独立したルーターを実装し、ユースケースに応じた選択を可能にしている。
+| ルーター | 登録コスト | マッチコスト | 制約 | 用途 |
+|---|---|---|---|---|
+| RegExpRouter | O(n) ビルド | O(1) 相当 | パスパターンの競合で UnsupportedPathError | デフォルト・高性能 |
+| TrieRouter | O(k) | O(k) | 制約なし | RegExpRouter のフォールバック |
+| LinearRouter | O(1) | O(n) | ラベル+ワイルドカード混在不可 | 起動速度重視（quick プリセット） |
+| PatternRouter | O(1) | O(n) | 制約なし | 最小バンドルサイズ（tiny プリセット） |
+| PreparedRegExpRouter | O(1) | O(1) 相当 | ビルド済み正規表現が必要 | AOT コンパイル |
 
-| ルーター | 戦略 | 特徴 |
-|---|---|---|
-| RegExpRouter | 全ルートを1つの正規表現に合成 | マッチング最速、初期化コスト高 |
-| TrieRouter | Trie 木による逐次マッチング | バランス型、RegExpRouter の fallback |
-| LinearRouter | 線形探索（正規表現なし） | 初期化最速、少ルート向き |
-| PatternRouter | ルートごとに正規表現を生成 | 最小バンドルサイズ |
-| SmartRouter | 複数ルーターを試行し最適を自動選択 | ユーザーが意識不要 |
+### RegExpRouter の正規表現コンパイル戦略
 
-デフォルトの `Hono` クラスは `SmartRouter + RegExpRouter + TrieRouter` の組み合わせ。RegExpRouter が対応できないパスパターン（同一セグメントに複数パラメータ等）は `UnsupportedPathError` で fallback する。
+RegExpRouter は以下の 3 段階で単一正規表現を構築する:
+
+1. **トークン化** (`trie.ts:33`): パスを文字単位・パラメータ単位・ワイルドカード単位のトークンに分解する
+2. **Trie 構築** (`node.ts:50-133`): トークンを Trie に挿入し、共通接頭辞を共有する。ノードの子キーはリテラル > カスタムパターン > `:label` > ワイルドカードの優先度でソートされる
+3. **正規表現生成** (`node.ts:135-162`, `trie.ts:49-73`): Trie を再帰的に走査し、ハンドラインデックスを `#N` マーカー、パラメータキャプチャを `@N` マーカーとして埋め込んだ正規表現文字列を構築する。最後にマーカーを空キャプチャグループ `$()` に置換し、`match.indexOf('', 1)` でマッチしたルートを O(1) で特定する
+
+### マッチ時の空文字列インデックス技法
+
+`matcher.ts:27` の `match.indexOf('', 1)` は、正規表現マッチ結果の中で最初に空文字列が出現するキャプチャグループのインデックスを返す。各ルートに対応するキャプチャグループが 1 つだけ空文字列をキャプチャするよう正規表現が設計されており、ルートの識別を `indexOf` 一発で実現する。
+
+### SmartRouter の遅延選択メカニズム
+
+`SmartRouter` はコンストラクタで複数のルーターを受け取り、`add()` ではルート情報を配列に蓄積するだけで実際のルーター構築を行わない。初回 `match()` 呼び出し時に各ルーターへの登録を試行し、`UnsupportedPathError` を投げないルーターを選択する。選択後は `this.match` を選択されたルーターの `match` に直接バインドし、以降の呼び出しで SmartRouter のコードは一切実行されない。
+
+### リクエストディスパッチの単一ハンドラ最適化
+
+`hono-base.ts:424-442` で、マッチ結果にハンドラが 1 つしかない場合は `compose()` を呼ばず直接ハンドラを実行する。ミドルウェアなしの単純なルートでは async 関数のラッピングオーバーヘッドを回避する。
+
+### URL パースの charCode 最適化
+
+`utils/url.ts:106-134` の `getPath()` は、URL からパスを抽出する際に `charCodeAt()` を使った文字単位のループで `%`（パーセントエンコーディング）と `?`（クエリ文字列）を検出する。`indexOf()` + `slice()` やRegExp より高速であることがベンチマーク (`benchmarks/utils/src/get-path.ts`) で確認されており、パーセントエンコーディングを含まない（大多数の）リクエストでは `decodeURI` の呼び出しを完全にスキップする。
+
+### バンドルサイズ計測基盤
+
+`perf-measures/bundle-check/` で esbuild によるミニファイ済みバンドルサイズを CI で計測している。ゼロ依存ポリシーと合わせて、バンドルサイズのリグレッションを検知する仕組みが整っている。
+
+## コード例
+
+### 単一正規表現の生成（Trie から RegExp へ）
 
 ```typescript
-// src/hono.ts:28-33
-this.router =
-  options.router ??
-  new SmartRouter({
-    routers: [new RegExpRouter(), new TrieRouter()],
+// src/router/reg-exp-router/trie.ts:49-73
+buildRegExp(): [RegExp, ReplacementMap, ReplacementMap] {
+  let regexp = this.#root.buildRegExpStr()
+  if (regexp === '') {
+    return [/^$/, [], []] // never match
+  }
+
+  let captureIndex = 0
+  const indexReplacementMap: ReplacementMap = []
+  const paramReplacementMap: ReplacementMap = []
+
+  regexp = regexp.replace(/#(\d+)|@(\d+)|\.\*\$/g, (_, handlerIndex, paramIndex) => {
+    if (handlerIndex !== undefined) {
+      indexReplacementMap[++captureIndex] = Number(handlerIndex)
+      return '$()'  // 空文字列をキャプチャするグループ
+    }
+    if (paramIndex !== undefined) {
+      paramReplacementMap[Number(paramIndex)] = ++captureIndex
+      return ''
+    }
+    return ''
   })
-```
 
-プリセットによりバンドルサイズを最適化するエントリポイントも提供される。
-
-```typescript
-// src/preset/tiny.ts:17-19 — バンドルサイズ最小構成
-constructor(options: HonoOptions<E> = {}) {
-  super(options)
-  this.router = new PatternRouter()
+  return [new RegExp(`^${regexp}`), indexReplacementMap, paramReplacementMap]
 }
 ```
 
-### RegExpRouter: 全ルートを1つの正規表現に合成
-
-RegExpRouter の核心は Trie 構造でルートパスをマージし、単一の正規表現を生成する点にある。`match()` の初回呼び出し時に `buildAllMatchers()` が発火し、以後は `this.match` を直接置き換えることで初期化コストを1回に抑えている。
+### 静的ルートの O(1) 参照とフォールバック
 
 ```typescript
 // src/router/reg-exp-router/matcher.ts:10-33
@@ -54,41 +99,60 @@ export function match<R extends Router<T>, T>(this: R, method: string, path: str
   const match = ((method, path) => {
     const matcher = (matchers[method] || matchers[METHOD_NAME_ALL]) as Matcher<T>
 
-    const staticMatch = matcher[2][path]
+    const staticMatch = matcher[2][path]  // ハッシュマップで O(1) 参照
     if (staticMatch) {
-      return staticMatch  // 静的ルートは O(1) ハッシュマップ参照
+      return staticMatch
     }
 
-    const match = path.match(matcher[0])  // 単一正規表現でマッチ
+    const match = path.match(matcher[0])  // 正規表現にフォールバック
     if (!match) {
       return [[], emptyParam]
     }
 
-    const index = match.indexOf('', 1)  // 空キャプチャの位置でルートを特定
+    const index = match.indexOf('', 1)  // 空文字列インデックスでルート特定
     return [matcher[1][index], match]
   }) as Router<T>['match']
 
-  this.match = match  // 関数自身を置き換え、以降は初期化不要
+  this.match = match  // 初回以降は buildAllMatchers をスキップ
   return match(method, path)
 }
 ```
 
-静的ルートは `StaticMap`（ハッシュマップ）で O(1) マッチ、動的ルートは1回の `RegExp.exec()` で O(1) マッチ。ルート数が増えても計算量が増加しないのが最大の強み。
-
-### SmartRouter: 初回マッチでルーター決定、以後バイパス
-
-SmartRouter は初回の `match()` 呼び出し時にルーター候補を順に試し、成功したルーターの `match` を直接バインドする。2回目以降はSmartRouter の分岐ロジックを完全にスキップする。
+### SmartRouter の遅延ルーター選択
 
 ```typescript
-// src/router/smart-router/router.ts:46
-this.match = router.match.bind(router)  // 以降の呼び出しを直接ルーターに委譲
-this.#routers = [router]
-this.#routes = undefined  // ルート定義を GC 可能にする
+// src/router/smart-router/router.ts:21-49
+match(method: string, path: string): Result<T> {
+  const routers = this.#routers
+  const routes = this.#routes
+
+  const len = routers.length
+  let i = 0
+  let res
+  for (; i < len; i++) {
+    const router = routers[i]
+    try {
+      for (let i = 0, len = routes.length; i < len; i++) {
+        router.add(...routes[i])
+      }
+      res = router.match(method, path)
+    } catch (e) {
+      if (e instanceof UnsupportedPathError) {
+        continue  // 次のルーターを試行
+      }
+      throw e
+    }
+
+    this.match = router.match.bind(router)  // 直接バインドで以降のオーバーヘッド除去
+    this.#routers = [router]
+    this.#routes = undefined  // ルート情報を GC 対象に
+    break
+  }
+  // ...
+}
 ```
 
-### 単一ハンドラ最適化: compose をスキップ
-
-ミドルウェアなしのルートでは `compose()` を呼ばず、ハンドラを直接実行する。async/await のオーバーヘッドも回避し、同期的に返せる場合は Promise を生成しない。
+### 単一ハンドラ最適化
 
 ```typescript
 // src/hono-base.ts:423-442
@@ -110,119 +174,34 @@ if (matchResult[0].length === 1) {
             resolved || (c.finalized ? c.res : this.#notFoundHandler(c))
         )
         .catch((err: Error) => this.#handleError(err, c))
-    : (res ?? this.#notFoundHandler(c))  // 同期レスポンスは Promise を生成しない
+    : (res ?? this.#notFoundHandler(c))
 }
 ```
 
-### 遅延初期化パターン
+## パターンカタログ
 
-Context と HonoRequest は `??=` による遅延初期化を多用し、使われないプロパティのコストをゼロにしている。
+- **Strategy パターン** (分類: 振る舞い)
+  - 解決する問題: ルーティングアルゴリズムの切り替えを透過的に行う
+  - 適用条件: 共通インターフェース `Router<T>` を満たす複数のルーター実装が存在する
+  - コード例: `src/router/smart-router/router.ts:4-70`
+  - 注意点: SmartRouter は Strategy の選択を自動化し、かつ選択後に `this.match` を直接バインドすることで Strategy パターンの間接呼び出しオーバーヘッドを除去している。通常の Strategy パターンとは異なり、選択は不可逆
 
-```typescript
-// src/context.ts:357 — HonoRequest はアクセスされるまで生成しない
-get req(): HonoRequest<P, I['out']> {
-  this.#req ??= new HonoRequest(this.#rawRequest, this.#path, this.#matchResult)
-  return this.#req
-}
-
-// src/context.ts:544 — 変数ストアは初回 set() まで Map を生成しない
-set: Set<...> = (key: string, value: unknown) => {
-  this.#var ??= new Map()
-  this.#var.set(key, value)
-}
-```
-
-### URL パース最適化
-
-`getPath()` は `new URL()` を使わず、文字コードベースの手動パースで高速化している。パーセントエンコーディングが含まれない（大多数の）ケースで `decodeURI` を回避するファストパスを持つ。
-
-```typescript
-// src/utils/url.ts:106-134
-export const getPath = (request: Request): string => {
-  const url = request.url
-  const start = url.indexOf('/', url.indexOf(':') + 4)
-  let i = start
-  for (; i < url.length; i++) {
-    const charCode = url.charCodeAt(i)
-    if (charCode === 37) {  // '%' — エンコーディングあり: 遅いパスに分岐
-      const queryIndex = url.indexOf('?', i)
-      const hashIndex = url.indexOf('#', i)
-      // ...
-      return tryDecodeURI(path)
-    } else if (charCode === 63 || charCode === 35) {  // '?' or '#'
-      break
-    }
-  }
-  return url.slice(start, i)  // エンコーディングなし: slice のみ
-}
-```
-
-クエリパラメータの取得も同様に、キーにエンコーディングが含まれない場合は `URLSearchParams` を使わず手動で走査する最適化がある (`src/utils/url.ts:219-253`)。
-
-### Context.text() のファストパス
-
-ヘッダー未設定・ステータス未設定の最も一般的なケースでは、`new Response(text)` のみで返し、ヘッダーマージのオーバーヘッドを回避する。
-
-```typescript
-// src/context.ts:672-684
-text: TextRespond = (text, arg, headers) => {
-  return !this.#preparedHeaders && !this.#status && !arg && !headers && !this.finalized
-    ? (new Response(text) as ReturnType<TextRespond>)          // ファストパス
-    : (this.#newResponse(text, arg, setDefaultContentType(TEXT_PLAIN, headers)) as ReturnType<TextRespond>)
-}
-```
-
-### PreparedRegExpRouter: ビルドタイム最適化
-
-`PreparedRegExpRouter` はルートの正規表現をビルドタイムに事前合成し、`serializeInitParams()` で JavaScript コードとしてシリアライズできる。ランタイムの Trie 構築・正規表現コンパイルを完全にスキップでき、サーバーレス環境のコールドスタートを大幅に短縮する。
-
-```typescript
-// src/router/reg-exp-router/prepared-router.ts:95-97
-export const buildInitParams: (params: {
-  paths: string[]
-}) => ConstructorParameters<typeof PreparedRegExpRouter> = ({ paths }) => {
-```
-
-### CI によるパフォーマンス回帰検出
-
-PR ごとに3つの自動チェックが走る:
-
-1. **バンドルサイズ**: esbuild で minify 後のサイズを計測し、octocov で main ブランチと比較表示
-2. **型チェック速度**: 200 ルートのアプリを自動生成し、tsc と typescript-go の `--diagnostics` を計測
-3. **HTTP スループット**: bombardier で GET/POST の req/sec を計測し、main ブランチとの差分を PR コメントに投稿
-
-```yaml
-# .github/workflows/ci.yml:181-210
-perf-measures-check-on-pr:
-  name: 'Type & Bundle size Check on PR'
-  runs-on: ubuntu-latest
-  if: github.event_name == 'pull_request'
-  steps:
-    - uses: actions/checkout@v6
-    - uses: ./.github/actions/perf-measures
-      with:
-        target-ref: 'auto'
-
-http-benchmark-on-pr:
-  name: 'HTTP Speed Check on PR'
-  # ... bombardier を使った HTTP ベンチマーク
-```
-
-### Object.create(null) の一貫使用
-
-プロトタイプチェーン参照を排除するため、全ルーターのマップ構造に `Object.create(null)` を使用している。`src/` 配下で26箇所使用されており、`hasOwnProperty` チェック不要で微小ながら一貫した最適化。
+- **Flyweight パターン** (分類: 構造)
+  - 解決する問題: 静的ルート・空パラメータ等の共有可能オブジェクトの重複生成を防ぐ
+  - 適用条件: 同一内容のオブジェクトが繰り返し必要になる場合
+  - コード例: `src/router/reg-exp-router/matcher.ts:9` の `emptyParam`、`src/router/linear-router/router.ts:8` の `emptyParams`
+  - 注意点: 共有オブジェクトは不変でなければならない
 
 ## Good Patterns
 
-- **関数置き換えによるワンタイム初期化**: SmartRouter と RegExpRouter の `match()` は初回呼び出し後に自身を最適化された関数で置き換える。初期化判定の分岐コストが以降ゼロになる。Proxy や flag チェックよりシンプルで高速。
+- **自己書き換え関数（Self-modifying Function）**: `matcher.ts:31` で `this.match = match` とすることで、初回呼び出し後は `buildAllMatchers()` の分岐を完全に除去する。SmartRouter でも同じ手法を用いている。初期化コストとランタイムコストを明確に分離する優れたパターン。
 
 ```typescript
-// src/router/reg-exp-router/matcher.ts:31-32
-this.match = match  // 初回以降は buildAllMatchers() を経由しない
-return match(method, path)
+// src/router/reg-exp-router/matcher.ts:31
+this.match = match  // 2 回目以降は直接 match() が呼ばれる
 ```
 
-- **静的ルートの O(1) ハッシュマップルックアップ**: RegExpRouter はマッチャー構築時に静的ルートを `StaticMap` に分離し、正規表現マッチより前にハッシュマップ参照する。多くの API では静的ルート（`/health`, `/api/users` 等）がリクエストの大部分を占めるため、効果が大きい。
+- **静的ルートのファストパス**: 正規表現マッチの前にハッシュマップ参照で静的ルートを即座に返す。多くの Web アプリケーションで大半のルートが静的であるため、正規表現エンジンの起動コストを回避する実用的な最適化。
 
 ```typescript
 // src/router/reg-exp-router/matcher.ts:17-19
@@ -232,64 +211,95 @@ if (staticMatch) {
 }
 ```
 
-- **同期レスポンスでの Promise 回避**: `#dispatch` はハンドラの戻り値が Promise でない場合、`async/await` を経由せず直接返す。Web フレームワークで頻出する `c.text('OK')` のような単純なレスポンスで、不要な microtask を生成しない。
+- **空文字列インデックスによるルート識別**: 正規表現のキャプチャグループに空文字列 `$()` を埋め込み、`indexOf('', 1)` でマッチしたルートを特定する。ルート数に関係なく 1 回の正規表現マッチで完結するため、従来の「各ルートに正規表現を持つ」アプローチに対して劇的に高速。
 
 ```typescript
-// src/hono-base.ts:434-441
-return res instanceof Promise
-  ? res.then(...)
-  : (res ?? this.#notFoundHandler(c))
+// src/router/reg-exp-router/matcher.ts:27
+const index = match.indexOf('', 1)
+return [matcher[1][index], match]
 ```
 
-- **バンドルサイズを意識したプリセット分離**: `hono/tiny` (PatternRouter のみ) と `hono/quick` (SmartRouter + LinearRouter) を別エントリポイントにすることで、ツリーシェイキングで不要なルーターを除外可能。ユーザーにトレードオフを明示した上で選択させる設計。
+- **charCode ベースの URL パース**: `charCodeAt()` によるバイト比較で文字列操作を最小化し、パーセントエンコーディングを含まない（一般的な）ケースでは `decodeURI` を完全にスキップする。
+
+```typescript
+// src/utils/url.ts:110-133
+for (; i < url.length; i++) {
+  const charCode = url.charCodeAt(i)
+  if (charCode === 37) {  // '%' - パーセントエンコーディング検出
+    // ...即座にフォールバック
+  } else if (charCode === 63 || charCode === 35) {  // '?' or '#'
+    break
+  }
+}
+return url.slice(start, i)
+```
 
 ## Anti-Patterns / 注意点
 
-- **デフォルト Hono での不要な TrieRouter バンドル**: SmartRouter が RegExpRouter を選択した場合、TrieRouter のコードはバンドルに含まれるが実行されない。サイズが重要な環境では `new Hono({ router: new RegExpRouter() })` を明示するか、`hono/tiny` プリセットを使うべき。
+- **ルートごとに個別の正規表現を持つ**: PatternRouter (`src/router/pattern-router/router.ts:34-36`) はルート追加時に個別の `new RegExp()` を生成し、マッチ時に全ルートを線形走査する。ルート数が増えると性能が劣化する。バンドルサイズ最小化のトレードオフとして意図的に採用されているが、ルート数の多いアプリケーションでは避けるべき。
 
 ```typescript
-// Bad: デフォルトは TrieRouter も含む
-import { Hono } from 'hono'
-const app = new Hono()
+// Bad: ルートごとに正規表現を生成して線形走査（PatternRouter）
+this.#routes.push([
+  new RegExp(`^${parts.join('')}${endsWithWildcard ? '' : '/?$'}`),
+  method,
+  handler,
+])
 
-// Better: バンドルサイズが重要なら明示的にルーターを選択
-import { Hono } from 'hono'
-import { RegExpRouter } from 'hono/router/reg-exp-router'
-const app = new Hono({ router: new RegExpRouter() })
+// Better: 全ルートを単一正規表現にコンパイル（RegExpRouter）
+const [regexp, indexReplacementMap, paramReplacementMap] = trie.buildRegExp()
 ```
 
-- **SmartRouter の初回リクエストレイテンシ**: SmartRouter は初回 `match()` で全ルーターを順次試すため、コールドスタートが重要な環境（サーバーレス）では初回リクエストのレイテンシが増加する。`PreparedRegExpRouter` を使うか、ルーターを直接指定することで回避可能。
+- **正規表現キャッシュの無制限蓄積**: `wildcardRegExpCache` (`src/router/reg-exp-router/router.ts:19-28`) はワイルドカードパスの正規表現をキャッシュするが、`buildAllMatchers()` 完了後に `clearWildcardRegExpCache()` で明示的にクリアしている。キャッシュをクリアせずに放置するとメモリリークにつながる。
 
 ```typescript
-// Bad: サーバーレスでデフォルト SmartRouter
-const app = new Hono()
+// Bad: キャッシュを生成するだけでクリアしない
+let cache: Record<string, RegExp> = {}
+function buildRegExp(path: string): RegExp {
+  return (cache[path] ??= new RegExp(...))
+}
 
-// Better: コールドスタートを最小化
-import { PreparedRegExpRouter, buildInitParams } from 'hono/router/reg-exp-router'
-const params = buildInitParams({ paths: ['/api/users', '/api/users/:id'] })
-const app = new Hono({ router: new PreparedRegExpRouter(...params) })
+// Better: ビルド完了後にキャッシュを解放する
+protected buildAllMatchers(): MatcherMap<T> {
+  const matchers = // ... build
+  this.#middleware = this.#routes = undefined  // ルート情報解放
+  clearWildcardRegExpCache()  // キャッシュ解放
+  return matchers
+}
 ```
 
-- **compose のオーバーヘッド認識不足**: ミドルウェアを多数適用すると `compose()` の再帰的 `dispatch()` チェーンが深くなる。各 `dispatch` が `async` 関数であるため、ミドルウェア数に比例して microtask が生成される。パフォーマンスが重要なルートではミドルウェアの適用範囲を限定すべき。
+## 導出ルール
 
-```typescript
-// Bad: 全ルートに不要なミドルウェアを適用
-app.use('*', logger())
-app.use('*', cors())
-app.use('*', compress())
-app.get('/health', (c) => c.text('OK'))  // 3つのミドルウェア + compose
+> このセクションは必須。最低 3 個のルールを記載すること。synthesis-writer が rules.md 生成時に参照する。
 
-// Better: パスベースで必要なルートにのみ適用
-app.get('/health', (c) => c.text('OK'))  // 単一ハンドラ最適化が効く
-app.use('/api/*', logger(), cors())
-```
+- `[MUST]` ルーティングライブラリでは、静的ルートをハッシュマップで O(1) 参照するファストパスを設ける
+  - 根拠: Hono の RegExpRouter は `staticMap[path]` で正規表現を経由せずに即座に返しており、大半の Web アプリで静的ルートが多数を占めるため効果が大きい (`src/router/reg-exp-router/matcher.ts:17-19`)
 
-## 自分のプロジェクトへの適用
+- `[MUST]` 初期化コストの高い処理は初回呼び出し時に遅延実行し、結果をキャッシュまたは自己書き換えで以降の呼び出しから除去する
+  - 根拠: RegExpRouter の `match()` は初回で `buildAllMatchers()` を実行した後 `this.match` を上書きし、SmartRouter も同じ手法でルーター選択を 1 回限りにしている (`src/router/reg-exp-router/matcher.ts:31`, `src/router/smart-router/router.ts:46`)
 
-- [ ] ルーター選択の指針を確立する: デフォルト(SmartRouter)、サイズ重視(PatternRouter)、速度重視(RegExpRouter)、サーバーレス(PreparedRegExpRouter)
-- [ ] 関数置き換えパターンを、初期化コストが高い処理（DB接続、設定ロードなど）に適用する
-- [ ] CI にバンドルサイズチェックを導入し、PR ごとにサイズ回帰を検出する（esbuild + octocov の構成を参考にする）
-- [ ] HTTP ベンチマーク（bombardier 等）を CI に組み込み、パフォーマンス回帰をコメントで可視化する
-- [ ] 遅延初期化 (`??=`) を Context 相当のリクエストスコープオブジェクトに適用し、不要なオブジェクト生成を回避する
-- [ ] URL パースで `new URL()` を避け、文字コードベースの手動パースでホットパスを最適化する
-- [ ] プリセットパターン（tiny/quick）を参考に、ユーザーに最適化トレードオフを選択させるエントリポイント設計を検討する
+- `[SHOULD]` 性能特性の異なる複数のアルゴリズムを提供し、自動選択メカニズムでユーザーの選択負荷を排除する
+  - 根拠: SmartRouter は RegExpRouter を優先試行し、UnsupportedPathError 時に TrieRouter にフォールバックすることで、ユーザーがルーターの制約を意識せずに最適な性能を得られる (`src/router/smart-router/router.ts:32-49`)
+
+- `[SHOULD]` ホットパスでのオブジェクト生成では `Object.create(null)` を使い、プロトタイプチェーン探索を排除する
+  - 根拠: Hono のルーター実装全体で 19 箇所 `Object.create(null)` を使用し、`{}` によるプロトタイプ付きオブジェクトを避けている
+
+- `[SHOULD]` URL パースなどリクエストごとに実行される処理では、一般的なケース（パーセントエンコーディングなし等）を先に検出して高コストな変換をスキップする
+  - 根拠: `getPath()` は `charCodeAt()` ループで `%` を検出し、含まれない場合は `decodeURI` を完全にスキップする。ベンチマークで他手法より高速であることが確認されている (`benchmarks/utils/src/get-path.ts`)
+
+- `[AVOID]` ルーティングで各ルートに個別の正規表現を持たせ、リクエストごとに線形走査する設計
+  - 根拠: PatternRouter はバンドルサイズ最小化のために意図的にこの設計を選んでいるが、ルート数増加に伴い O(n) で性能劣化する。RegExpRouter の単一正規表現方式なら O(1) 相当
+
+- `[AVOID]` ビルドフェーズで生成した一時キャッシュをランタイムに持ち越す
+  - 根拠: RegExpRouter は `buildAllMatchers()` 完了後に `this.#middleware`、`this.#routes`、`wildcardRegExpCache` をすべて解放し、不要なメモリ消費を防いでいる (`src/router/reg-exp-router/router.ts:218-219`)
+
+## 適用チェックリスト
+
+- [ ] ルーティングで静的パスと動的パスを区別し、静的パスにはハッシュマップによるファストパスを設けているか
+- [ ] 初期化処理（正規表現コンパイル、設定パース等）を遅延実行し、結果を自己書き換えまたはキャッシュで固定化しているか
+- [ ] ホットパスで `Object.create(null)` を使い、プロトタイプチェーン探索のオーバーヘッドを排除しているか
+- [ ] リクエストごとに実行される文字列操作で、一般的なケースを先に検出して高コスト処理をスキップしているか
+- [ ] ビルドフェーズの一時データ（中間キャッシュ、構築用ツリー等）をビルド完了後に解放しているか
+- [ ] ミドルウェアなしの単純なルートで、compose/dispatch のオーバーヘッドを回避する最適化があるか
+- [ ] バンドルサイズの計測を CI に組み込み、リグレッションを検知できるか
+- [ ] 性能特性の異なる実装を Strategy パターンで切り替え可能にし、自動選択メカニズムを提供しているか

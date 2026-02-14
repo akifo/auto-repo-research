@@ -5,133 +5,72 @@
 
 ## 概要
 
-Hono の型システムは、ルート定義からクライアントコードまでをエンドツーエンドで型安全に繋ぐ仕組みである。ルートハンドラで定義したパス・入力・出力の型情報がスキーマ型として蓄積され、それを RPC クライアント（`hc`）が自動的に導出する。TypeScript の Template Literal Types、Conditional Types、メソッドオーバーロードを駆使しており、フレームワークレベルの型安全 API 設計の参考になる。
+Hono の型システムは、ルート定義からクライアント型までの End-to-End 型安全性を TypeScript のみで実現する。バリデーター出力・ハンドラー応答・パスパラメータの型情報がメソッドチェーンを通じて `Schema` 型に蓄積され、RPC クライアント (`hc`) がその `Schema` を逆引きして型安全な API クライアントを自動生成する。コード生成なし・ランタイムオーバーヘッドなしで、サーバーとクライアントの型契約を静的に保証する仕組みは、TypeScript の型レベルプログラミングの実践的な到達点として注目に値する。
+
+## 設計思想
+
+- **Phantom Type による型情報の伝搬**: `TypedResponse<T, U, F>` はランタイムでは単なる `Response` だが、型レベルでは `_data`, `_status`, `_format` という phantom フィールドで出力型・ステータスコード・フォーマットを保持する。実行時のペイロードに影響を与えずに型情報を伝搬するための意図的な選択である（`src/types.ts:2346-2358`）。
+
+- **Schema 型への累積的合成**: 各ルート定義の戻り値型 `HonoBase<E, S & ToSchema<...>, BasePath>` において、`S` がインターセクション (`&`) で拡張される。チェーン呼び出しのたびに新しいルート情報が `Schema` に積み上がり、最終的な Hono インスタンスの型パラメータにすべてのエンドポイント情報が集約される。可変長引数やユニオンではなくインターセクションを選んだ理由は、パスをキーとしたオブジェクト型の合成に適しているためである（`src/types.ts:2211-2240`）。
+
+- **オーバーロードによる有限展開で型推論を確保**: TypeScript は可変長ジェネリクスの型推論が弱いため、Hono はハンドラー 1 個〜10 個のオーバーロードを明示的に列挙する。各ミドルウェアの `Env` 型を `IntersectNonAnyTypes` で累積マージし、`Input` 型を `I & I2 & I3...` で段階的にインターセクトする（`src/types.ts:128-900`）。可読性を犠牲にしてでも型推論の精度を優先する設計判断である。
+
+- **型と実装の完全分離**: `HonoBase` クラスの実装（`src/hono-base.ts:129-141`）では `return this as any` を使い、ランタイムの挙動は全メソッドで同一のロジックに委ねている。型安全性はインターフェース側（`HandlerInterface`, `MiddlewareHandlerInterface`）が完全に担い、実装側はそれに依存しない。
 
 ## 設計・実装の詳細
 
-### 1. 型の全体アーキテクチャ
+### 型推論チェーンの全体像
 
-Hono の型システムは以下の層で構成される:
+Hono の型推論は以下の 5 段階で伝搬する:
 
-1. **基盤型**（`Env`, `Input`, `Schema`, `Endpoint`）-- アプリケーション全体の型コンテキスト
-2. **パス型**（`MergePath`, `ParamKeys`, `ParamKeyToRecord`）-- URL パスからのパラメータ抽出
-3. **ハンドラインターフェース**（`HandlerInterface`, `MiddlewareHandlerInterface`）-- メソッドオーバーロードによる型推論
-4. **スキーマ変換型**（`ToSchema`, `MergeSchemaPath`, `ExtractSchema`）-- ルート定義からスキーマ型への変換
-5. **レスポンス型**（`TypedResponse`, `JSONParsed`）-- レスポンス形式の型安全な表現
-6. **クライアント型**（`Client`, `PathToChain`, `ClientRequest`）-- スキーマからクライアント API への自動導出
+```
+1. パス文字列リテラル → MergePath<BasePath, P> → パスパラメータ抽出
+2. バリデーター → Input { in: { json: T }, out: { json: T } } → Context に注入
+3. ハンドラー応答 → c.json(obj) → TypedResponse<JSONParsed<T>, U, 'json'>
+4. ルート登録 → S & ToSchema<M, P, I, R> → Schema に蓄積
+5. クライアント → Client<T, Prefix> → PathToChain → ClientRequest
+```
 
-### 2. Env 型によるコンテキスト伝搬
+### Stage 1: パスリテラルとパラメータ抽出
 
-`Env` 型はアプリケーション全体の型コンテキストを定義する。`Bindings`（環境変数等）と `Variables`（リクエストスコープの変数）を持ち、Context オブジェクト経由で型安全にアクセスできる。
+パス文字列 `'/users/:id'` から `:id` を抽出する型レベルパーサーが `ExtractParams` と `ParamKeys` で実装されている。
 
 ```typescript
-// src/types.ts:31-34
-export type Env = {
-  Bindings?: Bindings
-  Variables?: Variables
+// src/types.ts:2264-2270
+type ExtractParams<Path extends string> = string extends Path
+  ? Record<string, string>
+  : Path extends `${infer _Start}:${infer Param}/${infer Rest}`
+    ? { [K in Param | keyof ExtractParams<`/${Rest}`>]: string }
+    : Path extends `${infer _Start}:${infer Param}`
+      ? { [K in Param]: string }
+      : never
+```
+
+`MergePath` 型（`src/types.ts:2321-2335`）は `basePath` とルートパスを結合し、条件型の分岐でスラッシュの重複を排除する。Template Literal Types を活用した文字列操作の典型例である。
+
+### Stage 2: バリデーターから Input 型への変換
+
+`validator('json', fn)` は `MiddlewareHandler<E, P, V>` を返し、`V` に `{ in: { json: InputType }, out: { json: OutputType } }` を埋め込む。
+
+```typescript
+// src/validator/validator.ts:64-82
+V extends {
+  in: {
+    [K in U]: K extends 'json'
+      ? unknown extends InputType
+        ? ExtractValidatorOutput<VF>
+        : InputType
+      : InferInput<ExtractValidatorOutput<VF>, K, FormValue>
+  }
+  out: { [K in U]: ExtractValidatorOutput<VF> }
 }
 ```
 
-ミドルウェアチェーンでは `IntersectNonAnyTypes` を使って複数の `Env` 型を合成する。これにより、ミドルウェアが追加した変数をハンドラ側で型安全に参照できる。
+`in` がクライアント側の入力型（RPC クライアントが送信すべき型）、`out` がハンドラー側で `c.req.valid('json')` から取得できる検証済み出力型である。`in` と `out` を分離しているのは、フォーム値のような変換を伴うターゲットで入力型と出力型が異なるためである。
 
-```typescript
-// src/types.ts:2473-2476
-type ProcessHead<T> = IfAnyThenEmptyObject<T extends Env ? (Env extends T ? {} : T) : T>
-export type IntersectNonAnyTypes<T extends any[]> = T extends [infer Head, ...infer Rest]
-  ? ProcessHead<Head> & IntersectNonAnyTypes<Rest>
-  : {}
-```
+### Stage 3: ハンドラー応答と TypedResponse
 
-`ProcessHead` は `any` 型のフィルタリングを行う。`Env extends T` のチェックによって、`T` が `Env` そのもの（デフォルト値、つまり未指定）の場合は空オブジェクトに変換し、余計な型合成を防ぐ。
-
-### 3. メソッドオーバーロードによるハンドラ型推論
-
-`HandlerInterface` はハンドラの個数（1〜10個）と path 引数の有無で約 20 種類のオーバーロードを定義している。これにより、TypeScript はハンドラチェーンの各段階で正確な型推論を行う。
-
-```typescript
-// src/types.ts:168-183
-// app.get(path, handler)
-<
-  P extends string,
-  MergedPath extends MergePath<BasePath, P>,
-  R extends HandlerResponse<any> = any,
-  I extends Input = BlankInput,
-  E2 extends Env = E,
->(
-  path: P,
-  handler: H<E2, MergedPath, I, R>
-): HonoBase<
-  E,
-  AddSchemaIfHasResponse<MergeTypedResponse<R>, S, M, P, I, BasePath>,
-  BasePath,
-  MergePath<BasePath, P>
->
-```
-
-各オーバーロードの戻り値は `HonoBase` にスキーマ型 `S` を蓄積して返す。これにより、メソッドチェーンでルートを追加するたびにスキーマが成長する。
-
-### 4. パス型のテンプレートリテラル操作
-
-`MergePath` は2つのパス文字列を結合する再帰的条件型で、先頭/末尾のスラッシュの重複や空文字列を正しく処理する。
-
-```typescript
-// src/types.ts:2321-2335
-export type MergePath<A extends string, B extends string> = B extends ''
-  ? MergePath<A, '/'>
-  : A extends ''
-    ? B
-    : A extends '/'
-      ? B
-      : A extends `${infer P}/`
-        ? B extends `/${infer Q}`
-          ? `${P}/${Q}`
-          : `${P}/${B}`
-        : B extends `/${infer Q}`
-          ? Q extends ''
-            ? A
-            : `${A}/${Q}`
-          : `${A}/${B}`
-```
-
-`ParamKeys` はパス文字列からパラメータキーを再帰的に抽出する。`:id{[0-9]+}?` のようなパターン付き・オプショナルパラメータにも対応している。
-
-```typescript
-// src/types.ts:2409-2419
-type ParamKey<Component> = Component extends `:${infer NameWithPattern}`
-  ? NameWithPattern extends `${infer Name}{${infer Rest}`
-    ? Rest extends `${infer _Pattern}?`
-      ? `${Name}?`
-      : Name
-    : NameWithPattern
-  : never
-
-export type ParamKeys<Path> = Path extends `${infer Component}/${infer Rest}`
-  ? ParamKey<Component> | ParamKeys<Rest>
-  : ParamKey<Path>
-```
-
-### 5. TypedResponse とスキーマ蓄積
-
-`TypedResponse` はファントム型（`_data`, `_status`, `_format`）を使ってレスポンスの型情報をコンパイル時に保持する。実行時には通常の `Response` オブジェクトだが、型レベルではデータ型・ステータスコード・フォーマットを追跡する。
-
-```typescript
-// src/types.ts:2346-2358
-export type TypedResponse<
-  T = unknown,
-  U extends StatusCode = StatusCode,
-  F extends ResponseFormat = T extends string
-    ? 'text'
-    : T extends JSONValue
-      ? 'json'
-      : ResponseFormat,
-> = {
-  _data: T
-  _status: U
-  _format: F
-}
-```
-
-`c.json()` の戻り値は `Response & TypedResponse<JSONParsed<T>, U, 'json'>` となり、`JSONParsed` によって `Date` は `string` に、`undefined` プロパティは除外される等、`JSON.stringify` の実際の挙動を型レベルで模倣する。
+`c.json(obj)` は `JSONRespondReturn<T, U>` すなわち `Response & TypedResponse<JSONParsed<T>, U, 'json'>` を返す。`JSONParsed<T>` は JSON シリアライズの挙動（`Date` → `string`, `undefined` → 除外, `bigint` → `never` 等）を型レベルでシミュレートする（`src/utils/types.ts:53-83`）。
 
 ```typescript
 // src/context.ts:200-203
@@ -141,32 +80,28 @@ type JSONRespondReturn<
 > = Response & TypedResponse<JSONParsed<T>, U, 'json'>
 ```
 
-### 6. ToSchema によるルート定義の型変換
+### Stage 4: ToSchema による Schema への蓄積
 
-`ToSchema` はハンドラの情報（HTTPメソッド、パス、入力、出力）をスキーマ型に変換する。各ルートの `app.get('/path', handler)` 呼び出しごとに `S & ToSchema<...>` で型が蓄積される。
+`ToSchema<M, P, I, RorO>` はメソッド・パス・入力・応答を1つの `Endpoint` 型に構造化し、パスをキー、`$method` をサブキーとするネスト型を生成する。
 
 ```typescript
-// src/types.ts:2211-2240
-export type ToSchema<
-  M extends string,
-  P extends string,
-  I extends Input | Input['in'],
-  RorO,
-> =
-  IsAny<RorO> extends true
-    ? { [K in P]: { [K2 in M as AddDollar<K2>]: { ... } } }
-    : [RorO] extends [never]
-      ? {}
-      : [RorO] extends [Promise<void>]
-        ? {}
-        : { [K in P]: { [K2 in M as AddDollar<K2>]: Simplify<{ input: ... } & ToSchemaOutput<RorO, I>> } }
+// src/types.ts:2232-2240
+{
+  [K in P]: {
+    [K2 in M as AddDollar<K2>]: Simplify<
+      {
+        input: AddParam<ExtractInput<I>, P>
+      } & ToSchemaOutput<RorO, I>
+    >
+  }
+}
 ```
 
-`[RorO] extends [never]` のようにタプルでラップしてチェックしているのは、TypeScript の distributive conditional types を回避するためである。
+`AddParam` はパス文字列からパラメータを抽出し、`input` に `param` フィールドを追加する。`IsAny<RorO>` チェックにより、明示的な型注釈がない場合でも安全にフォールバックする。
 
-### 7. RPC クライアントの型導出
+### Stage 5: Client 型と PathToChain
 
-`hc<typeof app>(baseUrl)` で呼び出されるクライアントは、`Client<T, Prefix>` 型によってサーバーのスキーマから自動導出される。
+`Client<T, Prefix>` が Hono インスタンスの型パラメータ `S` (Schema) を抽出し、`PathToChain` でパス文字列をドットアクセス可能なオブジェクト型に変換する。
 
 ```typescript
 // src/client/types.ts:292-299
@@ -180,209 +115,130 @@ export type Client<T, Prefix extends string> =
     : never
 ```
 
-`PathToChain` はパス文字列をオブジェクトのネスト構造に変換する。`/api/users/:id` は `client.api.users[':id']` のようなチェーン呼び出しに対応する。
+`PathToChain` はパス文字列を `/` で再帰的に分割し、ネストされたオブジェクト型に変換する（`src/client/types.ts:275-290`）。最終的に `ClientRequest` 型がメソッド呼び出しの引数と戻り値を規定する。
+
+### route() による Schema のマージ
+
+`app.route('/api', subApp)` は `MergeSchemaPath` で子ルーターの `Schema` のパスキーに親パスをプレフィクスとして付与し、パラメータ型も `MergeEndpointParamsWithPath` で統合する（`src/types.ts:2274-2310`）。
+
+### IntersectNonAnyTypes によるミドルウェア Env の累積
+
+複数ミドルウェアが `Variables` や `Bindings` に独自の型を追加する場合、`IntersectNonAnyTypes` が `any` を `{}` に変換してからインターセクションを取る（`src/types.ts:2473-2476`）。`any & T = any` という TypeScript の挙動を回避するための防御的な型ユーティリティである。
 
 ```typescript
-// src/client/types.ts:275-290
-type PathToChain<
-  Prefix extends string,
-  Path extends string,
-  E extends Schema,
-  Original extends string = Path,
-> = Path extends `/${infer P}`
-  ? PathToChain<Prefix, P, E, Path>
-  : Path extends `${infer P}/${infer R}`
-    ? { [K in P]: PathToChain<Prefix, R, E, Original> }
-    : {
-        [K in Path extends '' ? 'index' : Path]: ClientRequest<
-          Prefix,
-          Original,
-          E extends Record<string, unknown> ? E[Original] : never
-        >
-      }
+// src/types.ts:2473-2476
+type ProcessHead<T> = IfAnyThenEmptyObject<T extends Env ? (Env extends T ? {} : T) : T>
+export type IntersectNonAnyTypes<T extends any[]> = T extends [infer Head, ...infer Rest]
+  ? ProcessHead<Head> & IntersectNonAnyTypes<Rest>
+  : {}
 ```
 
-クライアントの実装は `Proxy` で動的にパスを構築し、最終的に `$get()`, `$post()` 等のメソッド呼び出しで fetch を実行する。型は `ClientResponse<O, S, F>` として返り、`.json()` の戻り値型もサーバーのレスポンス型と一致する。
+## パターンカタログ
 
-### 8. バリデーターの型統合
+- **Phantom Type** (構造)
+  - 解決する問題: ランタイムには存在しないメタデータ（出力型、ステータスコード、フォーマット）を型レベルで伝搬する
+  - 適用条件: 型情報を失わずに異なるレイヤー間でデータを渡す必要がある場合
+  - コード例: `src/types.ts:2346-2358` — `TypedResponse<T, U, F>` の `_data`, `_status`, `_format`
+  - 注意点: phantom フィールドに実行時にアクセスすると `undefined` になる。型と実装の不一致を防ぐため、フィールド名にアンダースコアプレフィクスを使う慣習を Hono は採用している
 
-`validator()` 関数はバリデーション対象（`json`, `form`, `query`, `param`, `header`, `cookie`）と検証関数を受け取り、検証結果の型を `Input` の `in` / `out` に自動的にマッピングする。
+- **Builder Pattern（型レベル）** (生成)
+  - 解決する問題: メソッドチェーンで段階的にルート定義を積み上げ、最終的な型を構築する
+  - 適用条件: 設定の段階的蓄積が必要で、各ステップの型情報を保持したい場合
+  - コード例: `src/hono-base.ts:104-110` — `get!: HandlerInterface<E, 'get', S, BasePath>`
+  - 注意点: 各メソッド呼び出しで新しい型パラメータを含む `HonoBase` 型を返すため、チェーンが長くなると型チェックが遅くなる可能性がある
 
-```typescript
-// src/validator/validator.ts:46-88
-export const validator = <
-  InputType,
-  P extends string,
-  M extends string,
-  U extends ValidationTargetByMethod<M>,
-  ...
-  V extends {
-    in: { [K in U]: K extends 'json' ? ... : InferInput<ExtractValidatorOutput<VF>, K, FormValue> }
-    out: { [K in U]: ExtractValidatorOutput<VF> }
-  } = ...,
->(
-  target: U,
-  validationFunc: VF
-): MiddlewareHandler<E, P, V, ExtractValidationResponse<VF>>
-```
-
-`ValidationTargetByMethod` は HTTP メソッドに応じて利用可能なバリデーション対象を制限する。GET/HEAD リクエストではボディ系（`form`, `json`）のバリデーションが型レベルで禁止される。
-
-```typescript
-// src/validator/validator.ts:10-12
-type ValidationTargetByMethod<M> = M extends 'get' | 'head'
-  ? Exclude<keyof ValidationTargets, ValidationTargetKeysWithBody>
-  : keyof ValidationTargets
-```
-
-### 9. 型パフォーマンスの CI 計測
-
-`perf-measures/type-check/` に 200 ルートを自動生成するスクリプトがあり、PR ごとに `tsc --diagnostics` の結果を CI で計測している。`tsc` と `typescript-go` の両方で計測し、octocov でメインブランチとの比較を自動化している。
-
-```typescript
-// perf-measures/type-check/scripts/generate-app.ts:6-17
-const generateRoutes = (count: number) => {
-  let routes = `import { Hono } from '../../../src'
-export const app = new Hono()`
-  for (let i = 1; i <= count; i++) {
-    routes += `
-  .get('/route${i}/:id', (c) => {
-    return c.json({
-      ok: true
-    })
-  })`
-  }
-  return routes
-}
-```
-
-## コード例
-
-### ルート定義からクライアントまでの型フロー
-
-```typescript
-// サーバー側: ルート定義
-const app = new Hono()
-  .get('/users/:id', (c) => {
-    const id = c.req.param('id')  // 型: string
-    return c.json({ id, name: 'Alice' })
-  })
-
-// クライアント側: 型が自動導出される
-const client = hc<typeof app>('http://localhost')
-const res = await client.users[':id'].$get({ param: { id: '1' } })
-const data = await res.json()  // 型: { id: string; name: string }
-```
-
-### ミドルウェアによる Env 拡張
-
-```typescript
-// src/types.test.ts:29-48
-type E = {
-  Variables: { foo: string }
-  Bindings: { FLAG: boolean }
-}
-const app = new Hono<E>()
-app.get('/', (c) => {
-  const foo = c.get('foo')     // 型: string
-  const FLAG = c.env.FLAG      // 型: boolean
-  return c.text('foo')
-})
-```
-
-### バリデーターとの連携
-
-```typescript
-// src/types.test.ts:58-89
-const middleware: MiddlewareHandler<
-  Env,
-  '/',
-  { in: { json: Payload }; out: { json: Payload } }
-> = async (_c, next) => { await next() }
-
-app.get(middleware, (c) => {
-  const data = c.req.valid('json')  // 型: Payload
-  return c.json({ message: 'Hello!' })
-})
-```
+- **Proxy Pattern**（構造）
+  - 解決する問題: パス文字列のドットアクセスを動的に解決し、型安全な API クライアントを提供する
+  - 適用条件: 静的に定義できないプロパティアクセスを型安全に提供したい場合
+  - コード例: `src/client/client.ts:15-31` — `createProxy` による動的プロパティチェーン
+  - 注意点: ランタイムは Proxy で動的解決するが、型は `PathToChain` で静的に解決される。両者の整合性は型テストで担保する
 
 ## Good Patterns
 
-- **ファントム型による型情報の伝搬**: `TypedResponse` は `_data`, `_status`, `_format` というファントムフィールドで型情報を保持する。実行時コストゼロでコンパイル時の型安全性を実現している。フレームワークが返す `Response` オブジェクトの中身を型レベルで追跡する手法として汎用性が高い。
+- **any 型の防御的な除去**: `IntersectNonAnyTypes` は `any` が他の型をインターセクションで汚染する問題を解決する。`IsAny<T>` ガード（`0 extends 1 & T`）と `IfAnyThenEmptyObject` で `any` を `{}` に正規化してからインターセクションを取る。
 
 ```typescript
-// src/types.ts:2346-2358
-export type TypedResponse<T = unknown, U extends StatusCode = StatusCode, F extends ResponseFormat = ...> = {
-  _data: T
-  _status: U
-  _format: F
-}
-```
-
-- **any のフィルタリング（`IsAny` / `IfAnyThenEmptyObject`）**: TypeScript の型システムでは `any` が伝搬しやすい。Hono は `IsAny` で `any` を検出し、`IfAnyThenEmptyObject` で無害化する。ミドルウェアチェーンの `IntersectNonAnyTypes` で `any` な Env を空オブジェクトに変換することで、型情報の汚染を防いでいる。
-
-```typescript
-// src/utils/types.ts:21
+// src/utils/types.ts:21,110
 export type IfAnyThenEmptyObject<T> = 0 extends 1 & T ? {} : T
-
-// src/utils/types.ts:110
 export type IsAny<T> = boolean extends (T extends never ? true : false) ? true : false
 ```
 
-- **JSON 直列化の型模倣（`JSONParsed`）**: `JSON.stringify` の挙動（`Date` -> `string`, `undefined` プロパティ除外, `symbol` キー除外, `Set`/`Map` -> `{}`）を型レベルで正確に再現している。`toJSON()` メソッドの戻り値型の解決もサポートしている。
+- **JSON シリアライズの型レベルシミュレーション**: `JSONParsed<T>` は `Date` → `.toJSON()` の戻り値、`undefined` → フィールド除外、`Set`/`Map` → `{}`、`bigint` → `never` など、`JSON.stringify` の挙動を網羅的に型で再現する。これによりクライアント側が受け取る型が実際のレスポンスと一致する。
 
 ```typescript
-// src/utils/types.ts:53-83
+// src/utils/types.ts:53-60
 export type JSONParsed<T, TError = bigint | ReadonlyArray<bigint>> = T extends {
   toJSON(): infer J
 }
-  ? (() => J) extends () => JSONPrimitive ? J
-    : (() => J) extends () => { toJSON(): unknown } ? {}
+  ? (() => J) extends () => JSONPrimitive
+    ? J
+    : (() => J) extends () => { toJSON(): unknown }
+      ? {}
       : JSONParsed<J, TError>
-  : T extends JSONPrimitive ? T
-    : T extends InvalidJSONValue ? never
-      : T extends ReadonlyArray<unknown>
-        ? { [K in keyof T]: JSONParsed<InvalidToNull<T[K]>, TError> }
-        : ...
+  : T extends JSONPrimitive ? T : /* ... */
 ```
 
-- **distributive conditional types の回避**: `[RorO] extends [never]` のようにタプルでラップしてチェックすることで、union 型が分配されるのを防いでいる。型ユーティリティで `never` チェックする際の定石。
+- **in/out 分離による入力型と出力型の独立制御**: バリデーターの `Input` 型が `in`（クライアントが送信する型）と `out`（ハンドラーが受け取る型）を分離している。フォームデータでは `in` が `string | Blob`、`out` が `string | File` というように変換後の型を正確に表現できる。
 
 ```typescript
-// src/types.ts:2228-2231
-: [RorO] extends [never]
-  ? {}
-  : [RorO] extends [Promise<void>]
-    ? {}
+// src/types.ts:43-47
+export type Input = {
+  in?: {}
+  out?: {}
+  outputFormat?: ResponseFormat
+}
 ```
-
-- **型パフォーマンスの定量計測**: PR ごとに 200 ルートのアプリを自動生成し、`tsc --diagnostics` で型チェック時間を計測する CI パイプラインを持つ。型の複雑化によるコンパイル時間の劣化を早期に検出できる。
 
 ## Anti-Patterns / 注意点
 
-- **オーバーロード爆発**: `HandlerInterface` はハンドラ1個〜10個 x path有無 = 約20オーバーロード、`MiddlewareHandlerInterface` も同様に約20オーバーロード、`OnHandlerInterface` も同等の規模がある。`src/types.ts` は 2490 行に達しており、メンテナンスコストが高い。TypeScript 5.0+ の variadic tuple types や recursive conditional types でオーバーロード数を削減できる可能性があるが、型推論の精度とパフォーマンスのトレードオフがある。
+- **オーバーロード爆発**: ハンドラー数ごとに個別のオーバーロードを定義する手法は、1〜10 個で約 900 行のコードを生成している。TypeScript の可変長ジェネリクスの制限に起因するが、新しい組み合わせを追加するたびにすべてのインターフェースを更新する必要がある。
 
 ```typescript
-// Bad: 10段階のオーバーロードを手動で列挙
-// app.get(handler x1), app.get(handler x2), ..., app.get(handler x10)
-// app.get(path, handler x1), ..., app.get(path, handler x10)
-// src/types.ts には合計 1000 行以上のオーバーロード定義がある
+// Bad: 各ハンドラー数に対して個別のオーバーロードが必要
+// src/types.ts:128-948 — HandlerInterface だけで約 820 行
+
+// Better (将来の TypeScript が対応した場合):
+// 可変長タプル型を活用した単一定義
+// 現時点では TypeScript の推論限界により実現不可
 ```
+
+- **`return this as any` による型安全性の放棄**: 実装側では `return this as any` を使い、型チェックをバイパスしている。型とランタイムの整合性は型テスト（`src/types.test.ts`）で保証しているが、実装変更時に型テストの更新を忘れるとサイレントに破綻する。
 
 ```typescript
-// Better（理論上）: variadic tuple で統一的に定義
-// ただし、TypeScript の型推論精度が落ちる可能性がある
-type HandlerChain<E, P, Handlers extends H[]> = ...
+// Bad: 実装側で型安全性を放棄
+// src/hono-base.ts:139
+return this as any
+
+// Better: 型テストを充実させ、CI で必ず検証する
+// src/types.test.ts で expectTypeOf を使用した網羅的な型テスト
 ```
 
-Hono チームはこのトレードオフを理解した上で、型推論の精度を優先してオーバーロード方式を選択していると考えられる。CI での型パフォーマンス計測がこの戦略を支えている。
+## 導出ルール
 
-- **`any` の戦略的使用**: `types.ts` の先頭で `eslint-disable @typescript-eslint/no-explicit-any` を宣言し、ハンドラ型のデフォルトジェネリクスに `any` を使用している。これはフレームワーク内部の型推論を成立させるための妥協であり、ユーザーコードでは `any` が露出しないよう設計されている。自分のプロジェクトでこのパターンを模倣する場合、`any` の使用範囲を型定義ファイルに限定し、公開 API には `unknown` を使うルールが必要。
+- `[MUST]` 型レベルの API 契約を設計する場合、Phantom Type でランタイムに影響しないメタデータを伝搬させ、型情報の損失を防ぐこと
+  - 根拠: Hono の `TypedResponse<T, U, F>` は `_data`, `_status`, `_format` でレスポンス型情報を保持し、RPC クライアントまで型を伝搬している（`src/types.ts:2346-2358`）
 
-## 自分のプロジェクトへの適用
+- `[MUST]` `any` 型が型パラメータに混入する可能性がある場合、インターセクション前に `IsAny` ガードで `{}` に正規化すること
+  - 根拠: `any & T = any` により型情報が消失するため、Hono は `IntersectNonAnyTypes` で全ミドルウェアの `Env` をマージする前に `any` を除去している（`src/types.ts:2473-2476`）
 
-- [ ] **ファントム型で API レスポンスの型情報を保持する**: `TypedResponse` のパターンを参考に、API クライアントやフレームワークのレスポンス型にファントムフィールドを導入し、ステータスコードやフォーマットの型安全性を確保する
-- [ ] **`JSONParsed` 型を導入して JSON 直列化のギャップを埋める**: `Date` が `string` に変換される等の問題を型レベルで検出できるようにする。Hono の `JSONParsed` をそのまま流用するか、プロジェクト固有のバリアントを作成する
-- [ ] **`IsAny` / `IfAnyThenEmptyObject` パターンで型汚染を防止する**: ジェネリクスのデフォルト値に `any` を使う場面で、`any` が伝搬しないようフィルタリング型を設けることで、型安全性を維持する
-- [ ] **型パフォーマンス計測を CI に組み込む**: 型が複雑なプロジェクトでは `tsc --diagnostics` の結果をベースラインと比較するステップを CI に追加し、型チェック時間の劣化を検出する仕組みを構築する
-- [ ] **オーバーロードの活用と限界を理解する**: 可変長ハンドラチェーンの型推論が必要な場面では、variadic tuple よりもオーバーロードの方が推論精度が高い場合がある。上限（Hono では10個）を設定し、フォールバック用の汎用オーバーロードを最後に配置する
+- `[SHOULD]` 型レベルのビルダーパターンでは、メソッドチェーンの戻り値型に蓄積された型パラメータを含め、チェーンの各ステップで型情報を保持すること
+  - 根拠: `HandlerInterface` の各オーバーロードが `HonoBase<E, S & ToSchema<...>, BasePath>` を返し、`S` にルート情報を累積する設計がクライアント型の自動導出を可能にしている（`src/types.ts:143-148`）
+
+- `[SHOULD]` 型と実装を分離する場合、型テスト（`expectTypeOf` 等）で型契約の網羅的な検証を行い、実装の `as any` と型定義の整合性を保証すること
+  - 根拠: Hono は `src/types.test.ts` と `src/client/types.test.ts` で型レベルの期待値を記述し、`as any` を使う実装側との整合性を型テストで担保している
+
+- `[SHOULD]` JSON レスポンスの型にはシリアライズ後の型（`JSONParsed<T>`）を使い、クライアントが受け取る実際のデータ型と一致させること
+  - 根拠: `Date` → `string`、`undefined` → フィールド除外など、`JSON.stringify` の変換を型で再現しないとクライアント側で型不一致が起きる（`src/utils/types.ts:53-83`）
+
+- `[AVOID]` 型レベルの再帰的な文字列パースにおいて、Union 型が膨張するパターンを作ること。パスパラメータ抽出のような再帰型では、条件分岐の各枝が Union に展開されないよう `[T] extends [never]` でラップすること
+  - 根拠: `ExtractParams` は条件型の分配を制御し、`string extends Path` ガードで非リテラル型が入った場合のフォールバックを明示している（`src/types.ts:2264-2270`）
+
+## 適用チェックリスト
+
+- [ ] API レスポンスの型が `JSON.stringify` 後の型を正確に反映しているか（`Date` が `string` に、`undefined` フィールドが除外されているか）
+- [ ] ミドルウェアが追加する環境変数（`Variables`）の型が、後続ハンドラーの `Context` 型に正しく伝搬しているか
+- [ ] `any` 型がジェネリクスパラメータに混入した場合の防御（`IsAny` ガード）が実装されているか
+- [ ] 型と実装を分離している箇所（`as any` の使用箇所）に対応する型テストが存在するか
+- [ ] パスパラメータの型抽出が Template Literal Types で自動化されており、手動のパラメータ型定義が不要になっているか
+- [ ] RPC クライアント的な型導出を行う場合、サーバー側の Schema 型からクライアント型への変換が自動的に行われる仕組みがあるか
+- [ ] バリデーション結果の入力型（クライアント送信型）と出力型（ハンドラー受信型）が適切に分離されているか

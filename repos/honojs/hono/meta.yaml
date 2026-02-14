@@ -1,81 +1,110 @@
 url: https://github.com/honojs/hono
-stars: 28779
+stars: 28785
 language: TypeScript
 license: MIT
 description: "Web framework built on Web Standards"
 analyzed_at: "2026-02-14"
 local_path: /Users/akiho/github/github.com/honojs/hono
+scale: large
 
 perspectives:
   - name: project-structure
     file: project-structure.md
-    summary: ""
-  - name: dev-conventions
-    file: dev-conventions.md
-    summary: ""
+    wave: 1
+    intent: "ディレクトリ構成・モジュール分割・エクスポートマップ設計の意図を明らかにする"
+    summary: "70以上のサブパスエクスポートでtree-shakingを実現し、ランタイム固有コードをアダプター層に完全隔離する構造設計"
   - name: architecture
     file: architecture.md
-    summary: ""
-  - name: error-handling
-    file: error-handling.md
-    summary: ""
-  - name: testing-strategy
-    file: testing-strategy.md
-    summary: ""
-  - name: type-system
-    file: type-system.md
-    summary: ""
-  - name: api-design
-    file: api-design.md
-    summary: ""
-  - name: performance
-    file: performance.md
-    summary: ""
-  - name: security
-    file: security.md
-    summary: ""
-  - name: dependency-management
-    file: dependency-management.md
-    summary: ""
-  - name: build-system
-    file: build-system.md
-    summary: "Bun + esbuild のカスタムビルドで ESM/CJS デュアル出力。addExtension プラグインによる .js 拡張子付与、package.cjs.json パターン、package.json/jsr.json のエクスポート双方向検証、oxc-parser による .d.ts プライベートフィールド除去、publint バリデーション"
-  - name: ci-cd
-    file: ci-cd.md
-    summary: ""
+    wave: 1
+    intent: "全体アーキテクチャ・レイヤー構成・依存関係の方向性を分析する"
+    summary: "5層レイヤー構成で依存方向を内側→外側に統一し、薄いコア層と交換可能なルーターで9ランタイムに対応"
+  - name: design-philosophy
+    file: design-philosophy.md
+    wave: 1
+    intent: "Web Standards 中心の設計思想・ゼロ依存ポリシー・マルチランタイム戦略の根拠を解明する"
+    summary: "Fetch API を唯一の境界とし、ゼロ外部依存とプリセットによるトレードオフ選択でマルチランタイムを実現"
   - name: router-design
     file: router-design.md
-    summary: "Strategy パターンによる 5 種ルーター実装（RegExpRouter/TrieRouter/SmartRouter/PatternRouter/LinearRouter）の設計分析。メソッド自己差し替え・UnsupportedPathError による自動フォールバック・共通テストスイートの仕組み"
+    wave: 1
+    intent: "5種ルーター実装の Strategy パターンと SmartRouter による自動選択メカニズムを分析する"
+    summary: "最小インターフェース Router<T> で5種ルーターを統一し、SmartRouter がメソッド自己置換で最適ルーターに委譲"
   - name: middleware-system
     file: middleware-system.md
-    summary: ""
-  - name: adapter-pattern
-    file: adapter-pattern.md
-    summary: ""
-  - name: web-standards
-    file: web-standards.md
-    summary: "Fetch API (Request/Response) ベースのエントリーポイント設計、Web Crypto API による暗号処理、Streams API (TransformStream/ReadableStream) によるストリーミング、Service Worker 互換の FetchEvent 抽象化、ボディキャッシュ機構の詳細分析"
-  - name: jsx-engine
-    file: jsx-engine.md
-    summary: ""
+    wave: 1
+    intent: "onion 型ミドルウェア合成・compose 関数の実装・実行順序制御の仕組みを明らかにする"
+    summary: "73行のcompose関数でonion型合成を実現し、単一ハンドラ最適化でホットパスのオーバーヘッドを排除"
   - name: context-design
     file: context-design.md
-    summary: ""
-  - name: preset-system
-    file: preset-system.md
-    summary: ""
+    wave: 1
+    intent: "Context オブジェクトのライフサイクル・c.set/c.get の型安全ストア設計を分析する"
+    summary: "遅延初期化とEnv型+ContextVariableMapの二重レイヤーでランタイムコストゼロの型安全な変数ストアを実現"
+  - name: type-system
+    file: type-system.md
+    wave: 1
+    intent: "型推論チェーン・ルート定義からクライアント型への伝搬メカニズムを解明する"
+    summary: "Phantom TypeとSchema累積合成でルート定義からRPCクライアントまでEnd-to-End型安全性をコード生成なしで実現"
+  - name: adapter-pattern
+    file: adapter-pattern.md
+    wave: 2
+    intent: "マルチランタイムアダプター抽象化・Web Standards API ブリッジ設計を分析する"
+    summary: "アダプターの厚みをランタイムのAPI乖離度に比例させ、3行から680行まで変換責務のみに徹する設計"
+  - name: web-standards
+    file: web-standards.md
+    wave: 2
+    intent: "Fetch API/Web Crypto/Streams API など Web Standards の活用パターンと抽象化手法を分析する"
+    summary: "標準APIをラップしつつescape hatchで直接アクセスを保証し、Responseをデータ変換器として活用する実践手法"
   - name: client-rpc
     file: client-rpc.md
-    summary: ""
+    wave: 2
+    intent: "hc クライアントの型安全 RPC メカニズム・サーバー型からクライアント型の導出を解明する"
+    summary: "Proxyでパスを蓄積しPathToChainで型変換する約220行のランタイムで、コード生成なしの型安全RPCを実現"
+  - name: jsx-engine
+    file: jsx-engine.md
+    wave: 2
+    intent: "独自 JSX ランタイム実装・サーバーサイドレンダリング・DOM レンダラーの設計を分析する"
+    summary: "SSR用文字列レンダラーとDOM用クライアントレンダラーをSymbolベースのディスパッチで切り替える独自JSXエンジン"
   - name: validator-system
     file: validator-system.md
-    summary: ""
+    wave: 2
+    intent: "バリデーター統合パターン・Zod/Valibot 等外部ライブラリとの連携設計を分析する"
+    summary: "コールバック関数の型シグネチャを統合契約としin/out分離で任意のバリデーションライブラリを20行で統合可能にする設計"
+  - name: error-handling
+    file: error-handling.md
+    wave: 2
+    intent: "HTTPException 設計・エラー伝播パス・グローバルエラーハンドリングの仕組みを分析する"
+    summary: "Response同梱throwパターンとダックタイピング判定でエラーの意味と表現を一体運搬する二層構造のエラー設計"
+  - name: testing-strategy
+    file: testing-strategy.md
+    wave: 2
+    intent: "Vitest マルチプロジェクト構成・マルチランタイムテスト戦略を分析する"
+    summary: "app.request()によるサーバーレステストと共通テストスイートのskipリスト管理で7+ランタイムを効率的に検証"
+  - name: performance
+    file: performance.md
+    wave: 2
+    intent: "ルーター性能最適化・正規表現コンパイル戦略・ベンチマーク基盤を分析する"
+    summary: "全ルートを単一正規表現にコンパイルしO(1)マッチングを実現、静的ルートのハッシュマップ参照で更に高速化"
+  - name: build-system
+    file: build-system.md
+    wave: 2
+    intent: "Bun + esbuild カスタムビルドパイプライン・ESM/CJS デュアル出力・JSR 対応を分析する"
+    summary: "esbuild/tsc/publintの責務分離と並列実行で70+エクスポートのESM/CJSデュアル出力とJSR対応を自動保証"
   - name: streaming
     file: streaming.md
-    summary: ""
-  - name: multi-runtime-testing
-    file: multi-runtime-testing.md
-    summary: ""
+    wave: 2
+    intent: "SSE/ストリーミング応答・ReadableStream 抽象化・TransformStream 活用を分析する"
+    summary: "TransformStreamを仲介したPush型抽象化でSSE/ストリーミングをWeb Standards APIのみで統一的に実装"
+  - name: preset-system
+    file: preset-system.md
+    wave: 2
+    intent: "Hono/HonoBase/Tiny/Quick プリセットによる段階的構成と tree-shaking 設計を分析する"
+    summary: "HonoBase基盤にルーターだけ差し替えた3プリセットをexports分離で提供し、バンドルサイズの段階的選択を実現"
   - name: helper-utilities
     file: helper-utilities.md
-    summary: ""
+    wave: 2
+    intent: "ヘルパー群（cookie, html, css, ssg, testing, dev, ws, conninfo, proxy）の設計パターンを分析する"
+    summary: "Context-first引数規約とHelper/Utils二層分離で14ヘルパーをサブパスエクスポートとして独立公開する設計"
+  - name: dependency-management
+    file: dependency-management.md
+    wave: 2
+    intent: "ゼロ依存ポリシーの実践・devDependencies 管理・publint バリデーションを分析する"
+    summary: "Web Crypto APIによるJWT等の自前実装でproduction dependencies完全ゼロを達成し、publintで品質を自動保証"

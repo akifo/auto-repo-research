@@ -1,213 +1,92 @@
-# Validator System
+# validator-system
 
 > リポジトリ: honojs/hono
 > 分析日: 2026-02-14
 
 ## 概要
 
-Hono のバリデーションシステムは、ミドルウェアとして動作するライブラリ非依存のバリデーション基盤である。`validator()` 関数が 6 種類のリクエストデータソース（json, form, query, param, header, cookie）を統一的に扱い、バリデーション結果を TypeScript の型システムに反映させる。特筆すべきは、Zod・Valibot 等の外部バリデーションライブラリを「プラグイン」として接続する設計と、バリデーション結果の Input/Output 型がルート定義から hc（RPC クライアント）まで一気通貫で伝搬する型推論アーキテクチャである。
+Hono のバリデーターシステムは、HTTP リクエストの 6 種類のデータソース（json, form, query, param, header, cookie）を統一インターフェースで検証するミドルウェア機構である。注目すべき点は、バリデーション関数の戻り値型がそのまま `c.req.valid()` の型とルートスキーマの `input`/`output` 型に伝搬する設計にあり、フレームワーク本体が特定のバリデーションライブラリに依存しない「プロトコル指向」の統合パターンを採用していることである。外部ライブラリ（Zod, Valibot 等）との統合は、Hono 本体が提供する `validator()` 関数の「コールバック関数の型シグネチャ」を契約として成立する。
+
+## 設計思想
+
+- **バリデーションライブラリ非依存の原則**: Hono は特定のバリデーションライブラリをコアに取り込まず、`validator(target, fn)` というコールバックベースの API を提供する。外部ライブラリとの統合は薄いラッパー関数（`@hono/zod-validator` 等）が担い、コアのバリデーターは「データ取得 + コールバック呼び出し + 結果格納」のみに責務を限定する。テストファイル内の `zodValidator` リファレンス実装（`src/validator/validator.test.ts:36-61`）が示すように、統合コードは 20 行程度で完結する。
+
+- **型推論の双方向伝搬**: バリデーション関数の戻り値型が `out` として後続ハンドラーの `c.req.valid()` に伝搬し、同時に入力側の型（`in`）もバリデーションターゲットに応じた適切な型（`string | string[]` for query 等）に自動変換される。この二重マッピングにより、スキーマ定義一箇所の変更がハンドラーとクライアント（hc）の両方に波及する（`src/validator/validator.ts:64-82`）。
+
+- **Content-Type による防御的スキップ**: JSON/Form バリデーションは Content-Type ヘッダーが適切でない場合、バリデーション自体をスキップして空オブジェクトを返す。これは不正な Content-Type で 400 エラーを返すのではなく、「Content-Type が正しい場合のみバリデーションする」という寛容な設計である（`src/validator/validator.ts:94-98`）。Malformed JSON のみ HTTPException(400) を投げる。
+
+- **HTTPメソッドによるターゲット制約**: `ValidationTargetByMethod` 型により、GET/HEAD リクエストでは `json` と `form` のバリデーションが型レベルで禁止される（`src/validator/validator.ts:10-12`）。HTTP 仕様（GET/HEAD はボディを持たない）を型システムで強制する。
 
 ## 設計・実装の詳細
 
-### コアアーキテクチャ: バリデーションライブラリ非依存の抽象化
+### コアバリデーターの構造
 
-Hono のバリデーターは特定のバリデーションライブラリに依存しない。`validator()` 関数は「ターゲット」と「バリデーション関数」の 2 引数を受け取り、バリデーションロジックの実装をユーザーに委譲する。
+`validator()` 関数はミドルウェアハンドラーを返す高階関数である。実行時の処理は 3 段階に分かれる。
 
-```typescript
-// src/validator/validator.ts:46-88
-export const validator = <
-  InputType,
-  P extends string,
-  M extends string,
-  U extends ValidationTargetByMethod<M>,
-  // ... 型パラメータ省略
->(
-  target: U,
-  validationFunc: VF
-): MiddlewareHandler<E, P, V, ExtractValidationResponse<VF>> => {
-```
-
-この設計により、Hono 本体はバリデーションの「データ取得」と「結果の格納」のみを担当し、「どうバリデートするか」は完全にユーザー（またはサードパーティアダプタ）に任せている。
-
-### ValidationTargets: 6 つのリクエストデータソース
-
-バリデーション対象は `ValidationTargets` 型で定義されており、各ターゲットごとに適切な型が付けられている。
+1. **データ抽出**: `target` に基づく switch 文でリクエストからデータを取得
+2. **コールバック呼び出し**: ユーザー定義のバリデーション関数を実行
+3. **結果の分岐**: Response が返された場合はそのまま返却（早期リターン）、それ以外は `addValidatedData()` で格納して `next()` を呼ぶ
 
 ```typescript
-// src/types.ts:2394-2401
-export type ValidationTargets<T extends FormValue = ParsedFormValue, P extends string = string> = {
-  json: any
-  form: Record<string, T | T[]>
-  query: Record<string, string | string[]>
-  param: Record<P, P extends `${infer _}?` ? string | undefined : string>
-  header: Record<RequestHeader | CustomHeader, string>
-  cookie: Record<string, string>
+// src/validator/validator.ts:89-171
+return async (c, next) => {
+  let value = {}
+  // ... switch による target 別データ抽出 ...
+
+  const res = await validationFunc(value as never, c as never)
+
+  if (res instanceof Response) {
+    return res as ExtractValidationResponse<VF>
+  }
+
+  c.req.addValidatedData(target, res as never)
+  return (await next()) as ExtractValidationResponse<VF>
 }
 ```
-
-注目点として、`json` のみ `any` 型になっている。これは JSON ボディの構造が事前に不明であり、バリデーション関数の戻り値で型が決まるためである。一方、`query` は `string | string[]`、`param` は `string` といった HTTP プロトコルに忠実な型付けがされている。
-
-### HTTP メソッドによるターゲット制限
-
-GET/HEAD リクエストはボディを持たないという HTTP 仕様を型レベルで強制している。
-
-```typescript
-// src/validator/validator.ts:9-12
-type ValidationTargetKeysWithBody = 'form' | 'json'
-type ValidationTargetByMethod<M> = M extends 'get' | 'head'
-  ? Exclude<keyof ValidationTargets, ValidationTargetKeysWithBody>
-  : keyof ValidationTargets
-```
-
-これにより `app.get('/path', validator('json', ...))` はコンパイルエラーとなり、不正な API 設計を型レベルで防止できる。
-
-### データ抽出のスイッチ処理
-
-`validator()` のランタイム実装は、ターゲットに応じた switch 文でリクエストからデータを抽出する。
-
-```typescript
-// src/validator/validator.ts:89-160
-return async (c, next) => {
-    let value = {}
-    const contentType = c.req.header('Content-Type')
-
-    switch (target) {
-      case 'json':
-        if (!contentType || !jsonRegex.test(contentType)) {
-          break  // Content-Type が不正なら空オブジェクトのまま
-        }
-        try {
-          value = await c.req.json()
-        } catch {
-          const message = 'Malformed JSON in request body'
-          throw new HTTPException(400, { message })
-        }
-        break
-      case 'form': {
-        // multipart/form-data と x-www-form-urlencoded の両方に対応
-        // ...
-      }
-      case 'query':
-        value = Object.fromEntries(
-          Object.entries(c.req.queries()).map(([k, v]) => {
-            return v.length === 1 ? [k, v[0]] : [k, v]
-          })
-        )
-        break
-      // param, header, cookie ...
-    }
-```
-
-重要な設計判断として、Content-Type が不正な場合は例外を投げるのではなく、**空オブジェクトを渡してバリデーション関数に判断を委ねている**（json と form の場合）。ただし、Content-Type が正しいにもかかわらずパースに失敗した場合は `HTTPException(400)` を投げる。
-
-### FormData の配列処理
-
-FormData の値が同じキーで複数送信される場合の処理が丁寧に実装されている。
-
-```typescript
-// src/validator/validator.ts:129-141
-const form: BodyData<{ all: true }> = {}
-formData.forEach((value, key) => {
-  if (key.endsWith('[]')) {
-    ;((form[key] ??= []) as unknown[]).push(value)
-  } else if (Array.isArray(form[key])) {
-    ;(form[key] as unknown[]).push(value)
-  } else if (key in form) {
-    form[key] = [form[key] as string | File, value]
-  } else {
-    form[key] = value
-  }
-})
-```
-
-`foo[]` のように `[]` サフィックスを持つキーは常に配列として扱い、同じキーが複数回出現する場合は自動的に配列に変換する。Rails/PHP のフォーム規約と互換性がある。
 
 ### バリデーション結果の格納と取得
 
-バリデーション関数の戻り値は `HonoRequest` の内部ストアに格納され、ハンドラーから型安全に取得できる。
+`HonoRequest` クラスは private フィールド `#validatedData` にターゲットごとのバリデーション結果を保持する。`addValidatedData()` と `valid()` が対になるシンプルな setter/getter パターンである。
 
 ```typescript
-// src/validator/validator.ts:162-170
-const res = await validationFunc(value as never, c as never)
+// src/request.ts:53
+#validatedData: { [K in keyof ValidationTargets]?: {} }
 
-if (res instanceof Response) {
-  return res as ExtractValidationResponse<VF>  // エラーレスポンスを即座に返却
-}
-
-c.req.addValidatedData(target, res as never)  // 結果を格納
-return (await next()) as ExtractValidationResponse<VF>
-```
-
-```typescript
-// src/request.ts:321-335
+// src/request.ts:321-322
 addValidatedData(target: keyof ValidationTargets, data: {}) {
   this.#validatedData[target] = data
 }
 
+// src/request.ts:333-336
 valid<T extends keyof I & keyof ValidationTargets>(target: T): InputToDataByTarget<I, T>
 valid(target: keyof ValidationTargets) {
   return this.#validatedData[target] as unknown
 }
 ```
 
-バリデーション関数が `Response` を返した場合はミドルウェアチェーンを中断し、そのレスポンスを返す。成功時はデータを格納して `next()` でチェーンを続行する。
+`valid()` メソッドはオーバーロードにより、型レベルでは `InputToDataByTarget<I, T>` を返し、ランタイムでは単純な辞書参照を行う。型情報は `validator()` ミドルウェアの `V` ジェネリクスから `Input` 型を経由してハンドラーに伝搬する。
 
-### Input/Output の型分離と InferInput
+### ValidationTargets の設計
 
-バリデーションの型システムで最も洗練された部分は、Input 型（クライアントが送信するデータの型）と Output 型（バリデーション後にハンドラーが受け取る型）の分離である。
-
-```typescript
-// src/validator/utils.ts:59-69
-export type InferInput<
-  Output,
-  Target extends keyof ValidationTargets,
-  T extends FormValue = ParsedFormValue,
-> = [Exclude<Output, undefined>] extends [never]
-  ? {}
-  : [Exclude<Output, undefined>] extends [object]
-    ? undefined extends Output
-      ? SimplifyDeep<InferInputInner<Exclude<Output, undefined>, Target, T>> | undefined
-      : SimplifyDeep<InferInputInner<Output, Target, T>>
-    : {}
-```
-
-例えば、Zod の `z.string().transform(Number)` を使った query バリデーションでは、Output は `number` だが Input は `string | string[]`（HTTP クエリパラメータの実際の型）になる。リテラルユニオン型（`'asc' | 'desc'`）は `IsLiteralUnion` で判別し、Input 側でもそのまま保持される。
-
-### Content-Type 判定の正規表現
-
-JSON と FormData の Content-Type 判定には、サブタイプまで考慮した正規表現が使われている。
+6 つのバリデーションターゲットはそれぞれ異なる型を持つ。
 
 ```typescript
-// src/validator/validator.ts:24-26
-const jsonRegex = /^application\/([a-z-\.]+\+)?json(;\s*[a-zA-Z0-9\-]+\=([^;]+))*$/
-const multipartRegex = /^multipart\/form-data(;\s?boundary=[a-zA-Z0-9'"()+_,\-./:=?]+)?$/
-const urlencodedRegex = /^application\/x-www-form-urlencoded(;\s*[a-zA-Z0-9\-]+\=([^;]+))*$/
+// src/types.ts:2394-2401
+export type ValidationTargets<T extends FormValue = ParsedFormValue, P extends string = string> = {
+  json: any          // 任意の JSON 構造
+  form: Record<string, T | T[]>   // フォームは値 or 配列
+  query: Record<string, string | string[]>  // クエリは文字列 or 配列
+  param: Record<P, P extends `${infer _}?` ? string | undefined : string>  // パスパラメータ
+  header: Record<RequestHeader | CustomHeader, string>  // ヘッダー
+  cookie: Record<string, string>  // Cookie
+}
 ```
 
-`application/merge-patch+json` や `application/vnd.api+json` のような JSON サブタイプも正しく認識する。テストケースでも明確にカバーされている（`validator.test.ts:182-204`）。
+`json` のみ `any` 型で、他のターゲットは HTTP の仕様に基づいた具体的な型を持つ。
 
-## コード例
+### 外部バリデーターとの統合パターン
 
-### 基本的な使い方: カスタムバリデーション
-
-```typescript
-// src/validator/validator.test.ts:66-80
-const route = app.get(
-  '/search',
-  validator('query', (value, c) => {
-    // value の型は Record<string, string | string[]>
-    if (!value.q) {
-      return c.text('Invalid!', 400)  // エラーレスポンスを直接返却
-    }
-    // undefined を返す（バリデーション成功だが変換なし）
-  }),
-  (c) => {
-    return c.text('Valid!', 200)
-  }
-)
-```
-
-### Zod との統合パターン（テスト内リファレンス実装）
+Hono 本体のテストファイルに含まれるリファレンス実装が統合の契約を示す。
 
 ```typescript
 // src/validator/validator.test.ts:36-61
@@ -236,138 +115,178 @@ const zodValidator = <
 }
 ```
 
-### 複数バリデーターのスタック
+統合のポイントは、`validator()` の戻り値を `MiddlewareHandler` にキャストする際に `in`（スキーマの入力型）と `out`（スキーマの出力型）を明示的に指定することである。これにより Zod の `z.input<T>` / `z.output<T>` の区別（transform 前後の型差異）が正しくハンドラーに伝搬する。
+
+### InferInput 型ユーティリティ
+
+`InferInput` は、バリデーション結果の出力型からターゲットに応じた入力型を逆算する型ユーティリティである。
+
+```typescript
+// src/validator/utils.ts:25-45
+type InferInputInner<Output, Target extends keyof ValidationTargets, T extends FormValue> =
+  SimplifyDeep<{
+    [K in keyof Output]: IsLiteralUnion<Output[K], string> extends true
+      ? Output[K]       // リテラルユニオン ('asc' | 'desc') はそのまま保持
+      : IsOptionalUnion<Output[K]> extends true
+        ? Output[K]     // T | undefined もそのまま保持
+        : Target extends 'form'
+          ? T | T[]     // form は FormValue
+          : Target extends 'query'
+            ? string | string[]  // query は string
+            : // ... 他のターゲットも同様
+```
+
+リテラルユニオン型（`'asc' | 'desc'`）とオプショナルユニオン型（`T | undefined`）を検出してそのまま保持し、それ以外はターゲット固有のデフォルト型に変換する。これにより、`z.enum(['asc', 'desc'])` のようなスキーマ定義がクライアント側の入力型にも正しく反映される。
+
+### 複数バリデーターのチェーン
+
+同一ルートに複数のバリデーターを連結できる。各バリデーターは異なるターゲットに対してデータを格納し、ハンドラーでは `c.req.valid('query')` と `c.req.valid('form')` のように別々に取得する。型レベルでは `I & I2` のインターセクション型によって複数バリデーターの入出力が合成される。
 
 ```typescript
 // src/validator/validator.test.ts:835-865
 const route = app.post(
   '/posts',
-  zodValidator('query', z.object({
-    page: z.string().refine((v) => !isNaN(Number(v))).transform(Number),
-  })),
-  zodValidator('form', z.object({
-    title: z.string(),
-  })),
+  zodValidator('query', z.object({ page: z.string().transform(Number) })),
+  zodValidator('form', z.object({ title: z.string() })),
   (c) => {
-    const { page } = c.req.valid('query')   // number 型
-    const { title } = c.req.valid('form')    // string 型
+    const { page } = c.req.valid('query')   // number
+    const { title } = c.req.valid('form')   // string
     return c.json({ page, title })
   }
 )
-// 型: input は { query: { page: string } } & { form: { title: string } }
 ```
+
+### Body キャッシュとの協調
+
+バリデーター内で body を消費した後もハンドラーで再度 body を読めるよう、`c.req.bodyCache` を活用したキャッシュ機構が組み込まれている（`src/validator/validator.ts:115-127`）。FormData は `arrayBuffer` から `bufferToFormData` で再変換し、キャッシュに保存する。
+
+## パターンカタログ
+
+- **Strategy パターン** (分類: 振る舞い)
+  - 解決する問題: バリデーションロジックを呼び出し元から分離し、実行時に差し替え可能にする
+  - 適用条件: 検証ロジックが多様で、フレームワーク側が特定の実装に依存すべきでない場合
+  - コード例: `src/validator/validator.ts:46-88` -- `validationFunc` パラメータが Strategy に相当
+  - 注意点: 通常の Strategy パターンはインターフェースを定義するが、Hono は関数シグネチャ（コールバック）で契約を表現する。TypeScript の型推論と相性が良い
+
+- **Mediator パターン** (分類: 振る舞い)
+  - 解決する問題: バリデーション結果を複数のミドルウェア間で共有する
+  - 適用条件: リクエスト処理パイプラインで前段の結果を後段が参照する必要がある場合
+  - コード例: `src/request.ts:321-336` -- `addValidatedData` / `valid` が Mediator 的な役割を果たす
+  - 注意点: `HonoRequest` が Mediator として機能し、バリデーター間の直接的な依存を排除している
 
 ## Good Patterns
 
-- **バリデーションライブラリ非依存の抽象化**: `validator()` はバリデーション関数を引数に取るだけで、Zod・Valibot・ArkType 等のライブラリ選択をユーザーに委ねている。フレームワーク側のロックインがなく、ライブラリの移行コストが低い。
+- **コールバックベースのライブラリ統合**: `validator(target, fn)` のシグネチャにより、任意のバリデーションライブラリを 20 行程度のラッパーで統合できる。フレームワーク本体の依存関係が増えず、ユーザーはバリデーションライブラリを自由に選択できる。
 
 ```typescript
-// src/validator/validator.ts:86-88
-// target と validationFunc の2引数だけ。バリデーションロジックは完全に外部化
->(
-  target: U,
-  validationFunc: VF
-): MiddlewareHandler<E, P, V, ExtractValidationResponse<VF>> => {
-```
-
-- **エラーレスポンスの即座返却パターン**: バリデーション関数が `Response` を返した場合、ミドルウェアチェーンを中断して即座にレスポンスを返す。これにより、バリデーションエラーのハンドリングが直感的で、try-catch のネストが不要になる。
-
-```typescript
-// src/validator/validator.ts:164-166
-if (res instanceof Response) {
-  return res as ExtractValidationResponse<VF>
+// src/validator/validator.test.ts:44-61 (リファレンス実装)
+const zodValidator = <T extends z.ZodSchema, ...>(target: Target, schema: T) => {
+  const validationFunc = (value: unknown, c: Context<E, P>) => {
+    const result = schema.safeParse(value)
+    if (!result.success) {
+      return c.text('Invalid!', 400) // Response を返すと早期リターン
+    }
+    return result.data as z.output<T>  // データを返すと格納 + next()
+  }
+  return validator(target, validationFunc) as MiddlewareHandler<...>
 }
 ```
 
-- **HTTP メソッドによる型レベルの制約**: GET/HEAD で json/form バリデーションを使おうとするとコンパイルエラーになる。ランタイムではなく型レベルで不正な使い方を防止する。
+- **戻り値型による制御フロー分岐**: バリデーション関数が `Response` を返せばエラーレスポンス、データオブジェクトを返せば成功として格納する。`if/else` や例外ではなく戻り値の型で制御フローが決まるため、型安全にエラーハンドリングの種類（テキスト、JSON、カスタム Response）をユーザーが選択できる。
 
 ```typescript
-// src/validator/validator.ts:10-12
+// src/validator/validator.ts:162-170
+const res = await validationFunc(value as never, c as never)
+
+if (res instanceof Response) {
+  return res  // エラーレスポンスを直接返却
+}
+
+c.req.addValidatedData(target, res as never)  // 成功データを格納
+return (await next())
+```
+
+- **HTTP 仕様の型レベル強制**: `ValidationTargetByMethod` により GET/HEAD で body 系バリデーション（json, form）を型エラーにする。ランタイムエラーではなく、コンパイル時に HTTP 仕様違反を検出できる。
+
+```typescript
+// src/validator/validator.ts:9-12
+type ValidationTargetKeysWithBody = 'form' | 'json'
 type ValidationTargetByMethod<M> = M extends 'get' | 'head'
   ? Exclude<keyof ValidationTargets, ValidationTargetKeysWithBody>
   : keyof ValidationTargets
 ```
 
-- **Content-Type の安全なフォールバック**: Content-Type が想定外の場合、例外を投げるのではなく空オブジェクトを渡してバリデーション関数に判断を委ねる。一方、パースエラー（Malformed JSON 等）は `HTTPException(400)` で明確にエラーとする。防御的プログラミングと適切なエラー報告のバランスが取れている。
-
-```typescript
-// src/validator/validator.ts:94-103
-case 'json':
-  if (!contentType || !jsonRegex.test(contentType)) {
-    break  // 空オブジェクトのまま → バリデーション関数に委ねる
-  }
-  try {
-    value = await c.req.json()
-  } catch {
-    const message = 'Malformed JSON in request body'
-    throw new HTTPException(400, { message })  // パースエラーは明確に400
-  }
-```
-
-- **Input/Output 型分離による正確な型推論**: バリデーション前の「クライアントが送るべき型」（Input）とバリデーション後の「ハンドラーが受け取る型」（Output）を分離し、transform 付きスキーマでも正しい型が推論される。
-
-```typescript
-// src/validator/validator.test.ts:1261-1298
-// query の transform で string → number への変換
-// Input: { query: { page: string | string[] } }  ← クライアント側
-// Output: { query: { page: number } }              ← ハンドラー側
-```
-
 ## Anti-Patterns / 注意点
 
-- **バリデーション関数で undefined を返すことによる型の曖昧さ**: バリデーション関数が明示的に値を返さない場合、`c.req.valid()` の戻り値型が不安定になりうる。テストコード中でも `void` を返すケースがあるが、型推論上は `undefined` がバリデーション結果として格納される。
+- **Content-Type 不一致時のサイレントスキップ**: Content-Type が不正な場合にバリデーションがスキップされ空オブジェクトが返る。開発者が Content-Type の設定を忘れた場合、バリデーションが効いていないことに気づきにくい。
 
 ```typescript
-// Bad: 明示的な戻り値なし
-validator('query', (value, c) => {
-  if (!value.q) {
-    return c.text('Invalid!', 400)
-  }
-  // 暗黙の undefined が返る → c.req.valid('query') の型が不明確
+// Bad: Content-Type を設定し忘れると validator がスキップされる
+const res = await app.request('http://localhost/post', {
+  method: 'POST',
+  body: JSON.stringify({ foo: 'bar' }),
+  // Content-Type: 'application/json' が無い → バリデーションスキップ
 })
-
-// Better: 明示的にバリデーション済みデータを返す
-validator('query', (value, c) => {
-  if (!value.q) {
-    return c.text('Invalid!', 400)
-  }
-  return { q: value.q as string }  // 型が明確
-})
+// res.status は 200 だが、c.req.valid('json') は {}
 ```
 
-- **サードパーティアダプタでの型キャスト**: `zodValidator` のリファレンス実装では `as MiddlewareHandler<...>` による型キャストが必要になっている。Hono 本体の `validator()` が返す型は複雑なジェネリクスで構成されており、外部ライブラリが正確な型を保持するためにはキャストが避けられない。
+```typescript
+// Better: バリデーションラッパー側で Content-Type チェックを追加する
+const strictJsonValidator = <T extends z.ZodSchema>(schema: T) =>
+  validator('json', (value, c) => {
+    if (Object.keys(value).length === 0) {
+      return c.json({ error: 'Missing or invalid Content-Type' }, 400)
+    }
+    const result = schema.safeParse(value)
+    if (!result.success) return c.json({ errors: result.error.flatten() }, 400)
+    return result.data
+  })
+```
+
+- **MiddlewareHandler へのキャストによる型安全性の穴**: 外部バリデーターの統合では `as MiddlewareHandler<...>` によるキャストが必要になる。`in` と `out` の型を手動で指定するため、スキーマ定義と不整合が生じるリスクがある。
 
 ```typescript
-// src/validator/validator.test.ts:55-61
-// as による型キャストが必要
+// Bad: in/out の型を間違えてキャスト
 return validator(target, validationFunc) as MiddlewareHandler<
   E, P,
-  { in: { [K in Target]: z.input<T> }; out: { [K in Target]: z.output<T> } },
-  ResponseType
+  { in: { [K in Target]: string }; out: { [K in Target]: number } } // 手動指定ミス
+>
+
+// Better: z.input<T> / z.output<T> を使って型を自動導出
+return validator(target, validationFunc) as MiddlewareHandler<
+  E, P,
+  { in: { [K in Target]: z.input<T> }; out: { [K in Target]: z.output<T> } }
 >
 ```
 
-- **FormData のキャッシュに注意**: FormData の取得に `bufferToFormData` を使った独自キャッシュ機構がある。先行するミドルウェアが `c.req.formData()` を呼んでいた場合はキャッシュを使い回すが、`c.req.raw` 経由で直接ボディを消費した場合はバリデーターがデータを取得できない可能性がある。
+## 導出ルール
 
-```typescript
-// src/validator/validator.ts:115-127
-if (c.req.bodyCache.formData) {
-  formData = await c.req.bodyCache.formData
-} else {
-  try {
-    const arrayBuffer = await c.req.arrayBuffer()
-    formData = await bufferToFormData(arrayBuffer, contentType)
-    c.req.bodyCache.formData = formData
-  } catch (e) {
-    // ...
-  }
-}
-```
+> このセクションは必須。最低 3 個のルールを記載すること。synthesis-writer が rules.md 生成時に参照する。
 
-## 自分のプロジェクトへの適用
+- `[MUST]` フレームワークのバリデーション層は特定のバリデーションライブラリに依存せず、コールバック関数の型シグネチャを統合契約として設計する
+  - 根拠: Hono は `validator(target, fn)` のコールバックパターンにより、コア 186 行で Zod/Valibot/TypeBox 等あらゆるバリデーションライブラリとの統合を可能にしている（`src/validator/validator.ts`）
 
-- [ ] バリデーション関数を「ターゲット + ロジック関数」で抽象化する設計を採用し、特定のバリデーションライブラリへの依存を避ける
-- [ ] バリデーション結果の Input/Output 型分離パターンを導入し、transform（文字列 → 数値変換等）があっても API クライアントに正しい入力型を伝搬させる
-- [ ] HTTP メソッドに応じたバリデーションターゲットの制約を型レベルで実装し、GET リクエストに body バリデーションを適用するようなミスを防ぐ
-- [ ] Content-Type の不一致とパースエラーを区別するエラーハンドリング戦略を採用する（不一致は寛容に、パースエラーは厳格に）
-- [ ] バリデーション関数がエラーレスポンスを直接返却できるパターンを導入し、throw ベースではなく戻り値ベースのエラーハンドリングで可読性を向上させる
+- `[MUST]` バリデーション結果の型を `in`（入力型）と `out`（出力型）に分離し、transform（型変換）前後の型を正確にハンドラーとクライアントに伝搬させる
+  - 根拠: `InferInput` 型ユーティリティ（`src/validator/utils.ts:59-69`）がリテラルユニオンやオプショナル型を保持しつつ、ターゲット固有のデフォルト型に変換する設計により、`z.transform()` の前後で型が正確に伝搬する
+
+- `[SHOULD]` バリデーション関数の「戻り値型」で成功/失敗の制御フローを表現する（Response 返却 = エラー、データ返却 = 成功）
+  - 根拠: `src/validator/validator.ts:164-170` で `res instanceof Response` による分岐を行い、例外に頼らないエラーハンドリングを実現。型レベルで `ExtractValidationResponse` と `ExtractValidatorOutput` が Response 型とデータ型を分離する
+
+- `[SHOULD]` HTTP メソッドの制約（GET/HEAD はボディを持たない等）を型システムで強制する
+  - 根拠: `ValidationTargetByMethod<M>` 型（`src/validator/validator.ts:10-12`）により、GET リクエストに `validator('json', ...)` を指定するとコンパイルエラーになる
+
+- `[AVOID]` バリデーション時に Content-Type の不一致をサイレントにスキップする設計を無批判に採用すること
+  - 根拠: Hono は互換性と柔軟性のためにスキップを選択しているが（`src/validator/validator.ts:95-97`）、厳格なバリデーションが必要な API ではユーザー側でラッパーによる追加チェックが必要になる
+
+- `[AVOID]` 外部バリデーター統合で `in`/`out` の型を手動で指定する際に、スキーマの `input`/`output` 型と不整合なキャストを行うこと
+  - 根拠: `zodValidator` のリファレンス実装（`src/validator/validator.test.ts:55-60`）は `z.input<T>` / `z.output<T>` を使って型を自動導出しており、手動指定は型安全性を損なう
+
+## 適用チェックリスト
+
+- [ ] バリデーション層がコールバック/プラグイン形式で設計されており、特定のバリデーションライブラリにロックインしていないか
+- [ ] バリデーション結果の型がハンドラー（サーバー側）とクライアント側の両方に正しく伝搬しているか
+- [ ] transform を伴うバリデーション（文字列 -> 数値変換等）で、入力型と出力型が区別されているか
+- [ ] HTTP メソッドに応じたバリデーションターゲットの制約が型レベルで強制されているか
+- [ ] 複数のバリデーターを同一ルートにチェーンした際に、各バリデーション結果が独立して取得できるか
+- [ ] Body を消費するバリデーション（JSON, FormData）後に、ハンドラーで再度 body を読めるキャッシュ機構があるか
+- [ ] Content-Type の不一致時の挙動（スキップ vs エラー）がプロジェクトの要件に合致しているか

@@ -1,79 +1,61 @@
-# Build System
+# build-system
 
 > リポジトリ: honojs/hono
 > 分析日: 2026-02-14
 
 ## 概要
 
-Hono のビルドシステムは、Bun で実行される esbuild ベースのカスタムビルドスクリプトを中心に構成される。75 のエクスポートエントリーポイントを持つ大規模パッケージを ESM + CJS デュアルフォーマットで出力し、npm と JSR（Deno レジストリ）の両方に公開する。ビルド時にエクスポート定義の整合性検証、`.d.ts` からのプライベートフィールド除去、publint によるパッケージバリデーションを自動実行するなど、パッケージ品質を担保する仕組みが注目に値する。
+Hono のビルドシステムは、Bun をタスクランナー、esbuild をトランスパイラ、tsc を型定義生成器とし、ESM/CJS デュアル出力と JSR 対応を実現するカスタムパイプラインである。70 以上のエクスポートエントリポイントを持つモノリシックパッケージでありながら、バンドラレスの esbuild + `addExtension` プラグインという軽量な仕組みで一貫した出力を生成している。`package.json` と `jsr.json` のエクスポート整合性をビルド時にバリデーションする自動検証や、`.d.ts` から `#private` フィールドを AST ベースで除去する後処理など、パッケージ品質を自動保証する仕組みが注目に値する。
+
+## 設計思想
+
+- **ツールごとの責務分離**: esbuild は JS トランスパイル専任、tsc は型定義（`.d.ts`）生成専任、publint はパッケージバリデーション専任と、各ツールの得意分野だけを使う。esbuild に型チェックや型生成を任せず、tsc にバンドルを任せない。この分離により、esbuild の高速トランスパイルと tsc の正確な型情報を両立させている（`build/build.ts:100-106`）。
+
+- **ソースコードは拡張子なし、ビルドが解決する**: ソースコード（`src/`）のインポートパスに `.ts` や `.js` 拡張子を付けず、esbuild プラグイン `addExtension` がビルド時に `.js` 拡張子を付与する。Deno/JSR は `unstable: ["sloppy-imports"]` で拡張子なしインポートを許容する。これにより、ソースコードをランタイム・ビルドツールの都合から独立させている（`build/build.ts:42-67`, `jsr.json:8`）。
+
+- **パッケージ品質の自動保証**: ビルドスクリプト内で `validateExports` により `package.json` と `jsr.json` のエクスポート整合性をクロスチェックし、`postbuild` で publint によるパッケージ規約検証を行う。手動の目視確認ではなく、ビルドパイプラインに品質ゲートを組み込むことで、70 以上のエクスポートがあっても不整合を防止している（`build/build.ts:29-31`, `package.json:30`）。
+
+- **CJS 互換は最小限の仕組みで実現する**: `package.cjs.json`（`{"type": "commonjs"}` のみの 3 行ファイル）を `dist/cjs/` にコピーするだけで CJS 判定を成立させる。ルートの `package.json` は `"type": "module"` であり、`dist/cjs/` 配下に `package.json` を置くことで Node.js のモジュール解決規則を利用して CJS/ESM を切り替えている（`package.cjs.json`, `package.json:29`）。
 
 ## 設計・実装の詳細
 
-### ビルドパイプラインの全体像
+### ビルドパイプラインの全体構成
 
-ビルドは `bun run build` で起動され、以下の順序で実行される。
-
-1. `rm -rf dist` — 前回の成果物を削除
-2. `bun ./build/build.ts` — esbuild による ESM/CJS ビルド + tsc による型定義生成
-3. `cp ./package.cjs.json ./dist/cjs/package.json` — CJS ディレクトリに `{"type": "commonjs"}` を配置
-4. `publint` — postbuild フックでパッケージの正当性を検証
-
-ステップ 2 の内部では ESM ビルド、CJS ビルド、tsc の 3 タスクが `Promise.all` で並列実行される。tsc 完了後にはプライベートフィールドの除去が走る。
+ビルドは 3 つの並列タスクで構成されている。
 
 ```
-build/build.ts:100-110
-await Promise.all([
-  runBuild(esmConfig),
-  runBuild(cjsConfig),
-  $`tsc ${
-    isWatch ? '-w' : ''
-  } --emitDeclarationOnly --declaration --project tsconfig.build.json`.nothrow(),
-])
-
-// Remove #private fields
-const dtsEntries = glob.globSync('./dist/types/**/*.d.ts')
-await removePrivateFields(dtsEntries)
+bun run build
+  ├── rm -rf dist                        # クリーンビルド
+  ├── bun ./build/build.ts               # メインビルド
+  │   ├── validateExports()              # package.json <-> jsr.json 整合性チェック
+  │   ├── Promise.all([                  # 3 タスク並列実行
+  │   │   esbuild (ESM → dist/)          #   ESM 出力
+  │   │   esbuild (CJS → dist/cjs/)      #   CJS 出力
+  │   │   tsc (→ dist/types/)            #   型定義出力
+  │   │ ])
+  │   └── removePrivateFields()          # .d.ts から #private 除去
+  ├── cp package.cjs.json dist/cjs/      # CJS 判定用 package.json 配置
+  │   cp package.cjs.json dist/types/    # 型定義も CJS 解決用
+  └── publint                            # postbuild: パッケージ検証
 ```
 
-### ESM と CJS のデュアル出力戦略
+ESM ビルド・CJS ビルド・型定義生成は `Promise.all` で並列実行され、ビルド速度を最大化している。
 
-ESM と CJS で異なるビルド戦略を採用している点が特徴的である。
+### エントリポイントの収集戦略
 
-**ESM ビルド** (`dist/`): `bundle: true` を設定し、各エントリーポイントの依存をバンドルする。ただし `addExtension` プラグインで全インポートを `external: true` にマークするため、実質的にはバンドルされない。このプラグインの真の目的は TypeScript の拡張子なしインポートに `.js` 拡張子を付与することにある。
-
-**CJS ビルド** (`dist/cjs/`): `bundle` オプションなし（デフォルト `false`）で、単純なトランスパイルのみを行う。
-
-```
-build/build.ts:75-89
-const cjsConfig: BuildOptions = {
-  ...commonOptions,
-  outbase: './src',
-  outdir: './dist/cjs',
-  format: 'cjs',
-}
-
-const esmConfig: BuildOptions = {
-  ...commonOptions,
-  bundle: true,
-  outbase: './src',
-  outdir: './dist',
-  format: 'esm',
-  plugins: [addExtension('.js')],
-}
+```typescript
+// build/build.ts:34-36
+const entryPoints = glob.sync('./src/**/*.ts', {
+  ignore: ['./src/**/*.test.ts', './src/mod.ts', './src/middleware.ts', './src/deno/**/*.ts'],
+})
 ```
 
-### addExtension プラグイン: ESM インポートパス解決
+`src/` 配下の全 `.ts` ファイルをエントリポイントとして収集し、テストファイル・Deno 専用ファイル・集約モジュール（`mod.ts`, `middleware.ts`）を除外する。個々のエントリポイントを列挙するのではなく glob で自動収集することで、新しいモジュールの追加時にビルド設定の変更が不要になる。
 
-ESM では Node.js の `import` 文に明示的な `.js` 拡張子が必要になるケースがある。TypeScript ソースでは拡張子なし (`./router`) でインポートしているため、ビルド時に `.js` を付与する esbuild プラグインが組み込まれている。
+### addExtension プラグインの仕組み
 
-ファイル解決のロジックは 2 段階:
-1. `{path}.ts` が存在すれば `{path}.js` に変換
-2. `{path}/index.ts` が存在すれば `{path}/index.js` に変換
-
-すべてのインポートを `external: true` でマークすることで、バンドル対象から除外しつつパス書き換えのみを実現している。
-
-```
-build/build.ts:42-67
+```typescript
+// build/build.ts:42-67
 const addExtension = (extension: string = '.js', fileExtension: string = '.ts'): Plugin => ({
   name: 'add-extension',
   setup(build: PluginBuild) {
@@ -102,110 +84,46 @@ const addExtension = (extension: string = '.js', fileExtension: string = '.ts'):
 })
 ```
 
-### CJS 互換性の実現: package.cjs.json パターン
+ESM ビルドでのみ使用される。全インポートを `external: true` として扱い、拡張子なしの `./foo` を `./foo.js` に、`./bar/` を `./bar/index.js` に解決する。これにより ESM 出力はバンドルされずファイル単位のまま出力されるが、Node.js ESM が要求する明示的な `.js` 拡張子がビルド時に自動付与される。
 
-Node.js は `package.json` の `"type": "module"` フィールドでモジュールシステムを判定する。Hono のルート `package.json` は `"type": "module"` であるため、`dist/cjs/` 内の `.js` ファイルもデフォルトでは ESM と解釈されてしまう。
+CJS ビルドはこのプラグインを使わず、`bundle: true` も設定しないため、esbuild のデフォルト動作で CJS に変換される。
 
-この問題を解決するため、`dist/cjs/package.json` と `dist/types/package.json` に `{"type": "commonjs"}` のみを記述した `package.cjs.json` をコピーする。これにより `dist/cjs/` 配下のファイルは CJS として正しく解釈される。
+### ESM/CJS デュアル出力のディレクトリ戦略
 
 ```
-package.cjs.json
-{
-  "type": "commonjs"
+dist/
+├── index.js              # ESM (ルート package.json の "type": "module" に従う)
+├── middleware/
+│   └── cors/index.js     # ESM
+├── cjs/
+│   ├── package.json      # {"type": "commonjs"} ← package.cjs.json のコピー
+│   ├── index.js           # CJS
+│   └── middleware/
+│       └── cors/index.js  # CJS
+└── types/
+    ├── package.json       # {"type": "commonjs"} ← 同上
+    ├── index.d.ts
+    └── middleware/
+        └── cors/index.d.ts
+```
+
+`package.json` の `exports` フィールドで条件付きエクスポートを定義する。
+
+```json
+// package.json:38-42
+".": {
+  "types": "./dist/types/index.d.ts",
+  "import": "./dist/index.js",
+  "require": "./dist/cjs/index.js"
 }
 ```
 
-```
-package.json (scripts)
-"copy:package.cjs.json": "cp ./package.cjs.json ./dist/cjs/package.json && cp ./package.cjs.json ./dist/types/package.json"
-```
+`types` を最初に記述することで、TypeScript がまず型定義を解決できるようにしている。
 
-### エントリーポイントの自動検出とフィルタリング
+### #private フィールドの AST ベース除去
 
-ビルド対象は `src/**/*.ts` の glob パターンで自動検出される。テストファイル、Deno 専用モジュール、集約エクスポートファイル (`mod.ts`, `middleware.ts`) は除外される。
-
-```
-build/build.ts:34-36
-const entryPoints = glob.sync('./src/**/*.ts', {
-  ignore: ['./src/**/*.test.ts', './src/mod.ts', './src/middleware.ts', './src/deno/**/*.ts'],
-})
-```
-
-`tsconfig.build.json` でも同じ除外パターンが定義されており、JavaScript 出力と型定義出力の整合性が保たれている。
-
-```
-tsconfig.build.json:14-22
-"exclude": [
-  "src/mod.ts",
-  "src/helper.ts",
-  "src/middleware.ts",
-  "src/deno/**/*.ts",
-  "src/test-utils/*.ts",
-  "src/**/*.test.ts",
-  "src/**/*.test.tsx",
-]
-```
-
-### エクスポート整合性の自動検証
-
-`package.json` と `jsr.json` のエクスポート定義が相互に一致するかをビルド時に検証する。片方にあるエントリーポイントがもう片方に存在しない場合、エラーをスローしてビルドを中断する。ワイルドカードパターン (`./utils/*`) の展開にも対応している。
-
-```
-build/build.ts:28-31
-const [packageJsonExports, jsrJsonExports] = ['./package.json', './jsr.json'].map(readJsonExports)
-
-// Validate exports of package.json and jsr.json
-validateExports(packageJsonExports, jsrJsonExports, 'jsr.json')
-validateExports(jsrJsonExports, packageJsonExports, 'package.json')
-```
-
-```
-build/validate-exports.ts:1-37
-export const validateExports = (
-  source: Record<string, unknown>,
-  target: Record<string, unknown>,
-  fileName: string
-) => {
-  const isEntryInTarget = (entry: string): boolean => {
-    if (entry in target) {
-      return true
-    }
-
-    // e.g., "./utils/*" -> "./utils"
-    const wildcardPrefix = entry.replace(/\/\*$/, '')
-    if (entry.endsWith('/*')) {
-      return Object.keys(target).some(
-        (targetEntry) =>
-          targetEntry.startsWith(wildcardPrefix + '/') && targetEntry !== wildcardPrefix
-      )
-    }
-
-    const separatedEntry = entry.split('/')
-    while (separatedEntry.length > 0) {
-      const pattern = `${separatedEntry.join('/')}/*`
-      if (pattern in target) {
-        return true
-      }
-      separatedEntry.pop()
-    }
-
-    return false
-  }
-
-  Object.keys(source).forEach((sourceEntry) => {
-    if (!isEntryInTarget(sourceEntry)) {
-      throw new Error(`Missing "${sourceEntry}" in '${fileName}'`)
-    }
-  })
-}
-```
-
-### 型定義の後処理: プライベートフィールド除去
-
-TypeScript の `#private` フィールドは `.d.ts` 宣言ファイルにも出力される。これは公開 API として不要であり、パッケージサイズの増大やユーザーの混乱を招くため、`oxc-parser` を使って AST レベルで除去する。
-
-```
-build/remove-private-fields.ts:27-53
+```typescript
+// build/remove-private-fields.ts:27-53
 export function removePrivateFieldFromSourceCode(ast: ParseResult, sourceCode: string) {
   const removals: PropertyDefinition[] = []
   new Visitor({
@@ -235,54 +153,117 @@ export function removePrivateFieldFromSourceCode(ast: ParseResult, sourceCode: s
 }
 ```
 
-除去処理はスペースで置換する方式で、ソースマップへの影響を最小限に抑えている。
+tsc が `.d.ts` に出力する `#private;` フィールドは TypeScript の private class fields に対応するものだが、パッケージ利用者にとっては不要なノイズとなる。oxc-parser（Rust ベースの高速 AST パーサ）を使い、`#private;` を空白文字で置換することで、ソースマップの位置情報を壊さずにクリーンな型定義を生成している。
 
-### デュアルレジストリ公開: npm + JSR
+### package.json と jsr.json のエクスポート整合性バリデーション
 
-npm 公開は `np` ツール経由で行われ、`prerelease` スクリプトで Deno テスト + ビルドが前提条件として実行される。
-
-```
-package.json (scripts)
-"prerelease": "bun test:deno && bun run build",
-"release": "np",
-```
-
-JSR 公開は GitHub Actions のタグプッシュトリガーで自動実行される。JSR は TypeScript ソースを直接公開できるため、ビルド成果物ではなく `src/` をそのまま配布する。
-
-```
-jsr.json:107-110
-"publish": {
-  "include": ["jsr.json", "LICENSE", "README.md", "src/**/*.ts"],
-  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]
+```typescript
+// build/validate-exports.ts:1-37
+export const validateExports = (
+  source: Record<string, unknown>,
+  target: Record<string, unknown>,
+  fileName: string
+) => {
+  const isEntryInTarget = (entry: string): boolean => {
+    if (entry in target) {
+      return true
+    }
+    // ワイルドカードパターン ("./utils/*") のマッチング
+    const wildcardPrefix = entry.replace(/\/\*$/, '')
+    if (entry.endsWith('/*')) {
+      return Object.keys(target).some(
+        (targetEntry) =>
+          targetEntry.startsWith(wildcardPrefix + '/') && targetEntry !== wildcardPrefix
+      )
+    }
+    // ...
+  }
+  Object.keys(source).forEach((sourceEntry) => {
+    if (!isEntryInTarget(sourceEntry)) {
+      throw new Error(`Missing "${sourceEntry}" in '${fileName}'`)
+    }
+  })
 }
 ```
 
-### CI でのバンドルサイズ監視
+双方向バリデーション: `package.json` のエクスポートが `jsr.json` にも存在するか、その逆も検証する。ワイルドカードパターン（`./utils/*`）にも対応しており、npm と JSR で異なるパターン展開方式を吸収している。これにより、片方にエントリを追加して他方を忘れるミスをビルド時に検出できる。
 
-PR ごとにバンドルサイズを計測し、octocov でトラッキングする仕組みがある。esbuild で `dist/index.js` を minify バンドルし、そのファイルサイズを JSON メトリクスとして出力する。
+### JSR 対応の戦略
+
+```json
+// jsr.json
+{
+  "name": "@hono/hono",
+  "version": "0.0.0",
+  "compilerOptions": {
+    "lib": ["dom", "dom.iterable", "deno.ns"]
+  },
+  "unstable": ["sloppy-imports"],
+  "exports": {
+    ".": "./src/index.ts",
+    "./request": "./src/request.ts",
+    ...
+  }
+}
+```
+
+JSR はソース TypeScript を直接パブリッシュするため、`exports` は `./src/*.ts` を直接指す。`version` は `"0.0.0"` としてあり、実際のバージョンは `deno run -A jsr:@david/publish-on-tag` がタグから決定する（`release.yml:24`）。`sloppy-imports` を有効にすることで、拡張子なしインポートを Deno/JSR 環境でも許容している。
+
+### CI でのビルド品質チェック
+
+CI パイプライン（`.github/workflows/ci.yml`）では以下のビルド関連検証が行われる:
+
+1. **ビルド成功の確認**: `bun run build`（ESM/CJS 出力 + publint 検証）
+2. **JSR dry-run**: `bunx jsr publish --dry-run` で JSR パブリッシュの事前検証
+3. **バンドルサイズ計測**: esbuild で `dist/index.js` をミニファイバンドルし、サイズを octocov で追跡
+4. **型チェック性能計測**: tsc と typescript-go の両方で型チェック性能を計測・比較
+5. **pkg-pr-new**: PR ごとにパッケージを StackBlitz にプレビューパブリッシュ
+
+### リリースフロー
 
 ```
-perf-measures/bundle-check/scripts/check-bundle-size.ts:11-18
-await esbuild.build({
-  entryPoints: ['dist/index.js'],
+prerelease: bun test:deno && bun run build
+release: np (npm publish)
+tags push → GitHub Actions → deno run -A jsr:@david/publish-on-tag (JSR publish)
+```
+
+npm と JSR への二重パブリッシュを、npm は `np`（対話式リリースツール）、JSR は Git タグトリガーの GitHub Actions でそれぞれ自動化している。
+
+## コード例
+
+### ESM/CJS 共通オプションとフォーマット分岐
+
+```typescript
+// build/build.ts:69-89
+const commonOptions: BuildOptions = {
+  entryPoints,
+  logLevel: 'info',
+  platform: 'node',
+}
+
+const cjsConfig: BuildOptions = {
+  ...commonOptions,
+  outbase: './src',
+  outdir: './dist/cjs',
+  format: 'cjs',
+}
+
+const esmConfig: BuildOptions = {
+  ...commonOptions,
   bundle: true,
-  minify: true,
-  format: 'esm' as esbuild.Format,
-  target: 'es2022',
-  outfile: tempFilePath,
-})
+  outbase: './src',
+  outdir: './dist',
+  format: 'esm',
+  plugins: [addExtension('.js')],
+}
 ```
 
-### PR プレビュー公開: pkg-pr-new
+ESM ビルドのみ `bundle: true` と `addExtension` プラグインを使う点に注目。`bundle: true` は実際にはバンドルしないが（全インポートが `external: true` になるため）、esbuild のモジュール解決をトリガーするために必要である。
 
-`cr.yml` ワークフローにより、`cr-tracked` ラベルが付いた PR や main ブランチへのプッシュ時に `pkg-pr-new` 経由で StackBlitz にプレビューパッケージが公開される。これによりリリース前に実際のパッケージインストールを試行できる。
+### 3 タスク並列実行
 
-## Good Patterns
-
-- **3 タスク並列ビルド**: ESM トランスパイル、CJS トランスパイル、型定義生成を `Promise.all` で並列実行することで、ビルド時間を大幅に短縮している。各タスクが独立しているため安全に並列化できる設計になっている。
-
-```
-build/build.ts:100-106
+```typescript
+// build/build.ts:100-106
 await Promise.all([
   runBuild(esmConfig),
   runBuild(cjsConfig),
@@ -292,74 +273,126 @@ await Promise.all([
 ])
 ```
 
-- **エクスポート整合性の双方向検証**: `package.json` と `jsr.json` のエクスポートを相互に検証することで、一方にエントリーポイントを追加してもう一方を忘れるミスを防止している。ワイルドカードの展開ロジックも含め、堅牢な検証になっている。
+Bun の Shell API（`$`）で tsc を実行し、`.nothrow()` で tsc の非ゼロ終了コードを無視する。これにより、型エラーがあってもビルド全体が中断しない（型チェックは別の `test` スクリプトで行う）。
 
+### 条件付きエクスポートの定義パターン
+
+```json
+// package.json:38-42 (70+ エントリの一例)
+".": {
+  "types": "./dist/types/index.d.ts",
+  "import": "./dist/index.js",
+  "require": "./dist/cjs/index.js"
+}
 ```
-build/build.ts:30-31
+
+`types` → `import` → `require` の順序は Node.js の条件付きエクスポート解決の優先順位に従っている。
+
+## パターンカタログ
+
+- **Builder パターン** (分類: 生成)
+  - 解決する問題: ESM/CJS/型定義の 3 種の出力を、共通設定をベースに差分だけ定義して生成する
+  - 適用条件: 複数フォーマットの出力が必要で、設定の大部分が共通するとき
+  - コード例: `build/build.ts:69-89`（`commonOptions` をスプレッドで拡張）
+  - 注意点: 共通設定のオーバーライドが意図通りに動くか、スプレッド順序に注意
+
+- **Visitor パターン** (分類: 振る舞い)
+  - 解決する問題: AST を走査して特定のノード（`#private` フィールド）を検出・処理する
+  - 適用条件: 構造化データ（AST、DOM 等）の走査と条件付き処理
+  - コード例: `build/remove-private-fields.ts:29-37`（oxc-parser の Visitor API）
+  - 注意点: 置換時にソースマップの位置情報を壊さないよう、空白文字で埋めている
+
+## Good Patterns
+
+- **glob ベースのエントリポイント自動収集**: `glob.sync('./src/**/*.ts', { ignore: [...] })` で新規モジュール追加時にビルド設定変更が不要。エントリポイントを手動列挙するとモジュール追加のたびに設定変更が必要になるが、glob + ignore パターンなら「除外すべきもの」だけ定義すれば良い。
+
+```typescript
+// build/build.ts:34-36
+const entryPoints = glob.sync('./src/**/*.ts', {
+  ignore: ['./src/**/*.test.ts', './src/mod.ts', './src/middleware.ts', './src/deno/**/*.ts'],
+})
+```
+
+- **双方向エクスポートバリデーション**: `package.json` と `jsr.json` を相互にクロスチェックすることで、片方へのエントリ追加漏れをビルド時に自動検出する。単方向チェックでは片方だけに余分なエントリがあっても検出できないが、双方向にすることで完全な一致を保証する。
+
+```typescript
+// build/build.ts:29-31
 validateExports(packageJsonExports, jsrJsonExports, 'jsr.json')
 validateExports(jsrJsonExports, packageJsonExports, 'package.json')
 ```
 
-- **postbuild での publint 実行**: `npm publish` のパッケージ構造の正当性を publint で自動チェックする。`exports` のパスが実際に存在するか、条件付きエクスポートの優先順位が正しいかなどを検証できる。
+- **package.cjs.json パターン**: 3 行のミニマルな JSON（`{"type": "commonjs"}`）を `dist/cjs/` にコピーするだけで、ルートの `"type": "module"` と競合せずに CJS サブディレクトリを成立させる。ビルドツール側で `.cjs` 拡張子に変換する方式より、Node.js のモジュール解決規則を直接利用するため透明性が高い。
 
+```json
+// package.cjs.json (全文)
+{
+  "type": "commonjs"
+}
 ```
-package.json
-"postbuild": "publint",
-```
 
-- **package.cjs.json によるモジュールシステム制御**: ルートの `"type": "module"` と CJS サブディレクトリの `"type": "commonjs"` を `package.json` の階層構造で制御する。`.cjs` 拡張子を使わずに CJS 互換を実現するシンプルなアプローチ。
+- **postbuild フックでの publint 検証**: ビルド直後に publint を自動実行し、`exports` の指すファイルが実在するか、条件付きエクスポートの構文が正しいかを検証する。CI だけでなくローカルビルドでも常に検証が走るため、パブリッシュ前に問題を発見できる。
 
-- **ビルドスクリプト自体のテスト**: `validate-exports` と `remove-private-fields` にはユニットテストが存在し、ビルドツール自体の信頼性を担保している。
-
-```
-build/validate-exports.test.ts:25-30
-describe('validateExports', () => {
-  it('Works', async () => {
-    expect(() => validateExports(mockExports1, mockExports1, 'package.json')).not.toThrowError()
-    expect(() => validateExports(mockExports1, mockExports2, 'jsr.json')).not.toThrowError()
-    expect(() => validateExports(mockExports1, mockExports3, 'package.json')).toThrowError()
-  })
-})
+```json
+// package.json:30
+"postbuild": "publint"
 ```
 
 ## Anti-Patterns / 注意点
 
-- **ESM ビルドでの bundle + external パターンの複雑さ**: ESM 設定で `bundle: true` を有効にしつつ、`addExtension` プラグインで全インポートを `external` にマークするのは、実質的にバンドルを行わない設定である。この間接的なアプローチは初見で意図を理解しにくい。
+- **エクスポートの手動同期**: `package.json` の `exports`、`typesVersions`、`jsr.json` の `exports` で 70 以上のエントリを手動管理している。`validateExports` で整合性は検証されるが、新しいモジュール追加時に 3 箇所を手動編集する必要がある。
 
-```
-// Bad: bundle: true だが実質バンドルしない（わかりにくい）
-const esmConfig: BuildOptions = {
-  ...commonOptions,
-  bundle: true,
-  plugins: [addExtension('.js')],  // 全て external にする
-}
-```
-
-```
-// Better: esbuild にインポートパス書き換え専用の仕組みがない制約があるため、
-// コメントで意図を明記する
-const esmConfig: BuildOptions = {
-  ...commonOptions,
-  // bundle: true is required for the addExtension plugin to intercept imports.
-  // All imports are marked as external, so no actual bundling occurs.
-  // The real purpose is to add .js extensions to import paths for ESM compatibility.
-  bundle: true,
-  plugins: [addExtension('.js')],
-}
+```json
+// Bad: 3 箇所に同じエントリを手動で追加する必要がある
+// package.json exports:
+"./cors": { "types": "...", "import": "...", "require": "..." }
+// package.json typesVersions:
+"cors": ["./dist/types/middleware/cors"]
+// jsr.json exports:
+"./cors": "./src/middleware/cors/index.ts"
 ```
 
-- **tsc の `.nothrow()` による型エラーのサイレント無視**: tsc が `nothrow()` 付きで実行されているため、型エラーがあってもビルドが成功してしまう。CI の `test` スクリプトで `tsc --noEmit` を別途実行しているため実害はないが、ビルドスクリプト単体では型安全性が保証されない。
-
+```typescript
+// Better: エクスポートマップを単一のソースから生成するスクリプト
+// (Hono は validateExports で整合性を保証する方式を選択しているため、
+//  これは「別のアプローチ」であり必ずしも優れているとは限らない)
+const exports = generateExportsMap('./src')
+writeJson('package.json', { ...pkg, exports: toNpmExports(exports) })
+writeJson('jsr.json', { ...jsr, exports: toJsrExports(exports) })
 ```
-// 注意: nothrow() により型エラーがあってもビルドは通る
-$`tsc ${isWatch ? '-w' : ''} --emitDeclarationOnly --declaration --project tsconfig.build.json`.nothrow()
-```
 
-## 自分のプロジェクトへの適用
+- **tsc エラーの無視**: `$\`tsc ...\`.nothrow()` で tsc の終了コードを無視している。ビルドと型チェックの責務分離は合理的だが、型定義の生成自体が失敗しても気づかないリスクがある。CI で別途 `tsc --noEmit` を実行しているため実害は小さいが、ローカル開発では注意が必要。
 
-- [ ] ESM + CJS デュアル出力が必要なライブラリで、`package.cjs.json` パターンを導入してサブディレクトリ単位でモジュールシステムを制御する
-- [ ] 複数レジストリ（npm + JSR）に公開するライブラリで、エクスポート定義の双方向検証ロジックをビルドスクリプトに組み込む
-- [ ] `publint` を postbuild フックに追加して、パッケージの exports / types / main 設定の正当性を自動検証する
-- [ ] esbuild + tsc の並列実行パターン（esbuild で JS 出力、tsc で型定義のみ出力）を採用してビルド時間を短縮する
-- [ ] ビルドスクリプト自体にユニットテストを書き、特にエクスポート検証やコード変換ロジックの正しさを担保する
-- [ ] PR ごとのバンドルサイズ計測を CI に組み込み、パフォーマンスリグレッションを検知する
+## 導出ルール
+
+> このセクションは必須。synthesis-writer が rules.md 生成時に参照する。
+
+- `[MUST]` ESM/CJS デュアルパッケージでは `exports` フィールドに `types` → `import` → `require` の順序で条件を定義し、各条件が指すファイルの存在を publint 等で自動検証する
+  - 根拠: Hono は 70 以上のエクスポートで `types` を最優先に配置し、`postbuild` で publint を実行してファイル参照の正当性を保証している（`package.json:30, 38-42`）
+
+- `[MUST]` 複数のパッケージレジストリ（npm + JSR 等）にパブリッシュする場合、エクスポートマップの整合性をビルド時に自動検証する仕組みを設ける
+  - 根拠: Hono は `validateExports` で `package.json` と `jsr.json` を双方向にクロスチェックし、エントリの追加漏れをビルド時に検出している（`build/build.ts:29-31`）
+
+- `[SHOULD]` ビルドパイプラインではツールごとの責務を分離し、トランスパイル（esbuild）・型定義生成（tsc）・パッケージ検証（publint）を独立したステップとして並列実行する
+  - 根拠: Hono は `Promise.all` で ESM ビルド・CJS ビルド・tsc を並列実行し、各ツールの得意分野だけを活用することでビルド速度と正確性を両立している（`build/build.ts:100-106`）
+
+- `[SHOULD]` エントリポイントは glob パターンで自動収集し、除外リスト（テスト・内部モジュール）で制御する。手動列挙はモジュール追加時の設定変更漏れリスクがある
+  - 根拠: Hono は `glob.sync('./src/**/*.ts', { ignore: [...] })` で全ソースファイルを自動収集し、新モジュール追加時のビルド設定変更を不要にしている（`build/build.ts:34-36`）
+
+- `[SHOULD]` CJS 互換が必要な場合、ルートの `"type": "module"` と `dist/cjs/package.json` の `"type": "commonjs"` で Node.js のモジュール解決規則を利用し、`.cjs`/`.mjs` 拡張子変換を避ける
+  - 根拠: Hono は 3 行の `package.cjs.json` をコピーするだけで CJS サブディレクトリを成立させ、ファイル拡張子を変更しない透明なデュアル出力を実現している（`package.cjs.json`, `package.json:29`）
+
+- `[AVOID]` ソースコードのインポートパスにビルド出力用の拡張子（`.js`）をハードコードすること。ビルドツールのプラグインで拡張子を付与し、ソースコードをランタイムの都合から独立させる
+  - 根拠: Hono は `addExtension` プラグインでビルド時に `.js` 拡張子を付与し、ソースコードは拡張子なしインポートのまま保っている（`build/build.ts:42-67`）
+
+## 適用チェックリスト
+
+- [ ] `package.json` に `"type": "module"` を設定し、ESM をデフォルトとしているか
+- [ ] `exports` フィールドで `types` → `import` → `require` の順序を守っているか
+- [ ] CJS 出力ディレクトリに `{"type": "commonjs"}` の `package.json` を配置しているか
+- [ ] ビルド後に `publint` または同等のツールでパッケージ構造を自動検証しているか
+- [ ] 複数レジストリ（npm, JSR 等）のエクスポートマップの整合性をビルド時に検証しているか
+- [ ] エントリポイントを glob で自動収集し、除外リストで不要ファイルを排除しているか
+- [ ] ソースコードのインポートパスにビルド出力用の拡張子をハードコードしていないか
+- [ ] ESM ビルド・CJS ビルド・型定義生成を並列実行し、ビルド速度を最適化しているか
+- [ ] `.d.ts` の不要な内部情報（`#private` 等）を後処理で除去しているか
+- [ ] CI でバンドルサイズを計測し、リグレッションを検出できるようにしているか
