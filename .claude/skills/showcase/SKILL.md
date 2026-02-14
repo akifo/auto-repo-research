@@ -3,7 +3,7 @@ name: showcase
 description: "研究結果から実用的な知見を抽出し、showcase ファイルを生成する。キーワード: showcase, 知見, パターン"
 version: 2026.02.14
 user-invocable: true
-argument-hint: "<theme> <name>（例: pattern middleware-chain）"
+argument-hint: "[<theme> <name>]（省略時は候補を提案）"
 allowed-tools: Bash, Read, Write, Glob, Grep
 ---
 
@@ -13,11 +13,27 @@ allowed-tools: Bash, Read, Write, Glob, Grep
 
 ## 実行フロー
 
+### Step 0: 引数なし時の候補提案
+
+> 引数がある場合はこのステップをスキップし、Step 1 へ進む。
+
+1. `repos/` 配下の全 `meta.yaml` を Glob で列挙し Read する
+2. 各リポの `rules.md` を Read し、高価値なルール・カテゴリを把握する
+3. 各リポの `overview.md` の「特に注目すべき知見」セクションを Read する
+4. 既存の `showcases/` 配下のファイルを Glob で確認し、すでに作成済みのテーマと重複しないようにする
+5. 収集した情報から showcase 候補を **5個** 提案する
+   - 各候補に `theme`, `name`, 1行の説明を付与する
+   - 複数リポがある場合は横断的なテーマも含める
+   - theme の候補: `pattern`, `practice`, `tool`, `workflow`, `claude`（候補外も許容）
+6. AskUserQuestion で候補を提示し、ユーザーに選択させる
+   - 「Other」で自由入力も可能
+7. 選択された候補の theme と name で Step 1 以降を実行する
+
 ### Step 1: 引数の解析
 
 1. 引数から `theme` と `name` を抽出する
    - 例: `pattern middleware-chain` → theme=`pattern`, name=`middleware-chain`
-   - 引数が不足している場合は AI が提案する
+   - 引数が不足している場合は Step 0 に戻り候補を提案する
 2. 出力先: `showcases/<theme>_<name>.md`
 3. theme の候補: `pattern`, `practice`, `tool`, `workflow`, `claude`
    - 候補外の theme も許容する（柔軟に拡張可能）
