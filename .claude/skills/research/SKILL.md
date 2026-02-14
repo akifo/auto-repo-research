@@ -80,20 +80,24 @@ Step 2 の情報を基に、分析する視点リストを生成する。
 - `project-structure` — ディレクトリ構成・モジュール分割
 - `architecture` — 全体アーキテクチャ・レイヤー構成
 - `design-philosophy` — 設計思想・哲学・技術選定の根拠
-- + リポジトリ固有の最重要視点 2-5 個
+- + プラクティス軸の視点 2-5 個（例: `code-organization`, `abstraction-patterns`, `performance-techniques`, `type-system-patterns`）
 
-**Wave 2（拡張視点）**: 残り。詳細分析・横断的な視点:
+**Wave 2（拡張視点）**: 残り。プラクティス指向の横断的な視点:
 - 汎用視点（該当するものを選択）:
-  - `error-handling`, `testing-strategy`, `type-system`, `api-design`
-  - `performance`, `security`, `dependency-management`, `build-system`
-  - `extensibility`, `ci-cd`, `trade-offs`, `dev-conventions`
+  - `error-handling-idioms`, `testing-practices`, `type-system-patterns`, `api-design-practices`
+  - `performance-techniques`, `security-practices`, `dependency-management`, `build-and-tooling`
+  - `extensibility-mechanisms`, `concurrency-patterns`, `ci-cd`, `dev-conventions`
 - `ai-settings` — AI設定ファイルが存在する場合のみ生成（条件付き）
-- リポジトリ固有視点（そのリポでしか学べない独自の視点）
+- リポジトリ固有視点: **機能名ではなくプラクティス名で命名する**
+  - 良い例: `performance-techniques`, `abstraction-patterns`, `metaprogramming-techniques`
+  - 悪い例: `router-design`, `middleware-system`, `jsx-engine`（これらは機能分解であり、プラクティスの視点ではない）
 
 **視点選定の基準**:
+- 各視点はコードベースを横断的に分析する（特定の機能・モジュールに閉じない）
 - 表面的な視点は避け、技術的に深い視点を選ぶ
 - 「なぜ標準的な方法ではなくこの方法を選んだのか」が問えるテーマを優先する
 - 他のプロジェクトに応用可能な汎用性のある固有パターンを優先する
+- 視点名のリトマステスト: 「この視点名はリポジトリの機能名か、それともプラクティス名か？」→ 機能名なら再考する
 
 ### Step 4: meta.yaml と overview.md の初期生成
 
@@ -176,6 +180,11 @@ perspectives:
 
 ## リポジトリの初期調査情報
 [Step 2 の結果をここに貼り付け]
+
+## 分析の注意事項
+- コードベース全体を横断して分析すること（特定のモジュールや機能に閉じない）
+- 機能の実装解説ではなく、プラクティスの収集・体系化を行うこと
+- 導出ルールは「このリポを知らない開発者が自分のコードに適用できる」汎用性を持たせること
 
 templates/perspective.md を Read で読み、そのフォーマットに従って分析ファイルを output_path に Write で出力してください。
 「導出ルール」セクション（[MUST]/[SHOULD]/[AVOID] 形式、最低3個）と「適用チェックリスト」セクションは必須です。
