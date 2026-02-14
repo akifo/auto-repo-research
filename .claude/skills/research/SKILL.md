@@ -22,7 +22,8 @@ allowed-tools: Bash, Read, Write, Glob, Grep, Task
    - `org/repo` → `org`, `repo`
 2. `ghq list | grep <org>/<repo>` でローカルに存在するか確認
 3. 存在しなければ `ghq get --shallow https://github.com/<org>/<repo>` で取得
-4. `ghq root` と合わせてローカルパスを特定: `$(ghq root)/github.com/<org>/<repo>`
+4. 既にローカルに存在する場合は `git -C <repo_path> pull --ff-only` でリモート最新を取得する（失敗しても続行）
+5. `ghq root` と合わせてローカルパスを特定: `$(ghq root)/github.com/<org>/<repo>`
 5. 出力先 `repos/<org>/<repo>/` の存在を確認（既存研究がある場合は Resume 判定 → 後述）
 
 ### Step 2: リポジトリの初期調査
