@@ -11,6 +11,8 @@
 | [dynamic-argument](./pattern_dynamic-argument)               | `T \| ((ctx) => T)` で静的値と動的関数を統一する設定API設計パターン        |
 | [self-filtering-strategy](./pattern_self-filtering-strategy) | 全ハンドラを常に呼び出し各自が自己選別する、switch/if 不要のプラグイン設計 |
 | [options-or-false](./pattern_options-or-false)               | `Options \| false` + filter(Boolean) で宣言的にプラグイン配列を構築        |
+| [phantom-type](./pattern_phantom-type)                       | optional プロパティへの型情報埋め込みでランタイムコストゼロの型推論を実現   |
+| [escalating-escape-hatches](./pattern_escalating-escape-hatches) | 段階的抽象度の拡張ポイントで安全性と柔軟性を両立するライブラリ設計     |
 
 ## Practice
 
@@ -22,6 +24,8 @@
 | [defensive-validation](./practice_defensive-validation)               | LLM出力の5段階フォールバック検証と制約ダウングレードによる防御的バリデーション |
 | [declarative-config-layering](./practice_declarative-config-layering) | defu/ディープマージの引数順序で優先順位を表現する宣言的設定マージ              |
 | [define-helper-pattern](./practice_define-helper-pattern)             | defineXxxConfig ヘルパーによるゼロコスト型補完パターン（横断的）               |
+| [tree-shaking-library](./practice_tree-shaking-library)               | ファクトリ関数+@\_\_NO_SIDE_EFFECTS\_\_+sideEffects:falseによる完全tree-shaking |
+| [dual-layer-testing](./practice_dual-layer-testing)                   | ランタイムテスト+型テストの1:1対応とドメイン固有ヘルパーによる統一テスト戦略   |
 
 ## Claude
 
