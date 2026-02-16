@@ -1,0 +1,117 @@
+url: https://github.com/open-circle/valibot
+stars: 8428
+language: TypeScript
+license: MIT
+description: "The modular and type safe schema library for validating structural data"
+analyzed_at: "2026-02-16"
+local_path: /Users/akiho/github/github.com/open-circle/valibot
+scale: large
+
+perspectives:
+  - name: project-structure
+    file: project-structure.md
+    wave: 1
+    intent: "Monorepo構成・モジュール分割・ファイル配置規約のパターンを明らかにする"
+    summary: "1機能=1フォルダの4ファイル構成を200以上のモジュールで例外なく適用し、tree-shakingと認知負荷低減を両立"
+
+  - name: architecture
+    file: architecture.md
+    wave: 1
+    intent: "スキーマ/アクション/メソッドの3層アーキテクチャとパイプライン設計の仕組みを解明する"
+    summary: "Schema/Action/Methodの3層をDiscriminated Unionで分類し、統一された'~run'メソッドでパイプライン合成"
+
+  - name: design-philosophy
+    file: design-philosophy.md
+    wave: 1
+    intent: "モジュラリティ・ゼロ依存・型安全を追求する設計思想と技術選定の根拠を抽出する"
+    summary: "ファクトリ関数+プレーンオブジェクトでtree-shakingを最大化し、interface優先とstrict TSで型安全を徹底"
+
+  - name: type-system-patterns
+    file: type-system-patterns.md
+    wave: 1
+    intent: "TypeScript型システムの高度な活用パターンと型レベルプログラミングの手法を体系化する"
+    summary: "Phantom Type・Branded Type・const type parameter・Prettifyなど型レベルプログラミングの体系的活用"
+
+  - name: abstraction-patterns
+    file: abstraction-patterns.md
+    wave: 1
+    intent: "'~run'メソッドパターンと関数型合成の抽象化手法を分析する"
+    summary: "プレーンオブジェクト+プロトコルメソッド+pipe合成の三位一体でクラスレスな多態性を実現"
+
+  - name: code-organization
+    file: code-organization.md
+    wave: 1
+    intent: "各ユニット(スキーマ/アクション/メソッド)の構造的一貫性とファイル命名規約を分析する"
+    summary: "Issue型・Schema型・オーバーロード・実装の固定順序と、テストヘルパー集約による語彙の均質化"
+
+  - name: api-design-practices
+    file: api-design-practices.md
+    wave: 1
+    intent: "パブリックAPI設計の一貫性・エルゴノミクス・関数オーバーロード戦略を評価する"
+    summary: "全関数でオーバーロードによる型精度保持と、kind-type-referenceトリプレットの自己記述的API設計"
+
+  - name: testing-practices
+    file: testing-practices.md
+    wave: 2
+    intent: "vitest + 型テスト(test-d.ts)の包括的テスト戦略とテストパターンを体系化する"
+    summary: "ランタイムテストと型テストの1:1対応、8つのドメイン固有ヘルパーによる三段構成の統一テスト戦略"
+
+  - name: error-handling-idioms
+    file: error-handling-idioms.md
+    wave: 2
+    intent: "バリデーションエラーの構造化・伝搬・フラット化パターンを分析する"
+    summary: "Dataset 3状態モデル・非空タプル型issues・6段階メッセージ解決チェーン・flatten変換の一貫設計"
+
+  - name: performance-techniques
+    file: performance-techniques.md
+    wave: 2
+    intent: "Tree-shaking最適化・バンドルサイズ削減・NO_SIDE_EFFECTS注釈の戦略を明らかにする"
+    summary: "全関数への@__NO_SIDE_EFFECTS__付与、spread回避、遅延初期化、RegExp ESLintによる多層最適化"
+
+  - name: build-and-tooling
+    file: build-and-tooling.md
+    wave: 2
+    intent: "tsdown/Dual ESM+CJS出力/Deno互換/isolatedDeclarations等のビルドパイプラインを分析する"
+    summary: "tsdownでESM+CJS 4バリアント出力、isolatedDeclarationsで高速型生成、JSR/Deno同一ソース配信"
+
+  - name: extensibility-mechanisms
+    file: extensibility-mechanisms.md
+    wave: 2
+    intent: "カスタムスキーマ・アクション・メソッドの拡張ポイントとプラグイン設計を分析する"
+    summary: "check→rawCheck→rawTransformの段階的拡張ポイントとkindディスクリミネータによるOCP準拠設計"
+
+  - name: security-practices
+    file: security-practices.md
+    wave: 2
+    intent: "ReDoSガード・セキュリティリンティング・入力バリデーションの安全設計を分析する"
+    summary: "ReDoS三層ESLint防御、_isValidObjectKeyによるプロトタイプ汚染ガード、オブジェクト再構築パターン"
+
+  - name: dev-conventions
+    file: dev-conventions.md
+    wave: 2
+    intent: "ESLint設定・Prettier・JSDoc・コーディング規約の統制パターンを体系化する"
+    summary: "パッケージリスクに応じた段階的ESLint厳格化と、ツール強制による一貫性担保の多層規約統制"
+
+  - name: dependency-management
+    file: dependency-management.md
+    wave: 2
+    intent: "ゼロランタイム依存・peerDependencies・pnpmワークスペースの依存関係戦略を分析する"
+    summary: "コアライブラリのランタイム依存ゼロを徹底し、遅延初期化とimport type活用でバンドルを最小化"
+
+  - name: ai-settings
+    file: ai-settings.md
+    wave: 2
+    intent: "AGENTS.md・Agent Skills標準・AI支援開発の設定パターンを分析する"
+    summary: "AGENTS.md(60行)+6スキルファイルの二層Progressive Disclosure設計とESLintとの二重防御"
+
+  - name: ci-cd
+    file: ci-cd.md
+    wave: 2
+    intent: "GitHub Actions・pkg.pr.new・Publishワークフローの自動化パターンを分析する"
+    summary: "composite actionで環境一元管理、workflow_callでCI再利用、NPM+JSRデュアルパブリッシュ"
+
+  - name: metaprogramming-techniques
+    file: metaprogramming-techniques.md
+    wave: 2
+    intent: "codemod・型推論・コード生成のメタプログラミング手法を分析する"
+    summary: "Phantom Typeによる型埋め込み、スキーマの代数的変換、ASTベースcodemodの三軸メタプログラミング"
