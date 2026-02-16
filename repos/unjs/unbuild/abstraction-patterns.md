@@ -158,8 +158,7 @@ if (!entry.builder) {
 
 ```typescript
 // src/types.ts:197-202
-export interface BuildHooks
-  extends CopyHooks, UntypedHooks, MkdistHooks, RollupHooks {
+export interface BuildHooks extends CopyHooks, UntypedHooks, MkdistHooks, RollupHooks {
   "build:prepare": (ctx: BuildContext) => void | Promise<void>;
   "build:before": (ctx: BuildContext) => void | Promise<void>;
   "build:done": (ctx: BuildContext) => void | Promise<void>;
@@ -173,11 +172,11 @@ export interface BuildHooks
 ```typescript
 // src/build.ts:98-175
 const options = defu(
-  buildConfig,        // 1. build.config.ts の設定
-  pkg.unbuild || pkg.build,  // 2. package.json の設定
-  inputConfig,        // 3. CLI からの設定
-  preset,             // 4. プリセットの設定
-  { /* defaults */ } satisfies BuildOptions,  // 5. ハードコードデフォルト
+  buildConfig, // 1. build.config.ts の設定
+  pkg.unbuild || pkg.build, // 2. package.json の設定
+  inputConfig, // 3. CLI からの設定
+  preset, // 4. プリセットの設定
+  {/* defaults */} satisfies BuildOptions, // 5. ハードコードデフォルト
 ) as BuildOptions;
 ```
 
@@ -222,8 +221,7 @@ if (!entry.builder) {
 
 ```typescript
 // src/types.ts:197-202
-export interface BuildHooks
-  extends CopyHooks, UntypedHooks, MkdistHooks, RollupHooks {
+export interface BuildHooks extends CopyHooks, UntypedHooks, MkdistHooks, RollupHooks {
   "build:prepare": (ctx: BuildContext) => void | Promise<void>;
   "build:before": (ctx: BuildContext) => void | Promise<void>;
   "build:done": (ctx: BuildContext) => void | Promise<void>;

@@ -48,21 +48,21 @@ export const autoPreset: BuildPreset = definePreset(() => {
 ```typescript
 // src/build.ts:88-95
 const preset = await resolvePreset(
-  buildConfig.preset ||
-    pkg.unbuild?.preset ||
-    pkg.build?.preset ||
-    inputConfig.preset ||
-    "auto",
+  buildConfig.preset
+    || pkg.unbuild?.preset
+    || pkg.build?.preset
+    || inputConfig.preset
+    || "auto",
   rootDir,
 );
 
 // src/build.ts:98-175
 const options = defu(
-  buildConfig,       // 1. build.config.ts の設定（最優先）
+  buildConfig, // 1. build.config.ts の設定（最優先）
   pkg.unbuild || pkg.build, // 2. package.json 内の設定
-  inputConfig,       // 3. CLI 引数由来の設定
-  preset,            // 4. プリセットの設定
-  {                  // 5. ハードコードされたデフォルト値（最低優先）
+  inputConfig, // 3. CLI 引数由来の設定
+  preset, // 4. プリセットの設定
+  { // 5. ハードコードされたデフォルト値（最低優先）
     name: (pkg?.name || "").split("/").pop() || "default",
     rootDir,
     entries: [],
@@ -90,10 +90,9 @@ export async function resolvePreset(
   if (preset === "auto") {
     preset = autoPreset;
   } else if (typeof preset === "string") {
-    preset =
-      (await createJiti(rootDir, { interopDefault: true }).import(preset, {
-        default: true,
-      })) || {};
+    preset = (await createJiti(rootDir, { interopDefault: true }).import(preset, {
+      default: true,
+    })) || {};
   }
   if (typeof preset === "function") {
     preset = preset();
@@ -204,7 +203,7 @@ export default definePreset({
   rollup: {
     cjsBridge: true,
   },
-  hooks: { /* ... */ },
+  hooks: {/* ... */},
 });
 ```
 
@@ -268,7 +267,7 @@ const options = defu(buildConfig, preset, defaults);
 const options = defu(
   buildConfig,
   preset,
-  { /* ... */ } satisfies BuildOptions,
+  {/* ... */} satisfies BuildOptions,
 ) as BuildOptions;
 ```
 

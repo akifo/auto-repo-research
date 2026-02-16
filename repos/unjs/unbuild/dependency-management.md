@@ -29,9 +29,7 @@ export function inferPkgExternals(pkg: PackageJson): (string | RegExp)[] {
   const externals: (string | RegExp)[] = [
     ...Object.keys(pkg.dependencies || {}),
     ...Object.keys(pkg.peerDependencies || {}),
-    ...Object.keys(pkg.devDependencies || {}).filter((dep) =>
-      dep.startsWith("@types/"),
-    ),
+    ...Object.keys(pkg.devDependencies || {}).filter((dep) => dep.startsWith("@types/")),
     ...Object.keys(pkg.optionalDependencies || {}),
   ];
 
@@ -108,6 +106,7 @@ external(originalId): boolean {
 ```
 
 この多層判定の設計ポイントは:
+
 - **パッケージ名・オリジナル ID・解決後 ID の 3 つで照合する** -- エイリアス経由のインポートでも正しく判定できる
 - **「ソースは常にバンドル」を先に判定する** -- 相対パス・絶対パス・`src/` 内・自パッケージ名は無条件でバンドル対象
 - **暗黙バンドルを許容しつつ警告する** -- ビルドは壊さないが、開発者に気づきを与えるフォールバック設計
@@ -144,20 +143,20 @@ export function validateDependencies(ctx: BuildContext): void {
 
 unbuild の dependencies 24 個中 12 個が unjs パッケージであり、以下の使い分けが体系的に行われている:
 
-| 用途 | Node.js 標準 / 一般的な選択肢 | unjs パッケージ |
-|------|------|------|
-| パス操作 | `node:path` | `pathe` (クロスプラットフォーム対応) |
-| Glob | `glob`, `fast-glob` | `tinyglobby` (軽量) |
-| package.json 型 | 自前定義 | `pkg-types` |
-| 設定マージ | `lodash.merge` | `defu` (undefined のみ補完) |
-| コンソール出力 | `console` | `consola` (レベル制御・カラー) |
-| フック機構 | EventEmitter | `hookable` (型安全なフック) |
-| JIT 実行 | `ts-node`, `tsx` | `jiti` (transform 不要で TS 実行) |
-| CLI フレームワーク | `commander`, `yargs` | `citty` (軽量 CLI) |
-| ESM 解析 | 自前実装 | `mlly` (parseNodeModulePath 等) |
-| 文字列変換 | 自前実装 | `scule` (pascalCase 等) |
-| 型スキーマ生成 | なし | `untyped` (ランタイム型からスキーマ) |
-| ファイル変換 | なし | `mkdist` (ファイルごとの変換) |
+| 用途               | Node.js 標準 / 一般的な選択肢 | unjs パッケージ                      |
+| ------------------ | ----------------------------- | ------------------------------------ |
+| パス操作           | `node:path`                   | `pathe` (クロスプラットフォーム対応) |
+| Glob               | `glob`, `fast-glob`           | `tinyglobby` (軽量)                  |
+| package.json 型    | 自前定義                      | `pkg-types`                          |
+| 設定マージ         | `lodash.merge`                | `defu` (undefined のみ補完)          |
+| コンソール出力     | `console`                     | `consola` (レベル制御・カラー)       |
+| フック機構         | EventEmitter                  | `hookable` (型安全なフック)          |
+| JIT 実行           | `ts-node`, `tsx`              | `jiti` (transform 不要で TS 実行)    |
+| CLI フレームワーク | `commander`, `yargs`          | `citty` (軽量 CLI)                   |
+| ESM 解析           | 自前実装                      | `mlly` (parseNodeModulePath 等)      |
+| 文字列変換         | 自前実装                      | `scule` (pascalCase 等)              |
+| 型スキーマ生成     | なし                          | `untyped` (ランタイム型からスキーマ) |
+| ファイル変換       | なし                          | `mkdist` (ファイルごとの変換)        |
 
 この統一の利点は **API スタイルの一貫性**（すべて ESM-first、TypeScript-first）と **依存ツリーの重複排除**（unjs パッケージ同士が内部で同じ依存を共有する）にある。
 

@@ -66,11 +66,11 @@ export default defineBuildConfig([
     preset: "./build.preset",
     rollup: { emitCJS: true },
     entries: [
-      "./src/index.mts",                                    // rollup
-      "./src/nested/subpath.ts",                             // rollup (サブパス)
-      { input: "src/runtime/", outDir: "dist/runtime" },     // mkdist
+      "./src/index.mts", // rollup
+      "./src/nested/subpath.ts", // rollup (サブパス)
+      { input: "src/runtime/", outDir: "dist/runtime" }, // mkdist
       { input: "src/", outDir: "dist/json/", builder: "copy", pattern: "**/*.json" }, // copy
-      { input: "src/schema", builder: "untyped" },           // untyped
+      { input: "src/schema", builder: "untyped" }, // untyped
     ],
   },
   // Minified with sourcemaps (エッジケース)
@@ -119,7 +119,7 @@ validateDependencies({
 ```typescript
 // test/validate.test.ts:26-27
 validatePackage(
-  { main: "./dist/test", /* ... */ },
+  { main: "./dist/test" /* ... */ },
   join(fileURLToPath(import.meta.url), "../fixture"),
   buildContext,
 );
@@ -148,8 +148,10 @@ for (const file of ["dist/test", "dist/cli", "dist/mod", "runtime"]) {
 // test/validate.test.ts:82-88
 consola.mockTypes((type) =>
   type === "warn"
-    ? (str: string): void => { logs.push(str); }
-    : (): void => {},
+    ? (str: string): void => {
+      logs.push(str);
+    }
+    : (): void => {}
 );
 ```
 
@@ -208,8 +210,12 @@ export default definePreset({
   declaration: "compatible",
   rollup: { cjsBridge: true },
   hooks: {
-    "build:before": () => { console.log("Before build"); },
-    "build:done": () => { console.log("After build"); },
+    "build:before": () => {
+      console.log("Before build");
+    },
+    "build:done": () => {
+      console.log("After build");
+    },
   },
 });
 ```

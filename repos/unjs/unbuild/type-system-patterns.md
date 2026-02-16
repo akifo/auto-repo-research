@@ -81,12 +81,14 @@ const entries = ctx.options.entries.filter(
 
 ```typescript
 // src/types.ts:171
-type DeepPartial<T> = { [P in keyof T]?: DeepPartial<T[P]> };
+type DeepPartial<T> = { [P in keyof T]?: DeepPartial<T[P]>; };
 
 // src/types.ts:177-195
-export interface BuildConfig extends DeepPartial<
-  Omit<BuildOptions, "entries">
-> {
+export interface BuildConfig extends
+  DeepPartial<
+    Omit<BuildOptions, "entries">
+  >
+{
   entries?: (BuildEntry | string)[];
   preset?: string | BuildPreset;
   hooks?: Partial<BuildHooks>;
@@ -164,18 +166,10 @@ src/builders/
 
 ```typescript
 // src/types.ts:23-34
-export type {
-  RollupBuildEntry,
-  RollupBuildOptions,
-  RollupOptions,
-} from "./builders/rollup/types";
-export type { MkdistBuildEntry } from "./builders/mkdist/types";
 export type { CopyBuildEntry } from "./builders/copy/types";
-export type {
-  UntypedBuildEntry,
-  UntypedOutput,
-  UntypedOutputs,
-} from "./builders/untyped/types";
+export type { MkdistBuildEntry } from "./builders/mkdist/types";
+export type { RollupBuildEntry, RollupBuildOptions, RollupOptions } from "./builders/rollup/types";
+export type { UntypedBuildEntry, UntypedOutput, UntypedOutputs } from "./builders/untyped/types";
 ```
 
 `src/index.ts` は `export * from "./types"` で全公開型をバレルエクスポートする。`verbatimModuleSyntax: true` の設定下で `export type` を使い、型と値のエクスポートを明確に分離している。
@@ -245,11 +239,7 @@ export function definePreset(preset: BuildPreset): BuildPreset {
 
 ```typescript
 // src/types.ts:23-34
-export type {
-  RollupBuildEntry,
-  RollupBuildOptions,
-  RollupOptions,
-} from "./builders/rollup/types";
+export type { RollupBuildEntry, RollupBuildOptions, RollupOptions } from "./builders/rollup/types";
 ```
 
 ## Anti-Patterns / 注意点

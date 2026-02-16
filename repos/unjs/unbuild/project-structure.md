@@ -20,15 +20,15 @@ unbuild はわずか約 2,500 行・25 ファイルのソースコードで Roll
 
 `src/` 直下の 7 ファイルはそれぞれ明確に異なる責務を持ち、相互の依存が最小限に抑えられている。
 
-| ファイル | 行数 | 責務 | 依存先 |
-|---|---|---|---|
-| `index.ts` | 2 | 公開 API の re-export | build.ts, types.ts |
-| `cli.ts` | 69 | CLI コマンド定義 | build.ts |
-| `build.ts` | 415 | ビルドオーケストレーション | utils, validate, builders/*, types, auto |
-| `types.ts` | 212 | 型定義 + `defineBuildConfig`/`definePreset` | builders/*/types |
-| `auto.ts` | 176 | package.json からのエントリ自動推論 | utils, types |
-| `utils.ts` | 208 | 共通ユーティリティ | auto (resolvePreset 経由) |
-| `validate.ts` | 86 | ビルド成果物の検証 | utils, types |
+| ファイル      | 行数 | 責務                                        | 依存先                                   |
+| ------------- | ---- | ------------------------------------------- | ---------------------------------------- |
+| `index.ts`    | 2    | 公開 API の re-export                       | build.ts, types.ts                       |
+| `cli.ts`      | 69   | CLI コマンド定義                            | build.ts                                 |
+| `build.ts`    | 415  | ビルドオーケストレーション                  | utils, validate, builders/*, types, auto |
+| `types.ts`    | 212  | 型定義 + `defineBuildConfig`/`definePreset` | builders/*/types                         |
+| `auto.ts`     | 176  | package.json からのエントリ自動推論         | utils, types                             |
+| `utils.ts`    | 208  | 共通ユーティリティ                          | auto (resolvePreset 経由)                |
+| `validate.ts` | 86   | ビルド成果物の検証                          | utils, types                             |
 
 `build.ts` がオーケストレーション層として全ビルダーを束ね、それ以外のファイルは特定の関心にのみ集中している。この「1 つのオーケストレーター + 複数の特化モジュール」構成は、コードベースのナビゲーション性を高めている。
 
@@ -56,10 +56,10 @@ export { rollupBuild } from "./build";
 
 ```typescript
 // src/build.ts:21-24
+import { copyBuild } from "./builders/copy";
+import { mkdistBuild } from "./builders/mkdist";
 import { rollupBuild } from "./builders/rollup";
 import { typesBuild } from "./builders/untyped";
-import { mkdistBuild } from "./builders/mkdist";
-import { copyBuild } from "./builders/copy";
 ```
 
 ### 統一インターフェースによるビルダー実行
@@ -92,8 +92,7 @@ if (options.parallel) {
 
 ```typescript
 // src/types.ts:197-202
-export interface BuildHooks
-  extends CopyHooks, UntypedHooks, MkdistHooks, RollupHooks {
+export interface BuildHooks extends CopyHooks, UntypedHooks, MkdistHooks, RollupHooks {
   "build:prepare": (ctx: BuildContext) => void | Promise<void>;
   "build:before": (ctx: BuildContext) => void | Promise<void>;
   "build:done": (ctx: BuildContext) => void | Promise<void>;
@@ -113,8 +112,8 @@ unbuild は自分自身を使ってビルドする。開発時は `jiti` によ�
 
 ```typescript
 // build.config.ts:1-2
-import { defineBuildConfig } from "./src";
 import { rm } from "node:fs/promises";
+import { defineBuildConfig } from "./src";
 ```
 
 `build.config.ts` が `./src` からインポートすることで、ビルド前のソースコードで自身の設定を書ける。これはフレームワークが自身を使って構築される「ドッグフーディング」パターンであり、API の使いやすさを開発者自身が継続的に検証する効果がある。
@@ -123,14 +122,14 @@ import { rm } from "node:fs/promises";
 
 最も複雑な rollup ビルダーは以下のように内部分割されている。
 
-| ファイル | 行数 | 責務 |
-|---|---|---|
-| `build.ts` | 130 | ビルド実行フロー（stub/build/watch の分岐） |
-| `config.ts` | 168 | Rollup オプション構築 |
-| `stub.ts` | 188 | JIT スタブ生成 |
-| `watch.ts` | 39 | ウォッチモード |
-| `utils.ts` | 53 | エイリアス解決、チャンクファイル名生成 |
-| `types.ts` | 131 | 型定義 + フック定義 |
+| ファイル    | 行数 | 責務                                        |
+| ----------- | ---- | ------------------------------------------- |
+| `build.ts`  | 130  | ビルド実行フロー（stub/build/watch の分岐） |
+| `config.ts` | 168  | Rollup オプション構築                       |
+| `stub.ts`   | 188  | JIT スタブ生成                              |
+| `watch.ts`  | 39   | ウォッチモード                              |
+| `utils.ts`  | 53   | エイリアス解決、チャンクファイル名生成      |
+| `types.ts`  | 131  | 型定義 + フック定義                         |
 
 `build.ts` がエントリポイントとして stub/build/watch の 3 モードを分岐し、各モードの実装は別ファイルに委譲する。設定構築 (`config.ts`) と実行 (`build.ts`) が分離されているため、設定だけをテスト・検査することが容易である。
 

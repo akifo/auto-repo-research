@@ -26,19 +26,20 @@ CJS スタブと ESM スタブの生成を比較すると、同じ入力から�
 // src/builders/rollup/stub.ts:99-116 (CJS スタブ)
 await writeFile(
   output + ".cjs",
-  shebang +
-    [
+  shebang
+    + [
       `const { createJiti } = require(${JSON.stringify(jitiCJSPath)})`,
       ...importedBabelPlugins.map(
-        (plugin, i) =>
-          `const plugin${i} = require(${JSON.stringify(plugin)})`,
+        (plugin, i) => `const plugin${i} = require(${JSON.stringify(plugin)})`,
       ),
       "",
       `const jiti = createJiti(__filename, ${serializedJitiOptions})`,
       "",
-      `/** @type {import(${JSON.stringify(
-        resolvedEntryForTypeImport,
-      )})} */`,
+      `/** @type {import(${
+        JSON.stringify(
+          resolvedEntryForTypeImport,
+        )
+      })} */`,
       `module.exports = jiti(${JSON.stringify(resolvedEntry)})`,
     ].join("\n"),
 );
@@ -48,8 +49,8 @@ await writeFile(
 // src/builders/rollup/stub.ts:141-163 (ESM スタブ)
 await writeFile(
   output + ".mjs",
-  shebang +
-    [
+  shebang
+    + [
       `import { createJiti } from ${JSON.stringify(jitiESMPath)};`,
       ...importedBabelPlugins.map(
         (plugin, i) => `import plugin${i} from ${JSON.stringify(plugin)}`,
@@ -70,6 +71,7 @@ await writeFile(
 ```
 
 注目すべき点:
+
 1. **`JSON.stringify` でパスを安全にエスケープ** -- ファイルパスに特殊文字が含まれる場合でも壊れない
 2. **named exports の静的解析** -- `resolveModuleExportNames` でソースの export を事前解析し、ESM スタブに named export を個別に生成する
 3. **JSDoc `@type` 注釈を生成** -- スタブ経由でも型情報を IDE が認識できるようにしている
@@ -93,7 +95,7 @@ const __dirname = __cjs_path__.dirname(__filename);
 const require = __cjs_mod__.createRequire(import.meta.url);
 `;
 
-function CJSToESM(code: string): { code: string; map: any } | null {
+function CJSToESM(code: string): { code: string; map: any; } | null {
   if (code.includes(CJSShim) || !CJSyntaxRe.test(code)) {
     return null;
   }
@@ -111,6 +113,7 @@ function CJSToESM(code: string): { code: string; map: any } | null {
 ```
 
 設計判断:
+
 - **冪等性の保証**: `code.includes(CJSShim)` で二重注入を防止
 - **必要な場合のみ注入**: `CJSyntaxRe.test(code)` で CJS 構文が存在しないコードにはシムを注入しない
 - **挿入位置の正確性**: 最後の ESM import 文の直後に挿入することで、import 文の順序を壊さない
@@ -138,8 +141,8 @@ await typesBuild.write({
 });
 // d.ts (node10 互換 -- TypeScript < 4.7)
 if (
-  ctx.options.declaration === true ||
-  ctx.options.declaration === "compatible"
+  ctx.options.declaration === true
+  || ctx.options.declaration === "compatible"
 ) {
   await typesBuild.write({
     dir: resolve(ctx.options.rootDir, ctx.options.outDir),
@@ -158,19 +161,18 @@ CJS では `export default` が `module.exports.default` になるため、型�
 ```typescript
 // src/builders/rollup/plugins/cjs.ts:19-36
 export function fixCJSExportTypePlugin(ctx: BuildContext): Plugin {
-  const regexp =
-    ctx.options.declaration === "node16"
-      ? /\.d\.cts$/ // d.cts only
-      : /\.d\.c?ts$/; // d.ts and d.cts
+  const regexp = ctx.options.declaration === "node16"
+    ? /\.d\.cts$/ // d.cts only
+    : /\.d\.c?ts$/; // d.ts and d.cts
   return FixDtsDefaultCjsExportsPlugin({
     warn: (msg) => ctx.warnings.add(msg),
     matcher: (info) => {
       return (
-        info.type === "chunk" &&
-        info.exports?.length > 0 &&
-        info.exports.includes("default") &&
-        regexp.test(info.fileName) &&
-        info.isEntry
+        info.type === "chunk"
+        && info.exports?.length > 0
+        && info.exports.includes("default")
+        && regexp.test(info.fileName)
+        && info.isEntry
       );
     },
   });
@@ -193,11 +195,11 @@ export function JSONPlugin(options: RollupJsonOptions): Plugin {
     transform(code, id): TransformResult {
       const res = (plugin.transform as TransformHook)!.call(this, code, id);
       if (
-        res &&
-        typeof res !== "string" &&
-        "code" in res &&
-        res.code &&
-        res.code.startsWith(EXPORT_DEFAULT)
+        res
+        && typeof res !== "string"
+        && "code" in res
+        && res.code
+        && res.code.startsWith(EXPORT_DEFAULT)
       ) {
         res.code = res.code.replace(EXPORT_DEFAULT, "module.exports = ");
       }
@@ -254,7 +256,7 @@ for (const output of outputs.filter((o) => !o.type)) {
 
 ```typescript
 // src/builders/rollup/stub.ts:103
-`const { createJiti } = require(${JSON.stringify(jitiCJSPath)})`
+`const { createJiti } = require(${JSON.stringify(jitiCJSPath)})`;
 // JSON.stringify がバックスラッシュ、クォート等を自動エスケープ
 ```
 

@@ -21,6 +21,7 @@ unbuild の設計思想を分析する。ゼロコンフィグ推論・unjs エ�
 `auto.ts` の `inferEntries` 関数は、package.json のフィールドを入力として受け取り、ビルドエントリを逆算する。この「出力から入力を推論する」アプローチが unbuild のゼロコンフィグの核心である。
 
 推論のステップ:
+
 1. `exports`・`bin`・`main`・`module`・`types` から出力ファイル一覧を抽出（`src/auto.ts:80-97`）
 2. 出力ファイルの拡張子と `type` フィールドから ESM/CJS を判別（`src/auto.ts:100-108`）
 3. 出力パスからソースファイルを逆引きし、エントリポイントを特定（`src/auto.ts:114-166`）
@@ -195,8 +196,8 @@ export function defineBuildConfig(
 // src/build.ts:402-414
 if (ctx.warnings.size > 0) {
   consola.warn(
-    "Build is done with some warnings:\n\n" +
-      [...ctx.warnings].map((msg) => "- " + msg).join("\n"),
+    "Build is done with some warnings:\n\n"
+      + [...ctx.warnings].map((msg) => "- " + msg).join("\n"),
   );
   if (ctx.options.failOnWarn) {
     consola.error(

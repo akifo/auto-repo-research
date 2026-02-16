@@ -83,12 +83,12 @@ export interface UntypedHooks {
 
 対照的に copy ビルダーは 2 つだけ（`copy:entries`, `copy:done`）。フックの粒度はビルダーの複雑度に比例している。
 
-| ビルダー | フック数 | 粒度 |
-|---------|---------|------|
-| rollup | 5 | options → build → dts:options → dts:build → done |
-| untyped | 5 | entries → entry:options → entry:schema → entry:outputs → done |
-| mkdist | 4 | entries → entry:options → entry:build → done |
-| copy | 2 | entries → done |
+| ビルダー | フック数 | 粒度                                                          |
+| -------- | -------- | ------------------------------------------------------------- |
+| rollup   | 5        | options → build → dts:options → dts:build → done              |
+| untyped  | 5        | entries → entry:options → entry:schema → entry:outputs → done |
+| mkdist   | 4        | entries → entry:options → entry:build → done                  |
+| copy     | 2        | entries → done                                                |
 
 ### フック名の名前空間規約
 
@@ -175,8 +175,7 @@ if (ctx.options.stub) {
 
 ```typescript
 // src/types.ts:197-202
-export interface BuildHooks
-  extends CopyHooks, UntypedHooks, MkdistHooks, RollupHooks {
+export interface BuildHooks extends CopyHooks, UntypedHooks, MkdistHooks, RollupHooks {
   "build:prepare": (ctx: BuildContext) => void | Promise<void>;
   "build:before": (ctx: BuildContext) => void | Promise<void>;
   "build:done": (ctx: BuildContext) => void | Promise<void>;
@@ -208,7 +207,7 @@ export const autoPreset: BuildPreset = definePreset(() => {
 async function myBuild(ctx) {
   await ctx.hooks.callHook("my:options", ctx, options);
   const result = await doSomething(options); // ここで例外が発生すると...
-  await ctx.hooks.callHook("my:done", ctx);  // ここに到達しない
+  await ctx.hooks.callHook("my:done", ctx); // ここに到達しない
 }
 
 // Better: try/finally で done を保証する

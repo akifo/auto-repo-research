@@ -71,11 +71,13 @@ const entries = ctx.options.entries.filter(
 フックは明確な 3 層構造を持つ。
 
 **第 1 層: グローバルビルドライフサイクル**（`src/build.ts`）
+
 - `build:prepare` -- コンテキスト構築直後、エントリ正規化前
 - `build:before` -- エントリ正規化後、ビルダー実行前
 - `build:done` -- 全ビルダー完了後
 
 **第 2 層: ビルダー固有ライフサイクル**（各ビルダー内部）
+
 - `rollup:options` / `rollup:build` / `rollup:dts:options` / `rollup:dts:build` / `rollup:done`
 - `mkdist:entries` / `mkdist:entry:options` / `mkdist:entry:build` / `mkdist:done`
 - `untyped:entries` / `untyped:entry:options` / `untyped:entry:schema` / `untyped:entry:outputs` / `untyped:done`
@@ -128,11 +130,11 @@ export const autoPreset: BuildPreset = definePreset(() => {
 ```typescript
 // src/build.ts:98-175
 const options = defu(
-  buildConfig,         // 最高優先: build.config.ts
+  buildConfig, // 最高優先: build.config.ts
   pkg.unbuild || pkg.build, // package.json の unbuild/build フィールド
-  inputConfig,         // CLI 引数
-  preset,              // プリセット
-  { /* defaults */ } satisfies BuildOptions, // 最低優先: デフォルト値
+  inputConfig, // CLI 引数
+  preset, // プリセット
+  {/* defaults */} satisfies BuildOptions, // 最低優先: デフォルト値
 ) as BuildOptions;
 ```
 
@@ -152,7 +154,7 @@ export interface BuildContext {
     exports?: string[];
     chunks?: string[];
     chunk?: boolean;
-    modules?: { id: string; bytes: number }[];
+    modules?: { id: string; bytes: number; }[];
   }[];
   usedImports: Set<string>;
   warnings: Set<string>;
@@ -228,8 +230,7 @@ ctx.options.rollup.replace && replace({ ...ctx.options.rollup.replace, ... }),
 
 ```typescript
 // src/types.ts:197-202
-export interface BuildHooks
-  extends CopyHooks, UntypedHooks, MkdistHooks, RollupHooks {
+export interface BuildHooks extends CopyHooks, UntypedHooks, MkdistHooks, RollupHooks {
   "build:prepare": (ctx: BuildContext) => void | Promise<void>;
   "build:before": (ctx: BuildContext) => void | Promise<void>;
   "build:done": (ctx: BuildContext) => void | Promise<void>;
