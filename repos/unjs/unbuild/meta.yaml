@@ -1,0 +1,60 @@
+url: https://github.com/unjs/unbuild
+stars: 2719
+language: TypeScript
+license: MIT
+description: "A unified JavaScript build system"
+analyzed_at: "2026-02-16"
+local_path: /Users/akiho/github/github.com/unjs/unbuild
+scale: small
+
+perspectives:
+  - name: project-structure
+    file: project-structure.md
+    wave: 1
+    intent: "ディレクトリ構成・モジュール分割・エントリポイント設計を明らかにし、小規模ビルドツールの構造化手法を抽出する"
+    summary: "Facade + 水平/垂直分割で25ファイルを構造化し、統一シグネチャのビルダー配列と判別可能ユニオン型で拡張性を確保"
+  - name: architecture
+    file: architecture.md
+    wave: 1
+    intent: "ビルダーアーキテクチャ、パイプライン設計、コンテキストオブジェクトパターンを分析し、複数ビルダーの統合手法を明らかにする"
+    summary: "BuildContextを唯一の結合点としてビルダーを疎結合に統合し、defuによる宣言的レイヤリングとフック名前空間で拡張性を実現"
+  - name: design-philosophy
+    file: design-philosophy.md
+    wave: 1
+    intent: "ゼロコンフィグ思想、unjs エコシステムの哲学、技術選定の根拠を明らかにし、DX 重視のツール設計思想を抽出する"
+    summary: "package.jsonから出力を逆算するゼロコンフィグ、安全側デフォルト+脱出口、セルフホスティングによるDX自己検証の設計思想"
+  - name: abstraction-patterns
+    file: abstraction-patterns.md
+    wave: 1
+    intent: "4つのビルダーの共通インターフェース設計、エントリ解決の抽象化、ビルダー選択パターンを分析する"
+    summary: "Self-filteringパターンでディスパッチャの条件分岐を排除し、Discriminated Unionとフック型合成で型安全な抽象化を実現"
+  - name: type-system-patterns
+    file: type-system-patterns.md
+    wave: 1
+    intent: "ユニオン型によるビルダー型分岐、DeepPartial パターン、型エクスポート戦略を分析し、ライブラリ型設計の手法を抽出する"
+    summary: "内部厳密型/外部寛容型の分離、DeepPartial+Omitによる設定型緩和、Options|falseパターンでライブラリ型設計の定石を凝縮"
+  - name: hook-and-lifecycle-patterns
+    file: hook-and-lifecycle-patterns.md
+    wave: 2
+    intent: "hookable を使ったライフサイクル制御パターン、ビルドフェーズごとのフック設計を分析し、拡張可能なパイプライン設計手法を抽出する"
+    summary: "20のフックポイントを3層ライフサイクルで設計し、intersection型合成と登録順序による優先度制御で宣言的拡張モデルを構築"
+  - name: configuration-patterns
+    file: configuration-patterns.md
+    wave: 2
+    intent: "ゼロコンフィグ自動推論、プリセット機構、defu によるデフォルトマージを分析し、段階的設定カスタマイズの設計手法を抽出する"
+    summary: "ゼロコンフィグ→部分上書き→プリセット共有の3層設定システムをdefuディープマージとdefineヘルパーで型安全に実現"
+  - name: code-generation-techniques
+    file: code-generation-techniques.md
+    wave: 2
+    intent: "スタブ生成、型宣言生成、CJS/ESM デュアル出力の実装手法を分析し、コード生成パターンを抽出する"
+    summary: "JSON.stringifyによる安全なリテラル埋め込み、冪等なコード変換、rollup .write()再利用による効率的な多重出力生成"
+  - name: dependency-management
+    file: dependency-management.md
+    wave: 2
+    intent: "unjs エコシステム活用パターン、externals 解決戦略、依存関係の扱い方を分析し、ライブラリ開発における依存管理手法を抽出する"
+    summary: "package.jsonを真実源としたexternals自動推論と、ビルド後のunused/implicit依存検出で宣言的な依存管理を実現"
+  - name: testing-practices
+    file: testing-practices.md
+    wave: 2
+    intent: "フィクスチャベーステスト、ビルド出力の検証手法、テスト設計を分析し、ビルドツールのテスト戦略を抽出する"
+    summary: "純粋変換ロジックのユニットテスト+フィクスチャ統合検証+セルフホスティングの3層で最小コスト・高信頼のテスト戦略を実現"
