@@ -1,0 +1,80 @@
+url: https://github.com/ryoppippi/ccusage
+stars: 10735
+language: TypeScript
+license: NOASSERTION
+description: "A CLI tool for analyzing Claude Code/Codex CLI usage from local JSONL files."
+analyzed_at: "2026-02-16"
+local_path: /Users/akiho/github/github.com/ryoppippi/ccusage
+scale: medium
+
+perspectives:
+  - name: project-structure
+    file: project-structure.md
+    wave: 1
+    intent: "monorepoのディレクトリ構成・パッケージ分割戦略・workspace設計の合理性を明らかにする"
+    summary: "pnpm workspace monorepoでapps/packages分離、devDependencies-only戦略、pnpm catalogs strict、_prefix内部ファイル規約を実践"
+  - name: architecture
+    file: architecture.md
+    wave: 1
+    intent: "全体アーキテクチャ・データフロー・レイヤー間の依存関係を明らかにする"
+    summary: "扇形依存(apps->packages)の一方向アーキテクチャ、4段データパイプライン、Branded型・Result型・in-source testingの一貫適用"
+  - name: design-philosophy
+    file: design-philosophy.md
+    wave: 1
+    intent: "設計思想・技術選定の根拠・意図的なトレードオフを明らかにする"
+    summary: "バンドル前提のdevDeps集約、AIファーストの階層的CLAUDE.md、スキーマ駆動型定義、safeParse+サイレントスキップのレジリエンス設計"
+  - name: type-system-patterns
+    file: type-system-patterns.md
+    wave: 1
+    intent: "valibot/zodによるランタイム検証、byethrow Result型、型安全パターンの活用方法を明らかにする"
+    summary: "Valibot brand()で12種のドメインプリミティブを型安全化、ファクトリ関数+スキーマ型導出、Result パイプラインによる宣言的エラー処理"
+  - name: abstraction-patterns
+    file: abstraction-patterns.md
+    wave: 1
+    intent: "monorepo横断のコード共有・抽象化パターン・DRY原則の実践方法を明らかにする"
+    summary: "表現層・インフラ層を共有パッケージに集約しデータ変換層はアプリ固有に保持、ビルド時マクロで共通ロジックを具体化、意図的重複の管理"
+  - name: code-organization
+    file: code-organization.md
+    wave: 1
+    intent: "ファイル命名規則・モジュール構造・公開API設計・内部/外部の境界制御を明らかにする"
+    summary: "_prefix命名規則+tsdown entry除外+exports三層でAPI境界を制御、subpath exportsで機能別モジュール公開、publishConfig二重構造"
+  - name: error-handling-idioms
+    file: error-handling-idioms.md
+    wave: 2
+    intent: "byethrow Result型による関数型エラーハンドリング・早期リターンパターンの実践を明らかにする"
+    summary: "Result.try/pipe/unwrapの3イディオムで統一、isFailure+continueの早期スキップ、inspectError+unwrapの三点セット、境界でのみtry-catch許容"
+  - name: testing-practices
+    file: testing-practices.md
+    wave: 2
+    intent: "in-source testing パターン・fs-fixtureによるテストデータ管理・テスト設計の方針を明らかにする"
+    summary: "全ファイルでimport.meta.vitest in-source testing、await using+createFixtureで宣言的フィクスチャ+自動クリーンアップ、ビルド時テスト除去の二重保証"
+  - name: cli-framework-patterns
+    file: cli-framework-patterns.md
+    wave: 2
+    intent: "gunshiフレームワークによるサブコマンド設計・引数解析・CLIアーキテクチャパターンを明らかにする"
+    summary: "Gunshi define()による宣言的コマンド定義、共有引数のスプレッド拡張、tokens活用の4層設定優先度マージ、as const配列からの型+choices導出"
+  - name: build-and-tooling
+    file: build-and-tooling.md
+    wave: 2
+    intent: "tsdownバンドル・pnpm catalogs・ツールチェイン構成・ビルドパイプラインの設計を明らかにする"
+    summary: "tsdown+publint+unused品質ゲート統合、unplugin-macrosビルド時データ埋め込み、DCE-only minify、サプライチェーン多層防御設定"
+  - name: data-processing-patterns
+    file: data-processing-patterns.md
+    wave: 2
+    intent: "JSONL解析・データ集約・時系列グルーピング・コスト計算の処理パターンを明らかにする"
+    summary: "JONLストリーミング解析+safeParse サイレントスキップ、階層的時系列集約、3モードコスト計算+unreachable網羅性、NUL文字複合キー"
+  - name: dependency-management
+    file: dependency-management.md
+    wave: 2
+    intent: "pnpm catalogs・devDependencies only戦略・サプライチェーンセキュリティ設定を明らかにする"
+    summary: "catalogMode:strict+8カテゴリで153箇所の依存を一元管理、4層サプライチェーン防御、clean-pkg-jsonによる公開物最適化"
+  - name: ai-settings
+    file: ai-settings.md
+    wave: 2
+    intent: "CLAUDE.md設計・skills/commands活用・AIエージェント向け設定の体系と実践を明らかにする"
+    summary: "10個のCLAUDE.md階層的コンテキスト、AGENTS.mdシンボリックリンク、npm化LLMドキュメント+skills参照、MCP統合、ガードレール設計"
+  - name: dev-conventions
+    file: dev-conventions.md
+    wave: 2
+    intent: "命名規約・import規約・commit規約・lint/format設定・コードスタイルの統一戦略を明らかにする"
+    summary: "verbatimModuleSyntax+.ts拡張子import、ESLint論理ルール+oxfmtフォーマット分離、no-console+構造化ロガー、Conventional Commits scope規約"
