@@ -72,6 +72,7 @@ auto-repo-research/
 - repos/ 内のフォルダ名は GitHub の org/repo をそのまま使用する
 - showcases/ は `<theme>_<name>.md` のフラットファイル形式
   - theme 候補: `pattern_`, `practice_`, `tool_`, `workflow_`, `claude_`
+- `research-candidates.md` の Status カラムは `/research` 完了時に `済` へ更新する
 
 ## NEVER FORGET
 
