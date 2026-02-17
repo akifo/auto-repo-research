@@ -1,0 +1,100 @@
+url: https://github.com/vitejs/vite
+stars: 78159
+language: TypeScript
+license: MIT
+description: "Next generation frontend tooling. It's fast!"
+analyzed_at: "2026-02-17"
+local_path: /Users/akiho/github/github.com/vitejs/vite
+scale: large
+
+perspectives:
+  - name: project-structure
+    file: project-structure.md
+    wave: 1
+    intent: "monorepo の構成・パッケージ境界・ワークスペース設計の戦略を分析する"
+    summary: "pnpm workspaces で3公開パッケージ・40+ playground・docsを統合し、実行環境別のソース分離とバンドル境界に基づく依存分類を徹底"
+  - name: architecture
+    file: architecture.md
+    wave: 1
+    intent: "プラグインパイプライン・環境抽象化・レイヤー構成と依存関係の方向性を明らかにする"
+    summary: "Environment API による多環境抽象化、enforce+hook.order の二段階プラグイン順序制御、Proxy ベースの設定合成を実装"
+  - name: design-philosophy
+    file: design-philosophy.md
+    wave: 1
+    intent: "速度とDXを両立する設計判断の根拠・トレードオフ選択の原則を抽出する"
+    summary: "Lean Extendable Core・ブラウザ委譲・Pragmatic Performance の3原則で速度とDXを両立し、devDeps バンドル戦略で配布を軽量化"
+  - name: abstraction-patterns
+    file: abstraction-patterns.md
+    wave: 1
+    intent: "プラグインフック・環境API・設定マージなどの抽象化設計パターンを体系化する"
+    summary: "ObjectHook パターンでフック関数とメタデータを共存させ、mergeConfig/mergeWithDefaults の分離と宣言的フィルタで拡張性を確保"
+  - name: performance-techniques
+    file: performance-techniques.md
+    wave: 1
+    intent: "遅延ロード・プリバンドル・並列処理・キャッシュ戦略などのパフォーマンス最適化手法を分析する"
+    summary: "ETag 多層キャッシュ・リクエスト重複排除・ソフト無効化・プラグインフィルタリング・計測コードのゼロコスト化を体系的に実装"
+  - name: type-system-patterns
+    file: type-system-patterns.md
+    wave: 1
+    intent: "TypeScript の型設計・型推論活用・条件型・型エクスポート戦略のプラクティスを抽出する"
+    summary: "公開型/内部型/ソース型の3層分離、satisfies never による網羅性チェック、string & {} パターン、isolatedDeclarations を活用"
+  - name: code-organization
+    file: code-organization.md
+    wave: 1
+    intent: "パッケージ内のファイル分割・モジュール境界・exports/imports 設計パターンを分析する"
+    summary: "ランタイム境界をモジュール境界として厳密に分離し、exports の null マッピングと tsconfig の include 制限で依存方向を構造的に保証"
+  - name: error-handling-idioms
+    file: error-handling-idioms.md
+    wave: 2
+    intent: "エラーメッセージ設計・エラー境界・ユーザーフレンドリーなエラーハンドリングの手法を抽出する"
+    summary: "エラーコード定数による分岐、コードフレーム生成、prepareError による正規化、多段フォールバックのオーバーレイ表示を実装"
+  - name: testing-practices
+    file: testing-practices.md
+    wave: 2
+    intent: "Vitest + Playwright のE2Eテスト・playground ベースのインテグレーションテスト手法を分析する"
+    summary: "playground-temp 隔離コピーでの E2E テスト、環境変数による serve/build デュアルモード実行、expect.poll によるポーリング検証を採用"
+  - name: api-design-practices
+    file: api-design-practices.md
+    wave: 2
+    intent: "設定API・プラグインAPI・後方互換性・deprecation パターンの設計プラクティスを抽出する"
+    summary: "UserConfig(optional)→ResolvedConfig(required) 変換、experimental/future/legacy の三層 API ライフサイクル、getter trap 非推奨警告を体系化"
+  - name: dependency-management
+    file: dependency-management.md
+    wave: 2
+    intent: "devDeps バンドリング・遅延インポート・サイズ意識の依存管理戦略を分析する"
+    summary: "devDeps を Rolldown でバンドルし dependencies を6個に抑制、遅延 import()・npm alias・pnpm patches・bundleSizeLimit で軽量化を徹底"
+  - name: build-and-tooling
+    file: build-and-tooling.md
+    wave: 2
+    intent: "セルフバンドリング・ビルドパイプライン構築・ツールチェーン統合の手法を分析する"
+    summary: "Rolldown セルフバンドル+tsdown のパッケージ別ツール選択、型バンドリング+消費者視点チェックの二段パイプライン、shimDepsPlugin で依存書き換え"
+  - name: extensibility-mechanisms
+    file: extensibility-mechanisms.md
+    wave: 2
+    intent: "プラグインシステム設計・フックライフサイクル・compose パターンの仕組みを明らかにする"
+    summary: "Rollup 互換のスーパーセット設計、hookFirst/Sequential/Parallel の実行戦略使い分け、applyToEnvironment による環境分岐を実現"
+  - name: dev-conventions
+    file: dev-conventions.md
+    wave: 2
+    intent: "ESLint設定・コミット規約・lint-staged・コードスタイル統一の仕組みと効果を分析する"
+    summary: "レイヤード ESLint flat config で役割別に厳格度を調整、Prettier+lint-staged+simple-git-hooks の自動化、セマンティック PR タイトル検証を構築"
+  - name: ci-cd
+    file: ci-cd.md
+    wave: 2
+    intent: "CI/CD パイプライン・リリース自動化・エコシステムCIの運用手法を分析する"
+    summary: "変更検知による CI スキップ、ゲートジョブパターン、tag トリガー+Environment 承認の2段階リリース、エコシステム CI で下流影響を事前検知"
+  - name: migration-patterns
+    file: migration-patterns.md
+    wave: 2
+    intent: "バンドラー移行(esbuild→Rolldown)・deprecation管理・段階的移行の戦略パターンを抽出する"
+    summary: "自動変換レイヤー(esbuild→oxc)、Property Proxy(rollup→rolldown)、future/legacy フラグ、中間パッケージで段階的移行を実現"
+  - name: security-practices
+    file: security-practices.md
+    wave: 2
+    intent: "DNS rebinding防止・CORS・ホスト検証・開発サーバーセキュリティの実装パターンを分析する"
+    summary: "DNS rebinding・WebSocket hijacking・XSSI に対する多層ミドルウェア防御、Secure by Default の CORS/ホスト設定、timingSafeEqual トークン検証"
+  - name: concurrency-patterns
+    file: concurrency-patterns.md
+    wave: 2
+    intent: "ファイル監視・並列処理・Debounce/Throttle・非同期制御フローのパターンを体系化する"
+    summary: "Promise 重複排除・デバウンス付き排他制御・キャンセル可能な非同期処理・マイクロタスクバッファリング・Promise.allSettled シャットダウンを体系化"
