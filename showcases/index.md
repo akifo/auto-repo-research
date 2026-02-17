@@ -16,6 +16,8 @@
 | [subscribable-observer](./pattern_subscribable-observer)         | 30行のSubscribable基底クラスで6フレームワーク対応の最小購読パターン     |
 | [consume-aware-resource](./pattern_consume-aware-resource)       | AbortSignalのgetter検出で消費有無を判定し適応的にキャンセルするリソース管理 |
 | [register-declaration-merging](./pattern_register-declaration-merging) | 空Registerインターフェース+declaration mergingでライブラリ型をグローバルカスタマイズ |
+| [promise-coalescing](./pattern_promise-coalescing)                         | 並行リクエストの重複排除+無効化タイムスタンプ検証でキャッシュ整合性を保証             |
+| [weakmap-scoped-state](./pattern_weakmap-scoped-state)                     | WeakMap+ファクトリ関数による環境スコープ状態管理でメモリリークを防止                   |
 
 ## Practice
 
@@ -35,6 +37,8 @@
 | [supply-chain-defense](./practice_supply-chain-defense)               | pnpmの4層設定によるサプライチェーン多層防御（strictDepBuilds等）               |
 | [structural-sharing](./practice_structural-sharing)                   | 構造的共有+Proxy追跡+バッチ通知の三重レンダリング最適化                        |
 | [monorepo-quality-gates](./practice_monorepo-quality-gates)           | publint/attw/size-limit/sherif/knipの5ツールによる多層CI品質検証               |
+| [devdeps-bundling](./practice_devdeps-bundling)                       | devDepsバンドルでランタイムdependenciesを6個に極小化する配布軽量化戦略          |
+| [api-lifecycle](./practice_api-lifecycle)                             | experimental/future/legacy三層+getter trap非推奨警告によるAPI進化管理          |
 
 ## Claude
 
