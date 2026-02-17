@@ -34,6 +34,7 @@ Vite は 12 のワークフローを役割ごとに明確に分離している:
 
 CI ワークフローは変更検知 → テスト → ゲートジョブという3層構造を持つ。
 
+::: v-pre
 ```yaml
 # .github/workflows/ci.yml:34-60
 jobs:
@@ -58,6 +59,7 @@ jobs:
     needs: changed
     if: needs.changed.outputs.should_skip != 'true'
 ```
+:::
 
 docs や `.github/` 配下のみの変更はテストをスキップするが、`ci.yml` 自体の変更はスキップ対象から除外している点が巧妙である。
 
@@ -267,7 +269,7 @@ jobs:
     if: github.event_name == 'pull_request' || github.repository == 'vitejs/vite'
 ```
 
-- **Playwright キャッシュキーの OS 依存**: `${{ runner.os }}-playwright-bin-v1-${{ env.PLAYWRIGHT_VERSION }}` で Playwright バイナリをキャッシュしているが、キーのバージョン部分 (`v1`) を手動管理しており、キャッシュ無効化時にワークフロー内の複数箇所を同時に更新する必要がある。
+- **Playwright キャッシュキーの OS 依存**: <code v-pre>${{ runner.os }}-playwright-bin-v1-${{ env.PLAYWRIGHT_VERSION }}</code> で Playwright バイナリをキャッシュしているが、キーのバージョン部分 (`v1`) を手動管理しており、キャッシュ無効化時にワークフロー内の複数箇所を同時に更新する必要がある。
 
 ## 導出ルール
 

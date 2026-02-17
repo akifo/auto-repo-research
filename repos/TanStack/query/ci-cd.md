@@ -113,12 +113,14 @@ packages/query-core/root.tsup.config.js   -> ../../scripts/getTsupConfig.js
 "test:ci": "nx run-many --targets=test:sherif,test:knip,test:docs,test:eslint,test:lib,test:types,test:build,build",
 ```
 
+::: v-pre
 ```yaml
 # .github/workflows/pr.yml:6-8 — 同一 PR の重複実行をキャンセル
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.number || github.ref }}
   cancel-in-progress: true
 ```
+:::
 
 ```yaml
 # .github/workflows/release.yml:51-58 — Changesets Action によるリリース自動化
@@ -178,12 +180,14 @@ run: pnpx pkg-pr-new publish --pnpm --compact './packages/*' --template './examp
 
 - **Concurrency グループによる重複排除**: ワークフロー名と PR 番号（またはブランチ ref）を組み合わせたグループで、同一 PR の古い実行を自動キャンセルする。force push 後に二重実行が走ることを防ぐ。
 
+::: v-pre
 ```yaml
 # .github/workflows/pr.yml:6-8
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.number || github.ref }}
   cancel-in-progress: true
 ```
+:::
 
 - **パッケージ配布品質の機械的検証**: `publint --strict && attw --pack` により、package.json の exports フィールドとビルド成果物の整合性を機械的に検証する。人間のレビューでは見落としやすい CJS/ESM デュアル配布の問題を自動検出する。
 
@@ -230,7 +234,7 @@ export default [...rootConfig]
 ## 導出ルール
 
 - `[MUST]` CI ワークフローに concurrency グループと `cancel-in-progress: true` を設定し、同一 PR/ブランチの重複実行を排除する
-  - 根拠: TanStack Query の全ワークフロー（pr.yml, release.yml, autofix.yml）で `group: ${{ github.workflow }}-${{ github.event.number || github.ref }}` が設定されており、force push 後の二重実行を防止している
+  - 根拠: TanStack Query の全ワークフロー（pr.yml, release.yml, autofix.yml）で <code v-pre>group: ${{ github.workflow }}-${{ github.event.number || github.ref }}</code> が設定されており、force push 後の二重実行を防止している
 
 - `[MUST]` パッケージのビルド品質を publint や attw 等のツールで機械的に検証する品質ゲートを CI に組み込む
   - 根拠: 全 22 パッケージの `test:build` で `publint --strict && attw --pack` を実行し、exports フィールドとビルド成果物の不整合（CJS/ESM デュアル配布の問題）を自動検出している
