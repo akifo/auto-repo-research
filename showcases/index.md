@@ -18,6 +18,7 @@
 | [register-declaration-merging](./pattern_register-declaration-merging) | 空Registerインターフェース+declaration mergingでライブラリ型をグローバルカスタマイズ |
 | [promise-coalescing](./pattern_promise-coalescing)                         | 並行リクエストの重複排除+無効化タイムスタンプ検証でキャッシュ整合性を保証             |
 | [weakmap-scoped-state](./pattern_weakmap-scoped-state)                     | WeakMap+ファクトリ関数による環境スコープ状態管理でメモリリークを防止                   |
+| [dependency-injection](./pattern_dependency-injection)                     | 関数引数DI→遅延プロキシ→プッシュ型Hub→型レベルLayer/Tagの4段階DIパターン体系          |
 
 ## Practice
 
