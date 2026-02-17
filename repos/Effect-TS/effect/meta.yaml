@@ -1,0 +1,117 @@
+url: https://github.com/Effect-TS/effect
+stars: 13219
+language: TypeScript
+license: MIT
+description: "Build production-ready applications in TypeScript"
+analyzed_at: "2026-02-18"
+local_path: /Users/akiho/github/github.com/Effect-TS/effect
+scale: large
+
+perspectives:
+  - name: project-structure
+    file: project-structure.md
+    wave: 1
+    intent: "30+ パッケージのモノレポ構成原則とパッケージ間依存の方向性を明らかにする"
+    summary: "pnpm workspace 基盤の4層モノレポで、exports null による内部モジュール封鎖と madge 循環検出で構造を保護"
+
+  - name: architecture
+    file: architecture.md
+    wave: 1
+    intent: "Effect のレイヤー構成（コア/プラットフォーム/エコシステム）と関心の分離パターンを解剖する"
+    summary: "Tag/Layer/Context の DI 三角形と public/internal 2層分離で、30+ パッケージの一方向依存を実現"
+
+  - name: design-philosophy
+    file: design-philosophy.md
+    wave: 1
+    intent: "関数型プログラミングとエフェクトシステムの設計思想、TypeScript での実現戦略を明らかにする"
+    summary: "計算の記述と実行の分離、dual API、ジェネレータ構文モナドで FP を TypeScript に自然に翻訳"
+
+  - name: type-system-patterns
+    file: type-system-patterns.md
+    wave: 1
+    intent: "HKT エミュレーション、ファントム型、条件型、ブランド型など高度な型レベルプログラミング技法を体系化する"
+    summary: "TypeLambda/Kind による HKT エミュレーションと分散ファントム型で型安全性をランタイムコストなしに実現"
+
+  - name: effect-model
+    file: effect-model.md
+    wave: 1
+    intent: "Effect<A, E, R> の三型パラメータモデルと型安全なエフェクト合成の仕組みを解明する"
+    summary: "never デフォルトの三型パラメータで成功・エラー・依存を union 合成し、段階的型付けを実現"
+
+  - name: dependency-injection
+    file: dependency-injection.md
+    wave: 1
+    intent: "Layer/Context による依存性注入パターンとサービス解決メカニズムを分析する"
+    summary: "Tag + Layer + MemoMap による型追跡 DI で、自動メモ化・スコープ付きリソース管理・テスト差し替えを統合"
+
+  - name: error-handling-idioms
+    file: error-handling-idioms.md
+    wave: 1
+    intent: "型安全エラーチャネル、Cause/Defect の分類、エラー回復パターンを体系化する"
+    summary: "Cause ツリーによるロスレスエラーモデルと _tag+reason 二層分類で型安全なエラーディスパッチを実現"
+
+  - name: concurrency-patterns
+    file: concurrency-patterns.md
+    wave: 1
+    intent: "Fiber, Scope, 構造的並行処理、キャンセレーション、リソース安全性のパターンを分析する"
+    summary: "構造的並行処理・uninterruptibleMask・Scope LIFO ファイナライザで割り込み安全なリソース管理を実現"
+
+  - name: abstraction-patterns
+    file: abstraction-patterns.md
+    wave: 2
+    intent: "Pipeable, Effectable, Inspectable 等のプロトコル設計とモジュール間の共通抽象を分析する"
+    summary: "Symbol ベースのプロトコルとプロトタイプ合成で 177+ モジュールに横断的振る舞いを一括付与"
+
+  - name: code-generation
+    file: code-generation.md
+    wave: 2
+    intent: "codegen, barrel file 自動生成, docgen 等のコード生成パイプラインとその設計原則を分析する"
+    summary: "package.json exports から barrel file を自動生成し、ESLint 統合で生成コードの鮮度を CI で保証"
+
+  - name: performance-techniques
+    file: performance-techniques.md
+    wave: 2
+    intent: "Fiber スケジューリング、構造的共有、遅延評価、内部最適化パターンを収集する"
+    summary: "Monomorphic shape・HAMT・Chunk ロープ・トランジェントミューテーション・ハッシュキャッシュで高スループットを実現"
+
+  - name: testing-practices
+    file: testing-practices.md
+    wave: 2
+    intent: "it.effect パターン、vitest 統合、プロパティベーステスト、テストユーティリティ設計を分析する"
+    summary: "it.effect/it.scoped による Effect ライフサイクル統合テストと Schema→Arbitrary 自動導出で型安全テストを実現"
+
+  - name: api-design-practices
+    file: api-design-practices.md
+    wave: 2
+    intent: "モジュール名前空間パターン、デュアルAPI（data-first/data-last）、オーバーロード設計を体系化する"
+    summary: "dual 関数で data-first/data-last 両対応、Refinement 優先オーバーロードと namespace re-export で API を統一"
+
+  - name: streaming-patterns
+    file: streaming-patterns.md
+    wave: 2
+    intent: "Stream/Sink/Channel の合成パターンとバックプレッシャー、リソース管理の仕組みを分析する"
+    summary: "Channel 統一抽象の上に Stream/Sink を構築し、Chunk バッチ転送と pull-based バックプレッシャーを実現"
+
+  - name: schema-validation
+    file: schema-validation.md
+    wave: 2
+    intent: "Schema モジュールの宣言的バリデーション、型導出、AST ベース変換パターンを分析する"
+    summary: "AST を単一の真実の源泉とし、Parser/JSONSchema/Pretty/Arbitrary を独立インタプリタとして導出"
+
+  - name: extensibility-mechanisms
+    file: extensibility-mechanisms.md
+    wave: 2
+    intent: "プラットフォームアダプター、SQL ドライバ抽象化、プラグイン可能な拡張メカニズムを分析する"
+    summary: "Tag/Layer DI と dual-tag パターンで 10+ SQL ドライバ・3 プラットフォームを型安全に差し替え可能に"
+
+  - name: dev-conventions
+    file: dev-conventions.md
+    wave: 2
+    intent: "ESLint/dprint 設定、changeset 運用、CI/CD、AGENTS.md 等の開発規約とワークフローを分析する"
+    summary: "dprint ESLint 統合・codegen 差分チェック・tstyche 型テスト・4 シャード並列 CI で品質ゲートを多層化"
+
+  - name: ai-settings
+    file: ai-settings.md
+    wave: 2
+    intent: "AGENTS.md の構成と AI ツール向けの指示設計パターンを分析する"
+    summary: "コマンドベースの検証手順・scratchpad サンドボックス・.repos 知識注入で AI エージェント開発環境を構築"

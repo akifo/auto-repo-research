@@ -43,7 +43,7 @@
 | -- | --------------------------------------------------------------- | ---------------------------------------------------------------- | ------ |
 | 21 | [colinhacks/zod](https://github.com/colinhacks/zod)             | ビルダーパターン、型推論チェーン、エラーメッセージ設計           |        |
 | 22 | [sinclairzx81/typebox](https://github.com/sinclairzx81/typebox) | JSON Schema と TypeScript 型の双方向マッピング、コンパイラ設計   |        |
-| 23 | [Effect-TS/effect](https://github.com/Effect-TS/effect)         | 関数型エフェクトシステム、依存性注入、構造的並行処理             |        |
+| 23 | [Effect-TS/effect](https://github.com/Effect-TS/effect)         | 関数型エフェクトシステム、依存性注入、構造的並行処理             | 済     |
 | 24 | [trpc/trpc](https://github.com/trpc/trpc)                       | エンドツーエンド型安全、プロシージャビルダー、アダプターパターン |        |
 | 25 | [arktypeio/arktype](https://github.com/arktypeio/arktype)       | テンプレートリテラル型パーサー、ランタイムバリデーション最適化   |        |
 | 26 | [fakerjs/faker](https://github.com/fakerjs/faker)               | ロケール対応設計、モジュール式データ生成、シード管理             |        |
