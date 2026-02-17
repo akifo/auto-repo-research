@@ -26,6 +26,10 @@
 | [define-helper-pattern](./practice_define-helper-pattern)             | defineXxxConfig ヘルパーによるゼロコスト型補完パターン（横断的）               |
 | [tree-shaking-library](./practice_tree-shaking-library)               | ファクトリ関数+@\_\_NO_SIDE_EFFECTS\_\_+sideEffects:falseによる完全tree-shaking |
 | [dual-layer-testing](./practice_dual-layer-testing)                   | ランタイムテスト+型テストの1:1対応とドメイン固有ヘルパーによる統一テスト戦略   |
+| [branded-domain-primitives](./practice_branded-domain-primitives)     | Valibot brand()+ファクトリ関数+InferOutputでドメインプリミティブを型安全に構築 |
+| [result-error-pipeline](./practice_result-error-pipeline)             | byethrow Result.try/pipe/unwrapの3イディオムで関数型エラーハンドリングを統一   |
+| [in-source-testing](./practice_in-source-testing)                     | import.meta.vitest+await using+createFixtureによるin-source testingパターン   |
+| [supply-chain-defense](./practice_supply-chain-defense)               | pnpmの4層設定によるサプライチェーン多層防御（strictDepBuilds等）               |
 
 ## Claude
 
