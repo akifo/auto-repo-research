@@ -1,0 +1,100 @@
+url: https://github.com/TanStack/query
+stars: 48521
+language: TypeScript
+license: MIT
+description: "Powerful asynchronous state management, server-state utilities and data fetching for the web. TS/JS, React Query, Solid Query, Svelte Query and Vue Query."
+analyzed_at: "2026-02-17"
+local_path: /Users/akiho/github/github.com/TanStack/query
+scale: large
+
+perspectives:
+  - name: project-structure
+    file: project-structure.md
+    wave: 1
+    intent: "モノレポの構成・パッケージ分割・依存関係の設計を分析する"
+    summary: "24パッケージ4層構造のpnpmモノレポで、symlink設定共有とdual build出力を実現"
+  - name: architecture
+    file: architecture.md
+    wave: 1
+    intent: "コア/アダプター層の分離とフレームワーク非依存コアの設計を明らかにする"
+    summary: "query-coreにビジネスロジックを集約し、Observer/Strategy/Facadeで6フレームワークに対応"
+  - name: design-philosophy
+    file: design-philosophy.md
+    wave: 1
+    intent: "設計思想・技術選定の根拠・「なぜこの方法を選んだのか」を明らかにする"
+    summary: "フレームワーク非依存コア・Reducer-in-Class・構造的共有・Register型拡張の設計判断"
+  - name: type-system-patterns
+    file: type-system-patterns.md
+    wave: 1
+    intent: "TypeScriptの型システム活用・ジェネリクス・型推論の最適化パターンを分析する"
+    summary: "DataTagによるQueryKey型伝播、NoInfer・再帰型深度制限・Register宣言マージの型技法"
+  - name: abstraction-patterns
+    file: abstraction-patterns.md
+    wave: 1
+    intent: "コア抽象と各フレームワークアダプターの共通インターフェース設計を分析する"
+    summary: "30行のSubscribableから7派生クラス、QueryBehavior Strategyで拡張性を確保"
+  - name: state-management-patterns
+    file: state-management-patterns.md
+    wave: 1
+    intent: "非同期状態管理のモデル・キャッシュ戦略・状態遷移の仕組みを分析する"
+    summary: "status/fetchStatusの2軸直交設計、Action-Reducer状態遷移、Observer連動GC"
+  - name: error-handling-idioms
+    file: error-handling-idioms.md
+    wave: 2
+    intent: "エラーハンドリング戦略・リトライメカニズム・エラー境界連携を分析する"
+    summary: "指数バックオフリトライ・throwOnError選択制・Error Boundaryリセットプロトコル"
+  - name: testing-practices
+    file: testing-practices.md
+    wave: 2
+    intent: "テスト戦略・テストユーティリティ・マルチフレームワークテストの設計を分析する"
+    summary: "コア純粋テスト+アダプター統合テストの二層構造、型テスト・マルチTSバージョン検証"
+  - name: api-design-practices
+    file: api-design-practices.md
+    wave: 2
+    intent: "パブリックAPI設計・オプション設計パターン・後方互換性戦略を分析する"
+    summary: "単一オブジェクト引数・queryOptionsビルダー・skipToken・experimental_プレフィクス"
+  - name: performance-techniques
+    file: performance-techniques.md
+    wave: 2
+    intent: "キャッシュ最適化・再レンダリング抑制・メモリ管理パターンを分析する"
+    summary: "構造的共有・Proxyプロパティ追跡・NotifyManagerバッチ通知・遅延AbortSignal"
+  - name: extensibility-mechanisms
+    file: extensibility-mechanisms.md
+    wave: 2
+    intent: "プラグインシステム・永続化層・DevTools統合の拡張性設計を分析する"
+    summary: "最小契約インターフェース・Observable Cache・差し替え可能シングルトンの拡張設計"
+  - name: build-and-tooling
+    file: build-and-tooling.md
+    wave: 2
+    intent: "ビルドパイプライン・マルチフォーマット出力・パッケージ公開の仕組みを分析する"
+    summary: "tsup dual build・symlink設定共有・publint/attw/size-limit多層品質ゲート"
+  - name: observer-pattern-techniques
+    file: observer-pattern-techniques.md
+    wave: 2
+    intent: "Observerパターンの実装・購読管理・通知最適化の手法を分析する"
+    summary: "Subscribable基盤・購読数連動リソース管理・バッチ通知・Proxy追跡の通知最適化"
+  - name: concurrency-patterns
+    file: concurrency-patterns.md
+    wave: 2
+    intent: "並行リクエスト管理・競合状態回避・楽観的更新の手法を分析する"
+    summary: "Promise重複排除・スコープ直列化・AbortSignal消費検出・CancelledErrorロールバック"
+  - name: dev-conventions
+    file: dev-conventions.md
+    wave: 2
+    intent: "コーディング規約・リンター設定・命名規則・開発ワークフローを分析する"
+    summary: "symlink設定DRY・ESLint flat config・cspell・knip/sherifの多層品質検証"
+  - name: dependency-management
+    file: dependency-management.md
+    wave: 2
+    intent: "モノレポ依存管理・peerDeps戦略・バージョン整合性の仕組みを分析する"
+    summary: "workspace:*/^使い分け・pnpm overrides型統一・sherif整合性検証・Changesets制御"
+  - name: framework-adapter-patterns
+    file: framework-adapter-patterns.md
+    wave: 2
+    intent: "フレームワークアダプター層の実装パターン・共通化手法を分析する"
+    summary: "3層分離(API/Base/Observer)・Observer注入Strategy・フレームワーク慣習準拠の命名"
+  - name: ci-cd
+    file: ci-cd.md
+    wave: 2
+    intent: "CI/CDワークフロー・リリースプロセス・品質ゲートの設計を分析する"
+    summary: "nx affected/run-many二段構え・Changesets自動リリース・pkg-pr-newプレビュー公開"
