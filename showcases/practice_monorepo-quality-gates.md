@@ -129,6 +129,7 @@ full import（全 API）と minimal import（最小利用パターン）の両�
 
 ### 7. CI ワークフローへの組み込み
 
+:::: v-pre
 ```yaml
 # .github/workflows/pr.yml:6-8,34-35
 concurrency:
@@ -147,6 +148,7 @@ concurrency:
     skip_step: install
     build_script: build:all
 ```
+::::
 
 ```yaml
 # .github/workflows/release.yml:36
