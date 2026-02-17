@@ -13,6 +13,9 @@
 | [options-or-false](./pattern_options-or-false)               | `Options \| false` + filter(Boolean) で宣言的にプラグイン配列を構築        |
 | [phantom-type](./pattern_phantom-type)                       | optional プロパティへの型情報埋め込みでランタイムコストゼロの型推論を実現   |
 | [escalating-escape-hatches](./pattern_escalating-escape-hatches) | 段階的抽象度の拡張ポイントで安全性と柔軟性を両立するライブラリ設計     |
+| [subscribable-observer](./pattern_subscribable-observer)         | 30行のSubscribable基底クラスで6フレームワーク対応の最小購読パターン     |
+| [consume-aware-resource](./pattern_consume-aware-resource)       | AbortSignalのgetter検出で消費有無を判定し適応的にキャンセルするリソース管理 |
+| [register-declaration-merging](./pattern_register-declaration-merging) | 空Registerインターフェース+declaration mergingでライブラリ型をグローバルカスタマイズ |
 
 ## Practice
 
@@ -30,6 +33,8 @@
 | [result-error-pipeline](./practice_result-error-pipeline)             | byethrow Result.try/pipe/unwrapの3イディオムで関数型エラーハンドリングを統一   |
 | [in-source-testing](./practice_in-source-testing)                     | import.meta.vitest+await using+createFixtureによるin-source testingパターン   |
 | [supply-chain-defense](./practice_supply-chain-defense)               | pnpmの4層設定によるサプライチェーン多層防御（strictDepBuilds等）               |
+| [structural-sharing](./practice_structural-sharing)                   | 構造的共有+Proxy追跡+バッチ通知の三重レンダリング最適化                        |
+| [monorepo-quality-gates](./practice_monorepo-quality-gates)           | publint/attw/size-limit/sherif/knipの5ツールによる多層CI品質検証               |
 
 ## Claude
 
