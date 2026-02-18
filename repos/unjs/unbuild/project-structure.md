@@ -1,158 +1,106 @@
 # project-structure
 
 > リポジトリ: unjs/unbuild
-> 分析日: 2026-02-16
+> 分析日: 2026-02-18
 
 ## 概要
 
-unbuild はわずか約 2,500 行・25 ファイルのソースコードで Rollup/mkdist/untyped/copy の 4 つのビルダーを統合するビルドツールである。小規模ながら、エントリポイントの分離・ビルダーごとのモジュール分割・型定義の階層構造・セルフホスティングビルドなど、構造設計のプラクティスが凝縮されている。特に「最小限のトップレベル + ビルダーごとの自己完結サブモジュール」という分割戦略は、プラグインアーキテクチャを採用するあらゆるツールに応用できる。
+unbuild のディレクトリ構成とモジュール分割の設計意図を分析した。43 ファイル・小規模な TypeScript プロジェクトでありながら、4 種類のビルダー（rollup, mkdist, copy, untyped）を統合する複合ビルドシステムを実現している。注目すべきは、フラットなトップレベル + ビルダーごとのサブディレクトリという「浅い階層 + 責務境界の明確化」の設計と、型定義を各ビルダー内に co-locate する判断、そして自分自身を unbuild でビルドする self-build アーキテクチャである。
 
 ## 背景にある原則
 
-- **Facade Pattern によるエントリポイント最小化**: ライブラリの公開エントリ (`src/index.ts`) は 2 行で re-export のみを行い、CLI エントリ (`src/cli.ts`) はコマンド定義と `build()` 呼び出しに徹する。これにより消費者が触れる表面積を最小化し、内部構造の変更が外部 API に波及しないようにしている。公開 API と内部実装の結合を断つことで、後方互換性を維持しつつ内部リファクタリングの自由度を確保すべきである。
-- **関心ごとの水平分割 + 垂直分割**: トップレベル (`src/`) はビルドオーケストレーション (build.ts)・型定義 (types.ts)・ユーティリティ (utils.ts)・バリデーション (validate.ts)・自動推論 (auto.ts)・CLI (cli.ts) と機能軸で水平分割し、ビルダー実装 (`src/builders/<builder>/`) はビルダー軸で垂直分割している。機能が異なるものは水平に、同じ関心の実装バリエーションは垂直に分割すべきである。
-- **型とフックのコロケーション**: 各ビルダーは `index.ts`（実装）と `types.ts`（型 + フック定義）のペアで構成される。型定義がビルダーの近くに存在することで、そのビルダーの拡張ポイントが一目で分かり、型のスコープが明確になる。
-- **設定の段階的マージによるゼロコンフィグ実現**: `package.json` の exports/bin/main/types フィールドからビルドエントリを自動推論する `autoPreset` と、`defu` による多段マージ（buildConfig > pkg.unbuild > inputConfig > preset > defaults）で、設定ファイルなしでも合理的なデフォルトが適用される。ユーザーの認知負荷を下げるには「推論可能な情報を二重に書かせない」原則に従うべきである。
+- **責務境界はディレクトリで表現し、ファイルの深さは最小に留める**: トップレベルの `src/` には orchestration 層（`build.ts`, `cli.ts`, `auto.ts`, `validate.ts`, `utils.ts`, `types.ts`）のみを配置し、各ビルダーの実装は `src/builders/<name>/` に完全に封じ込めている。3 階層を超えるネストは rollup の plugins のみであり、それ以外は 2 階層以内に収まる。理由は「ファイルを探す認知コストの最小化」と「ビルダー間の依存を構造的に防止する」ことにある（`src/builders/rollup/config.ts:9` で `../../utils` をインポートする際、ビルダー同士が直接依存しない構造が強制される）。
+
+- **型定義は使用箇所に co-locate し、集約ファイルで再エクスポートする**: 各ビルダーが独自の `types.ts` を持ち（`src/builders/rollup/types.ts`, `src/builders/copy/types.ts` 等）、トップレベルの `src/types.ts` がそれらを `export type { ... }` で再エクスポートする。これにより、型の所有権がビルダーに帰属しつつ、外部消費者は単一のエントリポイントからすべての型にアクセスできる。
+
+- **エントリポイントは最小限の re-export に限定する**: `src/index.ts` はわずか 2 行（`export * from "./build"` と `export * from "./types"`）であり、ロジックを一切含まない。CLI エントリ（`src/cli.ts`）も `build()` を呼ぶだけの薄いアダプタ層である。これは「public API の表面積を制御し、内部リファクタリングの自由度を確保する」原則に基づく。
+
+- **自己参照（self-build）で設計の一貫性を検証する**: `build.config.ts` が `./src` から `defineBuildConfig` をインポートし、unbuild 自身を unbuild でビルドする（`package.json` の `"build": "pnpm unbuild"`）。ビルドツール自身がそのツールの最初のユーザーとなることで、API 設計の不整合を早期に検出できる。
 
 ## 実例と分析
 
-### トップレベルのファイル役割分担
+### トップレベル: orchestration 層の分離
 
-`src/` 直下の 7 ファイルはそれぞれ明確に異なる責務を持ち、相互の依存が最小限に抑えられている。
+`src/` 直下のファイルは 7 つのみで、各ファイルが明確に単一の責務を持つ。
 
-| ファイル      | 行数 | 責務                                        | 依存先                                   |
-| ------------- | ---- | ------------------------------------------- | ---------------------------------------- |
-| `index.ts`    | 2    | 公開 API の re-export                       | build.ts, types.ts                       |
-| `cli.ts`      | 69   | CLI コマンド定義                            | build.ts                                 |
-| `build.ts`    | 415  | ビルドオーケストレーション                  | utils, validate, builders/*, types, auto |
-| `types.ts`    | 212  | 型定義 + `defineBuildConfig`/`definePreset` | builders/*/types                         |
-| `auto.ts`     | 176  | package.json からのエントリ自動推論         | utils, types                             |
-| `utils.ts`    | 208  | 共通ユーティリティ                          | auto (resolvePreset 経由)                |
-| `validate.ts` | 86   | ビルド成果物の検証                          | utils, types                             |
+| ファイル | 責務 | 行数 |
+|---|---|---|
+| `build.ts` | ビルドの orchestration（設定読み込み、コンテキスト生成、ビルダー呼び出し、検証） | 415 |
+| `types.ts` | 全型定義の集約と公開 API 型 | 213 |
+| `auto.ts` | package.json からのエントリ自動推論 | 177 |
+| `utils.ts` | 汎用ユーティリティ関数 | 209 |
+| `validate.ts` | ビルド後のパッケージ整合性検証 | 87 |
+| `cli.ts` | CLI コマンド定義 | 69 |
+| `index.ts` | 公開エントリポイント（re-export のみ） | 2 |
 
-`build.ts` がオーケストレーション層として全ビルダーを束ね、それ以外のファイルは特定の関心にのみ集中している。この「1 つのオーケストレーター + 複数の特化モジュール」構成は、コードベースのナビゲーション性を高めている。
+`build.ts` が最大ファイルだが、公開関数 `build()` と内部関数 `_build()` の 2 関数構成で見通しが保たれている。`build()` は設定ファイル読み込みと複数 config のループ、`_build()` は単一 config のビルド実行という分担である。
 
-### ビルダーの自己完結サブモジュール構造
+### ビルダーのディレクトリ構造: 統一インターフェースと独立実装
 
-4 つのビルダーは `src/builders/<name>/` 以下にそれぞれ独立したサブモジュールとして配置されている。
+4 つのビルダーはすべて同じ構造パターンに従う。
 
 ```
-src/builders/
-├── copy/          (2 ファイル: index.ts, types.ts)
-├── mkdist/        (2 ファイル: index.ts, types.ts)
-├── untyped/       (2 ファイル: index.ts, types.ts)
-└── rollup/        (8 ファイル: index.ts, types.ts, build.ts, config.ts, stub.ts, watch.ts, utils.ts, plugins/)
-    └── plugins/   (5 ファイル: cjs.ts, esbuild.ts, json.ts, raw.ts, shebang.ts)
+src/builders/<name>/
+  ├── index.ts   # エクスポートされるビルド関数
+  └── types.ts   # ビルダー固有の型定義（Entry, Hooks）
 ```
 
-シンプルなビルダー (copy, mkdist, untyped) は `index.ts` + `types.ts` の 2 ファイル構成である。複雑な rollup ビルダーのみ内部でさらに分割されているが、外部に公開するのは `index.ts` からの re-export 1 行のみである。
+rollup ビルダーのみ、複雑さに応じてさらにファイルが分割されている。
+
+```
+src/builders/rollup/
+  ├── index.ts    # re-export のみ（1行）
+  ├── build.ts    # ビルド実行ロジック
+  ├── config.ts   # Rollup オプション組み立て
+  ├── stub.ts     # スタブモード実装
+  ├── watch.ts    # ウォッチモード実装
+  ├── utils.ts    # rollup 固有ユーティリティ
+  ├── types.ts    # rollup 固有型定義
+  └── plugins/    # カスタム Rollup プラグイン群
+      ├── cjs.ts
+      ├── esbuild.ts
+      ├── json.ts
+      ├── raw.ts
+      └── shebang.ts
+```
+
+この構成の設計意図は、rollup の `index.ts` に現れている。
 
 ```typescript
 // src/builders/rollup/index.ts:1
 export { rollupBuild } from "./build";
 ```
 
-これにより、rollup ビルダーの内部複雑性がカプセル化され、`build.ts` からは 4 つのビルダーを対称的にインポートできる。
+わずか 1 行の re-export ファイルだが、これにより他のビルダーと同じ `import { rollupBuild } from "./builders/rollup"` というインポートパスが維持される。内部のファイル分割（`build.ts`, `config.ts`, `stub.ts`, `watch.ts`）は外部から見えない実装詳細となる。
+
+### 型定義の co-location と集約パターン
+
+各ビルダーの `types.ts` は以下の 3 要素を定義する。
+
+1. **BuildEntry の特殊化**: `BaseBuildEntry` を拡張し、`builder` フィールドをリテラル型で固定
+2. **ビルダー固有のオプション型**: 外部ライブラリの型を交差型で取り込み
+3. **Hooks インターフェース**: ビルダーのライフサイクルフック定義
 
 ```typescript
-// src/build.ts:21-24
-import { copyBuild } from "./builders/copy";
-import { mkdistBuild } from "./builders/mkdist";
-import { rollupBuild } from "./builders/rollup";
-import { typesBuild } from "./builders/untyped";
-```
-
-### 統一インターフェースによるビルダー実行
-
-4 つのビルダーはすべて `(ctx: BuildContext) => Promise<void>` という同一シグネチャを持ち、配列に格納して順次または並列に実行される。
-
-```typescript
-// src/build.ts:293-306
-const buildTasks = [
-  typesBuild, // untyped
-  mkdistBuild, // mkdist
-  rollupBuild, // rollup
-  copyBuild, // copy
-] as const;
-
-if (options.parallel) {
-  await Promise.all(buildTasks.map((task) => task(ctx)));
-} else {
-  for (const task of buildTasks) {
-    await task(ctx);
-  }
+// src/builders/copy/types.ts:3-6
+export interface CopyBuildEntry extends BaseBuildEntry {
+  builder: "copy";
+  pattern?: string | string[];
 }
 ```
 
-ビルダーの追加・削除はこの配列への 1 行追加で完了する。各ビルダーは内部で `ctx.options.entries.filter((e) => e.builder === "<name>")` として自分が担当するエントリのみを処理するため、ビルダー間の干渉がない。
-
-### フック設計による拡張性の確保
-
-`BuildHooks` インターフェースは各ビルダーのフック型をインターセクションで合成している。
-
 ```typescript
-// src/types.ts:197-202
-export interface BuildHooks extends CopyHooks, UntypedHooks, MkdistHooks, RollupHooks {
-  "build:prepare": (ctx: BuildContext) => void | Promise<void>;
-  "build:before": (ctx: BuildContext) => void | Promise<void>;
-  "build:done": (ctx: BuildContext) => void | Promise<void>;
+// src/builders/mkdist/types.ts:4-7
+type _BaseAndMkdist = BaseBuildEntry & MkdistOptions;
+export interface MkdistBuildEntry extends _BaseAndMkdist {
+  builder: "mkdist";
 }
 ```
 
-この設計により、各ビルダーは自身のフック型を `types.ts` にコロケーションしつつ、ユーザーにはフラットな 1 つの `BuildHooks` として見せることができる。例えば rollup ビルダーは 5 つのフック (`rollup:options`, `rollup:build`, `rollup:dts:options`, `rollup:dts:build`, `rollup:done`) を定義し、mkdist は 4 つ (`mkdist:entries`, `mkdist:entry:options`, `mkdist:entry:build`, `mkdist:done`) を定義する。
-
-### セルフホスティングビルドの実現構造
-
-unbuild は自分自身を使ってビルドする。開発時は `jiti` による JIT 実行で TypeScript ソースを直接実行する。
-
-```json
-// package.json:29
-"unbuild": "jiti ./src/cli"
-```
+トップレベルの `src/types.ts` はこれらを集約する。
 
 ```typescript
-// build.config.ts:1-2
-import { rm } from "node:fs/promises";
-import { defineBuildConfig } from "./src";
-```
-
-`build.config.ts` が `./src` からインポートすることで、ビルド前のソースコードで自身の設定を書ける。これはフレームワークが自身を使って構築される「ドッグフーディング」パターンであり、API の使いやすさを開発者自身が継続的に検証する効果がある。
-
-### rollup ビルダーの内部分割: 関心の分離の深掘り
-
-最も複雑な rollup ビルダーは以下のように内部分割されている。
-
-| ファイル    | 行数 | 責務                                        |
-| ----------- | ---- | ------------------------------------------- |
-| `build.ts`  | 130  | ビルド実行フロー（stub/build/watch の分岐） |
-| `config.ts` | 168  | Rollup オプション構築                       |
-| `stub.ts`   | 188  | JIT スタブ生成                              |
-| `watch.ts`  | 39   | ウォッチモード                              |
-| `utils.ts`  | 53   | エイリアス解決、チャンクファイル名生成      |
-| `types.ts`  | 131  | 型定義 + フック定義                         |
-
-`build.ts` がエントリポイントとして stub/build/watch の 3 モードを分岐し、各モードの実装は別ファイルに委譲する。設定構築 (`config.ts`) と実行 (`build.ts`) が分離されているため、設定だけをテスト・検査することが容易である。
-
-### 型定義の階層構造
-
-型は「基底型 → ビルダー固有型 → ユニオン型」という階層で設計されている。
-
-```typescript
-// src/types.ts:14-20 (基底型)
-export interface BaseBuildEntry {
-  builder?: "untyped" | "rollup" | "mkdist" | "copy";
-  input: string;
-  name?: string;
-  outDir?: string;
-  declaration?: "compatible" | "node16" | boolean;
-}
-
-// src/builders/rollup/types.ts:20-22 (ビルダー固有型)
-export interface RollupBuildEntry extends BaseBuildEntry {
-  builder: "rollup";
-}
-
-// src/types.ts:36-41 (ユニオン型)
+// src/types.ts:36-41
 export type BuildEntry =
   | BaseBuildEntry
   | RollupBuildEntry
@@ -161,31 +109,99 @@ export type BuildEntry =
   | CopyBuildEntry;
 ```
 
-`BaseBuildEntry` が共通フィールドを定義し、各ビルダーの型が `builder` フィールドをリテラル型で固定することで、判別可能なユニオン (Discriminated Union) を構成している。
+```typescript
+// src/types.ts:197-202
+export interface BuildHooks
+  extends CopyHooks, UntypedHooks, MkdistHooks, RollupHooks {
+  "build:prepare": (ctx: BuildContext) => void | Promise<void>;
+  "build:before": (ctx: BuildContext) => void | Promise<void>;
+  "build:done": (ctx: BuildContext) => void | Promise<void>;
+}
+```
+
+`BuildHooks` は 4 つのビルダー Hooks インターフェースを交差型で合成する。各ビルダーが自身のフックを独立して定義し、集約層で合成するアプローチにより、ビルダーの追加・削除がトップレベル型の 1 行変更で完結する。
+
+### ビルダーの呼び出し: 統一された関数シグネチャ
+
+すべてのビルダーは `(ctx: BuildContext) => Promise<void>` という同一のシグネチャを持つ。
+
+```typescript
+// src/build.ts:293-298
+const buildTasks = [
+  typesBuild, // untyped
+  mkdistBuild, // mkdist
+  rollupBuild, // rollup
+  copyBuild, // copy
+] as const;
+```
+
+各ビルダーは内部でエントリを自分でフィルタリングする。
+
+```typescript
+// src/builders/copy/index.ts:11-13
+const entries = ctx.options.entries.filter(
+  (e) => e.builder === "copy",
+) as CopyBuildEntry[];
+```
+
+この「呼び出し側は全ビルダーを呼ぶ、フィルタリングはビルダー側」というパターンにより、orchestration 層はビルダーの詳細を知る必要がない。
+
+### self-build パターン
+
+```typescript
+// build.config.ts:1-12
+import { defineBuildConfig } from "./src";
+import { rm } from "node:fs/promises";
+
+export default defineBuildConfig({
+  hooks: {
+    async "build:done"() {
+      await rm("dist/index.d.ts");
+      await rm("dist/cli.d.ts");
+      await rm("dist/cli.d.mts");
+    },
+  },
+});
+```
+
+`./src` から直接インポートすることで、ビルド済みの `dist/` に依存しない。`package.json` の `"unbuild": "jiti ./src/cli"` が `jiti` による JIT 実行を可能にし、bootstrap 問題を回避している。
 
 ## パターンカタログ
 
 - **Strategy パターン** (分類: 振る舞い)
-  - 解決する問題: 4 つの異なるビルド戦略（rollup, mkdist, untyped, copy）を統一的に実行する
-  - 適用条件: 同一インターフェースで異なる実装を切り替える場面
-  - コード例: `src/build.ts:293-306` — ビルダー関数配列の順次/並列実行
-  - 注意点: GoF の Strategy は実行時にストラテジーオブジェクトを注入するが、unbuild では静的な配列として定義されている。エントリの `builder` フィールドで処理対象を自己選択する方式は、Strategy + Chain of Responsibility のハイブリッドに近い
+  - 解決する問題: 異なるビルド方式（rollup, mkdist, copy, untyped）を統一的に扱う
+  - 適用条件: 同一インターフェースで切り替え可能な複数のアルゴリズムがある場合
+  - コード例: `src/build.ts:293-306` で `buildTasks` 配列に格納し、順次またはパラレルで実行
+  - 注意点: GoF の Strategy はオブジェクトベースだが、ここでは関数ベースで実現。`(ctx: BuildContext) => Promise<void>` が共通インターフェースに相当する
 
 - **Facade パターン** (分類: 構造)
-  - 解決する問題: rollup ビルダーの内部の 8 ファイルを 1 つの `rollupBuild` 関数に集約する
-  - 適用条件: サブシステムの複雑性を隠蔽し、シンプルなインターフェースを提供する場面
-  - コード例: `src/builders/rollup/index.ts:1` — 1 行 re-export
-  - 注意点: barrel ファイル (index.ts) を Facade として使うパターン。re-export が多すぎると tree-shaking が効かなくなるが、ここでは単一関数のみで問題ない
-
-- **Builder パターン** (分類: 生成) — 変形適用
-  - 解決する問題: ビルドオプションの段階的構築と多段マージ
-  - 適用条件: オプションが多く、デフォルト値の推論とユーザー指定の合成が必要な場面
-  - コード例: `src/build.ts:98-175` — `defu` による 5 段階マージ
-  - 注意点: GoF の Builder はステップバイステップの構築だが、ここでは `defu` の深いマージで一括構築している。宣言的設定にはこの方式が適している
+  - 解決する問題: rollup ビルダーの複雑な内部構造（7 ファイル + 5 プラグイン）を `rollupBuild` 一関数で隠蔽
+  - 適用条件: サブシステムが複雑で、外部からのアクセスポイントを単純化したい場合
+  - コード例: `src/builders/rollup/index.ts:1` の 1 行 re-export
+  - 注意点: Facade が薄すぎると存在意義が問われるが、ここではインポートパスの一貫性と内部リファクタリングの自由度が明確な価値
 
 ## Good Patterns
 
-- **公開 API を re-export のみに制限する**: `src/index.ts` は `export * from "./build"` と `export * from "./types"` の 2 行のみである。内部モジュール構成が変わっても、re-export 元を変えるだけで互換性を維持できる。
+- **型の co-location + 集約 re-export**: ビルダー固有の型をビルダーディレクトリに配置し、トップレベル `types.ts` で再エクスポートする。型の所有権が明確になり、ビルダー追加時の変更箇所が局所化される。
+
+```typescript
+// src/types.ts:22-34 — 各ビルダーの型を re-export
+/** Bundler types */
+export type {
+  RollupBuildEntry,
+  RollupBuildOptions,
+  RollupOptions,
+} from "./builders/rollup/types";
+export type { MkdistBuildEntry } from "./builders/mkdist/types";
+export type { CopyBuildEntry } from "./builders/copy/types";
+export type {
+  UntypedBuildEntry,
+  UntypedOutput,
+  UntypedOutputs,
+} from "./builders/untyped/types";
+```
+
+- **index.ts を re-export 専用にする**: ロジックを含まない re-export ファイルにすることで、モジュールの公開 API と内部実装を構造的に分離する。
 
 ```typescript
 // src/index.ts:1-2
@@ -193,18 +209,12 @@ export * from "./build";
 export * from "./types";
 ```
 
-- **`defineBuildConfig` / `definePreset` ヘルパーで型安全な設定を提供する**: 設定ファイルの型補完を実行時コストなしで実現する。関数内部はほぼパススルーだが、ユーザーの IDE 体験を劇的に改善する。
-
 ```typescript
-// src/types.ts:204-208
-export function defineBuildConfig(
-  config: BuildConfig | BuildConfig[],
-): BuildConfig[] {
-  return (Array.isArray(config) ? config : [config]).filter(Boolean);
-}
+// src/builders/rollup/index.ts:1
+export { rollupBuild } from "./build";
 ```
 
-- **ビルダーの `builder` フィールドによるエントリ自己選択**: 各ビルダーが `ctx.options.entries.filter((e) => e.builder === "<name>")` で自分の担当エントリだけを抽出する。オーケストレーター側でルーティングロジックを持たず、ビルダー側に責務を持たせることで、新しいビルダー追加時にオーケストレーターの変更が最小化される。
+- **discriminated union による builder タイプ分岐**: `builder` フィールドのリテラル型で各ビルダーの Entry 型を区別し、`filter` + 型アサーションでタイプセーフなフィルタリングを実現する。
 
 ```typescript
 // src/builders/mkdist/index.ts:8-10
@@ -213,62 +223,64 @@ const entries = ctx.options.entries.filter(
 ) as MkdistBuildEntry[];
 ```
 
-- **フック型のインターセクション合成**: ビルダーごとに定義したフック型を `BuildHooks` で合成し、ユーザーにはフラットなインターフェースを提供する。ビルダー追加時はインターセクションに 1 つ追加するだけで済む。
-
-## Anti-Patterns / 注意点
-
-- **オーケストレーターファイルの肥大化**: `src/build.ts` は 415 行で、オプションマージ・エントリ正規化・ディレクトリ削除・ビルダー実行・出力レポート・バリデーション呼び出しという多くの責務を 1 ファイルに持つ。`_build` 関数が 330 行を超えており、例えばオプション構築やレポート出力を別ファイルに抽出できる余地がある。
+- **Hooks のインターフェース合成**: 各ビルダーが独自の Hooks 型を定義し、`extends` で合成する。ビルダーの追加・削除が型レベルで追跡可能になる。
 
 ```typescript
-// Bad: 1つの関数に多くの責務
-// src/build.ts:78-415 — _build 関数が約 340 行
-
-// Better: フェーズごとにファイルまたは関数を分割
-// options.ts — resolveOptions(rootDir, inputConfig, buildConfig, pkg)
-// report.ts  — reportBuildOutput(ctx)
-// build.ts   — _build() はフェーズを呼ぶだけ
-```
-
-- **暗黙的なビルダーフォールバック推論**: エントリの `builder` が未指定の場合、入力パスの末尾スラッシュで mkdist/rollup を判定する。この規則がドキュメント以外に明示されていないため、新規ユーザーが混乱する可能性がある。
-
-```typescript
-// src/build.ts:228-229
-if (!entry.builder) {
-  entry.builder = entry.input.endsWith("/") ? "mkdist" : "rollup";
+// src/types.ts:197-202
+export interface BuildHooks
+  extends CopyHooks, UntypedHooks, MkdistHooks, RollupHooks {
+  "build:prepare": (ctx: BuildContext) => void | Promise<void>;
+  "build:before": (ctx: BuildContext) => void | Promise<void>;
+  "build:done": (ctx: BuildContext) => void | Promise<void>;
 }
 ```
 
+## Anti-Patterns / 注意点
+
+- **型アサーションによるフィルタリングの型安全性欠如**: `filter` + `as` キャストはランタイムフィルタと型の整合性がコンパイラに検証されない。`builder` フィールドの値を間違えても型エラーにならない。
+
+```typescript
+// Bad: filter の条件と as の型が連動しない
+const entries = ctx.options.entries.filter(
+  (e) => e.builder === "copy",
+) as CopyBuildEntry[];
+```
+
+```typescript
+// Better: ユーザー定義型ガードで型を絞り込む
+function isCopyEntry(e: BuildEntry): e is CopyBuildEntry {
+  return e.builder === "copy";
+}
+const entries = ctx.options.entries.filter(isCopyEntry);
+```
+
+- **ビルダー複雑度に応じたファイル分割の基準が暗黙的**: copy/mkdist/untyped は `index.ts` + `types.ts` の 2 ファイル構成だが、rollup は 12 ファイルに分割されている。分割基準がドキュメント化されておらず、新しいビルダー追加時に判断が難しい。プロジェクトのコントリビューションガイドで「N 行を超えたら分割」等の基準を明示するのが望ましい。
+
 ## 導出ルール
 
-- `[MUST]` ライブラリの公開エントリポイントは re-export のみにし、実装ロジックを含めない
-  - 根拠: unbuild の `src/index.ts` は 2 行の re-export で、内部モジュール再構成が外部 API に影響しない設計を実現している (`src/index.ts:1-2`)
+- `[MUST]` モジュールの公開エントリポイント（`index.ts`）にはロジックを書かず、re-export のみにする
+  - 根拠: unbuild の `src/index.ts`（2 行）と `src/builders/rollup/index.ts`（1 行）は、内部ファイル構成の変更を外部に波及させない防壁として機能している
 
-- `[MUST]` プラグイン/ストラテジーの実装バリエーションは統一インターフェース `(ctx: Context) => Promise<void>` に揃え、配列で管理する
-  - 根拠: unbuild の 4 ビルダーは同一シグネチャを持ち、配列に格納して順次/並列実行を 3 行で切り替えている (`src/build.ts:293-306`)
+- `[MUST]` プラグイン/ストラテジーの追加で orchestration 層のコード変更が最小になるよう、統一インターフェース（共通の関数シグネチャまたは interface）を設ける
+  - 根拠: 4 つのビルダーが `(ctx: BuildContext) => Promise<void>` で統一され、`src/build.ts:293-306` の呼び出し側は配列走査のみで新規ビルダーに対応できる
 
-- `[SHOULD]` 設定ファイル用に `defineXxx` ヘルパー関数を提供し、実行時コストなしで型補完を実現する
-  - 根拠: `defineBuildConfig` はほぼパススルーだが、ユーザーが `build.config.ts` を書く際の IDE 体験を劇的に改善している (`src/types.ts:204-208`)
+- `[SHOULD]` 型定義はその型を「所有」するモジュール内に co-locate し、消費者向けには集約ファイルで re-export する
+  - 根拠: 各ビルダーの `types.ts` が Entry/Hooks 型を所有し、`src/types.ts` で集約。型の追加・変更がビルダーディレクトリ内で完結する
 
-- `[SHOULD]` 複雑なサブモジュールは内部をさらに分割しつつ、`index.ts` からの re-export 1 行で外部にはシンプルなインターフェースを見せる
-  - 根拠: rollup ビルダーは 8 ファイルの内部構成を持つが、外部には `export { rollupBuild } from "./build"` のみを公開している (`src/builders/rollup/index.ts:1`)
+- `[SHOULD]` サブモジュールの複雑度が他と大きく異なる場合でも、外部インターフェース（ディレクトリ名 + index.ts の export）は他と同じ構造に揃える
+  - 根拠: rollup ビルダーは内部 12 ファイルだが、`src/builders/rollup/index.ts` は 1 行の re-export で他ビルダーと同じインポートパスを維持している
 
-- `[SHOULD]` 判別可能なユニオン型 (Discriminated Union) を使い、基底型を拡張して各バリアントを定義する
-  - 根拠: `BaseBuildEntry` → `RollupBuildEntry` (builder: "rollup") のように `builder` リテラル型で判別するユニオンが、型安全なエントリ処理を実現している (`src/types.ts:14-41`)
+- `[SHOULD]` ビルドツールは自分自身のビルドに使う（dogfooding / self-build）ことで API 設計の不整合を早期検出する
+  - 根拠: `build.config.ts` が `./src` から `defineBuildConfig` をインポートし、`package.json` の `"unbuild": "jiti ./src/cli"` でソースから直接実行する
 
-- `[SHOULD]` フック/イベント型はサブモジュールにコロケーションし、トップレベルの型定義でインターセクションとして合成する
-  - 根拠: 各ビルダーの `types.ts` にフック定義を配置し、`BuildHooks extends CopyHooks, UntypedHooks, MkdistHooks, RollupHooks` で合成している (`src/types.ts:197-202`)
-
-- `[AVOID]` オーケストレーター関数にオプション構築・実行・レポート・バリデーションなど複数の責務を詰め込んで 300 行超にすること
-  - 根拠: `_build` 関数は 340 行に達しており、オプション構築やレポート出力をフェーズ関数に分割すればテスタビリティと可読性が向上する (`src/build.ts:78-415`)
+- `[AVOID]` ディレクトリ階層を 3 レベル以上にネストする（`src/builders/rollup/plugins/` が上限の目安）
+  - 根拠: unbuild は 43 ファイルで最大深度 4（`src/builders/rollup/plugins/*.ts`）であり、それ以外はすべて深度 3 以内。浅い構造がファイル探索の認知コストを抑えている
 
 ## 適用チェックリスト
 
-- [ ] 公開エントリポイント (`index.ts`) が re-export のみで構成されているか
-- [ ] CLI エントリとライブラリエントリが分離されているか（`cli.ts` と `index.ts`）
-- [ ] プラグイン/ストラテジーが統一インターフェースを持ち、配列で管理されているか
-- [ ] 複雑なサブモジュールが `index.ts` を Facade として外部公開しているか
-- [ ] 型定義がサブモジュールにコロケーションされ、トップレベルで合成されているか
-- [ ] 設定ファイル用の `defineXxx` ヘルパーが提供されているか
-- [ ] ゼロコンフィグを実現するために、既存のメタデータ（package.json 等）から設定を推論しているか
-- [ ] オーケストレーター関数が 300 行を超えていないか（超えている場合はフェーズ分割を検討）
-- [ ] 判別可能なユニオン型でバリアント間の型安全性を確保しているか
+- [ ] プロジェクトの `index.ts`（エントリポイント）が re-export のみであり、ロジックを含んでいないか確認する
+- [ ] プラグインやストラテジーなど同種の複数実装がある場合、共通インターフェース（関数シグネチャまたは interface）を定義しているか確認する
+- [ ] 型定義がそれを「所有」するモジュール内に配置され、消費者向けに集約 re-export されているか確認する
+- [ ] サブモジュール内部の複雑度に関係なく、外部から見たインターフェース（ディレクトリ構造、index.ts の export）が他のサブモジュールと統一されているか確認する
+- [ ] ディレクトリのネスト深度が 3 レベル以内に収まっているか確認する（超える場合は正当な理由があるか）
+- [ ] ツール/ライブラリの場合、自分自身を使ってビルド・テストしているか（dogfooding）確認する
