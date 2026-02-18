@@ -19,6 +19,9 @@
 | [promise-coalescing](./pattern_promise-coalescing)                         | 並行リクエストの重複排除+無効化タイムスタンプ検証でキャッシュ整合性を保証             |
 | [weakmap-scoped-state](./pattern_weakmap-scoped-state)                     | WeakMap+ファクトリ関数による環境スコープ状態管理でメモリリークを防止                   |
 | [dependency-injection](./pattern_dependency-injection)                     | 関数引数DI→遅延プロキシ→プッシュ型Hub→型レベルLayer/Tagの4段階DIパターン体系          |
+| [dual-api](./pattern_dual-api)                                           | dual()でdata-first/data-last両スタイルを単一実装から自動導出する二重APIパターン        |
+| [symbol-type-identity](./pattern_symbol-type-identity)                   | Symbol.for()+hasProperty型ガードでinstanceof代替の堅牢な型判定を実現                   |
+| [ast-interpreter](./pattern_ast-interpreter)                             | AST tagged union+Match型でコンパイル時網羅性チェック付き拡張可能インタプリタ            |
 
 ## Practice
 
@@ -40,6 +43,7 @@
 | [monorepo-quality-gates](./practice_monorepo-quality-gates)           | publint/attw/size-limit/sherif/knipの5ツールによる多層CI品質検証               |
 | [devdeps-bundling](./practice_devdeps-bundling)                       | devDepsバンドルでランタイムdependenciesを6個に極小化する配布軽量化戦略          |
 | [api-lifecycle](./practice_api-lifecycle)                             | experimental/future/legacy三層+getter trap非推奨警告によるAPI進化管理          |
+| [tagged-error-hierarchy](./practice_tagged-error-hierarchy)           | _tag+reason二層分類とcatchTagによる型安全エラーディスパッチ                     |
 
 ## Claude
 
