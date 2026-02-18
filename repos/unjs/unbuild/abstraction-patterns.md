@@ -1,194 +1,109 @@
-# 抽象化パターン
+# abstraction-patterns
 
 > リポジトリ: unjs/unbuild
-> 分析日: 2026-02-18
+> 分析日: 2026-02-16
 
 ## 概要
 
-unbuild は 4 つの異なるビルドバックエンド（rollup, mkdist, untyped, copy）を統一的なインターフェースで操作するビルドツールである。この視点では、Builder 抽象、設定のマルチソースマージ、フック機構による拡張点の設計、そして型レベルでの構成可能性（Composability）を分析する。小規模ながら多層の抽象化が凝縮されており、「設定オブジェクトをどう構造化し、どう合成するか」の実践的なリファレンスとして注目に値する。
+unbuild は 4 つのビルダー（rollup, mkdist, untyped, copy）を共通のオーケストレーション層で制御するビルドツールである。この視点では、ビルダー間の共通インターフェース設計、エントリ解決の抽象化、ビルダー選択（ディスパッチ）パターンを分析する。注目すべきは、4 つのビルダーが GoF の Strategy パターンの「暗黙的変形」として機能しながらも、共通インターフェースを型レベルで定義せず、入力フィルタリングで疎結合を実現している点である。
 
 ## 背景にある原則
 
-- **Convention over Configuration（規約優先）**: ユーザーが何も設定しなくても `package.json` の `exports` フィールドからビルドエントリを自動推論する（`src/auto.ts:17-62`）。明示的設定は規約のオーバーライドとして機能する。これにより zero-config の体験を実現しつつ、エスケープハッチも保持する。
-- **DeepPartial による段階的確定**: ユーザー入力型（`BuildConfig`）と内部処理型（`BuildOptions`）を分離し、前者は `DeepPartial` で全フィールドをオプショナルに、後者は必須フィールドを持つ確定型とする（`src/types.ts:171-195`）。これにより「設定が欠けていてもエラーにならない」入力層と「処理時に型安全が保証される」実行層を両立する。
-- **フックによる関心の分散**: ビルドライフサイクルの各段階にフックポイントを設け、ビルダー固有のロジックとユーザーのカスタマイズを同じ仕組みで注入する。autoPreset 自体が `build:prepare` フックとして実装されており（`src/auto.ts:20`）、コア機能とプリセットが同じ拡張メカニズムを共有する。
-- **Discriminated Union による Builder 分岐**: `builder` フィールドをタグとする判別共用体（`BuildEntry` 型）で、各ビルダーのエントリ型を型安全に区別する（`src/types.ts:36-41`）。ランタイムのフィルタリング（`e.builder === "rollup"`）と型の絞り込みが一致する。
+- **Discriminated Union による自己記述的ルーティング**: ビルダーの選択を中央のディスパッチャではなく、エントリ自体の `builder` フィールドに委ねることで、新しいビルダー追加時にルーティングロジックの変更が不要になる。各ビルダーが自分に該当するエントリを自ら `filter` するため、Open-Closed 原則に近い構造が自然に生まれる（`src/builders/copy/index.ts:11-12`, `src/builders/mkdist/index.ts:8-9`）。
+
+- **Convention over Configuration によるデフォルト推論**: エントリの `builder` フィールドが未指定の場合、入力パスの末尾スラッシュの有無で `mkdist` か `rollup` を自動判定する（`src/build.ts:229`）。ユーザーに設定を強制せず、慣習（ディレクトリ = ファイル群コピー系、ファイル = バンドル系）から意図を推論する設計である。
+
+- **Context Object による暗黙的プロトコル**: 4 つのビルダーは共通の TypeScript インターフェースを実装しない代わりに、すべて `BuildContext` を引数に取り `Promise<void>` を返す同一シグネチャの関数として定義されている。型レベルの契約ではなく、共有コンテキストオブジェクトへの副作用（`ctx.buildEntries.push`, `ctx.warnings`）が暗黙のプロトコルとして機能している（`src/build.ts:293-298`）。
+
+- **Hooks による横断的関心事の分離**: 各ビルダーが独自のフックインターフェースを定義し、それらを `BuildHooks` で合成する（`src/types.ts:197-202`）。ビルダーのライフサイクルイベントを外部に公開しつつ、ビルダー間の依存を排除している。
 
 ## 実例と分析
 
-### 1. マルチソース設定マージ
+### 1. ビルダーのディスパッチ: 全タスク実行 + 自己フィルタリング
 
-unbuild の設定は最大 5 つのソースから合成される。`_build` 関数内の `defu()` 呼び出しがその中核である。
-
-```typescript
-// src/build.ts:98-174
-const options = defu(
-  buildConfig,          // 1. build.config.ts の個別設定
-  pkg.unbuild || pkg.build,  // 2. package.json の unbuild/build フィールド
-  inputConfig,          // 3. CLI 引数からの設定
-  preset,               // 4. プリセット（auto or カスタム）
-  { /* デフォルト値 */ } satisfies BuildOptions,  // 5. ハードコードデフォルト
-) as BuildOptions;
-```
-
-`defu`（deep defaults utility）は「先に定義された値が優先される」セマンティクスを持つ。つまり `buildConfig` の値が最優先で、未定義のフィールドだけが後続ソースで埋められる。この方式には以下の設計判断がある。
-
-- **優先順位が引数の順序に直接対応する**: マージ関数の引数順を見るだけで優先順位が分かる。`Object.assign` のような「後勝ち」セマンティクスより直感的。
-- **`satisfies` による型安全なデフォルト**: デフォルトオブジェクトに `satisfies BuildOptions` を付与し、デフォルト値のオブジェクトが `BuildOptions` を完全に満たしていることをコンパイル時に保証する。
-
-### 2. Preset 抽象 — 関数 or オブジェクト
-
-プリセットは `BuildConfig | (() => BuildConfig)` という単純な合併型で表現される。
+unbuild のオーケストレーターは、ビルダーを「選択」しない。全ビルダーを常に呼び出し、各ビルダーが自分に該当するエントリを内部でフィルタリングする。
 
 ```typescript
-// src/types.ts:169
-export type BuildPreset = BuildConfig | (() => BuildConfig);
-```
-
-解決ロジック（`src/utils.ts:72-88`）は 3 段階のディスパッチを行う。
-
-1. `"auto"` 文字列 → 組み込み `autoPreset` に解決
-2. 任意の文字列 → `jiti.import()` で動的インポート
-3. 関数 → 呼び出して結果を取得
-
-この設計により、プリセットは「静的オブジェクト」「ファクトリ関数」「npm パッケージ名」のいずれでも指定でき、利用側のコード変更なしに提供形態を切り替えられる。
-
-### 3. Builder 統一インターフェース
-
-4 つのビルダーは明示的な interface を共有しないが、暗黙の契約で統一されている。
-
-```typescript
-// src/build.ts:293-298
+// src/build.ts:293-306
 const buildTasks = [
-  typesBuild,   // (ctx: BuildContext) => Promise<void>
-  mkdistBuild,
-  rollupBuild,
-  copyBuild,
+  typesBuild, // untyped
+  mkdistBuild, // mkdist
+  rollupBuild, // rollup
+  copyBuild, // copy
 ] as const;
-```
 
-各ビルダーは以下の共通パターンに従う。
-
-1. `ctx.options.entries` から自分の `builder` タグを持つエントリをフィルタリング
-2. `ctx.hooks.callHook("<builder>:entries", ...)` でエントリ一覧を通知
-3. 各エントリを処理
-4. `ctx.hooks.callHook("<builder>:done", ...)` で完了を通知
-
-この「暗黙の契約」は interface として型定義されていないが、全ビルダーが一貫して遵守している。ビルダー数が 4 つという小規模だからこそ、明示的 interface を導入せず、代わりにフック型定義（`BuildHooks`）で契約を表現する判断が合理的に機能している。
-
-### 4. フック型のインターフェース合成
-
-`BuildHooks` は 4 つのビルダーフックと 3 つのコアフックを `extends` で合成する。
-
-```typescript
-// src/types.ts:197-202
-export interface BuildHooks
-  extends CopyHooks, UntypedHooks, MkdistHooks, RollupHooks {
-  "build:prepare": (ctx: BuildContext) => void | Promise<void>;
-  "build:before": (ctx: BuildContext) => void | Promise<void>;
-  "build:done": (ctx: BuildContext) => void | Promise<void>;
+if (options.parallel) {
+  await Promise.all(buildTasks.map((task) => task(ctx)));
+} else {
+  for (const task of buildTasks) {
+    await task(ctx);
+  }
 }
 ```
 
-各ビルダーは自分のフック型をローカルに定義し（例: `src/builders/mkdist/types.ts:9-25`）、中央の `BuildHooks` がそれらを集約する。この設計は以下を実現する。
-
-- ビルダーがフックの型定義を自己完結的に保持（変更がビルダー内で閉じる）
-- ユーザーは `BuildHooks` の一枚型で全フックを参照できる
-- `hookable` ライブラリが `Hookable<BuildHooks>` として型安全なフック呼び出しを提供
-
-### 5. フック粒度のライフサイクル設計
-
-各ビルダーのフックは一貫した粒度パターンに従う。
-
-| 粒度 | 命名パターン | 例 | 用途 |
-|---|---|---|---|
-| 一覧レベル | `<builder>:entries` | `mkdist:entries` | エントリ一覧の変更 |
-| エントリレベル（オプション） | `<builder>:entry:options` | `mkdist:entry:options` | 個別エントリの設定変更 |
-| エントリレベル（結果） | `<builder>:entry:build` | `mkdist:entry:build` | ビルド結果への介入 |
-| 完了 | `<builder>:done` | `mkdist:done` | 後処理 |
-
-rollup ビルダーはさらに DTS ビルドフェーズ用のフック（`rollup:dts:options`, `rollup:dts:build`）を追加しており、ビルダーの複雑度に応じてフック粒度を拡張できることを示す。
-
-### 6. `OptionType | false` による機能の無効化
-
-Rollup プラグインのオプション型は一貫して `OptionsType | false` のパターンを採用する。
+各ビルダーは先頭で自分のエントリを抽出する:
 
 ```typescript
-// src/builders/rollup/types.ts:60-106
-replace: RollupReplaceOptions | false;
-alias: RollupAliasOptions | false;
-resolve: RollupNodeResolveOptions | false;
-json: RollupJsonOptions | false;
-esbuild: EsbuildOptions | false;
-commonjs: RollupCommonJSOptions | false;
+// src/builders/copy/index.ts:11-12
+const entries = ctx.options.entries.filter(
+  (e) => e.builder === "copy",
+) as CopyBuildEntry[];
+
+// src/builders/mkdist/index.ts:8-9
+const entries = ctx.options.entries.filter(
+  (e) => e.builder === "mkdist",
+) as MkdistBuildEntry[];
 ```
 
-設定ファイル構築側（`src/builders/rollup/config.ts:114-166`）ではこれを利用して条件付きプラグイン組み立てを行う。
+このパターンにより、ビルダーの追加・削除がオーケストレーター側の `buildTasks` 配列の変更のみで完結する。条件分岐（`if/switch`）によるルーティングが存在しないため、分岐の複雑度が増加しない。
+
+### 2. 型によるエントリの差別化: Discriminated Union
+
+`BuildEntry` は `BaseBuildEntry` と 4 つの専用エントリ型の Union として定義されている:
 
 ```typescript
-plugins: [
-  ctx.options.rollup.replace && replace({ ...ctx.options.rollup.replace }),
-  ctx.options.rollup.alias && alias({ ...ctx.options.rollup.alias }),
-  // ...
-].filter((p): p is NonNullable<Exclude<typeof p, false>> => !!p),
+// src/types.ts:14-20
+export interface BaseBuildEntry {
+  builder?: "untyped" | "rollup" | "mkdist" | "copy";
+  input: string;
+  name?: string;
+  outDir?: string;
+  declaration?: "compatible" | "node16" | boolean;
+}
+
+// src/types.ts:36-41
+export type BuildEntry =
+  | BaseBuildEntry
+  | RollupBuildEntry
+  | UntypedBuildEntry
+  | MkdistBuildEntry
+  | CopyBuildEntry;
 ```
 
-`false` を設定すると対応するプラグインがスキップされる。`undefined` ではなく `false` を使うのは意図的な「無効化」と「未設定」を区別するためである。
-
-### 7. 入力の柔軟な正規化
-
-エントリ定義は `string | BuildEntry` の合併型で受け付け、処理前に正規化する。
+各専用エントリは `builder` フィールドをリテラル型で固定し、独自のプロパティを追加する:
 
 ```typescript
-// src/types.ts:183
-entries?: (BuildEntry | string)[];
+// src/builders/copy/types.ts:3-6
+export interface CopyBuildEntry extends BaseBuildEntry {
+  builder: "copy";
+  pattern?: string | string[];
+}
 
-// src/build.ts:209-238
-options.entries = options.entries.map((entry) =>
-  typeof entry === "string" ? { input: entry } : entry,
-);
-```
-
-さらに `builder` 未指定時のデフォルト推論も行う（`src/build.ts:228-229`）。
-
-```typescript
-if (!entry.builder) {
-  entry.builder = entry.input.endsWith("/") ? "mkdist" : "rollup";
+// src/builders/untyped/types.ts:4-7
+export interface UntypedBuildEntry extends BaseBuildEntry {
+  builder: "untyped";
+  defaults?: Record<string, any>;
 }
 ```
 
-入力の末尾 `/` でビルダー種別を推論するのは小さな規約だが、zero-config 体験を支える重要な要素である。
+ただし、`BaseBuildEntry.builder` は optional（`builder?`）であるため、TypeScript の narrowing を `filter` + `as` キャストで代替している点は設計上の妥協である。
 
-## コード例
+### 3. エントリ解決の抽象化: auto preset
 
-```typescript
-// src/types.ts:169-195 — BuildConfig と BuildOptions の分離
-type DeepPartial<T> = { [P in keyof T]?: DeepPartial<T[P]> };
-
-export interface BuildConfig extends DeepPartial<
-  Omit<BuildOptions, "entries">
-> {
-  entries?: (BuildEntry | string)[];
-  preset?: string | BuildPreset;
-  hooks?: Partial<BuildHooks>;
-}
-```
+`auto` プリセットは `build:prepare` フックで `package.json` の `exports`/`bin`/`main`/`module` からエントリを自動推論する:
 
 ```typescript
-// src/build.ts:194-203 — 多層フック登録
-if (preset.hooks) {
-  ctx.hooks.addHooks(preset.hooks);
-}
-if (inputConfig.hooks) {
-  ctx.hooks.addHooks(inputConfig.hooks);
-}
-if (buildConfig.hooks) {
-  ctx.hooks.addHooks(buildConfig.hooks);
-}
-```
-
-```typescript
-// src/auto.ts:17-62 — プリセットがフックとして自己実装される
+// src/auto.ts:17-61
 export const autoPreset: BuildPreset = definePreset(() => {
   return {
     hooks: {
@@ -198,147 +113,190 @@ export const autoPreset: BuildPreset = definePreset(() => {
         }
         const sourceFiles = listRecursively(join(ctx.options.rootDir, "src"));
         const res = inferEntries(ctx.pkg, sourceFiles, ctx.options.rootDir);
-        ctx.options.entries.push(...res.entries);
         // ...
+        ctx.options.entries.push(...res.entries);
       },
     },
   };
 });
 ```
 
+`inferEntries` は出力ファイル名から逆算してソースファイルを特定する:
+
 ```typescript
-// src/builders/rollup/config.ts:114-166 — 条件付きプラグイン組み立て
-plugins: [
-  ctx.options.rollup.replace &&
-    replace({
-      ...ctx.options.rollup.replace,
-      values: {
-        ...ctx.options.replace,
-        ...ctx.options.rollup.replace.values,
-      },
-    }),
-  ctx.options.rollup.alias &&
-    alias({
-      ...ctx.options.rollup.alias,
-      entries: _aliases,
-    }),
-  // ... 省略
-].filter((p): p is NonNullable<Exclude<typeof p, false>> => !!p),
+// src/auto.ts:130-141
+const possiblePaths = getEntrypointPaths(outputSlug);
+const input = possiblePaths.reduce<string | undefined>((source, d) => {
+  if (source) {
+    return source;
+  }
+  const SOURCE_RE = new RegExp(
+    `(?<=/|$)${d}${isDir ? "" : String.raw`\.\w+`}$`,
+  );
+  return sourceFiles
+    .find((i) => SOURCE_RE.test(i))
+    ?.replace(/(\.d\.(m|c)?ts|\.\w+)$/, "");
+}, undefined as any);
 ```
+
+`getEntrypointPaths` はパスのセグメントを先頭から順に削って候補を生成する（`dist/utils/index` -> `["dist/utils/index", "utils/index", "index"]`）。これにより、ソースのディレクトリ構造が出力パスと完全一致しなくても解決できる。
+
+### 4. ビルダーのデフォルト推論: 入力パスからの暗黙的分類
+
+```typescript
+// src/build.ts:228-229
+if (!entry.builder) {
+  entry.builder = entry.input.endsWith("/") ? "mkdist" : "rollup";
+}
+```
+
+ディレクトリ入力（末尾 `/`）は「ファイル群を個別変換する」mkdist、ファイル入力は「バンドルする」rollup。この 1 行の規約がユーザー設定を大幅に削減している。
+
+### 5. Hooks の合成パターン
+
+各ビルダーが独自の `Hooks` インターフェースを定義し、`BuildHooks` がそれらを交差型（intersection）で合成する:
+
+```typescript
+// src/types.ts:197-202
+export interface BuildHooks extends CopyHooks, UntypedHooks, MkdistHooks, RollupHooks {
+  "build:prepare": (ctx: BuildContext) => void | Promise<void>;
+  "build:before": (ctx: BuildContext) => void | Promise<void>;
+  "build:done": (ctx: BuildContext) => void | Promise<void>;
+}
+```
+
+フックの粒度はビルダーごとに異なる。copy は 2 つ（`entries`, `done`）、untyped は 4 つ（`entries`, `entry:options`, `entry:schema`, `entry:outputs`, `done`）、rollup は 5 つ（`options`, `build`, `dts:options`, `dts:build`, `done`）。ビルダーの複雑さに応じて適切な粒度のフックを提供している。
+
+### 6. 設定のマージ戦略: defu による多層デフォルト
+
+```typescript
+// src/build.ts:98-175
+const options = defu(
+  buildConfig, // 1. build.config.ts の設定
+  pkg.unbuild || pkg.build, // 2. package.json の設定
+  inputConfig, // 3. CLI からの設定
+  preset, // 4. プリセットの設定
+  {/* defaults */} satisfies BuildOptions, // 5. ハードコードデフォルト
+) as BuildOptions;
+```
+
+`defu` は「最初に見つかった値が勝つ」セマンティクスを持ち、5 層の設定ソースを宣言的にマージする。
 
 ## パターンカタログ
 
 - **Strategy パターン** (分類: 振る舞い)
-  - 解決する問題: 複数のビルドバックエンドを同一インターフェースで切り替える
-  - 適用条件: 入力の `builder` フィールドで実行時にストラテジーが決定される
-  - コード例: `src/build.ts:293-306` — `buildTasks` 配列による戦略の列挙と逐次/並列実行
-  - 注意点: 明示的な Strategy interface は定義されていない。ビルダー数が少ないため配列に直接列挙する方式が採用されている。ビルダー数が増える場合はレジストリパターンへの移行が適切
+  - 解決する問題: 複数のビルド手法を統一的に扱い、切り替え可能にする
+  - 適用条件: 共通の入力（BuildContext）から異なるアルゴリズムで出力を生成する場面
+  - コード例: `src/build.ts:293-306`（ビルダー配列）、`src/builders/*/index.ts`（各戦略）
+  - 注意点: 典型的な Strategy では共通インターフェース（`interface Builder { build(ctx): Promise<void> }`）を定義するが、unbuild は関数シグネチャの一致のみで暗黙的に実現。小規模なビルダー数（4つ）では十分だが、拡張性が求められる場合は明示的インターフェースが望ましい
 
-- **Builder パターン** (分類: 生成)
-  - 解決する問題: 多数のオプションを持つ設定オブジェクトを段階的に構築する
-  - 適用条件: マルチソースからの設定マージ、デフォルト値の段階的適用
-  - コード例: `src/build.ts:98-174` — `defu()` による段階的設定確定
-  - 注意点: GoF の Builder とは異なり、`director` に相当するものがなく、`defu` のマージセマンティクスが構築順序を制御する
-
-- **Observer パターン** (分類: 振る舞い)
-  - 解決する問題: ビルドライフサイクルの各段階に外部ロジックを挿入する
-  - 適用条件: プリセット・ユーザー設定・ビルダー内部が同じフックメカニズムで連携する
-  - コード例: `src/build.ts:194-206` — 多層フック登録、`src/builders/rollup/build.ts:24` — フック呼び出し
-  - 注意点: `hookable` ライブラリが実装を提供。フックは同期・非同期の両方に対応（`void | Promise<void>`）
-
-- **Null Object パターン変形** (分類: 振る舞い)
-  - 解決する問題: プラグインの有効/無効を分岐ロジックなしで切り替える
-  - 適用条件: `OptionType | false` パターンで `false` 設定時にプラグインを生成しない
-  - コード例: `src/builders/rollup/config.ts:115-166` — 真偽値ショートサーキットと `filter(Boolean)`
-  - 注意点: 厳密な Null Object ではなく、条件付き配列要素の排除で同等の効果を得ている
+- **Chain of Responsibility パターン** (分類: 振る舞い / 変形)
+  - 解決する問題: 各ビルダーが自分に該当するエントリのみ処理し、残りは無視する
+  - 適用条件: 複数のハンドラが同一のデータセットから自己の責務分を選別する場面
+  - コード例: `src/builders/copy/index.ts:11-12`（自己フィルタリング）
+  - 注意点: 厳密には CoR ではなく「Broadcast + Self-filtering」。全ハンドラが呼ばれる点が異なる
 
 ## Good Patterns
 
-- **`satisfies` によるデフォルト値の型保証**: デフォルト値オブジェクトに `satisfies BuildOptions` を付与することで、デフォルト値がスキーマを完全に満たしていることをコンパイル時に検証する（`src/build.ts:174`）。`as BuildOptions` と異なり、値の型が変わらないため narrowing が維持される。
+- **Self-filtering Strategy**: 各ビルダーが先頭で `entries.filter(e => e.builder === "xxx")` を実行し、自分に該当するエントリのみ処理する。ディスパッチャ側の条件分岐を排除し、ビルダー追加時の変更箇所を最小化する。
 
 ```typescript
-// src/build.ts:103-174
-const options = defu(
-  buildConfig,
-  // ... 他のソース
-  {
-    name: (pkg?.name || "").split("/").pop() || "default",
-    rootDir,
-    entries: [],
-    clean: true,
-    // ... 全フィールドを網羅
-  } satisfies BuildOptions,
-) as BuildOptions;
+// src/builders/mkdist/index.ts:7-10
+export async function mkdistBuild(ctx: BuildContext): Promise<void> {
+  const entries = ctx.options.entries.filter(
+    (e) => e.builder === "mkdist",
+  ) as MkdistBuildEntry[];
 ```
 
-- **`defineBuildConfig` / `definePreset` ヘルパー**: 実行時には何もしない identity 関数だが、TypeScript の型推論を支援し、IDE の補完を有効にする。ユーザーはこの関数を通すだけで型安全な設定記述が可能になる。
+- **Convention-based Default Resolution**: 入力パスの形状（末尾スラッシュ）からビルダーを自動推論する。ユーザーの明示的設定が不要な場合に、慣習ベースのデフォルトを適用する。
 
 ```typescript
-// src/types.ts:204-212
-export function defineBuildConfig(
-  config: BuildConfig | BuildConfig[],
-): BuildConfig[] {
-  return (Array.isArray(config) ? config : [config]).filter(Boolean);
-}
-
-export function definePreset(preset: BuildPreset): BuildPreset {
-  return preset;
+// src/build.ts:228-229
+if (!entry.builder) {
+  entry.builder = entry.input.endsWith("/") ? "mkdist" : "rollup";
 }
 ```
 
-- **フック型定義のコロケーション**: 各ビルダーが自分のフック型をローカルファイルに定義し（例: `src/builders/mkdist/types.ts:9-25`）、中央の `BuildHooks` がインターフェース拡張で集約する。変更の影響範囲がビルダー単位で閉じる。
+- **Hooks Interface Composition**: ビルダーごとの独立した Hooks インターフェースを `extends` で合成し、型安全なフックシステムを構築する。
+
+```typescript
+// src/types.ts:197-202
+export interface BuildHooks extends CopyHooks, UntypedHooks, MkdistHooks, RollupHooks {
+  "build:prepare": (ctx: BuildContext) => void | Promise<void>;
+  "build:before": (ctx: BuildContext) => void | Promise<void>;
+  "build:done": (ctx: BuildContext) => void | Promise<void>;
+}
+```
+
+- **Reverse Inference (出力から入力を逆算)**: `package.json` の `exports` フィールドから出力ファイルを列挙し、パスセグメントの部分一致でソースファイルを特定する。設定ゼロでエントリを自動検出する。
+
+```typescript
+// src/auto.ts:171-176
+export const getEntrypointPaths = (path: string): string[] => {
+  const segments = normalize(path).split("/");
+  return segments
+    .map((_, index) => segments.slice(index).join("/"))
+    .filter(Boolean);
+};
+```
 
 ## Anti-Patterns / 注意点
 
-- **暗黙の Builder 契約**: 4 つのビルダーは共通の `(ctx: BuildContext) => Promise<void>` シグネチャを持つが、明示的な interface が定義されていない。現在の規模では問題ないが、外部開発者がカスタムビルダーを追加する場合、どのパターン（フックの呼び出し順序、エントリのフィルタリング等）に従うべきかがコードを読まないと分からない。
+- **Filter + as キャストによる型安全性の喪失**: 各ビルダーで `filter()` の結果を `as CopyBuildEntry[]` のようにキャストしている。`builder` フィールドが discriminant として機能しているにもかかわらず、TypeScript の型ガードではなくキャストで narrowing する。
 
 ```typescript
-// Bad: 暗黙の契約に依存（現状）
+// Bad: src/builders/copy/index.ts:11-12
+const entries = ctx.options.entries.filter(
+  (e) => e.builder === "copy",
+) as CopyBuildEntry[];
+
+// Better: カスタム型ガードを定義して型安全にフィルタリング
+function isCopyEntry(e: BuildEntry): e is CopyBuildEntry {
+  return e.builder === "copy";
+}
+const entries = ctx.options.entries.filter(isCopyEntry);
+```
+
+- **暗黙的プロトコルへの依存**: ビルダー関数は明示的インターフェースを持たず、`(ctx: BuildContext) => Promise<void>` というシグネチャが暗黙の契約となっている。新しいビルダーを追加する際、`ctx.buildEntries.push` による結果報告や `ctx.hooks.callHook` による適切なフック呼び出しといった暗黙のルールに依存している。
+
+```typescript
+// Bad: 暗黙のプロトコルのみ
 const buildTasks = [typesBuild, mkdistBuild, rollupBuild, copyBuild] as const;
 
-// Better: 契約を型で明示（ビルダー数が増える場合）
+// Better: 明示的なインターフェース定義（ビルダー数が増える場合）
 interface Builder {
-  name: string;
-  build(ctx: BuildContext): Promise<void>;
+  (ctx: BuildContext): Promise<void>;
 }
+const buildTasks: Builder[] = [typesBuild, mkdistBuild, rollupBuild, copyBuild];
 ```
 
-- **`defu` の戻り値型の不正確さ**: `defu()` は内部的に `DeepPartial` なオブジェクトをマージするが、戻り値が完全な型になることを TypeScript に証明できない。そのため `as BuildOptions` のアサーションが必要になる（`src/build.ts:175`）。デフォルト値が `satisfies BuildOptions` で検証されているため実行時の安全性は確保されているが、型レベルの保証は失われている。
-
-```typescript
-// 現状: アサーションが必要
-const options = defu(buildConfig, ...) as BuildOptions;
-
-// Better: ジェネリックラッパーで型を保証
-function mergeWithDefaults<T>(defaults: T, ...sources: DeepPartial<T>[]): T {
-  return defu(...sources, defaults) as T;
-}
-```
+ただし、unbuild の規模（4 ビルダー）では暗黙的プロトコルで十分機能しており、過度な抽象化を避けている点は合理的である。
 
 ## 導出ルール
 
-- `[MUST]` ユーザー入力型（partial/optional）と内部処理型（required/resolved）を明確に分離する。入力型は `DeepPartial` で受け付け、デフォルト値マージ後に確定型へ変換する
-  - 根拠: unbuild は `BuildConfig`（DeepPartial）と `BuildOptions`（確定型）を分離し、`defu` マージ後にのみ `BuildOptions` として扱う（`src/types.ts:171-195`, `src/build.ts:98-175`）
-- `[MUST]` 設定オブジェクトのデフォルト値には `satisfies` を使い、スキーマとの整合性をコンパイル時に検証する。`as` アサーションよりも `satisfies` を優先する
-  - 根拠: デフォルト値の `satisfies BuildOptions` により、フィールド追加時にデフォルト値の更新漏れがコンパイルエラーで検出される（`src/build.ts:174`）
-- `[SHOULD]` 設定マージは「先勝ち」セマンティクス（`defu` 等）を使い、引数の順序で優先順位を表現する。コメントでソース名と優先順位を明記する
-  - 根拠: `defu(buildConfig, pkg.unbuild, inputConfig, preset, defaults)` の順序だけで優先順位が確定し、複雑な if-else チェーンが不要になる（`src/build.ts:98-102`）
-- `[SHOULD]` プラグインやミドルウェアの有効/無効制御には `OptionType | false` パターンを使う。`undefined`（未設定）と `false`（明示的無効化）を区別する
-  - 根拠: 全 6 つの rollup プラグインオプションがこのパターンを採用し、条件付き配列 + `filter(Boolean)` で分岐を排除している（`src/builders/rollup/types.ts:60-106`）
-- `[SHOULD]` フレームワークのコア機能とプリセットが同じ拡張メカニズム（フック等）で実装されるようにする。「特別扱い」を減らし、ユーザーが同じ仕組みでカスタマイズできることを保証する
-  - 根拠: `autoPreset` はコア機能（エントリ自動推論）を `build:prepare` フックとして実装しており、ユーザーのカスタムプリセットと同じ仕組みで動作する（`src/auto.ts:17-62`）
-- `[SHOULD]` `defineXxx` ヘルパー関数（identity 関数）を設定ファイル用に提供し、型推論と IDE 補完を有効にする
-  - 根拠: `defineBuildConfig` と `definePreset` は実行時に何もしないが、ユーザーの設定ファイルに型安全性をもたらす（`src/types.ts:204-212`）
-- `[AVOID]` 設定マージ後の確定型への変換で `as` アサーションを直接使うこと。代わりにデフォルト値の `satisfies` 検証と組み合わせるか、型安全なラッパー関数を用意する
-  - 根拠: `defu()` の戻り値を `as BuildOptions` でアサーションしている箇所は、デフォルト値の `satisfies` があるため実行時は安全だが、型レベルの保証が欠けている（`src/build.ts:175`）
+- `[SHOULD]` 複数の処理戦略を持つシステムでは、ディスパッチャの条件分岐ではなく各戦略が「自分に該当するか」を判定する Self-filtering パターンを使う
+  - 根拠: unbuild の 4 ビルダーは全て `entries.filter(e => e.builder === "xxx")` で自己選別しており、オーケストレーター側に `switch`/`if` 分岐が存在しない（`src/build.ts:293-306`）
+
+- `[SHOULD]` Discriminated Union を使う場合、ベース型の判別フィールドは optional ではなく required にし、TypeScript の narrowing を活用する
+  - 根拠: unbuild の `BaseBuildEntry.builder?` は optional のため、`filter` 後に `as` キャストが必要になっている（`src/builders/copy/index.ts:11-12`）。required にすれば型ガード関数で安全に narrowing できる
+
+- `[MUST]` 設定のデフォルト値は「最も一般的なユースケース」をゼロ設定で動作させる方向に設計し、推論ロジックは慣習ベースにする
+  - 根拠: unbuild はパス末尾の `/` でビルダーを推論し、`package.json` の `exports` からエントリを自動検出することで、多くのプロジェクトが `build.config.ts` なしでビルドできる（`src/build.ts:228-229`, `src/auto.ts:17-61`）
+
+- `[SHOULD]` プラグインシステムのフック定義は、各モジュールが独自のフックインターフェースを所有し、コア側で交差型として合成する
+  - 根拠: unbuild の `BuildHooks extends CopyHooks, UntypedHooks, MkdistHooks, RollupHooks` は各ビルダーのフック定義を独立に保ちつつ型安全に統合している（`src/types.ts:197-202`）
+
+- `[SHOULD]` 多層設定のマージには宣言的なマージ関数を使い、優先順位を配列の順序で表現する
+  - 根拠: unbuild は `defu(buildConfig, pkg設定, inputConfig, preset, defaults)` の 5 層をワンライナーでマージしている（`src/build.ts:98-175`）
+
+- `[AVOID]` 戦略パターンで共通インターフェースを定義せずに暗黙のプロトコル（同じシグネチャ + 同じ副作用パターン）に依存することを、戦略の数が 5 個を超える場合に行う
+  - 根拠: unbuild は 4 ビルダーで暗黙的プロトコルが機能しているが、戦略数の増加に伴い「どの副作用が必須か」が不明確になるリスクがある
 
 ## 適用チェックリスト
 
-- [ ] ユーザー入力型と内部処理型を分離しているか（`Config` vs `Options` のような命名で区別）
-- [ ] 設定のデフォルト値に `satisfies` を付与し、型の網羅性をコンパイル時に検証しているか
-- [ ] 設定マージの優先順位が関数の引数順序で明示的に表現されているか
-- [ ] プラグイン/機能の有効・無効を `OptionType | false` で制御し、`undefined` と `false` を区別しているか
-- [ ] コア機能がフレームワークの拡張メカニズム（フック・プラグイン）を通じて実装されているか
-- [ ] 設定ファイル用の `defineXxx` ヘルパー関数を提供し、型推論を支援しているか
-- [ ] フック型定義がモジュール単位でコロケーションされ、中央のインターフェースで集約されているか
-- [ ] ビルダー/プロバイダーの契約が暗黙のまま放置されていないか（規模に応じて interface 化を検討）
+- [ ] 複数の処理戦略を持つシステムで、ディスパッチャに `switch`/`if` の分岐が増えていないか確認する。増えている場合は Self-filtering パターンへのリファクタリングを検討する
+- [ ] Discriminated Union の判別フィールドが optional になっていないか確認する。optional の場合は required に変更し、型ガード関数を定義する
+- [ ] 設定のデフォルト値が「ゼロ設定で最も一般的なケースが動く」ように設計されているか確認する
+- [ ] プラグインやフックのインターフェースが、各モジュール側で独立定義され、コア側で合成されているか確認する
+- [ ] 多層の設定マージが `defu` 等の宣言的マージ関数で行われているか確認する。手続き的な `if/else` によるマージは優先順位の把握が困難になる
+- [ ] 暗黙的プロトコルに依存している箇所を洗い出し、戦略の数が増加傾向にある場合は明示的インターフェースの導入を検討する

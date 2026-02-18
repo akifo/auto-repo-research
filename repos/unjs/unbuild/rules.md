@@ -1,96 +1,109 @@
 # unjs/unbuild — 導出ルール集
 
-> 出典: repos/unjs/unbuild/ | 生成日: 2026-02-18
+> 出典: repos/unjs/unbuild/ | 生成日: 2026-02-16
 > 用途: CLAUDE.md にそのまま貼り付けて AI コンテキストとして活用
+
+## パイプラインアーキテクチャ
+
+- `[MUST]` パイプラインの各ステージは統一されたシグネチャ `(ctx: Context) => Promise<void>` の関数として実装し、配列で管理して逐次/並列実行を切り替える
+  - 根拠: architecture — 4 ビルダーが同一シグネチャで `buildTasks` 配列に格納され、`parallel` オプションで実行方式を 3 行で切り替えている
+- `[MUST]` 複数コンポーネントが協調するシステムでは、共有コンテキストオブジェクトを唯一の結合点とし、コンポーネント間の直接参照を排除する
+  - 根拠: architecture — 4 つのビルダーは互いを参照せず `BuildContext` のみを介して状態を共有する
+- `[SHOULD]` 各ステージは自分が処理すべきデータを self-filtering で取得し、オーケストレーターに振り分けロジック（switch/if）を置かない
+  - 根拠: abstraction-patterns — 全ビルダーが `ctx.options.entries.filter(e => e.builder === "xxx")` で自己選別し、オーケストレーターに判定ロジックがない
+- `[AVOID]` オーケストレーター関数にオプション構築・実行・レポート・バリデーションなど複数の責務を詰め込んで 300 行超にすること。フェーズごとに関数を分割する
+  - 根拠: project-structure — `_build` 関数が 340 行に達しており、分割すればテスタビリティと可読性が向上する
+
+## 設定システム設計
+
+- `[MUST]` 設定オブジェクトのデフォルト値は単一の場所に集約し、ディープマージチェーンの最低優先位置に配置する
+  - 根拠: configuration-patterns — `defu` の最終引数にデフォルト値を `satisfies BuildOptions` 付きで一元配置し散在を防止している
+- `[MUST]` ツールのデフォルト設定は安全側に倒す（`failOnWarn: true`、`clean: true` 等）。ユーザーが明示的にオプトアウトする設計にする
+  - 根拠: design-philosophy — `failOnWarn: true` がデフォルトで、未使用依存・暗黙インライン・出力ファイル欠損を CI で検出する
+- `[MUST]` 自動推論やゼロコンフィグ機能を実装する場合、推論結果をログ等で明示的にユーザーに通知する
+  - 根拠: configuration-patterns — 推論されたエントリと設定フラグを `consola.info` で出力し暗黙の動作を可視化している
+- `[SHOULD]` 設定のマージには宣言的レイヤリング（ディープマージ + 優先順位）を使い、命令的な if/switch による設定上書きを避ける
+  - 根拠: architecture — `defu(buildConfig, pkg.unbuild, inputConfig, preset, defaults)` の引数順序で優先順位を表現し複雑な if 文を排除している
+- `[SHOULD]` ゼロコンフィグを実現する場合、「出力仕様（マニフェスト）から入力を逆算する」アプローチを採る
+  - 根拠: design-philosophy — package.json の exports/main/module/types からエントリポイントとフォーマットを自動推論している
+- `[SHOULD]` プラグインや機能モジュールの有効/無効切り替えには `Options | false` ユニオン型を使い、`false` で無効化・`&&` 短絡評価 + `.filter(Boolean)` で条件付き配列を構築する
+  - 根拠: configuration-patterns, type-system-patterns — 全 Rollup プラグインオプションが `SpecificOptions | false` 型で統一されている
+- `[SHOULD]` プリセット機構はオブジェクト・関数・文字列（モジュールパス）の 3 形式をサポートし、設定の再利用を可能にする
+  - 根拠: configuration-patterns — `resolvePreset` が 3 形式を統一的に解決している
 
 ## 型設計
 
-- `[MUST]` ユーザー向け設定型（partial/optional）と内部処理型（required/resolved）を明確に分離する。入力型は `DeepPartial` で受け付け、デフォルト値マージ後に確定型へ変換する
-  - 根拠: 型システムパターン / 抽象化パターン — `BuildConfig`（DeepPartial）と `BuildOptions`（確定型）の分離により、ユーザーは最小限の設定で動作しつつ、内部コードはオプショナルチェーン不要で安全に動作する
-- `[MUST]` デフォルト値オブジェクトリテラルに `satisfies` を付け、型の全フィールド網羅をコンパイル時に検証する。`as` アサーションよりも `satisfies` を優先する
-  - 根拠: 型システムパターン / 設定パターン — `satisfies BuildOptions` により、フィールド追加時にデフォルト値の更新漏れがコンパイルエラーで検出される
-- `[SHOULD]` 複数のバリアントを持つ型は discriminated union で表現し、string literal フィールドで判別する
-  - 根拠: 型システムパターン — `BuildEntry` union と各ビルダーの `builder: "rollup"` 等のリテラル型により、ランタイムのフィルタ条件がそのまま型ガードとして機能する
-- `[SHOULD]` プラグイン/機能の有効・無効は `OptionsType | false` で表現し、`enabled: boolean` の別フィールドを持たない。`undefined`（デフォルト使用）と `false`（明示的無効化）を区別する
-  - 根拠: 型システムパターン / 抽象化パターン — Rollup プラグイン設定が `PluginOptions | false` を採用し、条件付き配列 + `filter(Boolean)` で宣言的にプラグインを合成している
-- `[SHOULD]` 外部ライブラリの型を内部で利用する際は、interface extends や `Parameters<typeof fn>` で再定義・抽出し、内部の型制約を厳密にする
-  - 根拠: 型システムパターン — Rollup の `_RollupOptions` を extends して `plugins: Plugin[]`（nullable 不可）に厳密化している
-- `[AVOID]` `Array.filter` の結果を `as SomeType[]` でキャストする。type predicate `(e): e is SomeType => ...` を使って型を絞り込む
-  - 根拠: 型システムパターン — `filter` + `as` はフィルタ条件の誤りを型チェッカーが検出できない
+- `[MUST]` ライブラリの設定型は「内部用（全フィールド必須）」と「ユーザー向け（DeepPartial）」を分離する
+  - 根拠: type-system-patterns — `BuildOptions`（内部）と `BuildConfig`（外部 = `DeepPartial<Omit<BuildOptions, "entries">>`）を分離している
+- `[MUST]` ユーザー向け設定に `defineXxxConfig` 形式の型安全ヘルパー関数を提供する。実行時はほぼパススルーで主目的は IDE の型補完
+  - 根拠: type-system-patterns, design-philosophy — `defineBuildConfig` は配列化と filter のみで型推論だけで設定ミスを防止している
+- `[SHOULD]` サブモジュールの型は各モジュールの `types.ts` で定義し、パッケージのルート型ファイルから `export type` で re-export する
+  - 根拠: type-system-patterns — 4 つのビルダーが各自 `types.ts` を持ち `src/types.ts` で一括 re-export している
+- `[SHOULD]` 判別可能ユニオン（Discriminated Union）を使い、基底型を拡張して各バリアントを定義する。判別フィールドが省略可能な場合はユーザー入力型と内部処理型を分離する
+  - 根拠: type-system-patterns — `BaseBuildEntry.builder?` が optional のため `.filter()` 後に `as` キャストが必要になっている
+- `[SHOULD]` ディープマージ関数の戻り値には `satisfies` でデフォルト値の型整合性を検証し、`as` で最終型を確定する二段構えを使う
+  - 根拠: type-system-patterns — `defu` の汎用的な戻り値型では型として扱えないため `satisfies` + `as` で安全性と実用性を両立している
+- `[AVOID]` `.filter()` のコールバックで判別可能ユニオンを絞り込む際に `as` キャストを使う。代わりに型ガード関数を定義する
+  - 根拠: type-system-patterns — 4 つのビルダーで同一の `as XxxBuildEntry[]` キャストが繰り返されている
 
-## 設定・構成
+## ライフサイクルとフック
 
-- `[MUST]` 設定マージの優先順位を「具体性が高い順」で明示的に定め、引数の順序で優先順位を表現する
-  - 根拠: 抽象化パターン / 設定パターン — `defu(buildConfig, pkg.unbuild, inputConfig, preset, defaults)` の引数順が優先順位そのものであり、コード上で即座に読み取れる
-- `[SHOULD]` 設定ヘルパー関数（`defineXxxConfig`）を提供し、TypeScript の型推論による自動補完を利用者に与える
-  - 根拠: 抽象化パターン / 設定パターン — `defineBuildConfig` は実質 identity 関数だが、型推論を通じて設定ファイルでの DX を大幅に向上させる
-- `[SHOULD]` ゼロコンフィグの自動推論ロジックはプリセット/フックとして実装し、明示的な設定が与えられた場合は無条件にバイパスする
-  - 根拠: アーキテクチャ / 設計思想 — `autoPreset` は `build:prepare` フックで「エントリーが既に存在する場合は即 return」し、明示設定と自動推論の競合を回避する
-- `[SHOULD]` 既存のマニフェストファイル（package.json, tsconfig.json 等）から設定を推論し、専用の設定ファイルなしでも動作する Convention over Configuration 設計を採用する
-  - 根拠: 設計思想 — `inferEntries` が package.json の `exports` フィールドからビルドエントリ・フォーマット・型生成を自動推論する
-- `[SHOULD]` 暗黙的な動作には必ず警告を伴わせ、デフォルトで警告をエラーとして扱うことで、ユーザーに明示的な判断を促す
-  - 根拠: 設計思想 / 依存関係管理 — 外部依存の暗黙バンドル時に `warn()` を呼び、`failOnWarn: true` のデフォルトでビルドを失敗させる
+- `[MUST]` ライフサイクルフックの完了イベント（done/finish/end）はすべてのコードパス（早期リターン・エラー含む）で発火を保証する
+  - 根拠: hook-and-lifecycle-patterns — rollup ビルダーは stub モード・空エントリ・通常ビルドの 3 分岐すべてで `rollup:done` を呼ぶ
+- `[MUST]` フック名はコロン区切りの名前空間で `<scope>:<phase>` の形式に統一し、スコープとフェーズを名前だけで識別可能にする
+  - 根拠: hook-and-lifecycle-patterns — 全 20 フックが `build:prepare`, `rollup:dts:options`, `mkdist:entry:build` のように一貫している
+- `[SHOULD]` フック型はサブシステムごとに独立した interface で宣言し、親の型で intersection 合成する
+  - 根拠: hook-and-lifecycle-patterns — `BuildHooks extends CopyHooks, UntypedHooks, MkdistHooks, RollupHooks` で各ビルダーのフック定義が独立している
+- `[SHOULD]` フック登録の優先順位は「基盤→拡張→ユーザー」の順にし、ユーザーに最も近い層が最後に実行されるようにする
+  - 根拠: hook-and-lifecycle-patterns — preset → inputConfig → buildConfig の順で `addHooks` を呼んでいる
+- `[SHOULD]` パイプラインのフックにはミュータブルなオブジェクト参照を引数として渡し、ユーザーがインプレースで変更できるようにする（戻り値による置換ではなく追加的変更）
+  - 根拠: hook-and-lifecycle-patterns — `rollup:options` フックが `RollupOptions` 参照を渡しユーザーが `plugins.push()` で拡張する
+- `[AVOID]` フックのコールバック内でオブジェクトのプロパティを丸ごと置換する操作（他のフックハンドラが追加した変更を消す恐れがある）
+  - 根拠: hook-and-lifecycle-patterns — `options.plugins = [...]` とするとコアのプラグインチェーンが消失する
 
-## モジュール構造
+## モジュール構成とエントリポイント
 
-- `[MUST]` モジュールの公開エントリポイント（`index.ts`）にはロジックを書かず、re-export のみにする
-  - 根拠: プロジェクト構造 — `src/index.ts`（2行）と `src/builders/rollup/index.ts`（1行）は、内部ファイル構成の変更を外部に波及させない防壁として機能している
-- `[MUST]` プラグイン/ストラテジーの追加で orchestration 層のコード変更が最小になるよう、統一インターフェース（共通の関数シグネチャまたは interface）を設ける
-  - 根拠: プロジェクト構造 / アーキテクチャ — 4つのビルダーが `(ctx: BuildContext) => Promise<void>` で統一され、配列走査のみで新規ビルダーに対応できる
-- `[SHOULD]` 型定義はその型を「所有」するモジュール内に co-locate し、消費者向けには集約ファイルで re-export する
-  - 根拠: プロジェクト構造 — 各ビルダーの `types.ts` が Entry/Hooks 型を所有し、`src/types.ts` で集約。型の追加・変更がビルダーディレクトリ内で完結する
-- `[SHOULD]` サブモジュールの複雑度が他と大きく異なる場合でも、外部インターフェース（ディレクトリ名 + index.ts の export）は他と同じ構造に揃える
-  - 根拠: プロジェクト構造 — rollup ビルダーは内部 12 ファイルだが、`index.ts` は 1 行の re-export で他ビルダーと同じインポートパスを維持している
+- `[MUST]` ライブラリの公開エントリポイントは re-export のみにし、実装ロジックを含めない
+  - 根拠: project-structure — `src/index.ts` は 2 行の re-export で内部モジュール再構成が外部 API に影響しない
+- `[SHOULD]` 複雑なサブモジュールは内部をさらに分割しつつ、`index.ts` からの re-export 1 行で外部にはシンプルな Facade を見せる
+  - 根拠: project-structure — rollup ビルダーは 8 ファイルの内部構成を持つが外部には `export { rollupBuild }` のみを公開している
+- `[SHOULD]` ビルドツール・開発ツールは自身のツールで自身をビルドする（セルフホスティング）
+  - 根拠: design-philosophy — unbuild は `build.config.ts` で `defineBuildConfig` を使い `pnpm unbuild` で自身をビルドしている
 
-## フック・ライフサイクル
+## コード生成
 
-- `[MUST]` ライフサイクルの完了フック（done / cleanup 等）は、早期リターン・エラーパスを含むすべてのコードパスで呼び出す
-  - 根拠: フック・ライフサイクル — rollup ビルダーはスタブモード・エントリ空・通常モードのいずれでも `rollup:done` を呼んでからリターンする
-- `[MUST]` フック型を TypeScript の interface として宣言し、ジェネリクスでフックシステムに渡して、フック名・引数の型安全性をコンパイル時に保証する
-  - 根拠: フック・ライフサイクル — `Hookable<BuildHooks>` により存在しないフック名やシグネチャ不一致がコンパイルエラーになる
-- `[SHOULD]` フック名は `namespace:action` または `namespace:scope:action` のコロン区切り命名規約に従い、所属と意味を構造的に表現する
-  - 根拠: フック・ライフサイクル — 全 17 フック名がこの規約に従い、ビルダー名とフェーズが一目でわかる命名になっている
-- `[SHOULD]` すべてのフックハンドラの第1引数に共有コンテキストオブジェクトを渡し、フック間の状態共有を明示的にする
-  - 根拠: フック・ライフサイクル — 全フックが `ctx: BuildContext` を第1引数に取り、グローバル変数やクロージャへの依存を排除している
-- `[SHOULD]` フック型定義は、そのフックを発火するモジュールとコロケーションし、最終的に intersection（extends）で合成する
-  - 根拠: フック・ライフサイクル / プロジェクト構造 — 各ビルダーのフック型がローカル `types.ts` に定義され、`BuildHooks` で合成される構造により、変更箇所が局所化されている
-- `[AVOID]` フックシステムにおいてイベント名を文字列リテラルのみで管理し、型による制約を設けないこと
-  - 根拠: フック・ライフサイクル — hookable + TypeScript の組み合わせにより、フック名のタイポや引数ミスマッチがコンパイル時に検出される
-
-## コード生成・変換
-
-- `[MUST]` コード変換プラグインは冪等性を保証する — 同じ変換が二重に適用されないよう、変換済みかどうかの検出ロジックを含める
-  - 根拠: コード生成技法 — `code.includes(CJSShim)` によるガードで shim の二重挿入を防止している
-- `[SHOULD]` 複数の出力フォーマット（ESM/CJS/DTS）は、単一のビルドパスから `write()` のオプションを変えて生成する — ビルドパイプラインの重複を避け、出力間の一貫性を保証する
-  - 根拠: コード生成技法 — Rollup の `typesBuild` を3回 `write()` して `.d.cts` / `.d.mts` / `.d.ts` を生成している
-- `[SHOULD]` 正規表現で十分な変換（shim 挿入、シバン除去など）には AST パーサではなく MagicString を使い、sourcemap を保持する
-  - 根拠: コード生成技法 — `MagicString.appendRight` + `generateMap()` でフルパースなしで sourcemap 付きの変換を実現している
-- `[AVOID]` コード生成で JSON.stringify できない値（関数参照、クラスインスタンス）をプレースホルダ文字列の置換で埋め込む
-  - 根拠: コード生成技法 — `"__$BABEL_PLUGINS"` の文字列置換はデバッグが困難で破綻リスクがある
+- `[MUST]` コード生成時にユーザー入力やファイルパスを文字列リテラルに埋め込む場合は `JSON.stringify` を使い、特殊文字のエスケープ漏れを防止する
+  - 根拠: code-generation-techniques — スタブ生成の全パス埋め込みで `JSON.stringify` を使用している
+- `[MUST]` コード変換関数は冪等にする（既に変換済みのコードに対しては no-op を返す）
+  - 根拠: code-generation-techniques — `CJSToESM` は `code.includes(CJSShim)` で二重注入を防止している
+- `[SHOULD]` 複数の出力フォーマットを生成する場合、バンドル処理は 1 回で済ませ、出力フェーズのみフォーマットごとに分岐する
+  - 根拠: code-generation-techniques — 型宣言生成で `typesBuild` を 1 回作成し `.write()` を 3 回呼んで重複処理を回避している
+- `[SHOULD]` コード生成の「何を生成すべきかの検出」と「実際の生成処理」を分離し、検出ロジックを単体テスト可能にする
+  - 根拠: code-generation-techniques — `inferEntries` は検出のみ行い 13 個のテストケースで検証されている
+- `[AVOID]` サードパーティのプラグインをフォークして修正する。代わりに Decorator パターン（スプレッド + 特定フックのオーバーライド）でラップする
+  - 根拠: code-generation-techniques — `JSONPlugin` は `@rollup/plugin-json` をスプレッドでラップし `transform` のみをオーバーライドしている
 
 ## 依存関係管理
 
-- `[MUST]` ライブラリのバンドル境界は package.json の依存宣言から自動導出し、設定ファイルと二重管理しない
-  - 根拠: 依存関係管理 — `inferPkgExternals` で `dependencies` / `peerDependencies` を external リストに変換し、`validateDependencies` でビルド後に宣言と実態の乖離を検出する
-- `[MUST]` 暗黙的にバンドルされる依存には警告を出し、デフォルトでビルドを失敗させる
-  - 根拠: 依存関係管理 — `external` 関数でどのカテゴリにも属さない import に `warn` を発行し、`failOnWarn: true` でプロセスを exit(1) する
-- `[SHOULD]` 大型依存やユーザー環境に既存の依存は peerDependencies + optional フラグで宣言する
-  - 根拠: 依存関係管理 — TypeScript は `peerDependencies` + `peerDependenciesMeta.optional: true` で宣言されている
-- `[SHOULD]` エコシステム内のユーティリティライブラリを一貫して採用し、同一目的の重複依存を排除する
-  - 根拠: 依存関係管理 — `path` の代わりに `pathe`、glob に `tinyglobby`、ログに `consola` を全ファイルで統一的に使用している
+- `[MUST]` ライブラリビルドでは package.json の dependencies / peerDependencies を externals の真実源とし、自動推論する仕組みを構築する
+  - 根拠: dependency-management — `inferPkgExternals` が dependencies, peerDependencies, optionalDependencies, self-reference を一括で external 化している
+- `[SHOULD]` ビルド後に「実際に使用された import」と「package.json の宣言」を突き合わせ、unused / implicit dependencies を検出する
+  - 根拠: dependency-management — `validateDependencies` がビルド成果物の `usedImports` を追跡し差分を警告する
+- `[AVOID]` devDependencies を無差別に external 化する。`@types/` スコープのみに限定すべき
+  - 根拠: dependency-management — テストフレームワーク等ビルド成果物と無関係な依存が含まれるため全 external 化は危険
+- `[AVOID]` 暗黙のバンドルを無警告で許容する。external にも inline にも該当しない依存にはビルドを通しつつ警告を出す
+  - 根拠: dependency-management — `failOnWarn` で CI を止められる設計にしている
 
-## テスト
+## テスト戦略
 
-- `[MUST]` ビルドツール・コード生成器のテストでは、決定ロジック（何をビルドするか）と変換ロジック（どうビルドするか）を分離し、決定ロジックを I/O 非依存の純粋関数としてユニットテストする
-  - 根拠: テストプラクティス — `inferEntries`, `inferExportType`, `validateDependencies` 等を純粋関数として抽出し、高速にテストしている
-- `[MUST]` テスト fixture がプロジェクト構造全体を必要とする場合、実際のプロジェクトと同じ構成を持つミニチュアプロジェクトとして構築する
-  - 根拠: テストプラクティス — `test/fixture/` は package.json, build.config.ts, src/ を含む完全なプロジェクト構造で全4ビルダーをカバーしている
-- `[SHOULD]` ツールが自分自身を処理できる場合、CI パイプラインで self-build をテスト実行前のゲートとして配置する
-  - 根拠: テストプラクティス — CI で `pnpm build`（self-build）を `pnpm vitest run` の前に配置し、ビルドパイプライン全体の回帰をテスト以前に検出している
-- `[SHOULD]` テスト用 fixture を開発ワークフロー（dev スクリプト等）からも参照し、fixture の鮮度を自動的に維持する
-  - 根拠: テストプラクティス — `"dev": "pnpm unbuild test/fixture"` がテスト fixture を開発時のビルドターゲットとして再利用している
-- `[AVOID]` テストコードで `as any` を使って型チェックを全面的に迂回すること。部分モックが必要な場合はテスト用ファクトリ関数や `Partial<T>` + 必須フィールドの組み合わせを検討する
-  - 根拠: テストプラクティス — `as any` の多用は `BuildContext` のインターフェース変更時にテストがコンパイルエラーで検出できないリスクがある
+- `[MUST]` ビルド/変換パイプラインのテストでは、純粋変換ロジック（設定解析・エントリ推論・依存解決）を副作用のある実行ロジック（ファイル書き出し・プロセス呼び出し）から分離し、前者にユニットテストを集中させる
+  - 根拠: testing-practices — `inferEntries`, `inferPkgExternals` 等の純粋関数をテストし、ビルダー本体は直接テストしない戦略で最小コスト・高信頼を実現している
+- `[SHOULD]` フィクスチャは実際の `package.json` と設定ファイルを持つ「本物のプロジェクト」として構成し、全ビルドパスを単一フィクスチャでカバーする
+  - 根拠: testing-practices — `test/fixture/build.config.ts` は 4 ビルダーと 3 設定を 1 ファイルに含みカバレッジを最大化している
+- `[SHOULD]` 警告メッセージのテストでは完全一致ではなく部分一致（`include`）で検証し、メッセージフォーマットの軽微な変更に対する耐性を持たせる
+  - 根拠: testing-practices — `to.include("Potential missing")` でメッセージの装飾変更に影響されないテストを書いている
+- `[AVOID]` テスト用の部分オブジェクト構築で `as any` を多用する。代わりに `Pick<T, K>` や `Partial<T>` で型安全に限定する
+  - 根拠: testing-practices — `as any` の多用で `BuildContext` の変更がテストのコンパイルエラーとして検知されない
 
 ## ルール優先度の解釈
 
