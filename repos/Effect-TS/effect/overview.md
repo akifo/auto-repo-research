@@ -19,26 +19,26 @@ Effect-TS/effect は TypeScript に関数型エフェクトシステムを持ち
 
 ## 分析した視点
 
-| # | 視点 | ファイル | 概要 |
-| - | ---- | -------- | ---- |
-| 1 | プロジェクト構造 | project-structure.md | pnpm workspace 基盤の4層モノレポで、exports null による内部モジュール封鎖と madge 循環検出で構造を保護 |
-| 2 | アーキテクチャ | architecture.md | Tag/Layer/Context の DI 三角形と public/internal 2層分離で、30+ パッケージの一方向依存を実現 |
-| 3 | 設計思想 | design-philosophy.md | 計算の記述と実行の分離、dual API、ジェネレータ構文モナドで FP を TypeScript に自然に翻訳 |
-| 4 | 型システムパターン | type-system-patterns.md | TypeLambda/Kind による HKT エミュレーションと分散ファントム型で型安全性をランタイムコストなしに実現 |
-| 5 | Effect モデル | effect-model.md | never デフォルトの三型パラメータで成功・エラー・依存を union 合成し、段階的型付けを実現 |
-| 6 | 依存性注入 | dependency-injection.md | Tag + Layer + MemoMap による型追跡 DI で、自動メモ化・スコープ付きリソース管理・テスト差し替えを統合 |
-| 7 | エラーハンドリング | error-handling-idioms.md | Cause ツリーによるロスレスエラーモデルと _tag+reason 二層分類で型安全なエラーディスパッチを実現 |
-| 8 | 並行処理パターン | concurrency-patterns.md | 構造的並行処理・uninterruptibleMask・Scope LIFO ファイナライザで割り込み安全なリソース管理を実現 |
-| 9 | 抽象パターン | abstraction-patterns.md | Symbol ベースのプロトコルとプロトタイプ合成で 177+ モジュールに横断的振る舞いを一括付与 |
-| 10 | コード生成 | code-generation.md | package.json exports から barrel file を自動生成し、ESLint 統合で生成コードの鮮度を CI で保証 |
-| 11 | パフォーマンス技法 | performance-techniques.md | Monomorphic shape・HAMT・Chunk ロープ・トランジェントミューテーション・ハッシュキャッシュで高スループットを実現 |
-| 12 | テストプラクティス | testing-practices.md | it.effect/it.scoped による Effect ライフサイクル統合テストと Schema→Arbitrary 自動導出で型安全テストを実現 |
-| 13 | API 設計 | api-design-practices.md | dual 関数で data-first/data-last 両対応、Refinement 優先オーバーロードと namespace re-export で API を統一 |
-| 14 | ストリーミング | streaming-patterns.md | Channel 統一抽象の上に Stream/Sink を構築し、Chunk バッチ転送と pull-based バックプレッシャーを実現 |
-| 15 | スキーマバリデーション | schema-validation.md | AST を単一の真実の源泉とし、Parser/JSONSchema/Pretty/Arbitrary を独立インタプリタとして導出 |
-| 16 | 拡張性メカニズム | extensibility-mechanisms.md | Tag/Layer DI と dual-tag パターンで 10+ SQL ドライバ・3 プラットフォームを型安全に差し替え可能に |
-| 17 | 開発規約 | dev-conventions.md | dprint ESLint 統合・codegen 差分チェック・tstyche 型テスト・4 シャード並列 CI で品質ゲートを多層化 |
-| 18 | AI 設定 | ai-settings.md | コマンドベースの検証手順・scratchpad サンドボックス・.repos 知識注入で AI エージェント開発環境を構築 |
+| #  | 視点                   | ファイル                    | 概要                                                                                                            |
+| -- | ---------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| 1  | プロジェクト構造       | project-structure.md        | pnpm workspace 基盤の4層モノレポで、exports null による内部モジュール封鎖と madge 循環検出で構造を保護          |
+| 2  | アーキテクチャ         | architecture.md             | Tag/Layer/Context の DI 三角形と public/internal 2層分離で、30+ パッケージの一方向依存を実現                    |
+| 3  | 設計思想               | design-philosophy.md        | 計算の記述と実行の分離、dual API、ジェネレータ構文モナドで FP を TypeScript に自然に翻訳                        |
+| 4  | 型システムパターン     | type-system-patterns.md     | TypeLambda/Kind による HKT エミュレーションと分散ファントム型で型安全性をランタイムコストなしに実現             |
+| 5  | Effect モデル          | effect-model.md             | never デフォルトの三型パラメータで成功・エラー・依存を union 合成し、段階的型付けを実現                         |
+| 6  | 依存性注入             | dependency-injection.md     | Tag + Layer + MemoMap による型追跡 DI で、自動メモ化・スコープ付きリソース管理・テスト差し替えを統合            |
+| 7  | エラーハンドリング     | error-handling-idioms.md    | Cause ツリーによるロスレスエラーモデルと _tag+reason 二層分類で型安全なエラーディスパッチを実現                 |
+| 8  | 並行処理パターン       | concurrency-patterns.md     | 構造的並行処理・uninterruptibleMask・Scope LIFO ファイナライザで割り込み安全なリソース管理を実現                |
+| 9  | 抽象パターン           | abstraction-patterns.md     | Symbol ベースのプロトコルとプロトタイプ合成で 177+ モジュールに横断的振る舞いを一括付与                         |
+| 10 | コード生成             | code-generation.md          | package.json exports から barrel file を自動生成し、ESLint 統合で生成コードの鮮度を CI で保証                   |
+| 11 | パフォーマンス技法     | performance-techniques.md   | Monomorphic shape・HAMT・Chunk ロープ・トランジェントミューテーション・ハッシュキャッシュで高スループットを実現 |
+| 12 | テストプラクティス     | testing-practices.md        | it.effect/it.scoped による Effect ライフサイクル統合テストと Schema→Arbitrary 自動導出で型安全テストを実現      |
+| 13 | API 設計               | api-design-practices.md     | dual 関数で data-first/data-last 両対応、Refinement 優先オーバーロードと namespace re-export で API を統一      |
+| 14 | ストリーミング         | streaming-patterns.md       | Channel 統一抽象の上に Stream/Sink を構築し、Chunk バッチ転送と pull-based バックプレッシャーを実現             |
+| 15 | スキーマバリデーション | schema-validation.md        | AST を単一の真実の源泉とし、Parser/JSONSchema/Pretty/Arbitrary を独立インタプリタとして導出                     |
+| 16 | 拡張性メカニズム       | extensibility-mechanisms.md | Tag/Layer DI と dual-tag パターンで 10+ SQL ドライバ・3 プラットフォームを型安全に差し替え可能に                |
+| 17 | 開発規約               | dev-conventions.md          | dprint ESLint 統合・codegen 差分チェック・tstyche 型テスト・4 シャード並列 CI で品質ゲートを多層化              |
+| 18 | AI 設定                | ai-settings.md              | コマンドベースの検証手順・scratchpad サンドボックス・.repos 知識注入で AI エージェント開発環境を構築            |
 
 ## 特に注目すべき知見
 

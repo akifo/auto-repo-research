@@ -138,11 +138,11 @@ export const mutate = Dual.dual<...>(2, (self, f) => {
 // src/internal/core.ts:127-161
 // Monomorphic EffectPrimitive — 全命令が同一 shape
 class EffectPrimitive {
-  public effect_instruction_i0 = undefined
-  public effect_instruction_i1 = undefined
-  public effect_instruction_i2 = undefined
+  public effect_instruction_i0 = undefined;
+  public effect_instruction_i1 = undefined;
+  public effect_instruction_i2 = undefined;
   public trace = undefined;
-  [EffectTypeId] = effectVariance
+  [EffectTypeId] = effectVariance;
   constructor(readonly _op: Primitive["_op"]) {}
   // ...
 }
@@ -196,10 +196,10 @@ export const cached: { ... } = function() {
 ```typescript
 // src/internal/core.ts:127-133
 class EffectPrimitive {
-  public effect_instruction_i0 = undefined
-  public effect_instruction_i1 = undefined
-  public effect_instruction_i2 = undefined
-  public trace = undefined
+  public effect_instruction_i0 = undefined;
+  public effect_instruction_i1 = undefined;
+  public effect_instruction_i2 = undefined;
+  public trace = undefined;
   constructor(readonly _op: Primitive["_op"]) {}
 }
 ```
@@ -209,7 +209,7 @@ class EffectPrimitive {
 ```typescript
 // src/internal/fiberRuntime.ts:1392-1393
 // @ts-expect-error
-return this[(cur as core.Primitive)._op](cur as core.Primitive)
+return this[(cur as core.Primitive)._op](cur as core.Primitive);
 ```
 
 - **ESLint ルールによるパフォーマンス規約の強制**: `Array.push(...spread)` を禁止する ESLint ルールにより、大量要素のスプレッドによるスタックオーバーフローとパフォーマンス劣化をコードベース全体で防止する。
@@ -233,11 +233,11 @@ return this[(cur as core.Primitive)._op](cur as core.Primitive)
 
 ```typescript
 // Bad: スタックオーバーフローの危険
-result.push(...items) // items が大きいとクラッシュ
+result.push(...items); // items が大きいとクラッシュ
 
 // Better: for ループで個別に push
 for (let i = 0; i < items.length; i++) {
-  result.push(items[i])
+  result.push(items[i]);
 }
 ```
 
@@ -245,13 +245,13 @@ for (let i = 0; i < items.length; i++) {
 
 ```typescript
 // Bad: 命令ごとに異なるプロパティ構造
-const sync = { _op: "Sync", fn: () => {} }
-const async = { _op: "Async", register: () => {}, blockingOn: id }
+const sync = { _op: "Sync", fn: () => {} };
+const async = { _op: "Async", register: () => {}, blockingOn: id };
 
 // Better: 固定プロパティに統一
 class Primitive {
-  effect_instruction_i0 = undefined
-  effect_instruction_i1 = undefined
+  effect_instruction_i0 = undefined;
+  effect_instruction_i1 = undefined;
   constructor(readonly _op: string) {}
 }
 ```
@@ -260,17 +260,17 @@ class Primitive {
 
 ```typescript
 // Bad: 毎回新しい HashMap を生成
-let map = HashMap.empty()
+let map = HashMap.empty();
 for (const [k, v] of entries) {
-  map = HashMap.set(map, k, v) // 毎回 trie ノードをコピー
+  map = HashMap.set(map, k, v); // 毎回 trie ノードをコピー
 }
 
 // Better: トランジェントミューテーションで囲む
 const map = HashMap.mutate(HashMap.empty(), (draft) => {
   for (const [k, v] of entries) {
-    HashMap.set(draft, k, v) // in-place 更新
+    HashMap.set(draft, k, v); // in-place 更新
   }
-})
+});
 ```
 
 ## 導出ルール

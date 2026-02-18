@@ -25,31 +25,29 @@ queryOptions ヘルパーが返す queryKey には `DataTag<TQueryKey, TQueryFnD
 
 ```typescript
 // packages/query-core/src/types.ts:63-82
-export const dataTagSymbol = Symbol('dataTagSymbol')
-export type dataTagSymbol = typeof dataTagSymbol
-export const dataTagErrorSymbol = Symbol('dataTagErrorSymbol')
-export type dataTagErrorSymbol = typeof dataTagErrorSymbol
+export const dataTagSymbol = Symbol("dataTagSymbol");
+export type dataTagSymbol = typeof dataTagSymbol;
+export const dataTagErrorSymbol = Symbol("dataTagErrorSymbol");
+export type dataTagErrorSymbol = typeof dataTagErrorSymbol;
 
 export type DataTag<
   TType,
   TValue,
   TError = UnsetMarker,
-> = TType extends AnyDataTag
-  ? TType
+> = TType extends AnyDataTag ? TType
   : TType & {
-      [dataTagSymbol]: TValue
-      [dataTagErrorSymbol]: TError
-    }
+    [dataTagSymbol]: TValue;
+    [dataTagErrorSymbol]: TError;
+  };
 ```
 
 queryClient.getQueryData は `InferDataFromTag` で DataTag から型を自動抽出する。
 
 ```typescript
 // packages/query-core/src/types.ts:84-87
-export type InferDataFromTag<TQueryFnData, TTaggedQueryKey extends QueryKey> =
-  TTaggedQueryKey extends DataTag<unknown, infer TaggedValue, unknown>
-    ? TaggedValue
-    : TQueryFnData
+export type InferDataFromTag<TQueryFnData, TTaggedQueryKey extends QueryKey> = TTaggedQueryKey extends
+  DataTag<unknown, infer TaggedValue, unknown> ? TaggedValue
+  : TQueryFnData;
 ```
 
 ```typescript
@@ -77,14 +75,14 @@ export function useQuery<
 >(
   options: DefinedInitialDataOptions<TQueryFnData, TError, TData, TQueryKey>,
   queryClient?: QueryClient,
-): DefinedUseQueryResult<NoInfer<TData>, TError>
+): DefinedUseQueryResult<NoInfer<TData>, TError>;
 ```
 
 NoInfer の実装は `[T][T extends any ? 0 : never]` というイディオムで、TypeScript が推論位置として認識しないようにラップする。
 
 ```typescript
 // packages/query-core/src/types.ts:37
-export type NoInfer<T> = [T][T extends any ? 0 : never]
+export type NoInfer<T> = [T][T extends any ? 0 : never];
 ```
 
 setQueryData でも同様に `NoInfer<TInferredQueryFnData>` で updater パラメータの型が queryKey の推論を汚染することを防いでいる（`queryClient.ts:183-187`）。
@@ -98,22 +96,21 @@ setQueryData でも同様に `NoInfer<TInferredQueryFnData>` で updater パラ�
 export type QueryFunctionContext<
   TQueryKey extends QueryKey = QueryKey,
   TPageParam = never,
-> = [TPageParam] extends [never]
-  ? {
-      client: QueryClient
-      queryKey: TQueryKey
-      signal: AbortSignal
-      meta: QueryMeta | undefined
-      pageParam?: unknown
-    }
+> = [TPageParam] extends [never] ? {
+    client: QueryClient;
+    queryKey: TQueryKey;
+    signal: AbortSignal;
+    meta: QueryMeta | undefined;
+    pageParam?: unknown;
+  }
   : {
-      client: QueryClient
-      queryKey: TQueryKey
-      signal: AbortSignal
-      pageParam: TPageParam
-      direction: FetchDirection
-      meta: QueryMeta | undefined
-    }
+    client: QueryClient;
+    queryKey: TQueryKey;
+    signal: AbortSignal;
+    pageParam: TPageParam;
+    direction: FetchDirection;
+    meta: QueryMeta | undefined;
+  };
 ```
 
 `T extends never` ではなく `[T] extends [never]` を使う理由は、distributive conditional type を回避するため。naked type parameter に対する `extends never` は union 分配で意図しない挙動を起こす。
@@ -128,25 +125,24 @@ export type QueriesOptions<
   T extends Array<any>,
   TResults extends Array<any> = [],
   TDepth extends ReadonlyArray<number> = [],
-> = TDepth['length'] extends MAXIMUM_DEPTH
-  ? Array<UseQueryOptionsForUseQueries>
-  : T extends []
-    ? []
-    : T extends [infer Head]
-      ? [...TResults, GetUseQueryOptionsForUseQueries<Head>]
-      : T extends [infer Head, ...infer Tails]
-        ? QueriesOptions<
-            [...Tails],
-            [...TResults, GetUseQueryOptionsForUseQueries<Head>],
-            [...TDepth, 1]
-          >
-        : ReadonlyArray<unknown> extends T
-          ? T
-          : T extends Array<UseQueryOptionsForUseQueries<
-                infer TQueryFnData, infer TError, infer TData, infer TQueryKey
-              >>
-            ? Array<UseQueryOptionsForUseQueries<TQueryFnData, TError, TData, TQueryKey>>
-            : Array<UseQueryOptionsForUseQueries>
+> = TDepth["length"] extends MAXIMUM_DEPTH ? Array<UseQueryOptionsForUseQueries>
+  : T extends [] ? []
+  : T extends [infer Head] ? [...TResults, GetUseQueryOptionsForUseQueries<Head>]
+  : T extends [infer Head, ...infer Tails] ? QueriesOptions<
+      [...Tails],
+      [...TResults, GetUseQueryOptionsForUseQueries<Head>],
+      [...TDepth, 1]
+    >
+  : ReadonlyArray<unknown> extends T ? T
+  : T extends Array<
+    UseQueryOptionsForUseQueries<
+      infer TQueryFnData,
+      infer TError,
+      infer TData,
+      infer TQueryKey
+    >
+  > ? Array<UseQueryOptionsForUseQueries<TQueryFnData, TError, TData, TQueryKey>>
+  : Array<UseQueryOptionsForUseQueries>;
 ```
 
 `TDepth['length'] extends MAXIMUM_DEPTH` はタプルの長さカウンタとして機能し、深さ20で再帰を打ち切る安全弁となっている。
@@ -163,18 +159,17 @@ export interface Register {
 }
 
 export type DefaultError = Register extends {
-  defaultError: infer TError
-}
-  ? TError
-  : Error
+  defaultError: infer TError;
+} ? TError
+  : Error;
 ```
 
 ユーザーは以下のように一度だけ宣言すれば、全てのクエリ/ミューテーションのエラー型が変わる。
 
 ```typescript
-declare module '@tanstack/query-core' {
+declare module "@tanstack/query-core" {
   interface Register {
-    defaultError: AxiosError
+    defaultError: AxiosError;
   }
 }
 ```
@@ -210,13 +205,11 @@ QueryFilters で queryKey のプレフィックスマッチを型レベルで保
 type DropLast<T extends ReadonlyArray<unknown>> = T extends readonly [
   ...infer R,
   unknown,
-]
-  ? readonly [...R]
-  : never
+] ? readonly [...R]
+  : never;
 
-type TuplePrefixes<T extends ReadonlyArray<unknown>> = T extends readonly []
-  ? readonly []
-  : TuplePrefixes<DropLast<T>> | T
+type TuplePrefixes<T extends ReadonlyArray<unknown>> = T extends readonly [] ? readonly []
+  : TuplePrefixes<DropLast<T>> | T;
 ```
 
 `['users', number, 'posts']` に対し、`['users']` や `['users', number]` がフィルタとして型安全に受け入れられる。
@@ -248,7 +241,7 @@ type TuplePrefixes<T extends ReadonlyArray<unknown>> = T extends readonly []
 ```typescript
 // packages/react-query/src/queryOptions.ts:85-87
 export function queryOptions(options: unknown) {
-  return options
+  return options;
 }
 ```
 
@@ -258,15 +251,14 @@ export function queryOptions(options: unknown) {
 // packages/query-core/src/types.ts:19-29
 export type OmitKeyof<
   TObject,
-  TKey extends TStrictly extends 'safely'
-    ?
-        | keyof TObject
-        | (string & Record<never, never>)
-        | (number & Record<never, never>)
-        | (symbol & Record<never, never>)
+  TKey extends TStrictly extends "safely" ?
+      | keyof TObject
+      | (string & Record<never, never>)
+      | (number & Record<never, never>)
+      | (symbol & Record<never, never>)
     : keyof TObject,
-  TStrictly extends 'strictly' | 'safely' = 'strictly',
-> = Omit<TObject, TKey>
+  TStrictly extends "strictly" | "safely" = "strictly",
+> = Omit<TObject, TKey>;
 ```
 
 - **DistributiveOmit で union 型への Omit を安全に適用**: 標準の `Omit` は union 型に適用すると分配されず意図しない結果になる。`TObject extends any ? Omit<TObject, TKey> : never` で分配を強制する。
@@ -276,7 +268,7 @@ export type OmitKeyof<
 export type DistributiveOmit<
   TObject,
   TKey extends keyof TObject,
-> = TObject extends any ? Omit<TObject, TKey> : never
+> = TObject extends any ? Omit<TObject, TKey> : never;
 ```
 
 - **ReplaceReturnType によるサブクラスの型オーバーライド**: InfiniteQueryObserver は QueryObserver を継承し、メソッドの戻り値型だけを変更する必要がある。`!` 宣言と ReplaceReturnType ユーティリティで型だけを上書きする。
@@ -303,12 +295,12 @@ type ReplaceReturnType<
 
 ```typescript
 // Bad: distributive で意図しない挙動
-type Check<T> = T extends never ? 'yes' : 'no'
-type Result = Check<never> // never（'yes' ではない）
+type Check<T> = T extends never ? "yes" : "no";
+type Result = Check<never>; // never（'yes' ではない）
 
 // Better: tuple でラップして分配を防止
-type Check<T> = [T] extends [never] ? 'yes' : 'no'
-type Result = Check<never> // 'yes'
+type Check<T> = [T] extends [never] ? "yes" : "no";
+type Result = Check<never>; // 'yes'
 ```
 
 TanStack Query では `QueryPersister` と `QueryFunctionContext` でこのパターンを一貫して使用している（`types.ts:126,141`）。
@@ -317,20 +309,17 @@ TanStack Query では `QueryPersister` と `QueryFunctionContext` でこのパ�
 
 ```typescript
 // Bad: 深さ制限なしの再帰型
-type MapAll<T extends Array<any>> = T extends [infer H, ...infer Tail]
-  ? [Transform<H>, ...MapAll<Tail>]
-  : []
+type MapAll<T extends Array<any>> = T extends [infer H, ...infer Tail] ? [Transform<H>, ...MapAll<Tail>]
+  : [];
 
 // Better: TanStack Query のように深さカウンタを導入する
-type MAXIMUM_DEPTH = 20
+type MAXIMUM_DEPTH = 20;
 type MapAll<
   T extends Array<any>,
   TDepth extends ReadonlyArray<number> = [],
-> = TDepth['length'] extends MAXIMUM_DEPTH
-  ? Array<FallbackType>
-  : T extends [infer H, ...infer Tail]
-    ? [Transform<H>, ...MapAll<Tail, [...TDepth, 1]>]
-    : []
+> = TDepth["length"] extends MAXIMUM_DEPTH ? Array<FallbackType>
+  : T extends [infer H, ...infer Tail] ? [Transform<H>, ...MapAll<Tail, [...TDepth, 1]>]
+  : [];
 ```
 
 TanStack Query の useQueries / useSuspenseQueries で深さ20に制限している（`useQueries.ts:55,151`）。

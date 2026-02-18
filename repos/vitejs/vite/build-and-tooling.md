@@ -64,7 +64,7 @@ export default defineConfig([
   clientConfig,
   nodeConfig,
   moduleRunnerConfig,
-])
+]);
 ```
 
 `moduleRunnerConfig` は minify を有効にし、`bundleSizeLimit(54)` で 54kB の上限を設定している。Node.js 以外の環境（エッジランタイム等）での利用を想定し、軽量性を保証する仕組みである。
@@ -104,7 +104,7 @@ shimDepsPlugin({
 
 ```typescript
 // packages/vite/src/node/config.ts:2543
-const _require = createRequire(/** #__KEEP__ */ import.meta.url)
+const _require = createRequire(/** #__KEEP__ */ import.meta.url);
 ```
 
 ### 型バンドリングパイプライン
@@ -156,24 +156,24 @@ overrides:
 
 ### パッケージ別ビルドツール選択
 
-| パッケージ | ビルドツール | 理由 |
-|---|---|---|
-| `vite` (コア) | Rolldown 直接 | 複数エントリ、カスタムプラグイン、型バンドリング |
-| `create-vite` | tsdown | 単一エントリ、ライセンスプラグインのみ |
-| `plugin-legacy` | tsdown | 単一エントリ、DTS 自動生成 |
+| パッケージ      | ビルドツール  | 理由                                             |
+| --------------- | ------------- | ------------------------------------------------ |
+| `vite` (コア)   | Rolldown 直接 | 複数エントリ、カスタムプラグイン、型バンドリング |
+| `create-vite`   | tsdown        | 単一エントリ、ライセンスプラグインのみ           |
+| `plugin-legacy` | tsdown        | 単一エントリ、DTS 自動生成                       |
 
 tsdown の設定は極めてシンプルである。
 
 ```typescript
 // packages/plugin-legacy/tsdown.config.ts
 export default defineConfig({
-  entry: ['src/index.ts'],
-  target: 'node20',
-  inlineOnly: ['picocolors'],
+  entry: ["src/index.ts"],
+  target: "node20",
+  inlineOnly: ["picocolors"],
   tsconfig: false,
   dts: true,
   fixedExtension: false,
-})
+});
 ```
 
 ## パターンカタログ
@@ -197,26 +197,26 @@ export default defineConfig({
 ```typescript
 // packages/vite/rolldown.config.ts:377-405
 function bundleSizeLimit(limit: number): Plugin {
-  let size = 0
+  let size = 0;
   return {
-    name: 'bundle-limit',
+    name: "bundle-limit",
     generateBundle(_, bundle) {
-      if (this.meta.watchMode) return
+      if (this.meta.watchMode) return;
       size = Buffer.byteLength(
         Object.values(bundle)
-          .map((i) => ('code' in i ? i.code : ''))
-          .join(''),
-        'utf-8',
-      )
+          .map((i) => ("code" in i ? i.code : ""))
+          .join(""),
+        "utf-8",
+      );
     },
     closeBundle() {
-      if (this.meta.watchMode) return
-      const kb = size / 1000
+      if (this.meta.watchMode) return;
+      const kb = size / 1000;
       if (kb > limit) {
-        this.error(`Bundle size exceeded ${limit} kB, current size is ${kb.toFixed(2)}kb.`)
+        this.error(`Bundle size exceeded ${limit} kB, current size is ${kb.toFixed(2)}kb.`);
       }
     },
-  }
+  };
 }
 ```
 
@@ -239,11 +239,11 @@ function bundleSizeLimit(limit: number): Plugin {
 ```typescript
 // Bad: shim 対象が際限なく増える
 shimDepsPlugin({
-  'dep-a/file.js': [{ src: '...', replacement: '...' }],
-  'dep-b/file.js': [{ src: '...', replacement: '...' }],
-  'dep-c/file.js': [{ src: '...', replacement: '...' }],
+  "dep-a/file.js": [{ src: "...", replacement: "..." }],
+  "dep-b/file.js": [{ src: "...", replacement: "..." }],
+  "dep-c/file.js": [{ src: "...", replacement: "..." }],
   // 10個以上の shim...
-})
+});
 
 // Better: shim が必要な依存は ESM 対応の代替パッケージに移行する
 // 例: debug -> obug（pnpm overrides で差し替え）

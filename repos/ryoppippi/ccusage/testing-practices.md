@@ -48,17 +48,17 @@ in-source testing の基本構造:
 ```typescript
 // apps/ccusage/src/_token-utils.ts:56
 if (import.meta.vitest != null) {
-	describe('getTotalTokens', () => {
-		it('should sum all token types correctly (raw format)', () => {
-			const tokens: TokenCounts = {
-				inputTokens: 1000,
-				outputTokens: 500,
-				cacheCreationInputTokens: 2000,
-				cacheReadInputTokens: 300,
-			};
-			expect(getTotalTokens(tokens)).toBe(3800);
-		});
-	});
+  describe("getTotalTokens", () => {
+    it("should sum all token types correctly (raw format)", () => {
+      const tokens: TokenCounts = {
+        inputTokens: 1000,
+        outputTokens: 500,
+        cacheCreationInputTokens: 2000,
+        cacheReadInputTokens: 300,
+      };
+      expect(getTotalTokens(tokens)).toBe(3800);
+    });
+  });
 }
 ```
 
@@ -66,18 +66,18 @@ if (import.meta.vitest != null) {
 
 ```typescript
 // apps/ccusage/src/_utils.ts:34-46
-describe('getFileModifiedTime', () => {
-	it('returns specific modification time when set', async () => {
-		await using fixture = await createFixture({
-			'test.txt': 'content',
-		});
+describe("getFileModifiedTime", () => {
+  it("returns specific modification time when set", async () => {
+    await using fixture = await createFixture({
+      "test.txt": "content",
+    });
 
-		const specificTime = new Date('2024-01-01T12:00:00.000Z');
-		await utimes(`${fixture.path}/test.txt`, specificTime, specificTime);
+    const specificTime = new Date("2024-01-01T12:00:00.000Z");
+    await utimes(`${fixture.path}/test.txt`, specificTime, specificTime);
 
-		const mtime = await getFileModifiedTime(fixture.getPath('test.txt'));
-		expect(mtime).toBe(specificTime.getTime());
-	});
+    const mtime = await getFileModifiedTime(fixture.getPath("test.txt"));
+    expect(mtime).toBe(specificTime.getTime());
+  });
 });
 ```
 
@@ -85,29 +85,31 @@ Claude データディレクトリのシミュレーション:
 
 ```typescript
 // apps/ccusage/src/data-loader.ts:1536-1572
-it('loads usage data for a specific session', async () => {
-	await using fixture = await createFixture({
-		'.claude': {
-			projects: {
-				'test-project': {
-					'session-123.jsonl': `${JSON.stringify({
-						timestamp: '2024-01-01T00:00:00Z',
-						sessionId: 'session-123',
-						message: {
-							usage: { input_tokens: 100, output_tokens: 50 },
-							model: 'claude-sonnet-4-20250514',
-						},
-						costUSD: 0.5,
-					})}`,
-				},
-			},
-		},
-	});
+it("loads usage data for a specific session", async () => {
+  await using fixture = await createFixture({
+    ".claude": {
+      projects: {
+        "test-project": {
+          "session-123.jsonl": `${
+            JSON.stringify({
+              timestamp: "2024-01-01T00:00:00Z",
+              sessionId: "session-123",
+              message: {
+                usage: { input_tokens: 100, output_tokens: 50 },
+                model: "claude-sonnet-4-20250514",
+              },
+              costUSD: 0.5,
+            })
+          }`,
+        },
+      },
+    },
+  });
 
-	vi.stubEnv('CLAUDE_CONFIG_DIR', fixture.getPath('.claude'));
-	const result = await loadSessionUsageById('session-123', { mode: 'display' });
-	expect(result).not.toBeNull();
-	expect(result?.totalCost).toBe(1.5);
+  vi.stubEnv("CLAUDE_CONFIG_DIR", fixture.getPath(".claude"));
+  const result = await loadSessionUsageById("session-123", { mode: "display" });
+  expect(result).not.toBeNull();
+  expect(result?.totalCost).toBe(1.5);
 });
 ```
 
@@ -123,11 +125,11 @@ define: {
 ```typescript
 // apps/ccusage/vitest.config.ts:4-9
 export default defineConfig({
-	test: {
-		watch: false,
-		includeSource: ['src/**/*.{js,ts}'],
-		globals: true,
-	},
+  test: {
+    watch: false,
+    includeSource: ["src/**/*.{js,ts}"],
+    globals: true,
+  },
 });
 ```
 
@@ -135,25 +137,25 @@ MCP サーバーの統合テスト（in-source + createFixture）:
 
 ```typescript
 // apps/mcp/src/mcp.ts:237-268
-it('should connect via stdio transport and list tools', async () => {
-	await using fixture = await createFixture({
-		'projects/test-project/session1/usage.jsonl': JSON.stringify({
-			timestamp: '2024-01-01T12:00:00Z',
-			costUSD: 0.001,
-			message: {
-				model: 'claude-sonnet-4-20250514',
-				usage: { input_tokens: 50, output_tokens: 10 },
-			},
-		}),
-	});
+it("should connect via stdio transport and list tools", async () => {
+  await using fixture = await createFixture({
+    "projects/test-project/session1/usage.jsonl": JSON.stringify({
+      timestamp: "2024-01-01T12:00:00Z",
+      costUSD: 0.001,
+      message: {
+        model: "claude-sonnet-4-20250514",
+        usage: { input_tokens: 50, output_tokens: 10 },
+      },
+    }),
+  });
 
-	const client = new Client({ name: 'test-client', version: '1.0.0' });
-	const server = createMcpServer({ claudePath: fixture.path });
-	const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
-	await Promise.all([client.connect(clientTransport), server.connect(serverTransport)]);
+  const client = new Client({ name: "test-client", version: "1.0.0" });
+  const server = createMcpServer({ claudePath: fixture.path });
+  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+  await Promise.all([client.connect(clientTransport), server.connect(serverTransport)]);
 
-	const result = await client.listTools();
-	expect(result.tools).toHaveLength(6);
+  const result = await client.listTools();
+  expect(result.tools).toHaveLength(6);
 });
 ```
 
@@ -162,23 +164,23 @@ it('should connect via stdio transport and list tools', async () => {
 ```typescript
 // apps/ccusage/src/_session-blocks.ts:343-363
 if (import.meta.vitest != null) {
-	const SESSION_DURATION_MS = 5 * 60 * 60 * 1000;
+  const SESSION_DURATION_MS = 5 * 60 * 60 * 1000;
 
-	function createMockEntry(
-		timestamp: Date,
-		inputTokens = 1000,
-		outputTokens = 500,
-		model = 'claude-sonnet-4-20250514',
-		costUSD = 0.01,
-	): LoadedUsageEntry {
-		return {
-			timestamp,
-			usage: { inputTokens, outputTokens, cacheCreationInputTokens: 0, cacheReadInputTokens: 0 },
-			costUSD,
-			model,
-		};
-	}
-	// ... テストで createMockEntry を活用
+  function createMockEntry(
+    timestamp: Date,
+    inputTokens = 1000,
+    outputTokens = 500,
+    model = "claude-sonnet-4-20250514",
+    costUSD = 0.01,
+  ): LoadedUsageEntry {
+    return {
+      timestamp,
+      usage: { inputTokens, outputTokens, cacheCreationInputTokens: 0, cacheReadInputTokens: 0 },
+      costUSD,
+      model,
+    };
+  }
+  // ... テストで createMockEntry を活用
 }
 ```
 
@@ -209,7 +211,7 @@ if (import.meta.vitest != null) {
 ```typescript
 // 全ファイルで統一された記法
 if (import.meta.vitest != null) {
-	describe('...', () => { /* ... */ });
+  describe("...", () => {/* ... */});
 }
 ```
 
@@ -227,14 +229,14 @@ define: { 'import.meta.vitest': 'undefined' }
 ```typescript
 // apps/ccusage/src/debug.ts:297-310
 await using fixture = await createFixture({
-	'test.jsonl': JSON.stringify({
-		timestamp: '2024-01-01T12:00:00Z',
-		costUSD: 0.00015,
-		message: {
-			model: 'claude-sonnet-4-20250514',
-			usage: { input_tokens: 50, output_tokens: 0 },
-		},
-	}),
+  "test.jsonl": JSON.stringify({
+    timestamp: "2024-01-01T12:00:00Z",
+    costUSD: 0.00015,
+    message: {
+      model: "claude-sonnet-4-20250514",
+      usage: { input_tokens: 50, output_tokens: 0 },
+    },
+  }),
 });
 // fixture はスコープを抜けると自動的にクリーンアップされる
 ```

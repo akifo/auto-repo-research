@@ -114,12 +114,14 @@ packages/query-core/root.tsup.config.js   -> ../../scripts/getTsupConfig.js
 ```
 
 ::: v-pre
+
 ```yaml
 # .github/workflows/pr.yml:6-8 — 同一 PR の重複実行をキャンセル
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.number || github.ref }}
   cancel-in-progress: true
 ```
+
 :::
 
 ```yaml
@@ -181,12 +183,14 @@ run: pnpx pkg-pr-new publish --pnpm --compact './packages/*' --template './examp
 - **Concurrency グループによる重複排除**: ワークフロー名と PR 番号（またはブランチ ref）を組み合わせたグループで、同一 PR の古い実行を自動キャンセルする。force push 後に二重実行が走ることを防ぐ。
 
 ::: v-pre
+
 ```yaml
 # .github/workflows/pr.yml:6-8
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.number || github.ref }}
   cancel-in-progress: true
 ```
+
 :::
 
 - **パッケージ配布品質の機械的検証**: `publint --strict && attw --pack` により、package.json の exports フィールドとビルド成果物の整合性を機械的に検証する。人間のレビューでは見落としやすい CJS/ESM デュアル配布の問題を自動検出する。
@@ -200,8 +204,8 @@ concurrency:
 
 ```javascript
 // packages/query-core/eslint.config.js
-import rootConfig from './root.eslint.config.js'  // symlink → ../../eslint.config.js
-export default [...rootConfig]
+import rootConfig from "./root.eslint.config.js"; // symlink → ../../eslint.config.js
+export default [...rootConfig];
 ```
 
 ## Anti-Patterns / 注意点

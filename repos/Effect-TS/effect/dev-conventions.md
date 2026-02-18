@@ -24,6 +24,7 @@ Effect-TS/effect は 30 以上のパッケージを擁する大規模 TypeScript
 ESLint flat config で `@effect/eslint-plugin` の `configs.dprint` を展開し、dprint をフォーマッターとして ESLint 経由で実行している。dprint の設定は ESLint ルール `@effect/dprint` のオプションとしてインラインで記述されている。
 
 主要な設定値:
+
 - `semiColons: "asi"` — セミコロンなし
 - `quoteStyle: "alwaysDouble"` — ダブルクォート
 - `trailingCommas: "never"` — 末尾カンマなし
@@ -31,6 +32,7 @@ ESLint flat config で `@effect/eslint-plugin` の `configs.dprint` を展開し
 - `arrowFunction.useParentheses: "force"` — アロー関数の括弧を強制
 
 カスタムルールとして注目すべきもの:
+
 - `no-restricted-syntax` で `Array.push` にスプレッド引数を禁止（パフォーマンス上の理由）
 - `@typescript-eslint/array-type` で `Array<T>` の generic 記法を強制（`T[]` を禁止）
 - `sort-destructure-keys` で分割代入のキーをソート強制
@@ -63,6 +65,7 @@ changeset は `@changesets/changelog-github` で GitHub PR リンク付きの CH
 ### AGENTS.md と scratchpad パターン
 
 AGENTS.md は AI コーディングエージェント向けの指示書として機能し、以下の規約を明文化している:
+
 - `pnpm lint-fix` → `pnpm test run <file>` → `pnpm check` → `pnpm build` → `pnpm docgen` の検証フロー
 - barrel ファイル手動編集禁止、`pnpm codegen` で再生成
 - `it.effect` テストパターンの使用指示
@@ -71,6 +74,7 @@ AGENTS.md は AI コーディングエージェント向けの指示書として
 ### ビルドパイプライン: ESM + CJS デュアル出力
 
 各パッケージのビルドは以下の 4 段階:
+
 1. `build-esm` — `tsc -b` で ESM 出力
 2. `build-annotate` — babel で `annotate-pure-calls` プラグインにより純粋関数呼び出しに `/*#__PURE__*/` アノテーション付与
 3. `build-cjs` — babel で ESM → CJS 変換
@@ -83,6 +87,7 @@ AGENTS.md は AI コーディングエージェント向けの指示書として
 ### コードモッドによる大規模リファクタリング
 
 `scripts/codemods/` に jscodeshift ベースのコードモッドを配置:
+
 - `jsdoc.ts` — エクスポートされた変数宣言の JSDoc コメントを型シグネチャにコピーする（`dual` 関数の型パラメータにも対応）
 - `ts-fence.ts` — JSDoc の `@example` に TypeScript コードフェンスを自動追加
 
@@ -119,26 +124,26 @@ AGENTS.md は AI コーディングエージェント向けの指示書として
 
 ```typescript
 // vitest.shared.ts:1-23
-import * as path from "node:path"
-import type { ViteUserConfig } from "vitest/config"
+import * as path from "node:path";
+import type { ViteUserConfig } from "vitest/config";
 
 const config: ViteUserConfig = {
   esbuild: {
-    target: "es2020"
+    target: "es2020",
   },
   test: {
     setupFiles: [path.join(__dirname, "vitest.setup.ts")],
     fakeTimers: {
-      toFake: undefined
+      toFake: undefined,
     },
     sequence: {
-      concurrent: true
+      concurrent: true,
     },
-    include: ["test/**/*.test.ts"]
-  }
-}
+    include: ["test/**/*.test.ts"],
+  },
+};
 
-export default config
+export default config;
 ```
 
 ```yaml
@@ -150,8 +155,8 @@ export default config
 
 ```typescript
 // packages/effect/test/Array.test.ts:1-14
-import { describe, it } from "@effect/vitest"
-import { assertNone, assertSome, deepStrictEqual, strictEqual, throws } from "@effect/vitest/utils"
+import { describe, it } from "@effect/vitest";
+import { assertNone, assertSome, deepStrictEqual, strictEqual, throws } from "@effect/vitest/utils";
 import {
   Array as Arr,
   Either,
@@ -162,20 +167,20 @@ import {
   Order,
   pipe,
   type Predicate,
-  String as Str
-} from "effect"
+  String as Str,
+} from "effect";
 ```
 
 ```typescript
 // packages/effect/dtslint/Effect.tst.ts:6
-import { describe, expect, it, when } from "tstyche"
+import { describe, expect, it, when } from "tstyche";
 // ...
 it("array", () => {
   expect(Effect.forEach(strings, (a, i) => {
-    expect(a).type.toBe<string>()
-    return string
-  })).type.toBe<Effect.Effect<Array<string>, "err-1", "dep-1">>()
-})
+    expect(a).type.toBe<string>();
+    return string;
+  })).type.toBe<Effect.Effect<Array<string>, "err-1", "dep-1">>();
+});
 ```
 
 ## パターンカタログ
@@ -222,24 +227,24 @@ it("array", () => {
 
 ```typescript
 // Bad
-arr.push(...otherArray)
+arr.push(...otherArray);
 
 // Better
 for (const item of otherArray) {
-  arr.push(item)
+  arr.push(item);
 }
 // or
-Array.prototype.push.apply(arr, otherArray)
+Array.prototype.push.apply(arr, otherArray);
 ```
 
 - **barrel ファイル経由の内部インポート**: ライブラリの `src/` 内から自パッケージの barrel（`from "effect"`）をインポートすると、循環依存やバンドルサイズの肥大化を招く。`@effect/no-import-from-barrel-package` で禁止し、直接パス（`from "./Module.js"`）を強制する。
 
 ```typescript
 // Bad (src/ 内)
-import { Effect } from "effect"
+import { Effect } from "effect";
 
 // Better (src/ 内)
-import * as Effect from "./Effect.js"
+import * as Effect from "./Effect.js";
 ```
 
 ## 導出ルール

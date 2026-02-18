@@ -24,27 +24,27 @@ Vite の依存オプティマイザはコールドスタート時に「スキャ
 // packages/vite/src/node/optimizer/optimizer.ts:196-271
 // スキャンはバックグラウンドで並行実行される
 depsOptimizer.scanProcessing = new Promise((resolve) => {
-  ;(async () => {
+  (async () => {
     try {
       discover = discoverProjectDependencies(
         devToScanEnvironment(environment),
-      )
-      deps = await discover.result
+      );
+      deps = await discover.result;
       // ...
-      optimizationResult = runOptimizeDeps(environment, knownDeps)
+      optimizationResult = runOptimizeDeps(environment, knownDeps);
 
       // holdUntilCrawlEnd 戦略でなければ、スキャン完了時点で結果をブラウザに提供
       if (!holdUntilCrawlEnd) {
         optimizationResult.result.then((result) => {
-          if (!waitingForCrawlEnd) return
-          runOptimizer(result)
-        })
+          if (!waitingForCrawlEnd) return;
+          runOptimizer(result);
+        });
       }
     } finally {
-      resolve()
+      resolve();
     }
-  })()
-})
+  })();
+});
 ```
 
 `holdUntilCrawlEnd` オプション（デフォルト `true`）により、静的インポートのクロールが完了するまでバンドル結果の確定を遅延させ、フルページリロードを回避する。スキャナが見逃した依存が後から発見された場合でも、debounce（100ms）で batch 化して再バンドルを一度で済ませる。
@@ -53,27 +53,27 @@ depsOptimizer.scanProcessing = new Promise((resolve) => {
 
 ```typescript
 // packages/vite/src/node/server/transformRequest.ts:109-146
-const pending = environment._pendingRequests.get(url)
+const pending = environment._pendingRequests.get(url);
 if (pending) {
   return environment.moduleGraph.getModuleByUrl(url).then((module) => {
     if (!module || pending.timestamp > module.lastInvalidationTimestamp) {
       // 保留中のリクエストがまだ有効 → 結果を再利用
-      return pending.request
+      return pending.request;
     } else {
       // 保留中のリクエストが無効化された → キャッシュを破棄して再処理
-      pending.abort()
-      return transformRequest(environment, url, options)
+      pending.abort();
+      return transformRequest(environment, url, options);
     }
-  })
+  });
 }
 
-const request = doTransform(environment, url, options, timestamp)
+const request = doTransform(environment, url, options, timestamp);
 environment._pendingRequests.set(url, {
   request,
   timestamp,
   abort: clearCache,
-})
-return request.finally(clearCache)
+});
+return request.finally(clearCache);
 ```
 
 同一 URL への並行リクエストは `_pendingRequests` Map で追跡され、先行リクエストの Promise を返すことで重複変換を防ぐ。ただし、無効化タイムスタンプとの比較により、古い結果を誤ってキャッシュしない安全性を確保している。
@@ -85,21 +85,21 @@ return request.finally(clearCache)
 // 第1層: ETag による即時 304 応答（ミドルウェアチェーンを短絡）
 export function cachedTransformMiddleware(server: ViteDevServer) {
   return function viteCachedTransformMiddleware(req, res, next) {
-    const ifNoneMatch = req.headers['if-none-match']
+    const ifNoneMatch = req.headers["if-none-match"];
     if (ifNoneMatch) {
-      const moduleByEtag = environment.moduleGraph.getModuleByEtag(ifNoneMatch)
+      const moduleByEtag = environment.moduleGraph.getModuleByEtag(ifNoneMatch);
       if (moduleByEtag?.transformResult?.etag === ifNoneMatch) {
-        res.statusCode = 304
-        return res.end()
+        res.statusCode = 304;
+        return res.end();
       }
     }
-    next()
-  }
+    next();
+  };
 }
 
 // packages/vite/src/node/server/middlewares/transform.ts:259-263
 // 第2層: 最適化済み依存は immutable キャッシュヘッダ
-cacheControl: isDep ? 'max-age=31536000,immutable' : 'no-cache'
+cacheControl: isDep ? "max-age=31536000,immutable" : "no-cache";
 ```
 
 `etagToModuleMap` により ETag からモジュールへの O(1) 逆引きを可能にし、`cachedTransformMiddleware` を変換ミドルウェアの前に配置して 304 応答を高速に返す。プリバンドル済み依存にはバージョンハッシュ付き URL で `immutable` キャッシュを適用する。
@@ -108,22 +108,22 @@ cacheControl: isDep ? 'max-age=31536000,immutable' : 'no-cache'
 
 ```typescript
 // packages/vite/src/node/plugins/index.ts:200-241
-const filterForPlugin = new WeakMap<Plugin, FilterForPluginValue>()
+const filterForPlugin = new WeakMap<Plugin, FilterForPluginValue>();
 
 export function getCachedFilterForPlugin<
-  H extends 'resolveId' | 'load' | 'transform',
+  H extends "resolveId" | "load" | "transform",
 >(plugin: Plugin, hookName: H): FilterForPluginValue[H] | undefined {
-  let filters = filterForPlugin.get(plugin)
+  let filters = filterForPlugin.get(plugin);
   if (filters && hookName in filters) {
-    return filters[hookName]  // キャッシュ済みフィルタを返す
+    return filters[hookName]; // キャッシュ済みフィルタを返す
   }
   // ... フィルタを初回のみ構築し WeakMap にキャッシュ
 }
 
 // packages/vite/src/node/server/pluginContainer.ts:398-399
 // resolveId ループ内でフィルタを適用し、不要なプラグイン呼び出しをスキップ
-const filter = getCachedFilterForPlugin(plugin, 'resolveId')
-if (filter && !filter(rawId)) continue
+const filter = getCachedFilterForPlugin(plugin, "resolveId");
+if (filter && !filter(rawId)) continue;
 ```
 
 各プラグインの `filter` 宣言（ID パターン、コード内容、モジュールタイプ）を WeakMap にキャッシュし、フックのループ内で早期スキップする。プラグイン数が多い大規模プロジェクトでの transform パイプラインの高速化に寄与する。
@@ -156,13 +156,13 @@ HMR 時に変更されたモジュールの直接のインポーターは「ソ�
 
 ```typescript
 // packages/vite/src/node/cli.ts:214
-const { createServer } = await import('./server')
+const { createServer } = await import("./server");
 
 // packages/vite/src/node/cli.ts:348
-const { createBuilder } = await import('./build')
+const { createBuilder } = await import("./build");
 
 // packages/vite/src/node/cli.ts:441
-const { preview } = await import('./preview')
+const { preview } = await import("./preview");
 ```
 
 CLI エントリは各サブコマンドの実装を動的インポートで遅延ロードする。`vite dev` 実行時に `build` や `preview` のモジュール解析・評価コストを負わない。Node.js 起動時間に直結するパターン。
@@ -171,12 +171,12 @@ CLI エントリは各サブコマンドの実装を動的インポートで遅�
 
 ```typescript
 // packages/vite/src/node/server/transformRequest.ts:263,352
-const loadStart = debugLoad ? performance.now() : 0
+const loadStart = debugLoad ? performance.now() : 0;
 // ...
-const transformStart = debugTransform ? performance.now() : 0
+const transformStart = debugTransform ? performance.now() : 0;
 
 // packages/vite/src/node/server/pluginContainer.ts:390,433
-const resolveStart = debugResolve ? performance.now() : 0
+const resolveStart = debugResolve ? performance.now() : 0;
 ```
 
 `createDebugger()` は DEBUG 環境変数が設定されていないとき `undefined` を返す。`debugLoad ? performance.now() : 0` により、デバッグ無効時は `performance.now()` 呼び出し自体を回避する。`debug?.()` のオプショナルチェーンも同様にゼロコスト化する。
@@ -188,16 +188,16 @@ const resolveStart = debugResolve ? performance.now() : 0
 export function warmupFiles(server, environment): void {
   mapFiles(environment.config.dev.warmup, root).then((files) => {
     for (const file of files) {
-      warmupFile(server, environment, file)
+      warmupFile(server, environment, file);
     }
-  })
+  });
 }
 
 // packages/vite/src/node/plugins/importAnalysis.ts:675-684
 // 静的インポートを発見した時点で先行変換
 if (!isDynamicImport && isLocalImport && environment.config.dev.preTransformRequests) {
-  const url = removeImportQuery(hmrUrl)
-  environment.warmupRequest(url)
+  const url = removeImportQuery(hmrUrl);
+  environment.warmupRequest(url);
 }
 ```
 
@@ -223,15 +223,14 @@ if (!isDynamicImport && isLocalImport && environment.config.dev.preTransformRequ
 
 ```typescript
 // packages/vite/src/node/server/transformRequest.ts:246-247
-const prettyUrl =
-  debugLoad || debugTransform ? prettifyUrl(url, config.root) : ''
+const prettyUrl = debugLoad || debugTransform ? prettifyUrl(url, config.root) : "";
 ```
 
 - **WeakMap によるプラグインフィルタのキャッシュ**: プラグインオブジェクトをキーとした WeakMap でフィルタ関数をキャッシュし、プラグインが GC されればフィルタも自動回収される。ホットパスでのフィルタ再構築を避けつつ、メモリリークも防ぐ。
 
 ```typescript
 // packages/vite/src/node/plugins/index.ts:200
-const filterForPlugin = new WeakMap<Plugin, FilterForPluginValue>()
+const filterForPlugin = new WeakMap<Plugin, FilterForPluginValue>();
 ```
 
 - **Debounce による依存発見の batch 化**: 新しい依存が発見されるたびに即座に再バンドルせず、100ms の debounce で追加の依存発見を待つ。これにより、短時間に複数の依存が発見される典型的なコールドスタートで再バンドル回数を最小化する。
@@ -239,14 +238,14 @@ const filterForPlugin = new WeakMap<Plugin, FilterForPluginValue>()
 ```typescript
 // packages/vite/src/node/optimizer/optimizer.ts:615-628
 function debouncedProcessing(timeout = debounceMs) {
-  if (debounceProcessingHandle) clearTimeout(debounceProcessingHandle)
+  if (debounceProcessingHandle) clearTimeout(debounceProcessingHandle);
   debounceProcessingHandle = setTimeout(() => {
-    debounceProcessingHandle = undefined
-    enqueuedRerun = rerun
+    debounceProcessingHandle = undefined;
+    enqueuedRerun = rerun;
     if (!currentlyProcessing) {
-      enqueuedRerun()
+      enqueuedRerun();
     }
-  }, timeout)
+  }, timeout);
 }
 ```
 
@@ -256,17 +255,17 @@ function debouncedProcessing(timeout = debounceMs) {
 
 ```typescript
 // Bad: 無効化を考慮しない
-const pending = pendingRequests.get(url)
-if (pending) return pending.request
+const pending = pendingRequests.get(url);
+if (pending) return pending.request;
 
 // Better: タイムスタンプで無効化を検出（Vite の実装）
 if (pending) {
-  const module = await moduleGraph.getModuleByUrl(url)
+  const module = await moduleGraph.getModuleByUrl(url);
   if (!module || pending.timestamp > module.lastInvalidationTimestamp) {
-    return pending.request  // まだ有効
+    return pending.request; // まだ有効
   } else {
-    pending.abort()  // 無効化された → 再処理
-    return transformRequest(url)
+    pending.abort(); // 無効化された → 再処理
+    return transformRequest(url);
   }
 }
 ```

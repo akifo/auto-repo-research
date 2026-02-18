@@ -23,13 +23,13 @@ Vite のコードベースは、単一パッケージ内で「ブラウザ向け
 
 `src/` 直下は5つのディレクトリに分かれ、それぞれ異なるランタイムターゲットを持つ:
 
-| ディレクトリ | ランタイム | ビルドエントリ |
-|---|---|---|
-| `client/` | ブラウザ (ES2020) | `dist/client/client.mjs`, `dist/client/env.mjs` |
-| `node/` | Node.js (ES2023) | `dist/node/index.js`, `dist/node/cli.js`, `dist/node/internal.js` |
-| `module-runner/` | ランタイム非依存 | `dist/node/module-runner.js` |
-| `shared/` | ランタイム非依存 | (他バンドルに含まれる) |
-| `types/` | 型のみ | なし |
+| ディレクトリ     | ランタイム        | ビルドエントリ                                                    |
+| ---------------- | ----------------- | ----------------------------------------------------------------- |
+| `client/`        | ブラウザ (ES2020) | `dist/client/client.mjs`, `dist/client/env.mjs`                   |
+| `node/`          | Node.js (ES2023)  | `dist/node/index.js`, `dist/node/cli.js`, `dist/node/internal.js` |
+| `module-runner/` | ランタイム非依存  | `dist/node/module-runner.js`                                      |
+| `shared/`        | ランタイム非依存  | (他バンドルに含まれる)                                            |
+| `types/`         | 型のみ            | なし                                                              |
 
 依存方向は厳密に一方向で、`shared/` が最下層に位置する:
 
@@ -45,24 +45,19 @@ client/ (独立、shared/ を参照しない)
 
 ```typescript
 // packages/vite/src/node/index.ts:26-36
-export {
-  defineConfig,
-  loadConfigFromFile,
-  resolveConfig,
-  sortUserPlugins,
-} from './config'
-export { perEnvironmentPlugin } from './plugin'
-export { perEnvironmentState } from './environment'
-export { createServer } from './server'
-export { preview } from './preview'
-export { build, createBuilder } from './build'
+export { build, createBuilder } from "./build";
+export { defineConfig, loadConfigFromFile, resolveConfig, sortUserPlugins } from "./config";
+export { perEnvironmentState } from "./environment";
+export { perEnvironmentPlugin } from "./plugin";
+export { preview } from "./preview";
+export { createServer } from "./server";
 ```
 
 `index.ts` (289行) は公開 API の列挙に専念し、`internalIndex.ts` (1行) は内部専用エクスポートを分離する:
 
 ```typescript
 // packages/vite/src/node/internalIndex.ts:1
-export { viteReactRefreshWrapperPlugin as reactRefreshWrapperPlugin } from 'rolldown/experimental'
+export { viteReactRefreshWrapperPlugin as reactRefreshWrapperPlugin } from "rolldown/experimental";
 ```
 
 これらは `package.json` の `exports` で異なるエントリポイントにマッピングされる:
@@ -95,17 +90,17 @@ peer dependency の型を薄いラッパーファイルで包む:
 
 ```typescript
 // packages/vite/src/types/alias.d.ts:30-31
-import type { FunctionPluginHooks } from 'rolldown'
+import type { FunctionPluginHooks } from "rolldown";
 export interface Alias {
-  find: string | RegExp
-  replacement: string
+  find: string | RegExp;
+  replacement: string;
 }
 ```
 
 ```typescript
 // packages/vite/types/internal/esbuildOptions.d.ts:4
 // @ts-ignore `esbuild` may not be installed
-import type esbuild from 'esbuild'
+import type esbuild from "esbuild";
 ```
 
 `@ts-ignore` で peer dependency が未インストールでもコンパイルを通す。これにより、esbuild や terser が optional でも Vite 本体の型チェックが破綻しない。
@@ -116,18 +111,14 @@ import type esbuild from 'esbuild'
 
 ```typescript
 // packages/vite/src/node/server/environment.ts:5-9
-import type {
-  EnvironmentOptions,
-  ResolvedConfig,
-  ResolvedEnvironmentOptions,
-} from '../config'
+import type { EnvironmentOptions, ResolvedConfig, ResolvedEnvironmentOptions } from "../config";
 ```
 
 値と型を混合する場合は inline type import を使用:
 
 ```typescript
 // packages/vite/src/node/server/environment.ts:39
-import { type WebSocketServer, isWebSocketServer } from './ws'
+import { isWebSocketServer, type WebSocketServer } from "./ws";
 ```
 
 ### プラグインの1ファイル=1関心事パターン
@@ -229,8 +220,8 @@ return [
 ```typescript
 // packages/vite/types/internal/esbuildOptions.d.ts:3-4
 // @ts-ignore `esbuild` may not be installed
-import type esbuild from 'esbuild'
-export type EsbuildTransformOptions = esbuild.TransformOptions
+import type esbuild from "esbuild";
+export type EsbuildTransformOptions = esbuild.TransformOptions;
 ```
 
 - **条件分岐を配列 + filter で表現するプラグイン合成**: `plugins/index.ts` では `null` を返す三項演算子と `.filter(Boolean)` を組み合わせて、条件付きプラグインを宣言的に合成する。if-else のネストより読みやすく、順序の意図が明確になる。
@@ -244,7 +235,7 @@ return [
   ...normalPlugins,
   ...postPlugins,
   ...(isBundled ? [] : [clientInjectionsPlugin(config)]),
-].filter(Boolean) as Plugin[]
+].filter(Boolean) as Plugin[];
 ```
 
 ## Anti-Patterns / 注意点

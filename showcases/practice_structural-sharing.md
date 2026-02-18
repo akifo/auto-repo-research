@@ -21,48 +21,48 @@ React の `useSyncExternalStore` や仮想 DOM 差分検出は参照比較 (`===
 // packages/query-core/src/utils.ts:267-314
 export function replaceEqualDeep(a: any, b: any, depth = 0): any {
   if (a === b) {
-    return a
+    return a;
   }
 
-  if (depth > 500) return b
+  if (depth > 500) return b;
 
-  const array = isPlainArray(a) && isPlainArray(b)
+  const array = isPlainArray(a) && isPlainArray(b);
 
-  if (!array && !(isPlainObject(a) && isPlainObject(b))) return b
+  if (!array && !(isPlainObject(a) && isPlainObject(b))) return b;
 
-  const aItems = array ? a : Object.keys(a)
-  const aSize = aItems.length
-  const bItems = array ? b : Object.keys(b)
-  const bSize = bItems.length
-  const copy: any = array ? new Array(bSize) : {}
+  const aItems = array ? a : Object.keys(a);
+  const aSize = aItems.length;
+  const bItems = array ? b : Object.keys(b);
+  const bSize = bItems.length;
+  const copy: any = array ? new Array(bSize) : {};
 
-  let equalItems = 0
+  let equalItems = 0;
 
   for (let i = 0; i < bSize; i++) {
-    const key: any = array ? i : bItems[i]
-    const aItem = a[key]
-    const bItem = b[key]
+    const key: any = array ? i : bItems[i];
+    const aItem = a[key];
+    const bItem = b[key];
 
     if (aItem === bItem) {
-      copy[key] = aItem
-      if (array ? i < aSize : hasOwn.call(a, key)) equalItems++
-      continue
+      copy[key] = aItem;
+      if (array ? i < aSize : hasOwn.call(a, key)) equalItems++;
+      continue;
     }
     // null やプリミティブは再帰せず即座に新しい値を採用
     if (
-      aItem === null || bItem === null ||
-      typeof aItem !== 'object' || typeof bItem !== 'object'
+      aItem === null || bItem === null
+      || typeof aItem !== "object" || typeof bItem !== "object"
     ) {
-      copy[key] = bItem
-      continue
+      copy[key] = bItem;
+      continue;
     }
 
-    const v = replaceEqualDeep(aItem, bItem, depth + 1)
-    copy[key] = v
-    if (v === aItem) equalItems++
+    const v = replaceEqualDeep(aItem, bItem, depth + 1);
+    copy[key] = v;
+    if (v === aItem) equalItems++;
   }
 
-  return aSize === bSize && equalItems === aSize ? a : copy
+  return aSize === bSize && equalItems === aSize ? a : copy;
 }
 ```
 
@@ -71,14 +71,16 @@ export function replaceEqualDeep(a: any, b: any, depth = 0): any {
 ```typescript
 // packages/query-core/src/utils.ts:382-405
 export function replaceData<TData, TOptions extends QueryOptions<any, any, any, any>>(
-  prevData: TData | undefined, data: TData, options: TOptions,
+  prevData: TData | undefined,
+  data: TData,
+  options: TOptions,
 ): TData {
-  if (typeof options.structuralSharing === 'function') {
-    return options.structuralSharing(prevData, data) as TData
+  if (typeof options.structuralSharing === "function") {
+    return options.structuralSharing(prevData, data) as TData;
   } else if (options.structuralSharing !== false) {
-    return replaceEqualDeep(prevData, data)
+    return replaceEqualDeep(prevData, data);
   }
-  return data
+  return data;
 }
 ```
 
@@ -108,7 +110,7 @@ React 統合層では `notifyOnChangeProps` が未指定のとき自動的に `t
 // packages/react-query/src/useBaseQuery.ts:167-169
 return !defaultedOptions.notifyOnChangeProps
   ? observer.trackResult(result)
-  : result
+  : result;
 ```
 
 通知判定では、`#trackedProps` に含まれるプロパティだけを比較し、使用されていないプロパティの変更は無視する。
@@ -116,18 +118,18 @@ return !defaultedOptions.notifyOnChangeProps
 ```typescript
 // packages/query-core/src/queryObserver.ts:662-694
 const shouldNotifyListeners = (): boolean => {
-  if (!prevResult) { return true }
-  const { notifyOnChangeProps } = this.options
+  if (!prevResult) return true;
+  const { notifyOnChangeProps } = this.options;
   // ...
   const includedProps = new Set(
     notifyOnChangePropsValue ?? this.#trackedProps,
-  )
+  );
   return Object.keys(this.#currentResult).some((key) => {
-    const typedKey = key as keyof QueryObserverResult
-    const changed = this.#currentResult[typedKey] !== prevResult[typedKey]
-    return changed && includedProps.has(typedKey)
-  })
-}
+    const typedKey = key as keyof QueryObserverResult;
+    const changed = this.#currentResult[typedKey] !== prevResult[typedKey];
+    return changed && includedProps.has(typedKey);
+  });
+};
 ```
 
 ### 第3層: NotifyManager.batch によるバッチ通知
@@ -137,25 +139,25 @@ const shouldNotifyListeners = (): boolean => {
 ```typescript
 // packages/query-core/src/notifyManager.ts:17-64
 export function createNotifyManager() {
-  let queue: Array<NotifyCallback> = []
-  let transactions = 0
+  let queue: Array<NotifyCallback> = [];
+  let transactions = 0;
   // ...
   return {
     batch: <T>(callback: () => T): T => {
-      let result
-      transactions++
+      let result;
+      transactions++;
       try {
-        result = callback()
+        result = callback();
       } finally {
-        transactions--
+        transactions--;
         if (!transactions) {
-          flush()
+          flush();
         }
       }
-      return result
+      return result;
     },
     // ...
-  }
+  };
 }
 ```
 
@@ -165,10 +167,10 @@ export function createNotifyManager() {
 // packages/query-core/src/query.ts:680-686
 notifyManager.batch(() => {
   this.observers.forEach((observer) => {
-    observer.onQueryUpdate()
-  })
-  this.#cache.notify({ query: this, type: 'updated', action })
-})
+    observer.onQueryUpdate();
+  });
+  this.#cache.notify({ query: this, type: "updated", action });
+});
 ```
 
 ## Good Example
@@ -178,9 +180,9 @@ notifyManager.batch(() => {
 ```typescript
 // Good: デフォルトのまま使う = 全最適化が有効
 const { data, isLoading } = useQuery({
-  queryKey: ['todos'],
+  queryKey: ["todos"],
   queryFn: fetchTodos,
-})
+});
 // 1. replaceEqualDeep: レスポンスの変更されていない部分は前回の参照を再利用
 // 2. trackResult: data と isLoading のみ追跡。error や fetchStatus の変更では再レンダリングしない
 // 3. batch: 同時に複数の Query が更新されても 1 回の再レンダリングにまとめられる
@@ -189,20 +191,20 @@ const { data, isLoading } = useQuery({
 const selectDone = useCallback(
   (data: Todo[]) => data.filter((t) => t.done),
   [],
-)
+);
 const { data } = useQuery({
-  queryKey: ['todos'],
+  queryKey: ["todos"],
   queryFn: fetchTodos,
   select: selectDone,
-})
+});
 // select の結果にもさらに replaceEqualDeep が適用され、二重の参照安定化が機能する
 
 // Good: Map や Date を含むデータでは structuralSharing を無効化
 const { data } = useQuery({
-  queryKey: ['events'],
+  queryKey: ["events"],
   queryFn: fetchEvents,
   structuralSharing: false,
-})
+});
 ```
 
 ## Bad Example
@@ -212,21 +214,21 @@ const { data } = useQuery({
 ```typescript
 // Bad: 全プロパティの変更で再レンダリング
 const { data } = useQuery({
-  queryKey: ['todos'],
+  queryKey: ["todos"],
   queryFn: fetchTodos,
-  notifyOnChangeProps: 'all', // Proxy 追跡を無効化し、isFetching の変更でも再レンダリングが走る
-})
+  notifyOnChangeProps: "all", // Proxy 追跡を無効化し、isFetching の変更でも再レンダリングが走る
+});
 
 // Bad: select に毎レンダリングで新しい関数参照を渡す
 const { data } = useQuery({
-  queryKey: ['todos'],
+  queryKey: ["todos"],
   queryFn: fetchTodos,
   select: (data) => data.filter((t) => t.done), // 毎回新しい参照 → メモ化が無効
-})
+});
 
 // Bad: Observer への通知をバッチ化せず個別に行う（自作ストアの場合）
-observers.forEach((observer) => observer.onUpdate()) // N 回の再レンダリング
-cache.notify({ type: 'updated' })                    // さらにもう 1 回
+observers.forEach((observer) => observer.onUpdate()); // N 回の再レンダリング
+cache.notify({ type: "updated" }); // さらにもう 1 回
 ```
 
 ## 適用ガイド

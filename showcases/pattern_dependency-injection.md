@@ -13,13 +13,13 @@ DI は「構築と利用の分離」を実現する設計原則だが、TypeScri
 
 調査した 5 リポジトリは、DI の重さと型安全性のスペクトラム上で異なる位置に立つ:
 
-| リポジトリ | DI アプローチ | 型安全性 | 適用規模 |
-|---|---|---|---|
-| honojs/hono | DI なし（Web API 境界モック） | - | 小〜中 |
-| TanStack/query | 関数引数ベース DI | 静的型付き | 中 |
-| openclaw/openclaw | 遅延プロキシ DI コンテナ | 静的型付き | 中〜大 |
-| mastra-ai/mastra | プッシュ型 DI Hub | 静的型付き | 大 |
-| Effect-TS/effect | 型レベル DI（Layer/Tag） | コンパイル時保証 | 大 |
+| リポジトリ        | DI アプローチ                 | 型安全性         | 適用規模 |
+| ----------------- | ----------------------------- | ---------------- | -------- |
+| honojs/hono       | DI なし（Web API 境界モック） | -                | 小〜中   |
+| TanStack/query    | 関数引数ベース DI             | 静的型付き       | 中       |
+| openclaw/openclaw | 遅延プロキシ DI コンテナ      | 静的型付き       | 中〜大   |
+| mastra-ai/mastra  | プッシュ型 DI Hub             | 静的型付き       | 大       |
+| Effect-TS/effect  | 型レベル DI（Layer/Tag）      | コンパイル時保証 | 大       |
 
 ## 実装パターン
 
@@ -30,12 +30,12 @@ DI は「構築と利用の分離」を実現する設計原則だが、TypeScri
 ```typescript
 // packages/react-query/src/useQuery.ts:50-52
 export function useQuery(options: UseQueryOptions, queryClient?: QueryClient) {
-  return useBaseQuery(options, QueryObserver, queryClient)
+  return useBaseQuery(options, QueryObserver, queryClient);
 }
 
 // packages/react-query/src/useInfiniteQuery.ts
 export function useInfiniteQuery(options, queryClient) {
-  return useBaseQuery(options, InfiniteQueryObserver, queryClient)
+  return useBaseQuery(options, InfiniteQueryObserver, queryClient);
 }
 ```
 
@@ -90,19 +90,21 @@ mastraAgent.__registerPrimitives({
 ```typescript
 // packages/effect/src/Effect.ts:13556-13572
 class Prefix extends Effect.Service<Prefix>()("Prefix", {
-  sync: () => ({ prefix: "PRE" })
+  sync: () => ({ prefix: "PRE" }),
 }) {}
 
 class Logger extends Effect.Service<Logger>()("Logger", {
   accessors: true,
-  effect: Effect.gen(function* () {
-    const { prefix } = yield* Prefix
+  effect: Effect.gen(function*() {
+    const { prefix } = yield* Prefix;
     return {
       info: (message: string) =>
-        Effect.sync(() => { console.log(`[${prefix}][${message}]`) })
-    }
+        Effect.sync(() => {
+          console.log(`[${prefix}][${message}]`);
+        }),
+    };
   }),
-  dependencies: [Prefix.Default]
+  dependencies: [Prefix.Default],
 }) {}
 ```
 
@@ -110,11 +112,11 @@ Layer は DAG（有向非巡回グラフ）を形成し、`merge`（並列合成
 
 ```typescript
 // packages/effect/test/Layer.test.ts:77-85
-const layer = makeLayer1(ref)
-const env = layer.pipe(Layer.merge(layer), Layer.build)
-yield* Effect.scoped(env)
-const result = yield* Ref.get(ref)
-deepStrictEqual(Array.from(result), [acquire1, release1]) // 1回だけ
+const layer = makeLayer1(ref);
+const env = layer.pipe(Layer.merge(layer), Layer.build);
+yield * Effect.scoped(env);
+const result = yield * Ref.get(ref);
+deepStrictEqual(Array.from(result), [acquire1, release1]); // 1回だけ
 ```
 
 ## Good Example
@@ -126,12 +128,12 @@ deepStrictEqual(Array.from(result), [acquire1, release1]) // 1回だけ
 ```typescript
 // packages/effect/test/Effect/environment.test.ts:37-48
 class DateTag extends Effect.Tag("DateTag")<DateTag, Date>() {
-  static date = new Date(1970, 1, 1)
-  static Live = Layer.succeed(this, this.date)
+  static date = new Date(1970, 1, 1);
+  static Live = Layer.succeed(this, this.date);
 }
 
 class NumberTag extends Effect.Tag("NumberTag")<NumberTag, number>() {
-  static Live = Layer.succeed(this, 100)
+  static Live = Layer.succeed(this, 100);
 }
 ```
 
@@ -151,7 +153,7 @@ DI コンテナもデコレータも不要。関数の引数としてクラス�
 ```typescript
 // packages/react-query/src/useQuery.ts:50-52
 export function useQuery(options, queryClient?) {
-  return useBaseQuery(options, QueryObserver, queryClient)
+  return useBaseQuery(options, QueryObserver, queryClient);
 }
 // useInfiniteQuery は InfiniteQueryObserver を注入するだけ
 ```
@@ -164,8 +166,8 @@ export function useQuery(options, queryClient?) {
 
 ```typescript
 // Bad: 同じキーで異なる型 — 実行時に区別できない
-const NumberTag = Context.GenericTag<number>("config")
-const StringTag = Context.GenericTag<string>("config")
+const NumberTag = Context.GenericTag<number>("config");
+const StringTag = Context.GenericTag<string>("config");
 
 // Better: クラスベースの Tag を使い、型の一意性を保証
 class NumberConfig extends Context.Tag("NumberConfig")<NumberConfig, number>() {}
@@ -199,14 +201,14 @@ beforeAll(() => {
 // Bad: fresh で DB 接続プールが2つ作られる
 const app = myService.pipe(
   Layer.provide(Layer.fresh(dbLayer)),
-  Layer.merge(otherService.pipe(Layer.provide(Layer.fresh(dbLayer))))
-)
+  Layer.merge(otherService.pipe(Layer.provide(Layer.fresh(dbLayer)))),
+);
 
 // Better: デフォルトのメモ化を活用
 const app = myService.pipe(
   Layer.provide(dbLayer),
-  Layer.merge(otherService.pipe(Layer.provide(dbLayer)))
-)
+  Layer.merge(otherService.pipe(Layer.provide(dbLayer))),
+);
 ```
 
 ## 適用ガイド

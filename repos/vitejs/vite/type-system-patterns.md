@@ -34,15 +34,9 @@ Vite は型を3つのレイヤーに分離している:
 
 ```typescript
 // packages/vite/src/node/index.ts:270-286 — dep-types の再エクスポート
-export type {
-  AliasOptions,
-  MapToFunction,
-  ResolverFunction,
-  ResolverObject,
-  Alias,
-} from '#dep-types/alias'
-export type { Connect } from '#dep-types/connect'
-export type { WebSocket, WebSocketAlias } from '#dep-types/ws'
+export type { Alias, AliasOptions, MapToFunction, ResolverFunction, ResolverObject } from "#dep-types/alias";
+export type { Connect } from "#dep-types/connect";
+export type { WebSocket, WebSocketAlias } from "#dep-types/ws";
 ```
 
 ### `@internal` による公開 API 制御
@@ -52,26 +46,26 @@ export type { WebSocket, WebSocketAlias } from '#dep-types/ws'
 ```typescript
 // packages/vite/src/node/server/moduleGraph.ts:49-50
 /** @internal */
-lastHMRInvalidationReceived = false
+lastHMRInvalidationReceived = false;
 ```
 
 ```typescript
 // packages/vite/rolldown.dts.config.ts:384-404
 function removeInternal(s: MagicString, node: any): boolean {
   if (
-    node.leadingComments &&
-    node.leadingComments.some((c: any) => {
-      return c.type === 'CommentBlock' && c.value.includes('@internal')
+    node.leadingComments
+    && node.leadingComments.some((c: any) => {
+      return c.type === "CommentBlock" && c.value.includes("@internal");
     })
   ) {
     // strip trailing comma or pipe
-    const trailingRe = /\s*[,|]/y
-    trailingRe.lastIndex = node.end
-    const trailingStr = trailingRe.exec(s.original)?.[0] ?? ''
-    s.remove(node.leadingComments[0].start, node.end + trailingStr.length)
-    return true
+    const trailingRe = /\s*[,|]/y;
+    trailingRe.lastIndex = node.end;
+    const trailingStr = trailingRe.exec(s.original)?.[0] ?? "";
+    s.remove(node.leadingComments[0].start, node.end + trailingStr.length);
+    return true;
   }
-  return false
+  return false;
 }
 ```
 
@@ -83,7 +77,7 @@ Vite は `declare module` を3つの目的で使っている:
 
 ```typescript
 // packages/vite/src/node/plugin.ts:86-89
-declare module 'rolldown' {
+declare module "rolldown" {
   export interface MinimalPluginContext extends PluginContextExtension {}
   export interface PluginContextMeta extends PluginContextMetaExtension {}
 }
@@ -93,12 +87,12 @@ declare module 'rolldown' {
 
 ```typescript
 // packages/vite/types/metadata.d.ts:32-47
-declare module 'rolldown' {
+declare module "rolldown" {
   export interface OutputAsset {
-    viteMetadata?: AssetMetadata
+    viteMetadata?: AssetMetadata;
   }
   export interface RenderedChunk {
-    viteMetadata?: ChunkMetadata
+    viteMetadata?: ChunkMetadata;
   }
 }
 ```
@@ -111,15 +105,14 @@ declare module 'rolldown' {
 
 ```typescript
 // packages/vite/types/customEvent.d.ts:46-47
-export type InferCustomEventPayload<T extends string> =
-  T extends keyof CustomEventMap ? CustomEventMap[T] : any
+export type InferCustomEventPayload<T extends string> = T extends keyof CustomEventMap ? CustomEventMap[T] : any;
 ```
 
 `HookHandler<T>` は `ObjectHook<H>` ラッパーから内部ハンドラ型を抽出する。
 
 ```typescript
 // packages/vite/src/node/plugin.ts:373
-export type HookHandler<T> = T extends ObjectHook<infer H> ? H : T
+export type HookHandler<T> = T extends ObjectHook<infer H> ? H : T;
 ```
 
 `ImportGlobFunction` はジェネリクスと条件型で `eager` フラグに応じて同期/非同期の戻り値型を切り替える。
@@ -146,15 +139,14 @@ export type HookHandler<T> = T extends ObjectHook<infer H> ? H : T
 // packages/vite/types/importMeta.d.ts:7-14
 interface ViteTypeOptions {}
 
-type ImportMetaEnvFallbackKey =
-  'strictImportMetaEnv' extends keyof ViteTypeOptions ? never : string
+type ImportMetaEnvFallbackKey = "strictImportMetaEnv" extends keyof ViteTypeOptions ? never : string;
 
 interface ImportMetaEnv extends Record<ImportMetaEnvFallbackKey, any> {
-  BASE_URL: string
-  MODE: string
-  DEV: boolean
-  PROD: boolean
-  SSR: boolean
+  BASE_URL: string;
+  MODE: string;
+  DEV: boolean;
+  PROD: boolean;
+  SSR: boolean;
 }
 ```
 
@@ -183,15 +175,17 @@ default:
 
 ```typescript
 // packages/vite/src/node/config.ts:264-272
-export type ResolvedDevEnvironmentOptions = Omit<
-  Required<DevEnvironmentOptions>,
-  'sourcemapIgnoreList'
-> & {
-  sourcemapIgnoreList: Exclude<
-    DevEnvironmentOptions['sourcemapIgnoreList'],
-    false | undefined
+export type ResolvedDevEnvironmentOptions =
+  & Omit<
+    Required<DevEnvironmentOptions>,
+    "sourcemapIgnoreList"
   >
-}
+  & {
+    sourcemapIgnoreList: Exclude<
+      DevEnvironmentOptions["sourcemapIgnoreList"],
+      false | undefined
+    >;
+  };
 ```
 
 ```typescript
@@ -210,12 +204,12 @@ export interface ResolvedConfig extends Readonly<
 
 ```typescript
 // packages/vite/types/customEvent.d.ts:52
-export type CustomEventName = keyof CustomEventMap | (string & {})
+export type CustomEventName = keyof CustomEventMap | (string & {});
 ```
 
 ```typescript
 // packages/vite/src/node/server/index.ts:301
-environments: Record<'client' | 'ssr' | (string & {}), DevEnvironment>
+environments: Record<"client" | "ssr" | (string & {}), DevEnvironment>;
 ```
 
 `string & {}` により、IDE の自動補完で既知のリテラル候補を提示しつつ、任意の文字列も受け付ける。
@@ -226,26 +220,17 @@ environments: Record<'client' | 'ssr' | (string & {}), DevEnvironment>
 
 ```typescript
 // packages/vite/src/node/utils.ts:1176-1195
-type MergeWithDefaultsResult<D, V> =
-  Equal<D, undefined> extends true
-    ? V
-    : D extends Function | Array<any>
-      ? MaybeFallback<D, V>
-      : V extends Function | Array<any>
-        ? MaybeFallback<D, V>
-        : D extends Record<string, any>
-          ? V extends Record<string, any>
-            ? {
-                [K in keyof D | keyof V]: K extends keyof D
-                  ? K extends keyof V
-                    ? MergeWithDefaultsResult<D[K], V[K]>
-                    : D[K]
-                  : K extends keyof V
-                    ? V[K]
-                    : never
-              }
-            : MaybeFallback<D, V>
-          : MaybeFallback<D, V>
+type MergeWithDefaultsResult<D, V> = Equal<D, undefined> extends true ? V
+  : D extends Function | Array<any> ? MaybeFallback<D, V>
+  : V extends Function | Array<any> ? MaybeFallback<D, V>
+  : D extends Record<string, any> ? V extends Record<string, any> ? {
+        [K in keyof D | keyof V]: K extends keyof D ? K extends keyof V ? MergeWithDefaultsResult<D[K], V[K]>
+          : D[K]
+          : K extends keyof V ? V[K]
+          : never;
+      }
+    : MaybeFallback<D, V>
+  : MaybeFallback<D, V>;
 ```
 
 ## パターンカタログ
@@ -265,14 +250,18 @@ type MergeWithDefaultsResult<D, V> =
 ## Good Patterns
 
 - **`satisfies` によるデフォルト値の型安全性**: `Object.freeze({...} satisfies UserConfig)` により、デフォルト値オブジェクトがインターフェースに適合することをコンパイル時に保証しつつ、リテラル型を保持する。
+
 ```typescript
 // packages/vite/src/node/config.ts:775-883
-const configDefaults = Object.freeze({
-  // ... フィールド群
-} satisfies UserConfig)
+const configDefaults = Object.freeze(
+  {
+    // ... フィールド群
+  } satisfies UserConfig,
+);
 ```
 
 - **`as const satisfies Record<K, V>` による型安全な定数マップ**: リテラル型の推論と Record 型の制約を両立する。
+
 ```typescript
 // packages/vite/src/node/build.ts:1573-1579
 const customRelativeUrlMechanisms = {
@@ -282,6 +271,7 @@ const customRelativeUrlMechanisms = {
 ```
 
 - **keyof ベースの型安全ジェネリック getter/setter**: `ModuleNode._get<T extends keyof EnvironmentModuleNode>(prop: T)` で、プロパティ名から戻り値型を自動推論する。
+
 ```typescript
 // packages/vite/src/node/server/mixedModuleGraph.ts:33-37
 _get<T extends keyof EnvironmentModuleNode>(
@@ -292,6 +282,7 @@ _get<T extends keyof EnvironmentModuleNode>(
 ```
 
 - **`consistent-type-imports` ESLint ルール**: `import type` を強制することで、型インポートがランタイムバンドルに含まれないことを保証する。
+
 ```typescript
 // eslint.config.js:154-157
 '@typescript-eslint/consistent-type-imports': [
@@ -306,18 +297,42 @@ _get<T extends keyof EnvironmentModuleNode>(
 
 ```typescript
 // Bad: 大量の Omit キー
-export interface ResolvedConfig extends Readonly<
-  Omit<UserConfig, 'plugins' | 'css' | 'json' | 'assetsInclude' | 'optimizeDeps'
-    | 'worker' | 'build' | 'dev' | 'environments' | 'experimental' | 'future'
-    | 'server' | 'preview' | 'devtools'> & { /* 30+ フィールド */ }
-> {}
+export interface ResolvedConfig extends
+  Readonly<
+    Omit<
+      UserConfig,
+      | "plugins"
+      | "css"
+      | "json"
+      | "assetsInclude"
+      | "optimizeDeps"
+      | "worker"
+      | "build"
+      | "dev"
+      | "environments"
+      | "experimental"
+      | "future"
+      | "server"
+      | "preview"
+      | "devtools"
+    > & {/* 30+ フィールド */}
+  >
+{}
 ```
 
 ```typescript
 // Better: 共通部分をベース型として分離し、未解決/解決済みで個別に拡張する
-interface ConfigBase { root?: string; base?: string; mode?: string }
-interface UserConfig extends ConfigBase { plugins?: PluginOption[]; /* optional */ }
-interface ResolvedConfig extends Required<ConfigBase> { plugins: readonly Plugin[]; /* required */ }
+interface ConfigBase {
+  root?: string;
+  base?: string;
+  mode?: string;
+}
+interface UserConfig extends ConfigBase {
+  plugins?: PluginOption[]; /* optional */
+}
+interface ResolvedConfig extends Required<ConfigBase> {
+  plugins: readonly Plugin[]; /* required */
+}
 ```
 
 - **`mergeConfig` の引数に `Function` を渡す罠**: ランタイムで `throw` するが、型レベルでは `D extends Function ? never : D` で防いでいる。この制約型は呼び出し側で見落とされやすい。

@@ -115,8 +115,8 @@ overrides:
 
 ```ts
 // packages/vite/src/node/utils.ts:17-18
-import type { Debugger } from 'obug'
-import debug from 'obug'
+import type { Debugger } from "obug";
+import debug from "obug";
 ```
 
 ### 5. bundleSizeLimit プラグインによる自動ガードレール
@@ -125,33 +125,35 @@ import debug from 'obug'
 
 ```ts
 // packages/vite/rolldown.config.ts:150
-plugins: [bundleSizeLimit(54), enableSourceMapsInWatchModePlugin()],
-
-// packages/vite/rolldown.config.ts:377-405
-function bundleSizeLimit(limit: number): Plugin {
-  let size = 0
-  return {
-    name: 'bundle-limit',
-    generateBundle(_, bundle) {
-      if (this.meta.watchMode) return
-      size = Buffer.byteLength(
-        Object.values(bundle)
-          .map((i) => ('code' in i ? i.code : ''))
-          .join(''),
-        'utf-8',
-      )
-    },
-    closeBundle() {
-      if (this.meta.watchMode) return
-      const kb = size / 1000
-      if (kb > limit) {
-        this.error(
-          `Bundle size exceeded ${limit} kB, current size is ${kb.toFixed(2)}kb.`,
-        )
-      }
-    },
-  }
-}
+plugins: [bundleSizeLimit(54), enableSourceMapsInWatchModePlugin()], // packages/vite/rolldown.config.ts:377-405
+  function bundleSizeLimit(limit: number): Plugin {
+    let size = 0;
+    return {
+      name: "bundle-limit",
+      generateBundle(_, bundle) {
+        if (this.meta.watchMode) {
+          return;
+        }
+        size = Buffer.byteLength(
+          Object.values(bundle)
+            .map((i) => ("code" in i ? i.code : ""))
+            .join(""),
+          "utf-8",
+        );
+      },
+      closeBundle() {
+        if (this.meta.watchMode) {
+          return;
+        }
+        const kb = size / 1000;
+        if (kb > limit) {
+          this.error(
+            `Bundle size exceeded ${limit} kB, current size is ${kb.toFixed(2)}kb.`,
+          );
+        }
+      },
+    };
+  };
 ```
 
 ### 6. ESLint による require() 禁止の強制
@@ -227,7 +229,7 @@ external: [
 ```ts
 // 軽量代替の選択: http-proxy-middleware(3MB) ではなく http-proxy-3(380kB) を直接使用
 // packages/vite/src/node/server/middlewares/proxy.ts:2
-import * as httpProxy from 'http-proxy-3'
+import * as httpProxy from "http-proxy-3";
 ```
 
 ## Bad Example
@@ -253,10 +255,10 @@ import * as httpProxy from 'http-proxy-3'
 
 ```ts
 // ESM で require() を使う — バンドラに無視され、devDependencies は publish 時に存在しない
-const dep = require('somedep')  // バンドルに含まれず、二重に壊れる
+const dep = require("somedep"); // バンドルに含まれず、二重に壊れる
 
 // 正しくは await import() を使う
-const dep = (await import('somedep')).default
+const dep = (await import("somedep")).default;
 ```
 
 ## 適用ガイド

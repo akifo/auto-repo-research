@@ -34,9 +34,9 @@ MCP サーバー（`apps/mcp`）は `ccusage` パッケージの `data-loader` �
 
 ```typescript
 // apps/mcp/src/command.ts:1-5
-import type { LoadOptions } from 'ccusage/data-loader';
-import { getClaudePaths } from 'ccusage/data-loader';
-import { logger } from 'ccusage/logger';
+import type { LoadOptions } from "ccusage/data-loader";
+import { getClaudePaths } from "ccusage/data-loader";
+import { logger } from "ccusage/logger";
 ```
 
 ### データフローのパイプライン構造
@@ -84,7 +84,7 @@ const explicit = extractExplicitArgs(ctx.tokens);
 for (const [key, value] of Object.entries(ctx.values)) {
   if (value != null && explicit[key] === true) {
     (merged as any)[key] = value;
-    sources[key] = 'CLI';
+    sources[key] = "CLI";
   }
 }
 ```
@@ -127,8 +127,8 @@ using fetcher = mode === 'display' ? null : new PricingFetcher(options?.offline)
 // apps/ccusage/src/_types.ts:9-13, 109
 export const modelNameSchema = v.pipe(
   v.string(),
-  v.minLength(1, 'Model name cannot be empty'),
-  v.brand('ModelName'),
+  v.minLength(1, "Model name cannot be empty"),
+  v.brand("ModelName"),
 );
 export const createModelName = (value: string): ModelName => v.parse(modelNameSchema, value);
 ```
@@ -158,10 +158,8 @@ default: {
 
 ```typescript
 // packages/terminal/src/table.ts:182-188
-const terminalWidth =
-  Number.parseInt(process.env.COLUMNS ?? '', 10) || process.stdout.columns || 120;
-this.compactMode =
-  this.forceCompact || (terminalWidth < this.compactThreshold && this.compactHead != null);
+const terminalWidth = Number.parseInt(process.env.COLUMNS ?? "", 10) || process.stdout.columns || 120;
+this.compactMode = this.forceCompact || (terminalWidth < this.compactThreshold && this.compactHead != null);
 ```
 
 ## Anti-Patterns / 注意点

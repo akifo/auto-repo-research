@@ -59,9 +59,9 @@ Platform パッケージ群は「抽象インターフェース + 実装レイ�
 ```typescript
 // packages/platform/src/FileSystem.ts:1-16
 // 抽象インターフェース: 型定義のみ、実装は internal/ にデリゲート
-import * as internal from "./internal/fileSystem.js"
+import * as internal from "./internal/fileSystem.js";
 export interface FileSystem {
-  readonly access: (path: string, options?: AccessFileOptions) => Effect.Effect<void, PlatformError>
+  readonly access: (path: string, options?: AccessFileOptions) => Effect.Effect<void, PlatformError>;
   // ...
 }
 ```
@@ -69,10 +69,10 @@ export interface FileSystem {
 ```typescript
 // packages/platform-node/src/NodeFileSystem.ts:1-12
 // 具象パッケージ: shared 実装から Layer を re-export するだけ
-import * as NodeFileSystem from "@effect/platform-node-shared/NodeFileSystem"
-import type { FileSystem } from "@effect/platform/FileSystem"
-import type { Layer } from "effect/Layer"
-export const layer: Layer<FileSystem> = NodeFileSystem.layer
+import * as NodeFileSystem from "@effect/platform-node-shared/NodeFileSystem";
+import type { FileSystem } from "@effect/platform/FileSystem";
+import type { Layer } from "effect/Layer";
+export const layer: Layer<FileSystem> = NodeFileSystem.layer;
 ```
 
 ```typescript
@@ -83,12 +83,12 @@ export type NodeContext =
   | FileSystem.FileSystem
   | Path.Path
   | Terminal.Terminal
-  | Worker.WorkerManager
+  | Worker.WorkerManager;
 
 export const layer: Layer.Layer<NodeContext> = pipe(
   Layer.mergeAll(NodePath.layer, NodeCommandExecutor.layer, NodeTerminal.layer, NodeWorker.layerManager),
-  Layer.provideMerge(NodeFileSystem.layer)
-)
+  Layer.provideMerge(NodeFileSystem.layer),
+);
 ```
 
 ### 公開 API / Internal 分離の強制メカニズム
@@ -134,16 +134,16 @@ export const layer: Layer.Layer<NodeContext> = pipe(
 // scripts/circular.mjs:1-26
 madge(
   glob.globSync(["packages/*/src/**/*.ts", "packages/ai/*/src/**/*.ts"], {
-    ignore: ["packages/sql-sqlite-bun/**", "packages/experimental/src/EventLogServer/Cloudflare.ts"]
+    ignore: ["packages/sql-sqlite-bun/**", "packages/experimental/src/EventLogServer/Cloudflare.ts"],
   }),
-  { detectiveOptions: { ts: { skipTypeImports: true } } }
+  { detectiveOptions: { ts: { skipTypeImports: true } } },
 ).then((res) => {
-  const circular = res.circular()
+  const circular = res.circular();
   if (circular.length) {
-    console.error("Circular dependencies found")
-    process.exit(1)
+    console.error("Circular dependencies found");
+    process.exit(1);
   }
-})
+});
 ```
 
 `madge` を使ってモノレポ全体の循環依存をチェックし、型 import は `skipTypeImports: true` で除外する。これにより型レベルの相互参照は許容しつつ、実行時の循環依存を防止している。
@@ -237,24 +237,24 @@ TypeScript の Project References で依存関係を宣言し、`tsc -b` によ�
 ```typescript
 // Bad: 抽象パッケージが具象実装に依存
 // @effect/platform/src/FileSystem.ts
-import { NodeFileSystem } from "@effect/platform-node"  // 依存の逆転
+import { NodeFileSystem } from "@effect/platform-node"; // 依存の逆転
 
 // Better: 具象パッケージが抽象を実装
 // @effect/platform-node/src/NodeFileSystem.ts
-import type { FileSystem } from "@effect/platform/FileSystem"
-export const layer: Layer<FileSystem> = internal.layer
+import type { FileSystem } from "@effect/platform/FileSystem";
+export const layer: Layer<FileSystem> = internal.layer;
 ```
 
 - **バレルファイルからの一括 import**: 大規模パッケージでバレルファイル（index.ts）から import すると、未使用モジュールもバンドルに含まれるリスクがある。Effect では ESLint ルール `@effect/no-import-from-barrel-package` でサブモジュール単位の import を強制している。
 
 ```typescript
 // Bad: バレル import（ツリーシェイキング非効率）
-import { Effect, Option, Array } from "effect"
+import { Array, Effect, Option } from "effect";
 
 // Better: サブモジュール import
-import * as Effect from "effect/Effect"
-import * as Option from "effect/Option"
-import * as Array from "effect/Array"
+import * as Array from "effect/Array";
+import * as Effect from "effect/Effect";
+import * as Option from "effect/Option";
 ```
 
 ## 導出ルール

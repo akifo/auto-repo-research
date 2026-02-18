@@ -27,9 +27,9 @@ Fiber のフォーク時、子 Fiber は親の FiberScope に自動登録され�
 // packages/effect/src/internal/fiberRuntime.ts:2476-2481
 const parentScope = overrideScope !== null ? overrideScope : pipe(
   parentFiber.getFiberRef(core.currentForkScopeOverride),
-  Option.getOrElse(() => parentFiber.scope())
-)
-parentScope.add(parentRuntimeFlags, childFiber)
+  Option.getOrElse(() => parentFiber.scope()),
+);
+parentScope.add(parentRuntimeFlags, childFiber);
 ```
 
 Local FiberScope の `add` メソッドでは、子 Fiber を親の children セットに追加し、子の完了を observer で監視して自動除去する:
@@ -54,12 +54,12 @@ add(_runtimeFlags: RuntimeFlags.RuntimeFlags, child: FiberRuntime.FiberRuntime<a
 
 Effect-TS は Fiber のスコープを制御するために 4 つの fork バリエーションを提供する:
 
-| API | スコープ | 用途 |
-|-----|---------|------|
-| `fork` | 親 Fiber | 通常の子タスク |
-| `forkDaemon` | グローバルスコープ | バックグラウンドサービス |
-| `forkScoped` | 現在の Scope | スコープ寿命に紐づくタスク |
-| `forkIn` | 指定 Scope | 任意スコープへの移植 |
+| API          | スコープ           | 用途                       |
+| ------------ | ------------------ | -------------------------- |
+| `fork`       | 親 Fiber           | 通常の子タスク             |
+| `forkDaemon` | グローバルスコープ | バックグラウンドサービス   |
+| `forkScoped` | 現在の Scope       | スコープ寿命に紐づくタスク |
+| `forkIn`     | 指定 Scope         | 任意スコープへの移植       |
 
 `forkDaemon` は `forkWithScopeOverride(self, fiberScope.globalScope)` のエイリアスで、Global FiberScope は子 Fiber の完了を observer で監視するだけで interrupt しない（`fiberScope.ts:30-39`）。
 
@@ -71,10 +71,10 @@ Effect-TS は Fiber のスコープを制御するために 4 つの fork バリ
 
 ```typescript
 // packages/effect/src/internal/fiberRuntime.ts:1682-1685
-(acquire, release) =>
+((acquire, release) =>
   core.uninterruptible(
-    core.tap(acquire, (a) => addFinalizer((exit) => release(a, exit)))
-  )
+    core.tap(acquire, (a) => addFinalizer((exit) => release(a, exit))),
+  ));
 ```
 
 Semaphore の `withPermits` も同様のパターンで、permit の取得をキャンセル可能にしつつ、取得後の release を確実にする:
@@ -106,9 +106,9 @@ readonly withPermits = (n: number) => <A, E, R>(self: Effect.Effect<A, E, R>) =>
 const interruptAll = () =>
   fibers.forEach((fiber) => {
     fiber.currentScheduler.scheduleTask(() => {
-      fiber.unsafeInterruptAsFork(parent.id())
-    }, 0)
-  })
+      fiber.unsafeInterruptAsFork(parent.id());
+    }, 0);
+  });
 ```
 
 失敗時の interrupt はスケジューラに委ねることで、現在の実行フローをブロックせず非同期に中断を伝播させている。
@@ -129,15 +129,15 @@ export const make = <A = unknown, E = unknown>(): Effect.Effect<FiberSet<A, E>, 
     Effect.map(Deferred.make<void, unknown>(), (deferred) => unsafeMake(new Set(), deferred)),
     (set) =>
       Effect.withFiberRuntime((parent) => {
-        const state = set.state
-        if (state._tag === "Closed") return Effect.void
-        set.state = { _tag: "Closed" }
-        const fibers = state.backing
+        const state = set.state;
+        if (state._tag === "Closed") return Effect.void;
+        set.state = { _tag: "Closed" };
+        const fibers = state.backing;
         return Fiber.interruptAllAs(fibers, FiberId.combine(parent.id(), internalFiberId)).pipe(
-          Effect.intoDeferred(set.deferred)
-        )
-      })
-  )
+          Effect.intoDeferred(set.deferred),
+        );
+      }),
+  );
 ```
 
 FiberHandle は「常に最大 1 つの Fiber」を持つ特殊ケースで、新しい Fiber を `run` すると前の Fiber を自動 interrupt する。
@@ -217,10 +217,10 @@ return executionStrategy.isSequential(this.strategy) ?
 
 ```typescript
 // Bad: 無制限にデーモン化するとリークする
-const fiber = yield* Effect.forkDaemon(longRunningTask)
+const fiber = yield * Effect.forkDaemon(longRunningTask);
 
 // Better: スコープに紐づける
-const fiber = yield* Effect.forkScoped(longRunningTask)
+const fiber = yield * Effect.forkScoped(longRunningTask);
 // Scope 終了時に自動 interrupt
 ```
 
@@ -228,11 +228,11 @@ const fiber = yield* Effect.forkScoped(longRunningTask)
 
 ```typescript
 // Bad: acquire と addFinalizer の間に interrupt が入る可能性
-const resource = yield* acquire
-yield* Scope.addFinalizer(scope, () => release(resource))
+const resource = yield * acquire;
+yield * Scope.addFinalizer(scope, () => release(resource));
 
 // Better: acquireRelease で不可分にする
-const resource = yield* Effect.acquireRelease(acquire, (a) => release(a))
+const resource = yield * Effect.acquireRelease(acquire, (a) => release(a));
 ```
 
 - **Observer 登録の競合を無視する**: Fiber が既に完了している状態で observer を登録する場合、コールバックが呼ばれないリスクがある。Effect-TS の `addObserver` は既に exit している場合に即座にコールバックする（`fiberRuntime.ts:531-536`）。この二重チェックパターンを怠ると通知漏れが起きる。

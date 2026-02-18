@@ -48,7 +48,7 @@ pnpm catalogs（`pnpm-workspace.yaml`）で `catalogMode: strict` を設定し�
 
 ```typescript
 // apps/ccusage/src/_pricing-fetcher.ts:3
-import { prefetchClaudePricing } from './_macro.ts' with { type: 'macro' };
+import { prefetchClaudePricing } from "./_macro.ts" with { type: "macro" };
 
 const PREFETCHED_CLAUDE_PRICING = prefetchClaudePricing();
 ```
@@ -56,13 +56,13 @@ const PREFETCHED_CLAUDE_PRICING = prefetchClaudePricing();
 ```typescript
 // apps/ccusage/src/_macro.ts:16-24
 export async function prefetchClaudePricing(): Promise<Record<string, LiteLLMModelPricing>> {
-    try {
-        const dataset = await fetchLiteLLMPricingDataset();
-        return filterPricingDataset(dataset, isClaudeModel);
-    } catch (error) {
-        console.warn('Failed to prefetch Claude pricing data, proceeding with empty cache.', error);
-        return createPricingDataset();
-    }
+  try {
+    const dataset = await fetchLiteLLMPricingDataset();
+    return filterPricingDataset(dataset, isClaudeModel);
+  } catch (error) {
+    console.warn("Failed to prefetch Claude pricing data, proceeding with empty cache.", error);
+    return createPricingDataset();
+  }
 }
 ```
 
@@ -75,9 +75,9 @@ Valibot の `brand()` を使い、同じ `string` 型でも `ModelName`, `Sessio
 ```typescript
 // apps/ccusage/src/_types.ts:9-13
 export const modelNameSchema = v.pipe(
-    v.string(),
-    v.minLength(1, 'Model name cannot be empty'),
-    v.brand('ModelName'),
+  v.string(),
+  v.minLength(1, "Model name cannot be empty"),
+  v.brand("ModelName"),
 );
 ```
 
@@ -127,14 +127,14 @@ if (import.meta.vitest != null) {
 ```typescript
 // apps/ccusage/src/_utils.ts:14-23
 export async function getFileModifiedTime(filePath: string): Promise<number> {
-    return Result.pipe(
-        Result.try({
-            try: stat(filePath),
-            catch: (error) => error,
-        }),
-        Result.map((stats) => stats.mtime.getTime()),
-        Result.unwrap(0),
-    );
+  return Result.pipe(
+    Result.try({
+      try: stat(filePath),
+      catch: (error) => error,
+    }),
+    Result.map((stats) => stats.mtime.getTime()),
+    Result.unwrap(0),
+  );
 }
 ```
 
@@ -205,9 +205,9 @@ packages/internal/CLAUDE.md        # 内部パッケージ固有のルール
 ```typescript
 // apps/ccusage/src/data-loader.ts:241-256
 export const dailyUsageSchema = v.object({
-    date: dailyDateSchema,
-    inputTokens: v.number(),
-    // ...
+  date: dailyDateSchema,
+  inputTokens: v.number(),
+  // ...
 });
 export type DailyUsage = v.InferOutput<typeof dailyUsageSchema>;
 ```

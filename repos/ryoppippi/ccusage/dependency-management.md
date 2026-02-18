@@ -25,16 +25,16 @@ ccusage は pnpm v10 の Catalogs 機能を `catalogMode: strict` で運用し�
 
 カタログは用途別に 8 カテゴリに分類されている:
 
-| カテゴリ | 用途 | 依存数 |
-|---------|------|--------|
-| `build` | tsdown, unplugin-macros 等のビルドツール | 4 |
-| `docs` | VitePress, typedoc 等のドキュメントツール | 8 |
-| `lint` | ESLint, publint 等の静的解析ツール | 5 |
-| `llm-docs` | AI ツール向けドキュメントパッケージ | 2 |
-| `release` | bumpp, changelogithub 等のリリースツール | 5 |
-| `runtime` | 実行時に必要なライブラリ群 | 26 |
-| `testing` | vitest, fs-fixture 等のテストツール | 2 |
-| `types` | @types/node, @types/bun 等の型定義 | 4 |
+| カテゴリ   | 用途                                      | 依存数 |
+| ---------- | ----------------------------------------- | ------ |
+| `build`    | tsdown, unplugin-macros 等のビルドツール  | 4      |
+| `docs`     | VitePress, typedoc 等のドキュメントツール | 8      |
+| `lint`     | ESLint, publint 等の静的解析ツール        | 5      |
+| `llm-docs` | AI ツール向けドキュメントパッケージ       | 2      |
+| `release`  | bumpp, changelogithub 等のリリースツール  | 5      |
+| `runtime`  | 実行時に必要なライブラリ群                | 26     |
+| `testing`  | vitest, fs-fixture 等のテストツール       | 2      |
+| `types`    | @types/node, @types/bun 等の型定義        | 4      |
 
 `llm-docs` カテゴリは特筆に値する。`@gunshi/docs` や `@praha/byethrow-docs` は「ライブラリの使い方をまとめた AI 向けドキュメントパッケージ」であり、Claude Code のスキルファイルから参照される。依存管理の仕組みをドキュメント配信にも転用している。
 

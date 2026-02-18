@@ -30,8 +30,8 @@ Vite のテストスクリプトは3段構成で設計されている。
 
 ```typescript
 // vitest.config.e2e.ts:4-6
-const isBuild = !!process.env.VITE_TEST_BUILD
-const timeout = process.env.PWDEBUG ? Infinity : process.env.CI ? 50000 : 30000
+const isBuild = !!process.env.VITE_TEST_BUILD;
+const timeout = process.env.PWDEBUG ? Infinity : process.env.CI ? 50000 : 30000;
 ```
 
 テスト内では `isBuild` / `isServe` フラグで条件分岐する。3つのパターンが使い分けられる。
@@ -44,7 +44,7 @@ const timeout = process.env.PWDEBUG ? Infinity : process.env.CI ? 50000 : 30000
 // playground/assets/__tests__/assets.spec.ts:21-23
 const assetMatch = isBuild
   ? /\/foo\/bar\/assets\/asset-[-\w]{8}\.png/
-  : '/foo/bar/nested/asset.png'
+  : "/foo/bar/nested/asset.png";
 ```
 
 ### playground-temp による隔離実行
@@ -53,27 +53,27 @@ const assetMatch = isBuild
 
 ```typescript
 // playground/vitestGlobalSetup.ts:19-39
-const tempDir = path.resolve(import.meta.dirname, '../playground-temp')
-await fs.rm(tempDir, { recursive: true, force: true })
-await fs.mkdir(tempDir, { recursive: true })
-await fs.cp(path.resolve(import.meta.dirname, '../playground'), tempDir, {
+const tempDir = path.resolve(import.meta.dirname, "../playground-temp");
+await fs.rm(tempDir, { recursive: true, force: true });
+await fs.mkdir(tempDir, { recursive: true });
+await fs.cp(path.resolve(import.meta.dirname, "../playground"), tempDir, {
   recursive: true,
   dereference: false,
   filter(file) {
-    file = file.replace(/\\/g, '/')
-    return !file.includes('__tests__') && !/dist(?:\/|$)/.test(file)
+    file = file.replace(/\\/g, "/");
+    return !file.includes("__tests__") && !/dist(?:\/|$)/.test(file);
   },
-})
+});
 ```
 
 `__tests__` と `dist` を除外してコピーし、テストコード自身は元の場所から参照する。`vitestSetup.ts` が `testDir` をコピー先に書き換える。
 
 ```typescript
 // playground/vitestSetup.ts:131-137
-testName = slash(testPath).match(/playground\/([\w-]+)\//)?.[1]
-testDir = path.dirname(testPath)
+testName = slash(testPath).match(/playground\/([\w-]+)\//)?.[1];
+testDir = path.dirname(testPath);
 if (testName) {
-  testDir = path.resolve(workspaceRoot, 'playground-temp', testName)
+  testDir = path.resolve(workspaceRoot, "playground-temp", testName);
 }
 ```
 
@@ -98,17 +98,19 @@ playground/assets/
 
 ```typescript
 // playground/vitestGlobalSetup.ts:41-53
-for (const [original, variants] of [
-  ['assets', ['encoded-base', 'relative-base', 'runtime-base', 'url-base']],
-  ['css', ['lightningcss']],
-  ['transform-plugin', ['base']],
-] as const) {
+for (
+  const [original, variants] of [
+    ["assets", ["encoded-base", "relative-base", "runtime-base", "url-base"]],
+    ["css", ["lightningcss"]],
+    ["transform-plugin", ["base"]],
+  ] as const
+) {
   for (const variant of variants) {
     await fs.cp(
       path.resolve(tempDir, original),
       path.resolve(tempDir, `${original}__${variant}`),
       { recursive: true },
-    )
+    );
   }
 }
 ```
@@ -119,13 +121,13 @@ CSS テストでは `tests.ts` に共通テスト関数を抽出し、デフォ�
 
 ```typescript
 // playground/css/__tests__/css.spec.ts
-import { tests } from './tests'
-tests(false)
+import { tests } from "./tests";
+tests(false);
 
 // playground/css/__tests__/tests.ts:17
 export const tests = (isLightningCSS: boolean) => {
-  test('linked css', async () => { /* ... */ })
-}
+  test("linked css", async () => {/* ... */});
+};
 ```
 
 ### カスタム serve による柔軟なサーバー起動
@@ -135,12 +137,12 @@ export const tests = (isLightningCSS: boolean) => {
 ```typescript
 // playground/vitestSetup.ts:184-199
 const testCustomServe = [
-  path.resolve(path.dirname(testPath), 'serve.ts'),
-  path.resolve(path.dirname(testPath), 'serve.js'),
-].find((i) => fs.existsSync(i))
+  path.resolve(path.dirname(testPath), "serve.ts"),
+  path.resolve(path.dirname(testPath), "serve.js"),
+].find((i) => fs.existsSync(i));
 if (testCustomServe) {
-  const mod = await import(testCustomServe)
-  const serve = mod.serve || mod.default?.serve
+  const mod = await import(testCustomServe);
+  const serve = mod.serve || mod.default?.serve;
   // ...
 }
 ```
@@ -149,10 +151,10 @@ SSR の `serve.ts` は Express サーバーを手動で起動する。
 
 ```typescript
 // playground/ssr/__tests__/serve.ts:12-20
-export async function serve(): Promise<{ close(): Promise<void> }> {
-  await kill(port)
-  const { createServer } = await import(path.resolve(rootDir, 'server.js'))
-  const { app, vite } = await createServer(rootDir, hmrPorts.ssr, createInMemoryLogger(serverLogs))
+export async function serve(): Promise<{ close(): Promise<void>; }> {
+  await kill(port);
+  const { createServer } = await import(path.resolve(rootDir, "server.js"));
+  const { app, vite } = await createServer(rootDir, hmrPorts.ssr, createInMemoryLogger(serverLogs));
   // ...
 }
 ```
@@ -164,19 +166,17 @@ HMR テストでは `untilBrowserLogAfter` ヘルパーで「操作 → 期待�
 ```typescript
 // playground/hmr/__tests__/hmr.spec.ts:53-67
 await untilBrowserLogAfter(
-  () => editFile('hmr.ts', (code) =>
-    code.replace('const foo = 1', 'const foo = 2'),
-  ),
+  () => editFile("hmr.ts", (code) => code.replace("const foo = 1", "const foo = 2")),
   [
-    '>>> vite:beforeUpdate -- update',
-    'foo was: 1',
-    '(self-accepting 1) foo is now: 2',
-    '(self-accepting 2) foo is now: 2',
-    '[vite] hot updated: /hmr.ts',
-    '>>> vite:afterUpdate -- update',
+    ">>> vite:beforeUpdate -- update",
+    "foo was: 1",
+    "(self-accepting 1) foo is now: 2",
+    "(self-accepting 2) foo is now: 2",
+    "[vite] hot updated: /hmr.ts",
+    ">>> vite:afterUpdate -- update",
   ],
   true, // expectOrder: ログの順序も検証
-)
+);
 ```
 
 ### ポーリングベースの非同期アサーション
@@ -185,9 +185,9 @@ Vitest の `expect.poll()` を活用し、DOM 更新を待つ。固定 sleep で
 
 ```typescript
 // playground/optimize-deps/__tests__/optimize-deps.spec.ts:15-17
-await expect.poll(() => page.textContent('.cjs button')).toBe('count is 0')
-await page.click('.cjs button')
-await expect.poll(() => page.textContent('.cjs button')).toBe('count is 1')
+await expect.poll(() => page.textContent(".cjs button")).toBe("count is 0");
+await page.click(".cjs button");
+await expect.poll(() => page.textContent(".cjs button")).toBe("count is 1");
 ```
 
 タイムアウトは CI/ローカルで動的に設定される。
@@ -224,14 +224,21 @@ test: {
 ```typescript
 // playground/vitestSetup.ts:357-387
 export function createInMemoryLogger(logs: string[]): Logger {
-  const loggedErrors = new WeakSet<Error | RollupError>()
+  const loggedErrors = new WeakSet<Error | RollupError>();
   const logger: Logger = {
-    info(msg) { logs.push(msg) },
-    warn(msg) { logs.push(msg); logger.hasWarned = true },
-    error(msg, opts) { logs.push(msg); /* ... */ },
+    info(msg) {
+      logs.push(msg);
+    },
+    warn(msg) {
+      logs.push(msg);
+      logger.hasWarned = true;
+    },
+    error(msg, opts) {
+      logs.push(msg); /* ... */
+    },
     // ...
-  }
-  return logger
+  };
+  return logger;
 }
 ```
 
@@ -239,14 +246,14 @@ export function createInMemoryLogger(logs: string[]): Logger {
 
 ```typescript
 // playground/ssr/__tests__/ssr.spec.ts:70-82
-test.runIf(isServe)('should restart ssr', async () => {
-  editFile('./vite.config.ts', (content) => content)
+test.runIf(isServe)("should restart ssr", async () => {
+  editFile("./vite.config.ts", (content) => content);
   await expect.poll(() => {
     expect(serverLogs).toEqual(
-      expect.arrayContaining([expect.stringMatching('server restarted')]),
-    )
-  }).toSatisfy(() => true)
-})
+      expect.arrayContaining([expect.stringMatching("server restarted")]),
+    );
+  }).toSatisfy(() => true);
+});
 ```
 
 ## パターンカタログ
@@ -269,8 +276,8 @@ test.runIf(isServe)('should restart ssr', async () => {
 
 ```typescript
 // playground/css/__tests__/tests.ts:36-37
-editFile('linked.css', (code) => code.replace('color: blue', 'color: red'))
-await expect.poll(() => getColor(linked)).toBe('red')
+editFile("linked.css", (code) => code.replace("color: blue", "color: red"));
+await expect.poll(() => getColor(linked)).toBe("red");
 ```
 
 - **ポート番号の集中管理**: テスト用ポート番号を `test-utils.ts` に一元定義し、並列実行時の衝突を防ぐ。
@@ -279,10 +286,10 @@ await expect.poll(() => getColor(linked)).toBe('red')
 // playground/test-utils.ts:22-52
 export const ports = {
   cli: 9510,
-  'cli-module': 9511,
+  "cli-module": 9511,
   json: 9512,
   // ...
-}
+};
 ```
 
 - **エイリアスによるユーティリティインポート**: `~utils` エイリアスでテストユーティリティへのパスを簡潔に保つ。深いディレクトリからの相対パスの煩雑さを解消する。
@@ -300,13 +307,13 @@ resolve: {
 // playground/vitestSetup.ts:42-58
 expect.addSnapshotSerializer({
   serialize(val, config, indentation, depth, refs, printer) {
-    const map = { ...val.map }
+    const map = { ...val.map };
     // ...パス正規化、visualization リンク生成
   },
   test(val) {
-    return typeof val === 'object' && val && val[sourcemapSnapshot]
+    return typeof val === "object" && val && val[sourcemapSnapshot];
   },
-})
+});
 ```
 
 ## Anti-Patterns / 注意点
@@ -315,32 +322,32 @@ expect.addSnapshotSerializer({
 
 ```typescript
 // Bad
-await new Promise(resolve => setTimeout(resolve, 2000))
-expect(await page.textContent('.result')).toBe('updated')
+await new Promise(resolve => setTimeout(resolve, 2000));
+expect(await page.textContent(".result")).toBe("updated");
 
 // Better
-await expect.poll(() => page.textContent('.result')).toBe('updated')
+await expect.poll(() => page.textContent(".result")).toBe("updated");
 ```
 
 - **テストからソースファイルを直接編集**: playground-temp へのコピー機構を使わずソースを直接変更すると、テスト後にファイルが汚染される。Vite の `editFile` ヘルパーは `testDir`（コピー先）を基準にパスを解決する。
 
 ```typescript
 // Bad: ソースを直接変更
-fs.writeFileSync('/path/to/playground/hmr/hmr.ts', modified)
+fs.writeFileSync("/path/to/playground/hmr/hmr.ts", modified);
 
 // Better: editFile ヘルパーを使う（testDir 相対で解決される）
-editFile('hmr.ts', (code) => code.replace('foo = 1', 'foo = 2'))
+editFile("hmr.ts", (code) => code.replace("foo = 1", "foo = 2"));
 ```
 
 - **ハードコードされたポート番号**: テスト内で直接ポート番号を書くと、並列実行時に衝突する。集中管理された `ports` / `hmrPorts` マップを使う。
 
 ```typescript
 // Bad
-const server = app.listen(3000)
+const server = app.listen(3000);
 
 // Better
-import { ports } from '~utils'
-const server = app.listen(ports.ssr)
+import { ports } from "~utils";
+const server = app.listen(ports.ssr);
 ```
 
 ## 導出ルール

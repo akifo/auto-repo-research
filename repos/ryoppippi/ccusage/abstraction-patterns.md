@@ -61,111 +61,111 @@ ccusage, codex, opencode, pi の 4 アプリは `package.json` から `name` を
 ```typescript
 // packages/internal/src/logger.ts:5-17
 export function createLogger(name: string): ConsolaInstance {
-	const logger: ConsolaInstance = consola.withTag(name);
-	if (process.env.LOG_LEVEL != null) {
-		const level = Number.parseInt(process.env.LOG_LEVEL, 10);
-		if (!Number.isNaN(level)) {
-			logger.level = level;
-		}
-	}
-	return logger;
+  const logger: ConsolaInstance = consola.withTag(name);
+  if (process.env.LOG_LEVEL != null) {
+    const level = Number.parseInt(process.env.LOG_LEVEL, 10);
+    if (!Number.isNaN(level)) {
+      logger.level = level;
+    }
+  }
+  return logger;
 }
 ```
 
 ```typescript
 // apps/amp/src/logger.ts:1-3
-import { createLogger } from '@ccusage/internal/logger';
+import { createLogger } from "@ccusage/internal/logger";
 
-export const logger = createLogger('@ccusage/amp');
+export const logger = createLogger("@ccusage/amp");
 ```
 
 ```typescript
 // apps/ccusage/src/_macro.ts:1-24
-import type { LiteLLMModelPricing } from '@ccusage/internal/pricing';
+import type { LiteLLMModelPricing } from "@ccusage/internal/pricing";
 import {
-	createPricingDataset,
-	fetchLiteLLMPricingDataset,
-	filterPricingDataset,
-} from '@ccusage/internal/pricing-fetch-utils';
+  createPricingDataset,
+  fetchLiteLLMPricingDataset,
+  filterPricingDataset,
+} from "@ccusage/internal/pricing-fetch-utils";
 
 function isClaudeModel(modelName: string, _pricing: LiteLLMModelPricing): boolean {
-	return (
-		modelName.startsWith('claude-') ||
-		modelName.startsWith('anthropic.claude-') ||
-		modelName.startsWith('anthropic/claude-')
-	);
+  return (
+    modelName.startsWith("claude-")
+    || modelName.startsWith("anthropic.claude-")
+    || modelName.startsWith("anthropic/claude-")
+  );
 }
 
 export async function prefetchClaudePricing(): Promise<Record<string, LiteLLMModelPricing>> {
-	try {
-		const dataset = await fetchLiteLLMPricingDataset();
-		return filterPricingDataset(dataset, isClaudeModel);
-	} catch (error) {
-		console.warn('Failed to prefetch Claude pricing data, proceeding with empty cache.', error);
-		return createPricingDataset();
-	}
+  try {
+    const dataset = await fetchLiteLLMPricingDataset();
+    return filterPricingDataset(dataset, isClaudeModel);
+  } catch (error) {
+    console.warn("Failed to prefetch Claude pricing data, proceeding with empty cache.", error);
+    return createPricingDataset();
+  }
 }
 ```
 
 ```typescript
 // apps/codex/src/run.ts:1-32
-import process from 'node:process';
-import { cli } from 'gunshi';
-import { description, name, version } from '../package.json';
-import { dailyCommand } from './commands/daily.ts';
-import { monthlyCommand } from './commands/monthly.ts';
-import { sessionCommand } from './commands/session.ts';
+import { cli } from "gunshi";
+import process from "node:process";
+import { description, name, version } from "../package.json";
+import { dailyCommand } from "./commands/daily.ts";
+import { monthlyCommand } from "./commands/monthly.ts";
+import { sessionCommand } from "./commands/session.ts";
 
 const subCommands = new Map([
-	['daily', dailyCommand],
-	['monthly', monthlyCommand],
-	['session', sessionCommand],
+  ["daily", dailyCommand],
+  ["monthly", monthlyCommand],
+  ["session", sessionCommand],
 ]);
 
 const mainCommand = dailyCommand;
 
 export async function run(): Promise<void> {
-	let args = process.argv.slice(2);
-	if (args[0] === 'ccusage-codex') {
-		args = args.slice(1);
-	}
+  let args = process.argv.slice(2);
+  if (args[0] === "ccusage-codex") {
+    args = args.slice(1);
+  }
 
-	await cli(args, mainCommand, {
-		name,
-		version,
-		description,
-		subCommands,
-		renderHeader: null,
-	});
+  await cli(args, mainCommand, {
+    name,
+    version,
+    description,
+    subCommands,
+    renderHeader: null,
+  });
 }
 ```
 
 ```typescript
 // apps/ccusage/src/_pricing-fetcher.ts:1-25
-import { LiteLLMPricingFetcher } from '@ccusage/internal/pricing';
-import { Result } from '@praha/byethrow';
-import { prefetchClaudePricing } from './_macro.ts' with { type: 'macro' };
-import { logger } from './logger.ts';
+import { LiteLLMPricingFetcher } from "@ccusage/internal/pricing";
+import { Result } from "@praha/byethrow";
+import { prefetchClaudePricing } from "./_macro.ts" with { type: "macro" };
+import { logger } from "./logger.ts";
 
 const CLAUDE_PROVIDER_PREFIXES = [
-	'anthropic/',
-	'claude-3-5-',
-	'claude-3-',
-	'claude-',
-	'openrouter/openai/',
+  "anthropic/",
+  "claude-3-5-",
+  "claude-3-",
+  "claude-",
+  "openrouter/openai/",
 ];
 
 const PREFETCHED_CLAUDE_PRICING = prefetchClaudePricing();
 
 export class PricingFetcher extends LiteLLMPricingFetcher {
-	constructor(offline = false) {
-		super({
-			offline,
-			offlineLoader: async () => PREFETCHED_CLAUDE_PRICING,
-			logger,
-			providerPrefixes: CLAUDE_PROVIDER_PREFIXES,
-		});
-	}
+  constructor(offline = false) {
+    super({
+      offline,
+      offlineLoader: async () => PREFETCHED_CLAUDE_PRICING,
+      logger,
+      providerPrefixes: CLAUDE_PROVIDER_PREFIXES,
+    });
+  }
 }
 ```
 
@@ -211,14 +211,14 @@ export class PricingFetcher extends LiteLLMPricingFetcher {
 const PREFETCHED_AMP_PRICING = prefetchAmpPricing();
 
 export class AmpPricingSource implements PricingSource, Disposable {
-    private readonly fetcher: LiteLLMPricingFetcher;
-    constructor(options: AmpPricingSourceOptions = {}) {
-        this.fetcher = new LiteLLMPricingFetcher({
-            offline: options.offline ?? false,
-            offlineLoader: async () => PREFETCHED_AMP_PRICING,
-            // ...
-        });
-    }
+  private readonly fetcher: LiteLLMPricingFetcher;
+  constructor(options: AmpPricingSourceOptions = {}) {
+    this.fetcher = new LiteLLMPricingFetcher({
+      offline: options.offline ?? false,
+      offlineLoader: async () => PREFETCHED_AMP_PRICING,
+      // ...
+    });
+  }
 }
 ```
 
@@ -240,9 +240,9 @@ catalogs:
 ```typescript
 // packages/internal/src/pricing.ts:89-107
 export class LiteLLMPricingFetcher implements Disposable {
-    [Symbol.dispose](): void {
-        this.clearCache();
-    }
+  [Symbol.dispose](): void {
+    this.clearCache();
+  }
 }
 
 // apps/amp/src/commands/daily.ts:59
@@ -258,7 +258,7 @@ using pricingSource = new AmpPricingSource({ offline: false });
 export const MILLION = 1_000_000;
 
 // Better: 共有パッケージから import する
-import { MILLION } from '@ccusage/internal/constants';
+import { MILLION } from "@ccusage/internal/constants";
 ```
 
 - **構造的に同一のインターフェースが複数アプリに散在**: `PricingSource`, `TokenUsageDelta`, `ModelPricing` はアプリごとに微妙に異なるが構造的に酷似している。共通の基底型を定義し、アプリ固有のフィールドを拡張する方が保守性が高い。
@@ -266,13 +266,13 @@ import { MILLION } from '@ccusage/internal/constants';
 ```typescript
 // Bad: apps/amp/src/_types.ts:78-80 と apps/codex/src/_types.ts:53-55 が別定義
 export type PricingSource = {
-    getPricing: (model: string) => Promise<ModelPricing>;
+  getPricing: (model: string) => Promise<ModelPricing>;
 };
 
 // Better: 共有パッケージに基底型を定義し、アプリ側で拡張
 // packages/internal/src/types.ts
 export type BasePricingSource<T> = {
-    getPricing: (model: string) => Promise<T>;
+  getPricing: (model: string) => Promise<T>;
 };
 ```
 

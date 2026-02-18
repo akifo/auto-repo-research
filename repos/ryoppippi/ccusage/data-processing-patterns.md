@@ -53,23 +53,23 @@ LiteLLM の価格データは200kトークンを閾値とする段階的価格�
 // apps/ccusage/src/data-loader.ts:538-556
 // JSONL ストリーミング解析 — createReadStream で1行ずつ処理
 async function processJSONLFileByLine(
-	filePath: string,
-	processLine: (line: string, lineNumber: number) => void | Promise<void>,
+  filePath: string,
+  processLine: (line: string, lineNumber: number) => void | Promise<void>,
 ): Promise<void> {
-	const fileStream = createReadStream(filePath, { encoding: 'utf-8' });
-	const rl = createInterface({
-		input: fileStream,
-		crlfDelay: Number.POSITIVE_INFINITY,
-	});
+  const fileStream = createReadStream(filePath, { encoding: "utf-8" });
+  const rl = createInterface({
+    input: fileStream,
+    crlfDelay: Number.POSITIVE_INFINITY,
+  });
 
-	let lineNumber = 0;
-	for await (const line of rl) {
-		lineNumber++;
-		if (line.trim().length === 0) {
-			continue;
-		}
-		await processLine(line, lineNumber);
-	}
+  let lineNumber = 0;
+  for await (const line of rl) {
+    lineNumber++;
+    if (line.trim().length === 0) {
+      continue;
+    }
+    await processLine(line, lineNumber);
+  }
 }
 ```
 
@@ -77,9 +77,9 @@ async function processJSONLFileByLine(
 // apps/ccusage/src/_types.ts:9-13, 109
 // Branded Types でドメイン値の型安全性を確保
 export const modelNameSchema = v.pipe(
-	v.string(),
-	v.minLength(1, 'Model name cannot be empty'),
-	v.brand('ModelName'),
+  v.string(),
+  v.minLength(1, "Model name cannot be empty"),
+  v.brand("ModelName"),
 );
 
 export const createModelName = (value: string): ModelName => v.parse(modelNameSchema, value);
@@ -90,8 +90,8 @@ export const createModelName = (value: string): ModelName => v.parse(modelNameSc
 // NUL 文字セパレータによる複合グルーピングキー
 const needsProjectGrouping = options?.groupByProject === true || options?.project != null;
 const groupingKey = needsProjectGrouping
-	? (entry: (typeof allEntries)[0]) => `${entry.date}\x00${entry.project}`
-	: (entry: (typeof allEntries)[0]) => entry.date;
+  ? (entry: (typeof allEntries)[0]) => `${entry.date}\x00${entry.project}`
+  : (entry: (typeof allEntries)[0]) => entry.date;
 
 const groupedData = groupBy(allEntries, groupingKey);
 ```
@@ -100,35 +100,35 @@ const groupedData = groupBy(allEntries, groupingKey);
 // apps/ccusage/src/data-loader.ts:629-667
 // 3モードコスト計算 — exhaustive switch で漏れを防ぐ
 export async function calculateCostForEntry(
-	data: UsageData,
-	mode: CostMode,
-	fetcher: PricingFetcher,
+  data: UsageData,
+  mode: CostMode,
+  fetcher: PricingFetcher,
 ): Promise<number> {
-	if (mode === 'display') {
-		return data.costUSD ?? 0;
-	}
-	if (mode === 'calculate') {
-		if (data.message.model != null) {
-			return Result.unwrap(
-				fetcher.calculateCostFromTokens(data.message.usage, data.message.model),
-				0,
-			);
-		}
-		return 0;
-	}
-	if (mode === 'auto') {
-		if (data.costUSD != null) {
-			return data.costUSD;
-		}
-		if (data.message.model != null) {
-			return Result.unwrap(
-				fetcher.calculateCostFromTokens(data.message.usage, data.message.model),
-				0,
-			);
-		}
-		return 0;
-	}
-	unreachable(mode);
+  if (mode === "display") {
+    return data.costUSD ?? 0;
+  }
+  if (mode === "calculate") {
+    if (data.message.model != null) {
+      return Result.unwrap(
+        fetcher.calculateCostFromTokens(data.message.usage, data.message.model),
+        0,
+      );
+    }
+    return 0;
+  }
+  if (mode === "auto") {
+    if (data.costUSD != null) {
+      return data.costUSD;
+    }
+    if (data.message.model != null) {
+      return Result.unwrap(
+        fetcher.calculateCostFromTokens(data.message.usage, data.message.model),
+        0,
+      );
+    }
+    return 0;
+  }
+  unreachable(mode);
 }
 ```
 
@@ -136,15 +136,15 @@ export async function calculateCostForEntry(
 // apps/ccusage/src/data-loader.ts:1081-1091
 // 月次集約は日次を入力として再集約するパターン
 export async function loadMonthlyUsageData(options?: LoadOptions): Promise<MonthlyUsage[]> {
-	return loadBucketUsageData(
-		(data: DailyUsage) => createMonthlyDate(data.date.slice(0, 7)),
-		options,
-	).then((usages) =>
-		usages.map<MonthlyUsage>(({ bucket, ...rest }) => ({
-			month: v.parse(monthlyDateSchema, bucket),
-			...rest,
-		})),
-	);
+  return loadBucketUsageData(
+    (data: DailyUsage) => createMonthlyDate(data.date.slice(0, 7)),
+    options,
+  ).then((usages) =>
+    usages.map<MonthlyUsage>(({ bucket, ...rest }) => ({
+      month: v.parse(monthlyDateSchema, bucket),
+      ...rest,
+    }))
+  );
 }
 ```
 
@@ -152,17 +152,15 @@ export async function loadMonthlyUsageData(options?: LoadOptions): Promise<Month
 // apps/ccusage/src/_token-utils.ts:40-53
 // 2つの命名規約を1つの関数で吸収する polymorphic token counter
 export function getTotalTokens(tokenCounts: AnyTokenCounts): number {
-	const cacheCreation =
-		'cacheCreationInputTokens' in tokenCounts
-			? tokenCounts.cacheCreationInputTokens
-			: tokenCounts.cacheCreationTokens;
+  const cacheCreation = "cacheCreationInputTokens" in tokenCounts
+    ? tokenCounts.cacheCreationInputTokens
+    : tokenCounts.cacheCreationTokens;
 
-	const cacheRead =
-		'cacheReadInputTokens' in tokenCounts
-			? tokenCounts.cacheReadInputTokens
-			: tokenCounts.cacheReadTokens;
+  const cacheRead = "cacheReadInputTokens" in tokenCounts
+    ? tokenCounts.cacheReadInputTokens
+    : tokenCounts.cacheReadTokens;
 
-	return tokenCounts.inputTokens + tokenCounts.outputTokens + cacheCreation + cacheRead;
+  return tokenCounts.inputTokens + tokenCounts.outputTokens + cacheCreation + cacheRead;
 }
 ```
 
@@ -193,9 +191,9 @@ export function getTotalTokens(tokenCounts: AnyTokenCounts): number {
 ```typescript
 // apps/ccusage/src/calculate-cost.ts:84-86
 if (import.meta.vitest != null) {
-	describe('token aggregation utilities', () => {
-		// テストがプロダクションコードと同じファイルに
-	});
+  describe("token aggregation utilities", () => {
+    // テストがプロダクションコードと同じファイルに
+  });
 }
 ```
 
@@ -203,7 +201,7 @@ if (import.meta.vitest != null) {
 
 ```typescript
 // apps/ccusage/src/data-loader.ts:775
-using fetcher = mode === 'display' ? null : new PricingFetcher(options?.offline);
+using fetcher = mode === "display" ? null : new PricingFetcher(options?.offline);
 // スコープ終了時に fetcher[Symbol.dispose]() が自動呼出し → キャッシュクリア
 ```
 
@@ -211,7 +209,7 @@ using fetcher = mode === 'display' ? null : new PricingFetcher(options?.offline)
 
 ```typescript
 // apps/ccusage/src/_pricing-fetcher.ts:3,14
-import { prefetchClaudePricing } from './_macro.ts' with { type: 'macro' };
+import { prefetchClaudePricing } from "./_macro.ts" with { type: "macro" };
 const PREFETCHED_CLAUDE_PRICING = prefetchClaudePricing();
 ```
 
@@ -220,7 +218,7 @@ const PREFETCHED_CLAUDE_PRICING = prefetchClaudePricing();
 ```typescript
 // apps/ccusage/src/_utils.ts:5-7
 export function unreachable(value: never): never {
-	throw new Error(`Unreachable code reached with value: ${value as any}`);
+  throw new Error(`Unreachable code reached with value: ${value as any}`);
 }
 ```
 
@@ -246,14 +244,13 @@ await processJSONLFileByLine(file, (line) => {
 
 ```typescript
 // Bad: apps/ccusage/src/_token-utils.ts:42-46
-const cacheCreation =
-	'cacheCreationInputTokens' in tokenCounts
-		? tokenCounts.cacheCreationInputTokens
-		: tokenCounts.cacheCreationTokens;
+const cacheCreation = "cacheCreationInputTokens" in tokenCounts
+  ? tokenCounts.cacheCreationInputTokens
+  : tokenCounts.cacheCreationTokens;
 
 // Better: 早い段階で正規化し、以降は統一名で扱う
-type NormalizedTokenCounts = { input: number; output: number; cacheCreate: number; cacheRead: number };
-function normalizeTokenCounts(raw: AnyTokenCounts): NormalizedTokenCounts { /* ... */ }
+type NormalizedTokenCounts = { input: number; output: number; cacheCreate: number; cacheRead: number; };
+function normalizeTokenCounts(raw: AnyTokenCounts): NormalizedTokenCounts {/* ... */}
 ```
 
 ## 導出ルール

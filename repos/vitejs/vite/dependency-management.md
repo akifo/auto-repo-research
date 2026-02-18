@@ -54,33 +54,33 @@ CLI のアクションハンドラは、各コマンドの実行コードをす�
 
 ```ts
 // packages/vite/src/node/cli.ts:214
-const { createServer } = await import('./server')
+const { createServer } = await import("./server");
 
 // packages/vite/src/node/cli.ts:348
-const { createBuilder } = await import('./build')
+const { createBuilder } = await import("./build");
 
 // packages/vite/src/node/cli.ts:396-397
-const { resolveConfig } = await import('./config')
-const { optimizeDeps } = await import('./optimizer')
+const { resolveConfig } = await import("./config");
+const { optimizeDeps } = await import("./optimizer");
 
 // packages/vite/src/node/cli.ts:441
-const { preview } = await import('./preview')
+const { preview } = await import("./preview");
 ```
 
 CSS プリプロセッサ（Sass, Less, Stylus）や HTML パーサー（parse5）、terser など、ユーザー環境に存在しない可能性のある依存は、使用時に動的にロードする:
 
 ```ts
 // packages/vite/src/node/plugins/html.ts:209
-const { parse } = await import('parse5')
+const { parse } = await import("parse5");
 
 // packages/vite/src/node/plugins/css.ts:2512
-const sass: typeof Sass = await import(sassPath)
+const sass: typeof Sass = await import(sassPath);
 
 // packages/vite/src/node/plugins/css.ts:2861
-const nodeLess: typeof Less = (await import(lessPath)).default
+const nodeLess: typeof Less = (await import(lessPath)).default;
 
 // packages/vite/src/node/plugins/css.ts:2974
-const stylus: typeof Stylus = (await import(stylusPath)).default
+const stylus: typeof Stylus = (await import(stylusPath)).default;
 ```
 
 CONTRIBUTING.md はこのパターンの根拠を明示している: ESM ファイルでは `require()` が無視されバンドルに含まれないため、`(await import('somedep')).default` を使う必要がある（`CONTRIBUTING.md:50-54`）。
@@ -99,8 +99,8 @@ overrides:
 
 ```ts
 // packages/vite/src/node/utils.ts:17-18
-import type { Debugger } from 'obug'
-import debug from 'obug'
+import type { Debugger } from "obug";
+import debug from "obug";
 ```
 
 `obug` は `debug` の軽量フォーク（または互換パッケージ）であり、バンドルサイズ削減のための意図的な選択である。
@@ -213,31 +213,33 @@ module-runner は軽量であることが要求されるため、54kB のハー�
 
 ```ts
 // packages/vite/rolldown.config.ts:150
-plugins: [bundleSizeLimit(54), enableSourceMapsInWatchModePlugin()],
-
-// packages/vite/rolldown.config.ts:377-405
-function bundleSizeLimit(limit: number): Plugin {
-  let size = 0
-  return {
-    name: 'bundle-limit',
-    generateBundle(_, bundle) {
-      if (this.meta.watchMode) return
-      size = Buffer.byteLength(
-        Object.values(bundle)
-          .map((i) => ('code' in i ? i.code : ''))
-          .join(''),
-        'utf-8',
-      )
-    },
-    closeBundle() {
-      if (this.meta.watchMode) return
-      const kb = size / 1000
-      if (kb > limit) {
-        this.error(`Bundle size exceeded ${limit} kB, current size is ${kb.toFixed(2)}kb.`)
-      }
-    },
-  }
-}
+plugins: [bundleSizeLimit(54), enableSourceMapsInWatchModePlugin()], // packages/vite/rolldown.config.ts:377-405
+  function bundleSizeLimit(limit: number): Plugin {
+    let size = 0;
+    return {
+      name: "bundle-limit",
+      generateBundle(_, bundle) {
+        if (this.meta.watchMode) {
+          return;
+        }
+        size = Buffer.byteLength(
+          Object.values(bundle)
+            .map((i) => ("code" in i ? i.code : ""))
+            .join(""),
+          "utf-8",
+        );
+      },
+      closeBundle() {
+        if (this.meta.watchMode) {
+          return;
+        }
+        const kb = size / 1000;
+        if (kb > limit) {
+          this.error(`Bundle size exceeded ${limit} kB, current size is ${kb.toFixed(2)}kb.`);
+        }
+      },
+    };
+  };
 ```
 
 ### peerDependencies によるオプショナル機能の分離
@@ -297,11 +299,11 @@ CSS プリプロセッサ（sass, less, stylus）、minifier（terser）、設�
 ```ts
 // packages/vite/src/node/cli.ts:214
 // dev コマンド → server のみロード
-const { createServer } = await import('./server')
+const { createServer } = await import("./server");
 
 // packages/vite/src/node/cli.ts:348
 // build コマンド → build のみロード
-const { createBuilder } = await import('./build')
+const { createBuilder } = await import("./build");
 ```
 
 - **ビルドパイプラインでの依存コード書き換え（shimDepsPlugin）**: バンドル対象の依存が持つ不要な `require()` やモジュール参照を、ビルド時に差し替えることで推移的依存を削減する。fork のメンテナンスコストなく、ピンポイントで最適化できる。
@@ -312,21 +314,21 @@ const { createBuilder } = await import('./build')
 
 ```ts
 // Bad: http-proxy-middleware（3MB、大量の推移的依存）
-import { createProxyMiddleware } from 'http-proxy-middleware'
+import { createProxyMiddleware } from "http-proxy-middleware";
 
 // Better: http-proxy-3（380kB）+ 数行のカスタムミドルウェア
 // packages/vite/src/node/server/middlewares/proxy.ts:2
-import * as httpProxy from 'http-proxy-3'
+import * as httpProxy from "http-proxy-3";
 ```
 
 - **ESM バンドルで require() を使う**: ESM コンテキストでは `require()` はバンドラに無視され、さらに devDependencies は publish 時に存在しないため二重に壊れる。
 
 ```ts
 // Bad: ESM で require（バンドルに含まれず、devDep も見つからない）
-const dep = require('somedep')
+const dep = require("somedep");
 
 // Better: 動的 import を使う
-const dep = (await import('somedep')).default
+const dep = (await import("somedep")).default;
 ```
 
 ## 導出ルール

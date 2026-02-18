@@ -22,16 +22,16 @@ Vite は Node.js の慣習に倣い、`Error` オブジェクトに `.code` プ�
 
 ```typescript
 // packages/vite/src/node/server/pluginContainer.ts:128-135
-export const ERR_CLOSED_SERVER = 'ERR_CLOSED_SERVER'
+export const ERR_CLOSED_SERVER = "ERR_CLOSED_SERVER";
 
 export function throwClosedServerError(): never {
   const err: any = new Error(
-    'The server is being restarted or closed. Request is outdated',
-  )
-  err.code = ERR_CLOSED_SERVER
+    "The server is being restarted or closed. Request is outdated",
+  );
+  err.code = ERR_CLOSED_SERVER;
   // This error will be caught by the transform middleware that will
   // send a 504 status code request timeout
-  throw err
+  throw err;
 }
 ```
 
@@ -72,18 +72,18 @@ catch 側では `.code` を比較してエラー種別ごとに異なる処理�
 
 ```typescript
 // packages/vite/src/node/server/middlewares/error.ts:11-23
-export function prepareError(err: Error | RollupError): ErrorPayload['err'] {
+export function prepareError(err: Error | RollupError): ErrorPayload["err"] {
   // only copy the information we need and avoid serializing unnecessary
   // properties, since some errors may attach full objects (e.g. PostCSS)
   return {
     message: strip(err.message),
-    stack: strip(cleanStack(err.stack || '')),
+    stack: strip(cleanStack(err.stack || "")),
     id: (err as RollupError).id,
-    frame: strip((err as RollupError).frame || ''),
+    frame: strip((err as RollupError).frame || ""),
     plugin: (err as RollupError).plugin,
     pluginCode: (err as RollupError).pluginCode?.toString(),
     loc: (err as RollupError).loc,
-  }
+  };
 }
 ```
 
@@ -100,11 +100,11 @@ export function generateCodeFrame(
 ): string {
   // ...
   res.push(
-    `${line}${' '.repeat(lineNumberWidth - String(line).length)}|  ${displayLine}`,
-  )
+    `${line}${" ".repeat(lineNumberWidth - String(line).length)}|  ${displayLine}`,
+  );
   if (j === i) {
-    const underline = '^'.repeat(Math.min(underlineLength, MAX_DISPLAY_LEN))
-    res.push(`${' '.repeat(lineNumberWidth)}|  ` + ' '.repeat(underlinePad) + underline)
+    const underline = "^".repeat(Math.min(underlineLength, MAX_DISPLAY_LEN));
+    res.push(`${" ".repeat(lineNumberWidth)}|  ` + " ".repeat(underlinePad) + underline);
   }
   // ...
 }
@@ -114,10 +114,10 @@ export function generateCodeFrame(
 
 ```typescript
 // packages/vite/src/node/plugins/css.ts:2271
-e.frame = generateCodeFrame(css, e.loc)
+e.frame = generateCodeFrame(css, e.loc);
 
 // packages/vite/src/node/server/pluginContainer.ts:953
-err.frame = err.frame || generateCodeFrame(this._activeCode, pos)
+err.frame = err.frame || generateCodeFrame(this._activeCode, pos);
 ```
 
 ### ブラウザ側エラーオーバーレイ（Web Components）
@@ -127,24 +127,24 @@ err.frame = err.frame || generateCodeFrame(this._activeCode, pos)
 ```typescript
 // packages/vite/src/client/overlay.ts:216-298
 export class ErrorOverlay extends HTMLElement {
-  root: ShadowRoot
-  closeOnEsc: (e: KeyboardEvent) => void
+  root: ShadowRoot;
+  closeOnEsc: (e: KeyboardEvent) => void;
 
-  constructor(err: ErrorPayload['err'], links = true) {
-    super()
-    this.root = this.attachShadow({ mode: 'open' })
-    this.root.appendChild(createTemplate())
+  constructor(err: ErrorPayload["err"], links = true) {
+    super();
+    this.root = this.attachShadow({ mode: "open" });
+    this.root.appendChild(createTemplate());
     // plugin 名、メッセージ、ファイルパス、コードフレーム、スタックを構造化表示
     if (err.plugin) {
-      this.text('.plugin', `[plugin:${err.plugin}] `)
+      this.text(".plugin", `[plugin:${err.plugin}] `);
     }
-    this.text('.message-body', message.trim())
+    this.text(".message-body", message.trim());
     // ファイルパスをクリック可能なリンクに変換し、エディタで開く機能を提供
     // ...
   }
   close(): void {
-    this.parentNode?.removeChild(this)
-    document.removeEventListener('keydown', this.closeOnEsc)
+    this.parentNode?.removeChild(this);
+    document.removeEventListener("keydown", this.closeOnEsc);
   }
 }
 ```
@@ -156,18 +156,18 @@ export class ErrorOverlay extends HTMLElement {
 ```typescript
 // packages/vite/src/node/server/middlewares/error.ts:86-98
 try {
-  const { ErrorOverlay } = await import(/* client path */)
-  document.body.appendChild(new ErrorOverlay(error))
+  const { ErrorOverlay } = await import(); /* client path */
+  document.body.appendChild(new ErrorOverlay(error));
 } catch {
   const h = (tag, text) => {
-    const el = document.createElement(tag)
-    el.textContent = text
-    return el
-  }
-  document.body.appendChild(h('h1', 'Internal Server Error'))
-  document.body.appendChild(h('h2', error.message))
-  document.body.appendChild(h('pre', error.stack))
-  document.body.appendChild(h('p', '(Error overlay failed to load)'))
+    const el = document.createElement(tag);
+    el.textContent = text;
+    return el;
+  };
+  document.body.appendChild(h("h1", "Internal Server Error"));
+  document.body.appendChild(h("h2", error.message));
+  document.body.appendChild(h("pre", error.stack));
+  document.body.appendChild(h("p", "(Error overlay failed to load)"));
 }
 ```
 
@@ -177,22 +177,23 @@ try {
 
 ```typescript
 // packages/vite/src/node/ssr/ssrStacktrace.ts:92-113
-const rewroteStacktraces = new WeakSet()
+const rewroteStacktraces = new WeakSet();
 
 export function ssrFixStacktrace(
   e: Error,
   moduleGraph: EnvironmentModuleGraph,
 ): void {
-  if (!e.stack) return
-  if (rewroteStacktraces.has(e)) return
+  if (!e.stack) return;
+  if (rewroteStacktraces.has(e)) return;
   const { result: stacktrace, alreadyRewritten } = ssrRewriteStacktrace(
-    e.stack, moduleGraph,
-  )
-  rebindErrorStacktrace(e, stacktrace)
+    e.stack,
+    moduleGraph,
+  );
+  rebindErrorStacktrace(e, stacktrace);
   if (alreadyRewritten) {
-    e.message += ' (The stacktrace appears to be already rewritten...)'
+    e.message += " (The stacktrace appears to be already rewritten...)";
   }
-  rewroteStacktraces.add(e)
+  rewroteStacktraces.add(e);
 }
 ```
 
@@ -222,13 +223,13 @@ hasErrorLogged(error) {
 
 ```typescript
 // packages/vite/src/node/plugins/css.ts:1757
-e.message = `[postcss] ${e.message}`
+e.message = `[postcss] ${e.message}`;
 
 // packages/vite/src/node/plugins/css.ts:2224
-e.message = '[esbuild css minify] ' + e.message
+e.message = "[esbuild css minify] " + e.message;
 
 // packages/vite/src/node/plugins/css.ts:2260
-e.message = `[lightningcss] ${e.message}`
+e.message = `[lightningcss] ${e.message}`;
 ```
 
 ## パターンカタログ
@@ -251,9 +252,9 @@ e.message = `[lightningcss] ${e.message}`
 
 ```typescript
 // packages/vite/src/node/server/transformRequest.ts:39-41
-export const ERR_LOAD_URL = 'ERR_LOAD_URL'
-export const ERR_LOAD_PUBLIC_URL = 'ERR_LOAD_PUBLIC_URL'
-export const ERR_DENIED_ID = 'ERR_DENIED_ID'
+export const ERR_LOAD_URL = "ERR_LOAD_URL";
+export const ERR_LOAD_PUBLIC_URL = "ERR_LOAD_PUBLIC_URL";
+export const ERR_DENIED_ID = "ERR_DENIED_ID";
 ```
 
 - **アクション可能なエラーメッセージ**: エラーメッセージに問題の説明だけでなく、解決策のヒントを含める。
@@ -261,10 +262,10 @@ export const ERR_DENIED_ID = 'ERR_DENIED_ID'
 ```typescript
 // packages/vite/src/node/plugins/optimizedDeps.ts:123-133
 const err: any = new Error(
-  `The file does not exist at "${id}" which is in the optimize deps directory. ` +
-    `The dependency might be incompatible with the dep optimizer. ` +
-    `Try adding it to \`optimizeDeps.exclude\`.`,
-)
+  `The file does not exist at "${id}" which is in the optimize deps directory. `
+    + `The dependency might be incompatible with the dep optimizer. `
+    + `Try adding it to \`optimizeDeps.exclude\`.`,
+);
 ```
 
 - **構造化エラーの正規化**: 異なるソースからのエラーを共通構造に変換してから伝播させる。CSS プリプロセッサの catch ブロックでは、ツール固有のエラーフォーマットを `{ message, loc, frame }` に正規化する。
@@ -273,12 +274,12 @@ const err: any = new Error(
 // packages/vite/src/node/plugins/css.ts:2929-2940
 const normalizedError: RollupError = new Error(
   `[less] ${error.message || error.type}`,
-) as RollupError
+) as RollupError;
 normalizedError.loc = {
   file: error.filename || options.filename,
   line: error.line,
   column: error.column,
-}
+};
 ```
 
 ## Anti-Patterns / 注意点
@@ -287,17 +288,17 @@ normalizedError.loc = {
 
 ```typescript
 // Bad: any キャストが必要になる
-const err: any = new Error('message')
-err.code = ERR_SOME_ERROR
+const err: any = new Error("message");
+err.code = ERR_SOME_ERROR;
 
 // Better: 型付きのヘルパー関数で生成する
 interface CodedError extends Error {
-  code: string
+  code: string;
 }
 function createCodedError(message: string, code: string): CodedError {
-  const err = new Error(message) as CodedError
-  err.code = code
-  return err
+  const err = new Error(message) as CodedError;
+  err.code = code;
+  return err;
 }
 ```
 
@@ -305,12 +306,12 @@ function createCodedError(message: string, code: string): CodedError {
 
 ```typescript
 // Bad: 元のメッセージが失われる
-e.message = `[postcss] ${e.message}`
+e.message = `[postcss] ${e.message}`;
 
 // Better: 新しいエラーで元をラップする（ただしスタック情報の保持に注意）
-const wrapped = new Error(`[postcss] ${e.message}`)
-wrapped.cause = e
-throw wrapped
+const wrapped = new Error(`[postcss] ${e.message}`);
+wrapped.cause = e;
+throw wrapped;
 ```
 
 ただし Vite の場合、`e.frame` や `e.loc` を付与して `prepareError` 経由でクライアントに送る設計のため、同一オブジェクトの変異が意図的な選択である点に留意する。

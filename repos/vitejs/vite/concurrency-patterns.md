@@ -22,38 +22,38 @@ Vite のコードベースにおけるファイル監視・並列処理・デバ
 
 ```typescript
 // packages/vite/src/node/server/transformRequest.ts:109-146
-const pending = environment._pendingRequests.get(url)
+const pending = environment._pendingRequests.get(url);
 if (pending) {
   return environment.moduleGraph.getModuleByUrl(url).then((module) => {
     if (!module || pending.timestamp > module.lastInvalidationTimestamp) {
       // The pending request is still valid, we can safely reuse its result
-      return pending.request
+      return pending.request;
     } else {
       // First request has been invalidated, abort it to clear the cache,
       // then perform a new doTransform.
-      pending.abort()
-      return transformRequest(environment, url, options)
+      pending.abort();
+      return transformRequest(environment, url, options);
     }
-  })
+  });
 }
 
-const request = doTransform(environment, url, options, timestamp)
+const request = doTransform(environment, url, options, timestamp);
 
-let cleared = false
+let cleared = false;
 const clearCache = () => {
   if (!cleared) {
-    environment._pendingRequests.delete(url)
-    cleared = true
+    environment._pendingRequests.delete(url);
+    cleared = true;
   }
-}
+};
 
 environment._pendingRequests.set(url, {
   request,
   timestamp,
   abort: clearCache,
-})
+});
 
-return request.finally(clearCache)
+return request.finally(clearCache);
 ```
 
 ### デバウンス付き依存関係最適化
@@ -63,24 +63,24 @@ return request.finally(clearCache)
 ```typescript
 // packages/vite/src/node/optimizer/optimizer.ts:615-628
 function debouncedProcessing(timeout = debounceMs) {
-  enqueuedRerun = undefined
-  if (debounceProcessingHandle) clearTimeout(debounceProcessingHandle)
-  if (newDepsToLogHandle) clearTimeout(newDepsToLogHandle)
-  newDepsToLogHandle = undefined
+  enqueuedRerun = undefined;
+  if (debounceProcessingHandle) clearTimeout(debounceProcessingHandle);
+  if (newDepsToLogHandle) clearTimeout(newDepsToLogHandle);
+  newDepsToLogHandle = undefined;
   debounceProcessingHandle = setTimeout(() => {
-    debounceProcessingHandle = undefined
-    enqueuedRerun = rerun
+    debounceProcessingHandle = undefined;
+    enqueuedRerun = rerun;
     if (!currentlyProcessing) {
-      enqueuedRerun()
+      enqueuedRerun();
     }
-  }, timeout)
+  }, timeout);
 }
 
 // packages/vite/src/node/optimizer/optimizer.ts:518-520
 // runOptimizer の最後で、待機中の再実行を処理
-currentlyProcessing = false
+currentlyProcessing = false;
 // @ts-expect-error `enqueuedRerun` could exist because `debouncedProcessing` may run while awaited
-enqueuedRerun?.()
+enqueuedRerun?.();
 ```
 
 ### HMR 更新のマイクロタスクバッファリング
@@ -109,12 +109,12 @@ public async queueUpdate(payload: Update): Promise<void> {
 ```typescript
 // packages/vite/src/node/optimizer/optimizer.ts:143-149
 async function close() {
-  closed = true
+  closed = true;
   await Promise.allSettled([
     discover?.cancel(),
     depsOptimizer.scanProcessing,
     optimizationResult?.cancel(),
-  ])
+  ]);
 }
 ```
 
@@ -125,26 +125,26 @@ async function close() {
 ```typescript
 // packages/vite/src/node/server/environment.ts:342-401
 function setupOnCrawlEnd(): CrawlEndFinder {
-  const registeredIds = new Set<string>()
-  const seenIds = new Set<string>()
-  const onCrawlEndPromiseWithResolvers = promiseWithResolvers<void>()
+  const registeredIds = new Set<string>();
+  const seenIds = new Set<string>();
+  const onCrawlEndPromiseWithResolvers = promiseWithResolvers<void>();
 
-  let timeoutHandle: NodeJS.Timeout | undefined
+  let timeoutHandle: NodeJS.Timeout | undefined;
 
   function registerRequestProcessing(id: string, done: () => Promise<any>): void {
     if (!seenIds.has(id)) {
-      seenIds.add(id)
-      registeredIds.add(id)
+      seenIds.add(id);
+      registeredIds.add(id);
       done()
         .catch(() => {})
-        .finally(() => markIdAsDone(id))
+        .finally(() => markIdAsDone(id));
     }
   }
 
   function checkIfCrawlEndAfterTimeout() {
-    if (cancelled || registeredIds.size > 0) return
-    if (timeoutHandle) clearTimeout(timeoutHandle)
-    timeoutHandle = setTimeout(callOnCrawlEndWhenIdle, callCrawlEndIfIdleAfterMs)
+    if (cancelled || registeredIds.size > 0) return;
+    if (timeoutHandle) clearTimeout(timeoutHandle);
+    timeoutHandle = setTimeout(callOnCrawlEndWhenIdle, callCrawlEndIfIdleAfterMs);
   }
   // ...
 }
@@ -160,19 +160,19 @@ HMR でファイル変更イベントを受けた直後にファイルを読み�
 // change event and sometimes this can be too early and get an empty buffer.
 // Poll until the file's modified time has changed before reading again.
 async function readModifiedFile(file: string): Promise<string> {
-  const content = await fsp.readFile(file, 'utf-8')
+  const content = await fsp.readFile(file, "utf-8");
   if (!content) {
-    const mtime = (await fsp.stat(file)).mtimeMs
+    const mtime = (await fsp.stat(file)).mtimeMs;
     for (let n = 0; n < 10; n++) {
-      await new Promise((r) => setTimeout(r, 10))
-      const newMtime = (await fsp.stat(file)).mtimeMs
+      await new Promise((r) => setTimeout(r, 10));
+      const newMtime = (await fsp.stat(file)).mtimeMs;
       if (newMtime !== mtime) {
-        break
+        break;
       }
     }
-    return await fsp.readFile(file, 'utf-8')
+    return await fsp.readFile(file, "utf-8");
   } else {
-    return content
+    return content;
   }
 }
 ```
@@ -184,21 +184,21 @@ CSS の emit 処理など、順序保証が必要な非同期処理のために 
 ```typescript
 // packages/vite/src/node/utils.ts:1638-1661
 export function createSerialPromiseQueue<T>(): {
-  run(f: () => Promise<T>): Promise<T>
+  run(f: () => Promise<T>): Promise<T>;
 } {
-  let previousTask: Promise<[unknown, Awaited<T>]> | undefined
+  let previousTask: Promise<[unknown, Awaited<T>]> | undefined;
   return {
     async run(f) {
-      const thisTask = f()
-      const depTasks = Promise.all([previousTask, thisTask])
-      previousTask = depTasks
-      const [, result] = await depTasks
+      const thisTask = f();
+      const depTasks = Promise.all([previousTask, thisTask]);
+      previousTask = depTasks;
+      const [, result] = await depTasks;
       if (previousTask === depTasks) {
-        previousTask = undefined
+        previousTask = undefined;
       }
-      return result
+      return result;
     },
-  }
+  };
 }
 ```
 
@@ -234,16 +234,16 @@ export function createSerialPromiseQueue<T>(): {
 
 ```typescript
 // packages/vite/src/node/server/transformRequest.ts:128-146
-const request = doTransform(environment, url, options, timestamp)
-let cleared = false
+const request = doTransform(environment, url, options, timestamp);
+let cleared = false;
 const clearCache = () => {
   if (!cleared) {
-    environment._pendingRequests.delete(url)
-    cleared = true
+    environment._pendingRequests.delete(url);
+    cleared = true;
   }
-}
-environment._pendingRequests.set(url, { request, timestamp, abort: clearCache })
-return request.finally(clearCache)
+};
+environment._pendingRequests.set(url, { request, timestamp, abort: clearCache });
+return request.finally(clearCache);
 ```
 
 - **`Promise.allSettled` によるグレースフルシャットダウン**: 複数の非同期リソースを閉じる際に `Promise.allSettled` を使い、一部の失敗が他のクリーンアップを妨げない。
@@ -254,27 +254,25 @@ await Promise.allSettled([
   watcher.close(),
   ws.close(),
   Promise.allSettled(
-    Object.values(server.environments).map((environment) =>
-      environment.close(),
-    ),
+    Object.values(server.environments).map((environment) => environment.close()),
   ),
   closeHttpServer(),
   server._ssrCompatModuleRunner?.close(),
-])
+]);
 ```
 
 - **WeakMap による計算結果のキャッシュ**: ソート済みプラグインリストを `WeakMap<Environment, Plugin[]>` でキャッシュし、Environment オブジェクトが GC されれば自動的にキャッシュも解放される。
 
 ```typescript
 // packages/vite/src/node/server/hmr.ts:360-368
-const sortedHotUpdatePluginsCache = new WeakMap<Environment, Plugin[]>()
+const sortedHotUpdatePluginsCache = new WeakMap<Environment, Plugin[]>();
 function getSortedHotUpdatePlugins(environment: Environment): Plugin[] {
-  let sortedPlugins = sortedHotUpdatePluginsCache.get(environment)
+  let sortedPlugins = sortedHotUpdatePluginsCache.get(environment);
   if (!sortedPlugins) {
-    sortedPlugins = getSortedPluginsByHotUpdateHook(environment.plugins)
-    sortedHotUpdatePluginsCache.set(environment, sortedPlugins)
+    sortedPlugins = getSortedPluginsByHotUpdateHook(environment.plugins);
+    sortedHotUpdatePluginsCache.set(environment, sortedPlugins);
   }
-  return sortedPlugins
+  return sortedPlugins;
 }
 ```
 
@@ -283,13 +281,13 @@ function getSortedHotUpdatePlugins(environment: Environment): Plugin[] {
 ```typescript
 // packages/vite/src/shared/utils.ts:76-84
 export function promiseWithResolvers<T>(): PromiseWithResolvers<T> {
-  let resolve: any
-  let reject: any
+  let resolve: any;
+  let reject: any;
   const promise = new Promise<T>((_resolve, _reject) => {
-    resolve = _resolve
-    reject = _reject
-  })
-  return { promise, resolve, reject }
+    resolve = _resolve;
+    reject = _reject;
+  });
+  return { promise, resolve, reject };
 }
 ```
 
@@ -317,25 +315,25 @@ async close() {
 
 ```typescript
 // Bad: 変更通知の即座に読み取り
-watcher.on('change', async (file) => {
-  const content = await fs.readFile(file, 'utf-8')
+watcher.on("change", async (file) => {
+  const content = await fs.readFile(file, "utf-8");
   // content が空の可能性がある
-})
+});
 
 // Better: mtime ポーリングでリトライ
 // packages/vite/src/node/server/hmr.ts:1093-1110
 async function readModifiedFile(file: string): Promise<string> {
-  const content = await fsp.readFile(file, 'utf-8')
+  const content = await fsp.readFile(file, "utf-8");
   if (!content) {
-    const mtime = (await fsp.stat(file)).mtimeMs
+    const mtime = (await fsp.stat(file)).mtimeMs;
     for (let n = 0; n < 10; n++) {
-      await new Promise((r) => setTimeout(r, 10))
-      const newMtime = (await fsp.stat(file)).mtimeMs
-      if (newMtime !== mtime) break
+      await new Promise((r) => setTimeout(r, 10));
+      const newMtime = (await fsp.stat(file)).mtimeMs;
+      if (newMtime !== mtime) break;
     }
-    return await fsp.readFile(file, 'utf-8')
+    return await fsp.readFile(file, "utf-8");
   }
-  return content
+  return content;
 }
 ```
 
@@ -343,10 +341,10 @@ async function readModifiedFile(file: string): Promise<string> {
 
 ```typescript
 // Bad: 一つが失敗すると後続が待たれない
-await Promise.all([resourceA.close(), resourceB.close(), resourceC.close()])
+await Promise.all([resourceA.close(), resourceB.close(), resourceC.close()]);
 
 // Better: allSettled で全てのクリーンアップを実行
-await Promise.allSettled([resourceA.close(), resourceB.close(), resourceC.close()])
+await Promise.allSettled([resourceA.close(), resourceB.close(), resourceC.close()]);
 ```
 
 ## 導出ルール

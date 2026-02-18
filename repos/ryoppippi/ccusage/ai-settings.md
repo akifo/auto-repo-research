@@ -37,10 +37,12 @@ ccusage は monorepo 全体で 10 個の CLAUDE.md（合計 1,158 行）、2 つ
 パッケージ別 CLAUDE.md は 2 つのスタイルに分かれる:
 
 **構造化スタイル**（ccusage, mcp, pi, terminal, docs）:
+
 - Package Overview / Development Commands / Architecture / Testing / Code Style / Dependencies / Exports の定型セクション
 - ルートの規約を繰り返さず、パッケージ固有情報に集中
 
 **ドメイン知識スタイル**（codex, amp, opencode）:
+
 - Log Sources / Token Fields / Cost Calculation / CLI Usage / Testing Notes
 - 外部サービスのデータ形式・計算ロジックなど、AI が実装時に参照すべきドメイン固有知識を詳述
 
@@ -102,6 +104,7 @@ catalogs:
 
 ```markdown
 // CLAUDE.md:296-302
+
 # Tips for Claude Code
 
 - Context7 MCP server available for library documentation lookup
@@ -115,6 +118,7 @@ catalogs:
 
 ```markdown
 // CLAUDE.md:304-310
+
 # important-instruction-reminders
 
 Do what has been asked; nothing more, nothing less.
@@ -191,6 +195,7 @@ Run `similarity-ts .` to detect semantic code similarities. Execute this command
 
 ```markdown
 # Tips for Claude Code
+
 - Context7 MCP server available for library documentation lookup
 - use-gunshi-cli skill available for gunshi CLI framework documentation
 - do not use console.log. use logger.ts instead
@@ -215,6 +220,7 @@ catalogs:
 
 ```markdown
 ## Token Fields
+
 - `input_tokens`: total input tokens sent to the model.
 - `cached_input_tokens`: cached portion of the input.
 - `output_tokens`: normal output tokens.
@@ -224,6 +230,7 @@ catalogs:
 
 ```markdown
 After making any code changes, ALWAYS run these commands in parallel:
+
 - `pnpm run format`
 - `pnpm typecheck`
 - `pnpm run test`
@@ -236,10 +243,11 @@ After making any code changes, ALWAYS run these commands in parallel:
 ```markdown
 // Bad: 6 ファイルに同一ルールを重複記載
 // CLAUDE.md:279
+
 - **IMPORTANT**: DO NOT use `await import()` dynamic imports anywhere
-// apps/ccusage/CLAUDE.md:71
+  // apps/ccusage/CLAUDE.md:71
 - **CRITICAL**: NEVER use `await import()` dynamic imports anywhere, especially in test blocks
-// apps/amp/CLAUDE.md:56
+  // apps/amp/CLAUDE.md:56
 - **CRITICAL**: NEVER use `await import()` dynamic imports anywhere, especially in test blocks.
 
 // Better: ルートに集約し、子では「ルートの規約に従う」と参照する
@@ -250,11 +258,15 @@ After making any code changes, ALWAYS run these commands in parallel:
 
 ```markdown
 // Bad: 参照先が曖昧
+
 ## Code Style
+
 Follow the same code style guidelines as the main ccusage package:
 
 // Better: 明示的にパスを指定
+
 ## Code Style
+
 Follow the code style guidelines defined in the root `CLAUDE.md` (## Code Style Notes section):
 ```
 

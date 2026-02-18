@@ -24,20 +24,24 @@ TanStack Query は 24 パッケージを擁する pnpm workspace モノレポで
 24 パッケージは明確な 4 層構造を持つ。
 
 **Layer 0: コア**
+
 - `query-core` — キャッシュ、Observer、リトライ、GC。フレームワーク依存ゼロ
 - `query-persist-client-core` — 永続化のフレームワーク非依存コア
 - `query-devtools` — devtools UI のフレームワーク非依存実装（Solid.js で実装）
 
 **Layer 1: フレームワークアダプタ**
+
 - `react-query`, `vue-query`, `solid-query`, `svelte-query`, `angular-query-experimental`, `preact-query`
 - 全てが `query-core` に `dependencies` で依存し、`export * from '@tanstack/query-core'` で再エクスポート
 
 **Layer 2: 機能アドオン**
+
 - `react-query-devtools`, `vue-query-devtools` など — Layer 0 の devtools コアと Layer 1 のアダプタに依存
 - `react-query-persist-client`, `solid-query-persist-client` など — persist コアとアダプタに依存
 - `query-async-storage-persister`, `query-sync-storage-persister` — ストレージ実装
 
 **Layer 3: ユーティリティ・ツール**
+
 - `eslint-plugin-query` — 静的解析ルール
 - `query-codemods` — マイグレーション用 codemod（private パッケージ）
 - `query-test-utils` — 内部テストユーティリティ（private、未公開）
@@ -57,20 +61,20 @@ TanStack Query は 24 パッケージを擁する pnpm workspace モノレポで
 
 ```js
 // packages/query-core/eslint.config.js:1-5
-import rootConfig from './root.eslint.config.js'
+import rootConfig from "./root.eslint.config.js";
 
-export default [...rootConfig]
+export default [...rootConfig];
 ```
 
 ```ts
 // packages/query-core/tsup.config.ts:1-7
-import { defineConfig } from 'tsup'
-import { legacyConfig, modernConfig } from './root.tsup.config.js'
+import { defineConfig } from "tsup";
+import { legacyConfig, modernConfig } from "./root.tsup.config.js";
 
 export default defineConfig([
-  modernConfig({ entry: ['src/*.ts'] }),
-  legacyConfig({ entry: ['src/*.ts'] }),
-])
+  modernConfig({ entry: ["src/*.ts"] }),
+  legacyConfig({ entry: ["src/*.ts"] }),
+]);
 ```
 
 tsconfig.json も同様に、ルートの `tsconfig.json` を `extends` し、パッケージ固有の設定（`jsx`, `outDir` 等）のみオーバーライドする。
@@ -84,14 +88,14 @@ tsconfig.json も同様に、ルートの `tsconfig.json` を `extends` し、�
 export function modernConfig(opts) {
   return {
     entry: opts.entry,
-    format: ['cjs', 'esm'],
-    target: ['chrome91', 'firefox90', 'edge91', 'safari15', 'ios15', 'opera77'],
-    outDir: 'build/modern',
+    format: ["cjs", "esm"],
+    target: ["chrome91", "firefox90", "edge91", "safari15", "ios15", "opera77"],
+    outDir: "build/modern",
     dts: true,
     sourcemap: true,
     clean: true,
-    esbuildPlugins: [esbuildPluginFilePathExtensions({ esmExtension: 'js' })],
-  }
+    esbuildPlugins: [esbuildPluginFilePathExtensions({ esmExtension: "js" })],
+  };
 }
 ```
 
@@ -166,7 +170,7 @@ integrations/
 
 ```ts
 // packages/react-query/src/index.ts:4
-export * from '@tanstack/query-core'
+export * from "@tanstack/query-core";
 ```
 
 - **Private パッケージによる内部共有**: `query-test-utils` は `"private": true` で npm に公開されないが、ワークスペース内では `workspace:*` で参照可能。テストヘルパー（`sleep`, `queryKey`, `mockVisibilityState`）を全パッケージで共有しつつ、外部公開のメンテナンスコストを避けている。

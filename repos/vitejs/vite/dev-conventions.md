@@ -84,16 +84,16 @@ import type {
   ExternalOption,
   InputOption,
   // ...
-} from 'rolldown'
+} from "rolldown";
 
 // packages/vite/src/node/config.ts:11-17 -- inline type import の例
 import {
   type NormalizedOutputOptions,
   type OutputChunk,
   type PluginContextMeta,
-  type RolldownOptions,
   rolldown,
-} from 'rolldown'
+  type RolldownOptions,
+} from "rolldown";
 ```
 
 ### pre-commit フックと lint-staged の構成
@@ -114,6 +114,7 @@ import {
 ```
 
 設計上の特徴:
+
 - **全ファイルに Prettier**: `*` パターンで言語を問わず自動フォーマット（`--ignore-unknown` で未対応ファイルをスキップ）
 - **ESLint は限定範囲**: パッケージソース + 型定義 + テストのみ。playground のアプリケーションコードは ESLint の対象外（意図的に緩い）
 - **`--concurrent false`**: Prettier と ESLint の順序衝突を回避

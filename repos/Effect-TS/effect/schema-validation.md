@@ -51,7 +51,7 @@ export type AST =
   | Union
   | Suspend
   // transformations
-  | Transformation
+  | Transformation;
 ```
 
 `SchemaAST.ts:2629-2639` で `Match` 型と `getCompiler` 関数が提供され、各 AST タグに対するハンドラを定義するだけで新しいインタプリタを構築できる。
@@ -59,13 +59,13 @@ export type AST =
 ```typescript
 // SchemaAST.ts:2629-2639
 export type Match<A> = {
-  [K in AST["_tag"]]: (ast: Extract<AST, { _tag: K }>, compile: Compiler<A>, path: ReadonlyArray<PropertyKey>) => A
-}
+  [K in AST["_tag"]]: (ast: Extract<AST, { _tag: K; }>, compile: Compiler<A>, path: ReadonlyArray<PropertyKey>) => A;
+};
 
 export const getCompiler = <A>(match: Match<A>): Compiler<A> => {
-  const compile = (ast: AST, path: ReadonlyArray<PropertyKey>): A => match[ast._tag](ast as any, compile, path)
-  return compile
-}
+  const compile = (ast: AST, path: ReadonlyArray<PropertyKey>): A => match[ast._tag](ast as any, compile, path);
+  return compile;
+};
 ```
 
 Pretty モジュールはこの `Match` を使って5行でコンパイラを取得している。
@@ -83,26 +83,26 @@ AST には「Refinement（型を絞り込む）」と「Transformation（型を�
 ```typescript
 // SchemaAST.ts:1805-1818
 export class Refinement<From extends AST = AST> implements Annotated {
-  readonly _tag = "Refinement"
+  readonly _tag = "Refinement";
   constructor(
     readonly from: From,
     readonly filter: (
       input: any,
       options: ParseOptions,
-      self: Refinement
+      self: Refinement,
     ) => Option.Option<ParseIssue>,
-    readonly annotations: Annotations = {}
+    readonly annotations: Annotations = {},
   ) {}
 }
 
 // SchemaAST.ts:1927-1937
 export class Transformation implements Annotated {
-  readonly _tag = "Transformation"
+  readonly _tag = "Transformation";
   constructor(
     readonly from: AST,
     readonly to: AST,
     readonly transformation: TransformationKind,
-    readonly annotations: Annotations = {}
+    readonly annotations: Annotations = {},
   ) {}
 }
 ```
@@ -126,10 +126,10 @@ export const maxLength =
           title: `maxLength(${maxLength})`,
           description: `a string at most ${maxLength} character(s) long`,
           jsonSchema: { maxLength },
-          ...annotations
-        }
-      )
-    )
+          ...annotations,
+        },
+      ),
+    );
 ```
 
 このパターンにより、バリデーション述語とメタデータ（JSON Schema プロパティ、エラーメッセージ）を一箇所で定義でき、複数のインタプリタが一貫した情報を利用できる。
@@ -142,12 +142,12 @@ export const maxLength =
 // ParseResult.ts:308-323
 export const flatMap = dual(2, <A, E, R, B, E1, R1>(
   self: Effect.Effect<A, E, R>,
-  f: (a: A) => Effect.Effect<B, E1, R1>
+  f: (a: A) => Effect.Effect<B, E1, R1>,
 ): Effect.Effect<B, E | E1, R | R1> => {
-  return isEither(self) ?
-    Either.match(self, { onLeft: Either.left, onRight: f }) :
-    Effect.flatMap(self, f)
-})
+  return isEither(self)
+    ? Either.match(self, { onLeft: Either.left, onRight: f })
+    : Effect.flatMap(self, f);
+});
 ```
 
 ### パーサーのメモ化
@@ -158,24 +158,24 @@ export const flatMap = dual(2, <A, E, R, B, E1, R1>(
 // ParseResult.ts:743-770
 const decodeMemoMap = globalValue(
   Symbol.for("effect/ParseResult/decodeMemoMap"),
-  () => new WeakMap<AST.AST, Parser>()
-)
+  () => new WeakMap<AST.AST, Parser>(),
+);
 const encodeMemoMap = globalValue(
   Symbol.for("effect/ParseResult/encodeMemoMap"),
-  () => new WeakMap<AST.AST, Parser>()
-)
+  () => new WeakMap<AST.AST, Parser>(),
+);
 
 const goMemo = (ast: AST.AST, isDecoding: boolean): Parser => {
-  const memoMap = isDecoding ? decodeMemoMap : encodeMemoMap
-  const memo = memoMap.get(ast)
+  const memoMap = isDecoding ? decodeMemoMap : encodeMemoMap;
+  const memo = memoMap.get(ast);
   if (memo) {
-    return memo
+    return memo;
   }
-  const raw = go(ast, isDecoding)
+  const raw = go(ast, isDecoding);
   // ...
-  memoMap.set(ast, parser)
-  return parser
-}
+  memoMap.set(ast, parser);
+  return parser;
+};
 ```
 
 ### AST 走査での構造共有（changeMap）
@@ -185,17 +185,17 @@ AST の再帰的変換で、変更がなかった場合は元の配列をその�
 ```typescript
 // SchemaAST.ts:2739-2751
 function changeMap<A>(as: ReadonlyArray<A>, f: (a: A) => A): ReadonlyArray<A> {
-  let changed = false
-  const out = Arr.allocate(as.length) as Array<A>
+  let changed = false;
+  const out = Arr.allocate(as.length) as Array<A>;
   for (let i = 0; i < as.length; i++) {
-    const a = as[i]
-    const fa = f(a)
+    const a = as[i];
+    const fa = f(a);
     if (fa !== a) {
-      changed = true
+      changed = true;
     }
-    out[i] = fa
+    out[i] = fa;
   }
-  return changed ? out : as
+  return changed ? out : as;
 }
 ```
 
@@ -215,7 +215,7 @@ export type ParseIssue =
   | Pointer
   | Refinement
   | Transformation
-  | Composite
+  | Composite;
 ```
 
 ## パターンカタログ
@@ -245,15 +245,15 @@ export type ParseIssue =
 ```typescript
 // SchemaAST.ts:335-344
 export const getAnnotation: {
-  <A>(key: symbol): (annotated: Annotated) => Option.Option<A>
-  <A>(annotated: Annotated, key: symbol): Option.Option<A>
+  <A>(key: symbol): (annotated: Annotated) => Option.Option<A>;
+  <A>(annotated: Annotated, key: symbol): Option.Option<A>;
 } = dual(
   2,
   <A>(annotated: Annotated, key: symbol): Option.Option<A> =>
-    Object.prototype.hasOwnProperty.call(annotated.annotations, key) ?
-      Option.some(annotated.annotations[key] as any) :
-      Option.none()
-)
+    Object.prototype.hasOwnProperty.call(annotated.annotations, key)
+      ? Option.some(annotated.annotations[key] as any)
+      : Option.none(),
+);
 ```
 
 - **フィルタにメタデータを同梱する**: バリデーション述語だけでなく、`schemaId`、`title`、`description`、`jsonSchema` を一緒に定義することで、JSON Schema 生成やエラーメッセージ生成が自動的に正しく動作する。
@@ -262,7 +262,7 @@ export const getAnnotation: {
 // Schema.ts:5012-5025
 export const greaterThan = <S extends Schema.Any>(
   exclusiveMinimum: number,
-  annotations?: Annotations.Filter<Schema.Type<S>>
+  annotations?: Annotations.Filter<Schema.Type<S>>,
 ) =>
 <A extends number>(self: S & Schema<A, Schema.Encoded<S>, Schema.Context<S>>): filter<S> =>
   self.pipe(
@@ -273,9 +273,9 @@ export const greaterThan = <S extends Schema.Any>(
         ? "a positive number"
         : `a number greater than ${exclusiveMinimum}`,
       jsonSchema: { exclusiveMinimum },
-      ...annotations
-    })
-  )
+      ...annotations,
+    }),
+  );
 ```
 
 - **api interface パターンによる型安全なメソッドチェーン**: 各コンビネータの戻り値に専用の interface（`@category api interface`）を定義し、`.annotations()` 等のメソッドが正しい型を返すようにしている。
@@ -285,7 +285,7 @@ export const greaterThan = <S extends Schema.Any>(
 export interface Literal<Literals extends array_.NonEmptyReadonlyArray<AST.LiteralValue>>
   extends AnnotableClass<Literal<Literals>, Literals[number]>
 {
-  readonly literals: Readonly<Literals>
+  readonly literals: Readonly<Literals>;
 }
 ```
 
@@ -296,8 +296,8 @@ export interface Literal<Literals extends array_.NonEmptyReadonlyArray<AST.Liter
 ```typescript
 // Bad: アノテーションなしのフィルタ
 const Positive = Schema.Number.pipe(
-  Schema.filter((n) => n > 0)
-)
+  Schema.filter((n) => n > 0),
+);
 // JSON Schema: 制約情報なし、エラーメッセージ: 汎用的な "Expected ..." メッセージ
 
 // Better: アノテーション付きのフィルタ
@@ -307,9 +307,9 @@ const Positive = Schema.Number.pipe(
     title: "Positive",
     description: "a positive number",
     jsonSchema: { exclusiveMinimum: 0 },
-    message: () => "Expected a positive number"
-  })
-)
+    message: () => "Expected a positive number",
+  }),
+);
 ```
 
 - **同期インタプリタで非同期スキーマを実行**: `decodeUnknownSync` を非同期コンポーネント（Effect ベースのフィルタなど）を含むスキーマに対して使うと `Forbidden` エラーが発生する。Effect ベースのバリデーションを使う場合は `decodeUnknown`（Effect 版）を使用する。
@@ -317,14 +317,14 @@ const Positive = Schema.Number.pipe(
 ```typescript
 // Bad: filterEffect を含むスキーマを sync で実行
 const schema = Schema.String.pipe(
-  Schema.filterEffect((s) => Effect.succeed(s.length > 0))
-)
-Schema.decodeUnknownSync(schema)("test") // Forbidden エラー
+  Schema.filterEffect((s) => Effect.succeed(s.length > 0)),
+);
+Schema.decodeUnknownSync(schema)("test"); // Forbidden エラー
 
 // Better: Effect 版を使用
 const result = await Effect.runPromise(
-  Schema.decodeUnknown(schema)("test")
-)
+  Schema.decodeUnknown(schema)("test"),
+);
 ```
 
 ## 導出ルール

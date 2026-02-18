@@ -29,40 +29,39 @@ export function convertEsbuildConfigToOxcConfig(
   esbuildConfig: ESBuildOptions,
   logger: Logger,
 ): OxcOptions {
-  const { jsxInject, include, exclude, ...esbuildTransformOptions } =
-    esbuildConfig
+  const { jsxInject, include, exclude, ...esbuildTransformOptions } = esbuildConfig;
 
   const oxcOptions: OxcOptions = {
     jsxInject,
     include,
     exclude,
-  }
+  };
 
   // JSX 設定の変換: esbuild と oxc で API 体系が異なるため、
   // switch-case でマッピング
-  if (esbuildTransformOptions.jsx === 'preserve') {
-    oxcOptions.jsx = 'preserve'
+  if (esbuildTransformOptions.jsx === "preserve") {
+    oxcOptions.jsx = "preserve";
   } else {
-    const jsxOptions: OxcJsxOptions = {}
+    const jsxOptions: OxcJsxOptions = {};
     switch (esbuildTransformOptions.jsx) {
-      case 'automatic':
-        jsxOptions.runtime = 'automatic'
+      case "automatic":
+        jsxOptions.runtime = "automatic";
         // ...
-        break
-      case 'transform':
-        jsxOptions.runtime = 'classic'
+        break;
+      case "transform":
+        jsxOptions.runtime = "classic";
         // ...
-        break
+        break;
     }
-    oxcOptions.jsx = jsxOptions
+    oxcOptions.jsx = jsxOptions;
   }
 
   // 変換不可能なオプションは警告で通知
   if (esbuildTransformOptions.banner) {
-    warnDeprecatedShouldBeConvertedToPluginOptions(logger, 'banner')
+    warnDeprecatedShouldBeConvertedToPluginOptions(logger, "banner");
   }
 
-  return oxcOptions
+  return oxcOptions;
 }
 ```
 
@@ -70,14 +69,14 @@ export function convertEsbuildConfigToOxcConfig(
 
 ```typescript
 // packages/vite/src/node/config.ts:1841-1851
-let oxc: OxcOptions | false | undefined = config.oxc
+let oxc: OxcOptions | false | undefined = config.oxc;
 if (config.esbuild) {
   if (config.oxc) {
     logger.warn(
-      `Both esbuild and oxc options were set. oxc options will be used...`
-    )
+      `Both esbuild and oxc options were set. oxc options will be used...`,
+    );
   } else {
-    oxc = convertEsbuildConfigToOxcConfig(config.esbuild, logger)
+    oxc = convertEsbuildConfigToOxcConfig(config.esbuild, logger);
   }
 }
 ```
@@ -89,27 +88,27 @@ if (config.esbuild) {
 ```typescript
 // packages/vite/src/node/utils.ts:1250-1283
 export function setupRollupOptionCompat<
-  T extends Pick<BuildEnvironmentOptions, 'rollupOptions' | 'rolldownOptions'>,
+  T extends Pick<BuildEnvironmentOptions, "rollupOptions" | "rolldownOptions">,
 >(buildConfig: T, path: string): asserts buildConfig is T & {
-  rolldownOptions: Exclude<T['rolldownOptions'], undefined>
+  rolldownOptions: Exclude<T["rolldownOptions"], undefined>;
 } {
   // rolldownOptions が未設定なら rollupOptions の値をフォールバック
-  buildConfig.rolldownOptions ??= buildConfig.rollupOptions
+  buildConfig.rolldownOptions ??= buildConfig.rollupOptions;
 
   // rollupOptions を rolldownOptions への Proxy に変換
-  Object.defineProperty(buildConfig, 'rollupOptions', {
+  Object.defineProperty(buildConfig, "rollupOptions", {
     get() {
-      return buildConfig.rolldownOptions
+      return buildConfig.rolldownOptions;
     },
     set(newValue) {
       if (runtimeDeprecatedPath.has(path)) {
-        rollupOptionsDeprecationCall()
+        rollupOptionsDeprecationCall();
       }
-      buildConfig.rolldownOptions = newValue
+      buildConfig.rolldownOptions = newValue;
     },
     configurable: true,
     enumerable: true,
-  })
+  });
 }
 ```
 
@@ -122,11 +121,11 @@ export function setupRollupOptionCompat<
 ```typescript
 // packages/vite/src/node/deprecations.ts:6-18
 const deprecationCode = {
-  removePluginHookSsrArgument: 'this-environment-in-hooks',
-  removePluginHookHandleHotUpdate: 'hotupdate-hook',
-  removeServerModuleGraph: 'per-environment-apis',
+  removePluginHookSsrArgument: "this-environment-in-hooks",
+  removePluginHookHandleHotUpdate: "hotupdate-hook",
+  removeServerModuleGraph: "per-environment-apis",
   // ...
-} satisfies Record<keyof FutureOptions, string>
+} satisfies Record<keyof FutureOptions, string>;
 ```
 
 `warnFutureDeprecation` は「フラグが `'warn'` に設定されている場合のみ」警告を出す。プラグイン作者向けにスタックトレースとドキュメントURLを付与する:
@@ -139,12 +138,15 @@ export function warnFutureDeprecation(
   extraMessage?: string,
   stacktrace = true,
 ): void {
-  if (_ignoreDeprecationWarnings || !config.future ||
-      config.future[type] !== 'warn')
-    return
+  if (
+    _ignoreDeprecationWarnings || !config.future
+    || config.future[type] !== "warn"
+  ) {
+    return;
+  }
 
-  let msg = `[vite future] ${deprecationMessages[type]}`
-  const docs = `${docsURL}/changes/${deprecationCode[type].toLowerCase()}`
+  let msg = `[vite future] ${deprecationMessages[type]}`;
+  const docs = `${docsURL}/changes/${deprecationCode[type].toLowerCase()}`;
   // スタックトレースを付与してプラグイン内の該当箇所を特定可能にする
 }
 ```
@@ -178,10 +180,13 @@ Vite 7 時代に `rolldown-vite` という npm パッケージを公開し、Vit
 // packages/vite/src/node/config.ts:2143-2160
 function resolveNativePluginEnabledLevel(enableNativePlugin) {
   switch (enableNativePlugin) {
-    case 'v1': return 1
-    case 'v2':
-    case true:  return 2
-    case false: return -1
+    case "v1":
+      return 1;
+    case "v2":
+    case true:
+      return 2;
+    case false:
+      return -1;
   }
 }
 ```
@@ -192,9 +197,9 @@ oxc プラグインはこのレベルに基づき、ネイティブ実装と JS 
 // packages/vite/src/node/plugins/oxc.ts:211-239
 export function oxcPlugin(config: ResolvedConfig): Plugin {
   if (config.isBundled && config.nativePluginEnabledLevel >= 1) {
-    return perEnvironmentPlugin('native:transform', (environment) => {
-      return nativeTransformPlugin({ /* ... */ })
-    })
+    return perEnvironmentPlugin("native:transform", (environment) => {
+      return nativeTransformPlugin({/* ... */});
+    });
   }
   // ネイティブが無効の場合は JS 実装にフォールバック
   // ...
@@ -208,15 +213,15 @@ export function oxcPlugin(config: ResolvedConfig): Plugin {
 ```typescript
 // packages/vite/src/node/deprecations.ts:99-105
 export function ignoreDeprecationWarnings<T>(fn: () => T): T {
-  const before = _ignoreDeprecationWarnings
-  _ignoreDeprecationWarnings = true
-  const ret = fn()
-  _ignoreDeprecationWarnings = before
-  return ret
+  const before = _ignoreDeprecationWarnings;
+  _ignoreDeprecationWarnings = true;
+  const ret = fn();
+  _ignoreDeprecationWarnings = before;
+  return ret;
 }
 
 // packages/vite/src/node/server/hmr.ts:376
-const mixedModuleGraph = ignoreDeprecationWarnings(() => server.moduleGraph)
+const mixedModuleGraph = ignoreDeprecationWarnings(() => server.moduleGraph);
 ```
 
 ## パターンカタログ
@@ -246,9 +251,9 @@ const mixedModuleGraph = ignoreDeprecationWarnings(() => server.moduleGraph)
   // packages/vite/src/node/config.ts:1841-1851
   if (config.esbuild) {
     if (config.oxc) {
-      logger.warn(`Both esbuild and oxc options were set...`)
+      logger.warn(`Both esbuild and oxc options were set...`);
     } else {
-      oxc = convertEsbuildConfigToOxcConfig(config.esbuild, logger)
+      oxc = convertEsbuildConfigToOxcConfig(config.esbuild, logger);
     }
   }
   ```
@@ -275,16 +280,16 @@ const mixedModuleGraph = ignoreDeprecationWarnings(() => server.moduleGraph)
 - **互換レイヤーの無期限維持**: 自動変換レイヤーを作ったまま削除期限を設けないと、二重メンテナンスが永続化する。Vite は「deprecated and will be removed in the future」と明記しているが、具体的な削除バージョンの記載がない箇所もある。
   ```typescript
   // Bad: 削除時期が不明確
-  console.warn('`transformWithEsbuild` is deprecated and will be removed in the future.')
+  console.warn("`transformWithEsbuild` is deprecated and will be removed in the future.");
 
   // Better: 削除時期を明示
-  console.warn('`transformWithEsbuild` is deprecated and will be removed in v9.0.')
+  console.warn("`transformWithEsbuild` is deprecated and will be removed in v9.0.");
   ```
 
 - **Proxy ベースの互換性の複雑さ**: `Object.defineProperty` による Proxy は強力だが、デバッグ時に `console.log` で見えるプロパティと実際の動作が異なる場合がある。`VITE_DEPRECATION_TRACE=1` 環境変数でスタックトレースを出す回避策を提供している（`utils.ts:1238`）が、知らないユーザーにとっては非直感的。
   ```typescript
   // Bad: 環境変数に頼ったデバッグ
-  const method = process.env.VITE_DEPRECATION_TRACE ? 'trace' : 'warn'
+  const method = process.env.VITE_DEPRECATION_TRACE ? "trace" : "warn";
 
   // Better: デフォルトで trace を含めるか、ドキュメントの URL を常に提示
   ```

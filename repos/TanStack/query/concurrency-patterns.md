@@ -49,14 +49,14 @@ TanStack Query は `Object.defineProperty` で `signal` プロパティをゲッ
 ```typescript
 // packages/query-core/src/query.ts:435-443
 const addSignalProperty = (object: unknown) => {
-  Object.defineProperty(object, 'signal', {
+  Object.defineProperty(object, "signal", {
     enumerable: true,
     get: () => {
-      this.#abortSignalConsumed = true
-      return abortController.signal
+      this.#abortSignalConsumed = true;
+      return abortController.signal;
     },
-  })
-}
+  });
+};
 ```
 
 この検出は、最後のオブザーバーがアンマウントされたときの挙動を決定する。
@@ -126,16 +126,16 @@ runNext(mutation: Mutation<any, any, any, any>): Promise<unknown> {
 ```typescript
 // packages/query-core/src/retryer.ts:48-49
 function defaultRetryDelay(failureCount: number) {
-  return Math.min(1000 * 2 ** failureCount, 30000)
+  return Math.min(1000 * 2 ** failureCount, 30000);
 }
 ```
 
 ```typescript
 // packages/query-core/src/retryer.ts:103-106
 const canContinue = () =>
-  focusManager.isFocused() &&
-  (config.networkMode === 'always' || onlineManager.isOnline()) &&
-  config.canRun()
+  focusManager.isFocused()
+  && (config.networkMode === "always" || onlineManager.isOnline())
+  && config.canRun();
 ```
 
 `pause` 関数は Promise を作成し、`continueFn` としてリゾルバを保存する。ネットワーク復帰やフォーカス復帰時に `continue` が呼ばれると、保存されたリゾルバが実行されてループが再開する。
@@ -169,15 +169,15 @@ batch: <T>(callback: () => T): T => {
 // packages/query-core/src/streamedQuery.ts:100-113
 for await (const chunk of stream) {
   if (cancelled) {
-    break
+    break;
   }
   if (isReplaceRefetch) {
-    result = reducer(result, chunk)       // ローカルに蓄積、完了後に一括書き込み
+    result = reducer(result, chunk); // ローカルに蓄積、完了後に一括書き込み
   } else {
-    context.client.setQueryData<TData>(   // チャンクごとにキャッシュ更新
-      context.queryKey, (prev) =>
-        reducer(prev === undefined ? initialValue : prev, chunk),
-    )
+    context.client.setQueryData<TData>( // チャンクごとにキャッシュ更新
+      context.queryKey,
+      (prev) => reducer(prev === undefined ? initialValue : prev, chunk),
+    );
   }
 }
 ```
@@ -233,12 +233,12 @@ build(client, options, state) {
 ```typescript
 // packages/query-core/src/retryer.ts:58-66
 export class CancelledError extends Error {
-  revert?: boolean
-  silent?: boolean
+  revert?: boolean;
+  silent?: boolean;
   constructor(options?: CancelOptions) {
-    super('CancelledError')
-    this.revert = options?.revert
-    this.silent = options?.silent
+    super("CancelledError");
+    this.revert = options?.revert;
+    this.silent = options?.silent;
   }
 }
 ```
@@ -280,29 +280,29 @@ onCancel: (error) => {
 
 ```typescript
 // Bad: signal にアクセスするがfetchに渡さない
-queryFn: async ({ signal }) => {
-  console.log(signal.aborted) // signal consumed → キャンセル発動するが...
-  const res = await fetch('/api/data') // signal 未伝播 → リクエストは続行
-  return res.json()
-}
+queryFn: (async ({ signal }) => {
+  console.log(signal.aborted); // signal consumed → キャンセル発動するが...
+  const res = await fetch("/api/data"); // signal 未伝播 → リクエストは続行
+  return res.json();
+});
 
 // Better: signal を fetch に渡す
-queryFn: async ({ signal }) => {
-  const res = await fetch('/api/data', { signal })
-  return res.json()
-}
+queryFn: (async ({ signal }) => {
+  const res = await fetch("/api/data", { signal });
+  return res.json();
+});
 ```
 
 - **スコープ粒度の設計ミス**: mutation スコープを広すぎる粒度で設定すると、無関係な mutation が直列化されてスループットが低下する。逆に狭すぎると、本来順序を保証すべき操作が並列実行されてデータ不整合が発生する。
 
 ```typescript
 // Bad: 全 mutation を単一スコープに → グローバル直列化
-useMutation({ scope: { id: 'global' }, mutationFn: updateUser })
-useMutation({ scope: { id: 'global' }, mutationFn: updatePost })
+useMutation({ scope: { id: "global" }, mutationFn: updateUser });
+useMutation({ scope: { id: "global" }, mutationFn: updatePost });
 
 // Better: リソース単位のスコープ
-useMutation({ scope: { id: `user-${userId}` }, mutationFn: updateUser })
-useMutation({ scope: { id: `post-${postId}` }, mutationFn: updatePost })
+useMutation({ scope: { id: `user-${userId}` }, mutationFn: updateUser });
+useMutation({ scope: { id: `post-${postId}` }, mutationFn: updatePost });
 ```
 
 ## 導出ルール

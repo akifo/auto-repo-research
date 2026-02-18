@@ -69,13 +69,13 @@ SQL パッケージ群はさらに細分化されており、`@effect/sql`（抽
 export interface FileSystem {
   readonly access: (
     path: string,
-    options?: AccessFileOptions
-  ) => Effect.Effect<void, PlatformError>
+    options?: AccessFileOptions,
+  ) => Effect.Effect<void, PlatformError>;
   readonly copy: (
     fromPath: string,
     toPath: string,
-    options?: CopyOptions
-  ) => Effect.Effect<void, PlatformError>
+    options?: CopyOptions,
+  ) => Effect.Effect<void, PlatformError>;
   // ...
 }
 ```
@@ -83,7 +83,7 @@ export interface FileSystem {
 ```typescript
 // packages/platform-node-shared/src/internal/fileSystem.ts:648
 // プラットフォーム実装: Layer.effect で Tag にバインド
-export const layer = Layer.effect(FileSystem.FileSystem, makeFileSystem)
+export const layer = Layer.effect(FileSystem.FileSystem, makeFileSystem);
 ```
 
 ```typescript
@@ -94,34 +94,34 @@ export const layer: Layer.Layer<NodeContext> = pipe(
     NodePath.layer,
     NodeCommandExecutor.layer,
     NodeTerminal.layer,
-    NodeWorker.layerManager
+    NodeWorker.layerManager,
   ),
-  Layer.provideMerge(NodeFileSystem.layer)
-)
+  Layer.provideMerge(NodeFileSystem.layer),
+);
 ```
 
 ```typescript
 // packages/effect/src/Layer.ts:53 (公開モジュール)
-export const LayerTypeId: unique symbol = internal.LayerTypeId
+export const LayerTypeId: unique symbol = internal.LayerTypeId;
 
 // packages/effect/src/internal/layer.ts:43-45 (内部モジュール)
 export const LayerTypeId: Layer.LayerTypeId = Symbol.for(
-  LayerSymbolKey
-) as Layer.LayerTypeId
+  LayerSymbolKey,
+) as Layer.LayerTypeId;
 ```
 
 ```typescript
 // packages/sql-pg/src/PgClient.ts:550-558
 // SQL ドライバの Layer: 抽象 SqlClient と具象 PgClient の両方を提供
 export const layer = (
-  config: PgClientConfig
+  config: PgClientConfig,
 ): Layer.Layer<PgClient | Client.SqlClient, SqlError> =>
   Layer.scopedContext(
     Effect.map(make(config), (client) =>
       Context.make(PgClient, client).pipe(
-        Context.add(Client.SqlClient, client)
-      ))
-  ).pipe(Layer.provide(Reactivity.layer))
+        Context.add(Client.SqlClient, client),
+      )),
+  ).pipe(Layer.provide(Reactivity.layer));
 ```
 
 ```typescript
@@ -130,15 +130,15 @@ export const layer = (
 export const globalValue = <A>(id: unknown, compute: () => A): A => {
   if (!globalStore) {
     // @ts-expect-error
-    globalThis[globalStoreId] ??= new Map()
+    globalThis[globalStoreId] ??= new Map();
     // @ts-expect-error
-    globalStore = globalThis[globalStoreId] as Map<unknown, any>
+    globalStore = globalThis[globalStoreId] as Map<unknown, any>;
   }
   if (!globalStore.has(id)) {
-    globalStore.set(id, compute())
+    globalStore.set(id, compute());
   }
-  return globalStore.get(id)!
-}
+  return globalStore.get(id)!;
+};
 ```
 
 ## パターンカタログ
@@ -171,9 +171,9 @@ export const layer = (config: PgClientConfig): Layer.Layer<PgClient | Client.Sql
   Layer.scopedContext(
     Effect.map(make(config), (client) =>
       Context.make(PgClient, client).pipe(
-        Context.add(Client.SqlClient, client)
-      ))
-  ).pipe(Layer.provide(Reactivity.layer))
+        Context.add(Client.SqlClient, client),
+      )),
+  ).pipe(Layer.provide(Reactivity.layer));
 ```
 
 - **NodeContext による複合サービスの束ね**: 複数のプラットフォームサービスを 1 つの Layer に合成し、型エイリアスで「このランタイムで使える全サービス」を表現する。利用者は `NodeContext.layer` を 1 行で提供するだけで Node.js 固有の全サービスが注入される。
@@ -185,12 +185,12 @@ export type NodeContext =
   | FileSystem.FileSystem
   | Path.Path
   | Terminal.Terminal
-  | Worker.WorkerManager
+  | Worker.WorkerManager;
 
 export const layer: Layer.Layer<NodeContext> = pipe(
   Layer.mergeAll(NodePath.layer, NodeCommandExecutor.layer, NodeTerminal.layer, NodeWorker.layerManager),
-  Layer.provideMerge(NodeFileSystem.layer)
-)
+  Layer.provideMerge(NodeFileSystem.layer),
+);
 ```
 
 - **GlobalValue によるシングルトン保証**: `Symbol.for` ベースのグローバルストアにより、CJS/ESM 混在環境やホットリロード環境でもシングルトンインスタンスの一意性を保証する。TypeId や FiberRef の登録に一貫して使用されている。
@@ -199,14 +199,14 @@ export const layer: Layer.Layer<NodeContext> = pipe(
 // packages/effect/src/GlobalValue.ts:42-53
 export const globalValue = <A>(id: unknown, compute: () => A): A => {
   if (!globalStore) {
-    globalThis[globalStoreId] ??= new Map()
-    globalStore = globalThis[globalStoreId] as Map<unknown, any>
+    globalThis[globalStoreId] ??= new Map();
+    globalStore = globalThis[globalStoreId] as Map<unknown, any>;
   }
   if (!globalStore.has(id)) {
-    globalStore.set(id, compute())
+    globalStore.set(id, compute());
   }
-  return globalStore.get(id)!
-}
+  return globalStore.get(id)!;
+};
 ```
 
 ## Anti-Patterns / 注意点
@@ -218,15 +218,15 @@ export const globalValue = <A>(id: unknown, compute: () => A): A => {
 // src/Layer.ts
 export const mergeAll = (...layers) => {
   // 実装ロジック...
-}
+};
 
 // Better: 公開モジュールは internal から re-export のみ
 // src/Layer.ts
-export const mergeAll = internal.mergeAll
+export const mergeAll = internal.mergeAll;
 // src/internal/layer.ts
 export const mergeAll = (...layers) => {
   // 実装ロジック...
-}
+};
 ```
 
 - **循環依存を放置する**: Effect のコア内部では Effect ↔ Layer、Fiber ↔ Scope など相互参照が不可避だが、これを単一ファイルに詰め込むとファイルが肥大化しビルドが不安定になる。Effect は `circular.ts` ファイルに分離して対処している。
@@ -237,7 +237,7 @@ export const mergeAll = (...layers) => {
 // Better: internal/layer/circular.ts に分離し、コメントで循環元を明示
 // circular with Logger
 export const minimumLogLevel = (level: LogLevel.LogLevel): Layer.Layer<never> =>
-  layer.scopedDiscard(fiberRuntime.fiberRefLocallyScoped(fiberRuntime.currentMinimumLogLevel, level))
+  layer.scopedDiscard(fiberRuntime.fiberRefLocallyScoped(fiberRuntime.currentMinimumLogLevel, level));
 ```
 
 ## 導出ルール

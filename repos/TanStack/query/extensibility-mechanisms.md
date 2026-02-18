@@ -30,9 +30,9 @@ TanStack Query の拡張性設計を、プラグインシステム・永続化�
 ```typescript
 // query-persist-client-core/src/persist.ts:12-16
 export interface Persister {
-  persistClient: (persistClient: PersistedClient) => Promisable<void>
-  restoreClient: () => Promisable<PersistedClient | undefined>
-  removeClient: () => Promisable<void>
+  persistClient: (persistClient: PersistedClient) => Promisable<void>;
+  restoreClient: () => Promisable<PersistedClient | undefined>;
+  removeClient: () => Promisable<void>;
 }
 ```
 
@@ -41,10 +41,10 @@ export interface Persister {
 ```typescript
 // query-persist-client-core/src/createPersister.ts:25-29
 export interface AsyncStorage<TStorageValue = string> {
-  getItem: (key: string) => MaybePromise<TStorageValue | undefined | null>
-  setItem: (key: string, value: TStorageValue) => MaybePromise<unknown>
-  removeItem: (key: string) => MaybePromise<void>
-  entries?: () => MaybePromise<Array<[key: string, value: TStorageValue]>>
+  getItem: (key: string) => MaybePromise<TStorageValue | undefined | null>;
+  setItem: (key: string, value: TStorageValue) => MaybePromise<unknown>;
+  removeItem: (key: string) => MaybePromise<void>;
+  entries?: () => MaybePromise<Array<[key: string, value: TStorageValue]>>;
 }
 ```
 
@@ -60,12 +60,11 @@ DevTools は3層構造になっている。
 
 ```typescript
 // react-query-devtools/src/index.ts:6-11
-export const ReactQueryDevtools: (typeof Devtools)['ReactQueryDevtools'] =
-  process.env.NODE_ENV !== 'development'
-    ? function () {
-        return null
-      }
-    : Devtools.ReactQueryDevtools
+export const ReactQueryDevtools: (typeof Devtools)["ReactQueryDevtools"] = process.env.NODE_ENV !== "development"
+  ? function() {
+    return null;
+  }
+  : Devtools.ReactQueryDevtools;
 ```
 
 DevTools が `QueryCache.subscribe` 経由でデータを取得するため、コアに DevTools 固有のコードが一切存在しない。
@@ -77,17 +76,17 @@ DevTools が `QueryCache.subscribe` 経由でデータを取得するため、�
 ```typescript
 // query-core/src/subscribable.ts:1-30
 export class Subscribable<TListener extends Function> {
-  protected listeners = new Set<TListener>()
+  protected listeners = new Set<TListener>();
   subscribe(listener: TListener): () => void {
-    this.listeners.add(listener)
-    this.onSubscribe()
+    this.listeners.add(listener);
+    this.onSubscribe();
     return () => {
-      this.listeners.delete(listener)
-      this.onUnsubscribe()
-    }
+      this.listeners.delete(listener);
+      this.onUnsubscribe();
+    };
   }
-  protected onSubscribe(): void { /* hook */ }
-  protected onUnsubscribe(): void { /* hook */ }
+  protected onSubscribe(): void {/* hook */}
+  protected onUnsubscribe(): void {/* hook */}
 }
 ```
 
@@ -129,11 +128,11 @@ export interface Register {
 ```typescript
 // query-core/src/timeoutManager.ts:22-29
 export type TimeoutProvider<TTimerId extends ManagedTimerId = ManagedTimerId> = {
-  readonly setTimeout: (callback: TimeoutCallback, delay: number) => TTimerId
-  readonly clearTimeout: (timeoutId: TTimerId | undefined) => void
-  readonly setInterval: (callback: TimeoutCallback, delay: number) => TTimerId
-  readonly clearInterval: (intervalId: TTimerId | undefined) => void
-}
+  readonly setTimeout: (callback: TimeoutCallback, delay: number) => TTimerId;
+  readonly clearTimeout: (timeoutId: TTimerId | undefined) => void;
+  readonly setInterval: (callback: TimeoutCallback, delay: number) => TTimerId;
+  readonly clearInterval: (intervalId: TTimerId | undefined) => void;
+};
 ```
 
 数千のクエリを扱う場合に `setTimeout` がボトルネックになるケースに対応し、タイマーコアレッシングなどカスタム実装を注入できる。`setTimeoutProvider` のガード（`timeoutManager.ts:76-92`）はプロバイダー切り替え時の危険性を開発モードで警告する。
@@ -169,9 +168,9 @@ export type TimeoutProvider<TTimerId extends ManagedTimerId = ManagedTimerId> = 
 ```typescript
 // query-persist-client-core/src/persist.ts:12-16
 export interface Persister {
-  persistClient: (persistClient: PersistedClient) => Promisable<void>
-  restoreClient: () => Promisable<PersistedClient | undefined>
-  removeClient: () => Promisable<void>
+  persistClient: (persistClient: PersistedClient) => Promisable<void>;
+  restoreClient: () => Promisable<PersistedClient | undefined>;
+  removeClient: () => Promisable<void>;
 }
 ```
 
@@ -179,12 +178,12 @@ export interface Persister {
 
 ```typescript
 // query-broadcast-client-experimental/src/index.ts:17-21
-let transaction = false
+let transaction = false;
 const tx = (cb: () => void) => {
-  transaction = true
-  cb()
-  transaction = false
-}
+  transaction = true;
+  cb();
+  transaction = false;
+};
 ```
 
 - **Dead Code Elimination via Conditional Export（条件付きエクスポートによるデッドコード除去）**: DevTools の `index.ts` で `process.env.NODE_ENV` 分岐を使い、本番ビルドではツリーシェイクによって DevTools コード全体を除去可能にする。import の時点で分岐するため、利用者側のコード変更が不要。
@@ -207,30 +206,30 @@ export type QueryCacheNotifyEvent =
 
 ```typescript
 // Bad: テスト間でシングルトン状態が残る
-test('test A', () => {
-  onlineManager.setOnline(false)
+test("test A", () => {
+  onlineManager.setOnline(false);
   // ... test A ...
-})
-test('test B', () => {
+});
+test("test B", () => {
   // onlineManager はまだ offline のまま
-})
+});
 
 // Better: テストごとに状態をリセットする
 afterEach(() => {
-  onlineManager.setOnline(true)
-})
+  onlineManager.setOnline(true);
+});
 ```
 
 - **Provider Switch After Use（使用後のプロバイダー切り替え）**: `TimeoutManager` は使用後にプロバイダーを切り替えると、既存タイマーの `clearTimeout` が正しく動作しない。開発モードの警告はあるが、本番では静かに壊れる。
 
 ```typescript
 // Bad: タイマー使用後にプロバイダーを切り替え
-const id = timeoutManager.setTimeout(cb, 1000)
-timeoutManager.setTimeoutProvider(customProvider)
-timeoutManager.clearTimeout(id) // 元のプロバイダーのタイマーを解除できない
+const id = timeoutManager.setTimeout(cb, 1000);
+timeoutManager.setTimeoutProvider(customProvider);
+timeoutManager.clearTimeout(id); // 元のプロバイダーのタイマーを解除できない
 
 // Better: アプリケーション初期化時に一度だけ設定する
-timeoutManager.setTimeoutProvider(customProvider)
+timeoutManager.setTimeoutProvider(customProvider);
 // 以降のタイマー操作は全て customProvider で処理される
 ```
 

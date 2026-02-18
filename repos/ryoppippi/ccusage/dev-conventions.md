@@ -37,13 +37,13 @@ entry: [
 
 変数・型・定数・ファイルの各レベルで命名規約が分離されている。
 
-| 対象 | 規約 | 例 |
-|------|------|-----|
-| 変数 | camelCase | `usageDataSchema`, `modelBreakdownSchema` |
-| 型 | PascalCase | `UsageData`, `ModelBreakdown`, `TokenCounts` |
-| 定数 | UPPER_SNAKE_CASE | `DEFAULT_CLAUDE_CODE_PATH`, `BLOCKS_WARNING_THRESHOLD` |
-| 内部ファイル | `_` プレフィックス | `_types.ts`, `_utils.ts`, `_consts.ts` |
-| 公開ファイル | プレフィックスなし | `data-loader.ts`, `calculate-cost.ts` |
+| 対象         | 規約               | 例                                                     |
+| ------------ | ------------------ | ------------------------------------------------------ |
+| 変数         | camelCase          | `usageDataSchema`, `modelBreakdownSchema`              |
+| 型           | PascalCase         | `UsageData`, `ModelBreakdown`, `TokenCounts`           |
+| 定数         | UPPER_SNAKE_CASE   | `DEFAULT_CLAUDE_CODE_PATH`, `BLOCKS_WARNING_THRESHOLD` |
+| 内部ファイル | `_` プレフィックス | `_types.ts`, `_utils.ts`, `_consts.ts`                 |
+| 公開ファイル | プレフィックスなし | `data-loader.ts`, `calculate-cost.ts`                  |
 
 ### pnpm catalog によるバージョン中央管理
 
@@ -85,41 +85,41 @@ const XDG_CONFIG_DIR = xdgConfig ?? `${USER_HOME_DIR}/.config`;
 ```typescript
 // apps/ccusage/src/data-loader.ts:11-13
 // verbatimModuleSyntax による import type と import の明示的分離
-import type { WeekDay } from './_consts.ts';
-import type { LoadedUsageEntry, SessionBlock } from './_session-blocks.ts';
-import type { ActivityDate, Bucket, CostMode, ModelName, SortOrder, Version } from './_types.ts';
+import type { WeekDay } from "./_consts.ts";
+import type { LoadedUsageEntry, SessionBlock } from "./_session-blocks.ts";
+import type { ActivityDate, Bucket, CostMode, ModelName, SortOrder, Version } from "./_types.ts";
 ```
 
 ```typescript
 // apps/ccusage/src/commands/daily.ts:1-22
 // import type はファイル先頭にグループ化、.ts 拡張子付き
-import type { UsageReportConfig } from '@ccusage/terminal/table';
-import process from 'node:process';
+import type { UsageReportConfig } from "@ccusage/terminal/table";
 import {
-	addEmptySeparatorRow,
-	createUsageReportTable,
-	formatTotalsRow,
-	formatUsageDataRow,
-	pushBreakdownRows,
-} from '@ccusage/terminal/table';
-import { Result } from '@praha/byethrow';
-import { define } from 'gunshi';
-import pc from 'picocolors';
-import { loadConfig, mergeConfigWithArgs } from '../_config-loader-tokens.ts';
+  addEmptySeparatorRow,
+  createUsageReportTable,
+  formatTotalsRow,
+  formatUsageDataRow,
+  pushBreakdownRows,
+} from "@ccusage/terminal/table";
+import { Result } from "@praha/byethrow";
+import { define } from "gunshi";
+import process from "node:process";
+import pc from "picocolors";
+import { loadConfig, mergeConfigWithArgs } from "../_config-loader-tokens.ts";
 ```
 
 ```typescript
 // packages/internal/src/logger.ts:5-20
 // console.log の代替としての構造化ロガー
 export function createLogger(name: string): ConsolaInstance {
-	const logger: ConsolaInstance = consola.withTag(name);
-	if (process.env.LOG_LEVEL != null) {
-		const level = Number.parseInt(process.env.LOG_LEVEL, 10);
-		if (!Number.isNaN(level)) {
-			logger.level = level;
-		}
-	}
-	return logger;
+  const logger: ConsolaInstance = consola.withTag(name);
+  if (process.env.LOG_LEVEL != null) {
+    const level = Number.parseInt(process.env.LOG_LEVEL, 10);
+    if (!Number.isNaN(level)) {
+      logger.level = level;
+    }
+  }
+  return logger;
 }
 // eslint-disable-next-line no-console
 export const log = console.log;
@@ -129,13 +129,13 @@ export const log = console.log;
 // apps/ccusage/src/_utils.ts:25-76
 // in-source testing パターン: テストがソースと同一ファイルに存在
 if (import.meta.vitest != null) {
-	describe('unreachable', () => {
-		it('should throw an error when called', () => {
-			expect(() => unreachable('test' as never)).toThrow(
-				'Unreachable code reached with value: test',
-			);
-		});
-	});
+  describe("unreachable", () => {
+    it("should throw an error when called", () => {
+      expect(() => unreachable("test" as never)).toThrow(
+        "Unreachable code reached with value: test",
+      );
+    });
+  });
 }
 ```
 
@@ -161,7 +161,7 @@ trustPolicy: no-downgrade
 
 ```typescript
 // apps/ccusage/src/_types.ts:140-145
-export const CostModes = ['auto', 'calculate', 'display'] as const;
+export const CostModes = ["auto", "calculate", "display"] as const;
 export type CostMode = TupleToUnion<typeof CostModes>;
 ```
 
@@ -170,9 +170,9 @@ export type CostMode = TupleToUnion<typeof CostModes>;
 ```typescript
 // apps/ccusage/src/_types.ts:9-13
 export const modelNameSchema = v.pipe(
-	v.string(),
-	v.minLength(1, 'Model name cannot be empty'),
-	v.brand('ModelName'),
+  v.string(),
+  v.minLength(1, "Model name cannot be empty"),
+  v.brand("ModelName"),
 );
 ```
 
@@ -202,7 +202,7 @@ console.log(JSON.stringify(jsonOutput, null, 2));
 
 ```typescript
 // Better: ロガーモジュールを利用する
-import { log } from '../logger.ts';
+import { log } from "../logger.ts";
 log(table.toString());
 log(JSON.stringify(jsonOutput, null, 2));
 ```
@@ -211,7 +211,7 @@ log(JSON.stringify(jsonOutput, null, 2));
 
 ```typescript
 // apps/ccusage/src/_macro.ts:22
-console.warn('Failed to prefetch Claude pricing data, proceeding with empty cache.', error);
+console.warn("Failed to prefetch Claude pricing data, proceeding with empty cache.", error);
 ```
 
 ## 導出ルール

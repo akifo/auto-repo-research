@@ -78,17 +78,19 @@ dev サーバーの `cachedTransformMiddleware` はリクエストチェーン�
 // packages/vite/src/node/server/middlewares/transform.ts:70-103
 export function cachedTransformMiddleware(server: ViteDevServer): Connect.NextHandleFunction {
   return function viteCachedTransformMiddleware(req, res, next) {
-    const ifNoneMatch = req.headers['if-none-match']
+    const ifNoneMatch = req.headers["if-none-match"];
     if (ifNoneMatch) {
-      const moduleByEtag = environment.moduleGraph.getModuleByEtag(ifNoneMatch)
-      if (moduleByEtag?.transformResult?.etag === ifNoneMatch
-          && moduleByEtag.url === req.url) {
-        res.statusCode = 304
-        return res.end()
+      const moduleByEtag = environment.moduleGraph.getModuleByEtag(ifNoneMatch);
+      if (
+        moduleByEtag?.transformResult?.etag === ifNoneMatch
+        && moduleByEtag.url === req.url
+      ) {
+        res.statusCode = 304;
+        return res.end();
       }
     }
-    next()
-  }
+    next();
+  };
 }
 ```
 
@@ -131,7 +133,7 @@ export function warnFutureDeprecation(
   stacktrace = true,
 ): void {
   // ... 警告メッセージ + ドキュメント URL + スタックトレース
-  const docs = `${docsURL}/changes/${deprecationCode[type].toLowerCase()}`
+  const docs = `${docsURL}/changes/${deprecationCode[type].toLowerCase()}`;
 }
 ```
 
@@ -156,18 +158,19 @@ export function warnFutureDeprecation(
   // packages/vite/rolldown.config.ts:377-405
   function bundleSizeLimit(limit: number): Plugin {
     return {
-      name: 'bundle-limit',
+      name: "bundle-limit",
       generateBundle(_, bundle) {
         size = Buffer.byteLength(
-          Object.values(bundle).map((i) => ('code' in i ? i.code : '')).join(''), 'utf-8',
-        )
+          Object.values(bundle).map((i) => ("code" in i ? i.code : "")).join(""),
+          "utf-8",
+        );
       },
       closeBundle() {
         if (kb > limit) {
-          this.error(`Bundle size exceeded ${limit} kB, current size is ${kb.toFixed(2)}kb.`)
+          this.error(`Bundle size exceeded ${limit} kB, current size is ${kb.toFixed(2)}kb.`);
         }
       },
-    }
+    };
   }
   ```
 
@@ -175,22 +178,22 @@ export function warnFutureDeprecation(
   ```typescript
   // packages/vite/src/node/plugins/terser.ts:96-97
   // Lazy load worker.
-  worker ||= makeWorker()
+  worker ||= makeWorker();
   ```
 
 - **重複リクエスト抑制**: `transformRequest` で同一 URL のリクエストが並行して到着した場合、2つ目以降は最初のリクエストの Promise を再利用する。無効化タイムスタンプとの比較で古いリクエストを適切に破棄する。
   ```typescript
   // packages/vite/src/node/server/transformRequest.ts:109-146
-  const pending = environment._pendingRequests.get(url)
+  const pending = environment._pendingRequests.get(url);
   if (pending) {
     return environment.moduleGraph.getModuleByUrl(url).then((module) => {
       if (!module || pending.timestamp > module.lastInvalidationTimestamp) {
-        return pending.request
+        return pending.request;
       } else {
-        pending.abort()
-        return transformRequest(environment, url, options)
+        pending.abort();
+        return transformRequest(environment, url, options);
       }
-    })
+    });
   }
   ```
 

@@ -39,7 +39,7 @@ Effect-TS/effect は大規模モノレポ（35+ パッケージ）において�
 2. エクスポート宣言のコメントを `TSCallSignatureDeclaration`（型リテラル内の呼び出しシグネチャ）に複製
 3. `dual()` の型パラメータにもコメントを伝播
 
-`scripts/codemods/ts-fence.ts` は `@example` タグのコード例にマークダウンの ` ```ts ` フェンスを自動付与する。これはドキュメント生成ツール（`@effect/docgen`）がフェンス付きの `@example` を期待するためである。
+`scripts/codemods/ts-fence.ts` は `@example` タグのコード例にマークダウンの `` ```ts `` フェンスを自動付与する。これはドキュメント生成ツール（`@effect/docgen`）がフェンス付きの `@example` を期待するためである。
 
 ### バージョン情報のテンプレートベース埋め込み
 
@@ -61,41 +61,41 @@ Effect-TS/effect は大規模モノレポ（35+ パッケージ）において�
 
 ```typescript
 // build-utils/src/PrepareV3.ts:16-58（barrel file 生成の核心部分）
-const template = yield* fs.readFileString("src/.index.ts").pipe(
+const template = yield * fs.readFileString("src/.index.ts").pipe(
   Effect.map((_) => _.trim() + "\n\n"),
-  Effect.orElseSucceed(() => "")
-)
+  Effect.orElseSucceed(() => ""),
+);
 
 const modules = Object.entries(ctx.entrypoints)
   .filter(([entry, module]) => module.ts && entry !== ".")
   .map(([, module]) => module.original.replace(/^\.\/src\//, ""))
-  .filter((current, index, array) => array.indexOf(current) === index)
+  .filter((current, index, array) => array.indexOf(current) === index);
 
 const matches = micromatch(modules, [
   "*.ts",
-  ...ctx.packageJson.effect.generateIndex.include
+  ...ctx.packageJson.effect.generateIndex.include,
 ], {
   ignore: [
     ...ctx.packageJson.effect.generateIndex.exclude,
     "**/internal/**",
-    "**/index.ts"
-  ]
-})
+    "**/index.ts",
+  ],
+});
 
-const content = yield* Effect.forEach(
+const content = yield * Effect.forEach(
   matches,
   (file) =>
     Effect.gen(function*() {
-      const content = yield* fs.readFileString(`./src/${file}`)
-      const topComment = content.match(/\/\*\*\n.+?\*\//s)?.[0] ?? ""
+      const content = yield* fs.readFileString(`./src/${file}`);
+      const topComment = content.match(/\/\*\*\n.+?\*\//s)?.[0] ?? "";
       const moduleName = file
         .slice(file.lastIndexOf("/") + 1)
-        .slice(0, -path.extname(file).length)
-      const srcFile = file.replace(/\.ts$/, ".js")
-      return `${topComment}\nexport * as ${moduleName} from "./${srcFile}"`
+        .slice(0, -path.extname(file).length);
+      const srcFile = file.replace(/\.ts$/, ".js");
+      return `${topComment}\nexport * as ${moduleName} from "./${srcFile}"`;
     }),
-  { concurrency: "inherit" }
-)
+  { concurrency: "inherit" },
+);
 ```
 
 ```typescript
@@ -111,32 +111,32 @@ root.find(j.ExportNamedDeclaration, {
           type: "TSTypeAnnotation",
           typeAnnotation: {
             type: "TSTypeLiteral",
-            members: [{ type: "TSCallSignatureDeclaration" }]
-          }
-        }
-      }
-    }]
-  }
+            members: [{ type: "TSCallSignatureDeclaration" }],
+          },
+        },
+      },
+    }],
+  },
 }).forEach((path) => {
-  const comments = path.node.comments ?? []
+  const comments = path.node.comments ?? [];
   j(path).find(j.TSCallSignatureDeclaration).forEach((path) => {
-    if (hasComments(path.node)) return
-    path.node.comments = comments
-  })
-})
+    if (hasComments(path.node)) return;
+    path.node.comments = comments;
+  });
+});
 ```
 
 ```typescript
 // scripts/version.mjs:1-9（バージョン埋め込み）
-import * as Fs from "node:fs"
-import Package from "../packages/effect/package.json" with { type: "json" }
+import * as Fs from "node:fs";
+import Package from "../packages/effect/package.json" with { type: "json" };
 
-const tpl = Fs.readFileSync("./scripts/version.template.txt").toString("utf8")
+const tpl = Fs.readFileSync("./scripts/version.template.txt").toString("utf8");
 
 Fs.writeFileSync(
   "packages/effect/src/internal/version.ts",
-  tpl.replace("VERSION", Package.version)
-)
+  tpl.replace("VERSION", Package.version),
+);
 ```
 
 ```typescript
@@ -169,8 +169,8 @@ export {
   /**
    * @since 2.0.0
    */
-  unsafeCoerce
-} from "./Function.js"
+  unsafeCoerce,
+} from "./Function.js";
 ```
 
 ```typescript
@@ -182,9 +182,9 @@ export const javascript = ${JSON.stringify(`${jsBundle}\n${jsPreset}`)}
 
 /** @internal */
 export const css = ${JSON.stringify(css)}
-`
+`;
 
-await Fs.writeFile("packages/platform/src/internal/httpApiSwagger.ts", source)
+await Fs.writeFile("packages/platform/src/internal/httpApiSwagger.ts", source);
 ```
 
 ## パターンカタログ
@@ -232,8 +232,8 @@ expectTransformation(
   `// description
 const v = 1`,
   `// description
-const v = 1`
-)
+const v = 1`,
+);
 ```
 
 ## Anti-Patterns / 注意点
@@ -242,7 +242,7 @@ const v = 1`
 
 ```typescript
 // Bad: index.ts を直接編集する
-export * as MyNewModule from "./MyNewModule.js"  // 手動追加 → pnpm codegen で上書きされる
+export * as MyNewModule from "./MyNewModule.js"; // 手動追加 → pnpm codegen で上書きされる
 ```
 
 ```typescript

@@ -21,28 +21,28 @@ API の成熟度を3つのインターフェースで構造的に分離する。
 // packages/vite/src/node/config.ts:547-614
 export interface ExperimentalOptions {
   // semver に従わない。ピン留め推奨
-  importGlobRestoreExtension?: boolean
-  enableNativePlugin?: boolean | 'v1' | 'v2'
-  bundledDev?: boolean
+  importGlobRestoreExtension?: boolean;
+  enableNativePlugin?: boolean | "v1" | "v2";
+  bundledDev?: boolean;
 }
 
 export interface FutureOptions {
   // 次期メジャーで削除予定の API に対する事前警告
-  removePluginHookHandleHotUpdate?: 'warn'
-  removePluginHookSsrArgument?: 'warn'
-  removeServerModuleGraph?: 'warn'
-  removeServerReloadModule?: 'warn'
-  removeServerPluginContainer?: 'warn'
-  removeServerHot?: 'warn'
-  removeServerTransformRequest?: 'warn'
-  removeServerWarmupRequest?: 'warn'
-  removeSsrLoadModule?: 'warn'
+  removePluginHookHandleHotUpdate?: "warn";
+  removePluginHookSsrArgument?: "warn";
+  removeServerModuleGraph?: "warn";
+  removeServerReloadModule?: "warn";
+  removeServerPluginContainer?: "warn";
+  removeServerHot?: "warn";
+  removeServerTransformRequest?: "warn";
+  removeServerWarmupRequest?: "warn";
+  removeSsrLoadModule?: "warn";
 }
 
 export interface LegacyOptions {
   // パッチ版でのみ semver に従う。マイナーで削除される可能性
-  skipWebSocketTokenCheck?: boolean
-  inconsistentCjsInterop?: boolean
+  skipWebSocketTokenCheck?: boolean;
+  inconsistentCjsInterop?: boolean;
 }
 ```
 
@@ -51,9 +51,9 @@ UserConfig にはこれらが optional フィールドとして配置され、`f
 ```typescript
 // packages/vite/src/node/config.ts:420-438
 export interface UserConfig extends DefaultEnvironmentOptions {
-  experimental?: ExperimentalOptions
-  future?: FutureOptions | 'warn'  // 'warn' で全非推奨警告を一括有効化
-  legacy?: LegacyOptions
+  experimental?: ExperimentalOptions;
+  future?: FutureOptions | "warn"; // 'warn' で全非推奨警告を一括有効化
+  legacy?: LegacyOptions;
   // ...
 }
 ```
@@ -65,26 +65,24 @@ export interface UserConfig extends DefaultEnvironmentOptions {
 ```typescript
 // packages/vite/src/node/deprecations.ts:1-40
 const deprecationCode = {
-  removePluginHookSsrArgument: 'this-environment-in-hooks',
-  removePluginHookHandleHotUpdate: 'hotupdate-hook',
-  removeServerModuleGraph: 'per-environment-apis',
-  removeServerReloadModule: 'per-environment-apis',
-  removeServerPluginContainer: 'per-environment-apis',
-  removeServerHot: 'per-environment-apis',
-  removeServerTransformRequest: 'per-environment-apis',
-  removeServerWarmupRequest: 'per-environment-apis',
-  removeSsrLoadModule: 'ssr-using-modulerunner',
-} satisfies Record<keyof FutureOptions, string>
+  removePluginHookSsrArgument: "this-environment-in-hooks",
+  removePluginHookHandleHotUpdate: "hotupdate-hook",
+  removeServerModuleGraph: "per-environment-apis",
+  removeServerReloadModule: "per-environment-apis",
+  removeServerPluginContainer: "per-environment-apis",
+  removeServerHot: "per-environment-apis",
+  removeServerTransformRequest: "per-environment-apis",
+  removeServerWarmupRequest: "per-environment-apis",
+  removeSsrLoadModule: "ssr-using-modulerunner",
+} satisfies Record<keyof FutureOptions, string>;
 
 const deprecationMessages = {
   removePluginHookSsrArgument:
     "Plugin hook `options.ssr` is replaced with `this.environment.config.consumer === 'server'`.",
-  removePluginHookHandleHotUpdate:
-    'Plugin hook `handleHotUpdate()` is replaced with `hotUpdate()`.',
-  removeServerModuleGraph:
-    'The `server.moduleGraph` is replaced with `this.environment.moduleGraph`.',
+  removePluginHookHandleHotUpdate: "Plugin hook `handleHotUpdate()` is replaced with `hotUpdate()`.",
+  removeServerModuleGraph: "The `server.moduleGraph` is replaced with `this.environment.moduleGraph`.",
   // ... 各項目に移行先を明記
-} satisfies Record<keyof FutureOptions, string>
+} satisfies Record<keyof FutureOptions, string>;
 ```
 
 ### 3. warnFutureDeprecation: メッセージ + ドキュメント URL + スタックトレース
@@ -100,41 +98,41 @@ export function warnFutureDeprecation(
   stacktrace = true,
 ): void {
   if (
-    _ignoreDeprecationWarnings ||
-    !config.future ||
-    config.future[type] !== 'warn'
-  )
-    return
-
-  let msg = `[vite future] ${deprecationMessages[type]}`
-  if (extraMessage) {
-    msg += ` ${extraMessage}`
+    _ignoreDeprecationWarnings
+    || !config.future
+    || config.future[type] !== "warn"
+  ) {
+    return;
   }
 
-  const docs = `${docsURL}/changes/${deprecationCode[type].toLowerCase()}`
-  msg +=
-    colors.gray(`\n  ${stacktrace ? '├' : '└'}─── `) +
-    colors.underline(docs) +
-    '\n'
+  let msg = `[vite future] ${deprecationMessages[type]}`;
+  if (extraMessage) {
+    msg += ` ${extraMessage}`;
+  }
+
+  const docs = `${docsURL}/changes/${deprecationCode[type].toLowerCase()}`;
+  msg += colors.gray(`\n  ${stacktrace ? "├" : "└"}─── `)
+    + colors.underline(docs)
+    + "\n";
 
   if (stacktrace) {
-    const stack = new Error().stack
+    const stack = new Error().stack;
     if (stack) {
       let stacks = stack
-        .split('\n')
+        .split("\n")
         .slice(3)
-        .filter((i) => !i.includes('/node_modules/vite/dist/'))
+        .filter((i) => !i.includes("/node_modules/vite/dist/"));
       if (stacks.length === 0) {
-        stacks.push('No stack trace found.')
+        stacks.push("No stack trace found.");
       }
       // ツリー形式で見やすく整形
       stacks = stacks.map(
-        (i, idx) => `  ${idx === stacks.length - 1 ? '└' : '│'} ${i.trim()}`,
-      )
-      msg += colors.dim(stacks.join('\n')) + '\n'
+        (i, idx) => `  ${idx === stacks.length - 1 ? "└" : "│"} ${i.trim()}`,
+      );
+      msg += colors.dim(stacks.join("\n")) + "\n";
     }
   }
-  config.logger.warnOnce(msg)
+  config.logger.warnOnce(msg);
 }
 ```
 
@@ -148,38 +146,38 @@ let server: ViteDevServer = {
   config,
   // ...
   get hot() {
-    warnFutureDeprecation(config, 'removeServerHot')
-    return hot
+    warnFutureDeprecation(config, "removeServerHot");
+    return hot;
   },
   get pluginContainer() {
-    warnFutureDeprecation(config, 'removeServerPluginContainer')
-    return pluginContainer
+    warnFutureDeprecation(config, "removeServerPluginContainer");
+    return pluginContainer;
   },
   get moduleGraph() {
-    warnFutureDeprecation(config, 'removeServerModuleGraph')
-    return moduleGraph
+    warnFutureDeprecation(config, "removeServerModuleGraph");
+    return moduleGraph;
   },
   // ...
-}
+};
 ```
 
 プラグインフックの引数レベルでも同様の trap を仕掛けられる。
 
 ```typescript
 // packages/vite/src/node/server/pluginContainer.ts:418-431
-Object.defineProperty(normalizedOptions, 'ssr', {
+Object.defineProperty(normalizedOptions, "ssr", {
   get() {
     warnFutureDeprecation(
       topLevelConfig,
-      'removePluginHookSsrArgument',
-      `Used in plugin "${plugin.name}".`,  // どのプラグインが使ったかを特定
-    )
-    return ssrTemp
+      "removePluginHookSsrArgument",
+      `Used in plugin "${plugin.name}".`, // どのプラグインが使ったかを特定
+    );
+    return ssrTemp;
   },
   set(v) {
-    ssrTemp = v
+    ssrTemp = v;
   },
-})
+});
 ```
 
 ### 5. future: 'warn' ショートカットによる一括有効化
@@ -211,15 +209,15 @@ future:
 ```typescript
 // packages/vite/src/node/deprecations.ts:99-105
 export function ignoreDeprecationWarnings<T>(fn: () => T): T {
-  const before = _ignoreDeprecationWarnings
-  _ignoreDeprecationWarnings = true
-  const ret = fn()
-  _ignoreDeprecationWarnings = before
-  return ret
+  const before = _ignoreDeprecationWarnings;
+  _ignoreDeprecationWarnings = true;
+  const ret = fn();
+  _ignoreDeprecationWarnings = before;
+  return ret;
 }
 
 // packages/vite/src/node/server/hmr.ts:376
-const mixedModuleGraph = ignoreDeprecationWarnings(() => server.moduleGraph)
+const mixedModuleGraph = ignoreDeprecationWarnings(() => server.moduleGraph);
 ```
 
 ### 7. Property Proxy による名前変更の段階的移行
@@ -229,23 +227,23 @@ const mixedModuleGraph = ignoreDeprecationWarnings(() => server.moduleGraph)
 ```typescript
 // packages/vite/src/node/utils.ts:1250-1283
 export function setupRollupOptionCompat<
-  T extends Pick<BuildEnvironmentOptions, 'rollupOptions' | 'rolldownOptions'>,
+  T extends Pick<BuildEnvironmentOptions, "rollupOptions" | "rolldownOptions">,
 >(buildConfig: T, path: string) {
-  buildConfig.rolldownOptions ??= buildConfig.rollupOptions
+  buildConfig.rolldownOptions ??= buildConfig.rollupOptions;
 
-  Object.defineProperty(buildConfig, 'rollupOptions', {
+  Object.defineProperty(buildConfig, "rollupOptions", {
     get() {
-      return buildConfig.rolldownOptions
+      return buildConfig.rolldownOptions;
     },
     set(newValue) {
       if (runtimeDeprecatedPath.has(path)) {
-        rollupOptionsDeprecationCall()
+        rollupOptionsDeprecationCall();
       }
-      buildConfig.rolldownOptions = newValue
+      buildConfig.rolldownOptions = newValue;
     },
     configurable: true,
     enumerable: true,
-  })
+  });
 }
 ```
 
@@ -256,39 +254,39 @@ export function setupRollupOptionCompat<
 ```typescript
 // --- 1. 非推奨項目を型で定義 ---
 interface FutureOptions {
-  removeOldApi?: 'warn'
-  removeDeprecatedHook?: 'warn'
+  removeOldApi?: "warn";
+  removeDeprecatedHook?: "warn";
 }
 
 // --- 2. メタデータを satisfies で網羅性保証 ---
 const deprecationCode = {
-  removeOldApi: 'new-api-migration',
-  removeDeprecatedHook: 'new-hook-system',
-} satisfies Record<keyof FutureOptions, string>
+  removeOldApi: "new-api-migration",
+  removeDeprecatedHook: "new-hook-system",
+} satisfies Record<keyof FutureOptions, string>;
 
 const deprecationMessages = {
-  removeOldApi: '`oldApi()` is replaced with `newApi()`.',
-  removeDeprecatedHook: '`onOldHook()` is replaced with `onNewHook()`.',
-} satisfies Record<keyof FutureOptions, string>
+  removeOldApi: "`oldApi()` is replaced with `newApi()`.",
+  removeDeprecatedHook: "`onOldHook()` is replaced with `onNewHook()`.",
+} satisfies Record<keyof FutureOptions, string>;
 
 // --- 3. 警告関数はドキュメント URL 付き ---
 function warnFutureDeprecation(
   config: ResolvedConfig,
   type: keyof FutureOptions,
 ): void {
-  if (!config.future?.[type]) return
-  const msg = `[future] ${deprecationMessages[type]}`
-  const docs = `https://docs.example.com/changes/${deprecationCode[type]}`
-  config.logger.warnOnce(`${msg}\n  See: ${docs}`)
+  if (!config.future?.[type]) return;
+  const msg = `[future] ${deprecationMessages[type]}`;
+  const docs = `https://docs.example.com/changes/${deprecationCode[type]}`;
+  config.logger.warnOnce(`${msg}\n  See: ${docs}`);
 }
 
 // --- 4. getter trap で遅延検知 ---
 const server = {
   get oldApi() {
-    warnFutureDeprecation(config, 'removeOldApi')
-    return newApi  // 内部的には新 API に委譲
+    warnFutureDeprecation(config, "removeOldApi");
+    return newApi; // 内部的には新 API に委譲
   },
-}
+};
 ```
 
 ## Bad Example
@@ -299,26 +297,26 @@ const server = {
 // Bad: 非推奨メッセージが散在し、移行先の情報がない
 class Server {
   get moduleGraph() {
-    console.warn('moduleGraph is deprecated')  // どう移行すべきか不明
-    return this._moduleGraph
+    console.warn("moduleGraph is deprecated"); // どう移行すべきか不明
+    return this._moduleGraph;
   }
 }
 
 // Bad: 非推奨項目の追加時に対応表の更新漏れを検出できない
-const messages: Record<string, string> = {  // any key を許容
-  removeOldApi: 'deprecated',
+const messages: Record<string, string> = { // any key を許容
+  removeOldApi: "deprecated",
   // removeNewlyDeprecated を追加し忘れてもエラーにならない
-}
+};
 
 // Bad: 設定解決時に非推奨の互換コードが本体ロジックに混在
 function resolveConfig(config: UserConfig): ResolvedConfig {
   // 800行の関数の中に互換コードが散在...
   if (config.oldOption) {
-    config.newOption = config.oldOption  // 変換ロジックが埋もれる
+    config.newOption = config.oldOption; // 変換ロジックが埋もれる
   }
   // ... 数百行後 ...
   if (config.anotherOldOption) {
-    config.anotherNewOption = convertOld(config.anotherOldOption)
+    config.anotherNewOption = convertOld(config.anotherOldOption);
   }
 }
 ```

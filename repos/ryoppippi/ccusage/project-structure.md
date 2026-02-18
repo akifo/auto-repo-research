@@ -23,17 +23,17 @@ ccusage は pnpm workspace による monorepo で、CLI ツール群（apps/）�
 
 `apps/` には独立して公開・配布される CLI ツールが配置され、`packages/` にはモノレポ内部でのみ使われる共有ライブラリが配置されている。
 
-| ディレクトリ | パッケージ名 | 公開 | 役割 |
-|---|---|---|---|
-| `apps/ccusage` | `ccusage` | npm 公開 | Claude Code 使用量 CLI |
-| `apps/codex` | `@ccusage/codex` | npm 公開 | Codex CLI |
-| `apps/opencode` | `@ccusage/opencode` | npm 公開 | OpenCode CLI |
-| `apps/amp` | `@ccusage/amp` | npm 公開 | Amp CLI |
-| `apps/pi` | `@ccusage/pi` | npm 公開 | Pi-agent CLI |
-| `apps/mcp` | `@ccusage/mcp` | npm 公開 | MCP サーバー |
-| `packages/internal` | `@ccusage/internal` | private | pricing, logger, format |
-| `packages/terminal` | `@ccusage/terminal` | private | テーブル表示, TUI |
-| `docs/` | `@ccusage/docs` | private | VitePress ドキュメント |
+| ディレクトリ        | パッケージ名        | 公開     | 役割                    |
+| ------------------- | ------------------- | -------- | ----------------------- |
+| `apps/ccusage`      | `ccusage`           | npm 公開 | Claude Code 使用量 CLI  |
+| `apps/codex`        | `@ccusage/codex`    | npm 公開 | Codex CLI               |
+| `apps/opencode`     | `@ccusage/opencode` | npm 公開 | OpenCode CLI            |
+| `apps/amp`          | `@ccusage/amp`      | npm 公開 | Amp CLI                 |
+| `apps/pi`           | `@ccusage/pi`       | npm 公開 | Pi-agent CLI            |
+| `apps/mcp`          | `@ccusage/mcp`      | npm 公開 | MCP サーバー            |
+| `packages/internal` | `@ccusage/internal` | private  | pricing, logger, format |
+| `packages/terminal` | `@ccusage/terminal` | private  | テーブル表示, TUI       |
+| `docs/`             | `@ccusage/docs`     | private  | VitePress ドキュメント  |
 
 依存の方向は厳密に一方向: `apps/ -> packages/` であり、`packages/` 間の依存は存在しない。`apps/mcp` だけが他の apps（`ccusage`, `@ccusage/codex`）に依存するが、これは MCP サーバーが各 CLI をサブプロセスとして呼び出す構成のためである。
 
@@ -52,6 +52,7 @@ ccusage は pnpm workspace による monorepo で、CLI ツール群（apps/）�
 各 app 内のソースファイルは、公開される（バンドルのエントリポイントとなる）ファイルと、内部でのみ使われるファイルに分けられている。内部ファイルは `_` prefix で命名され、tsdown の設定で明示的に除外される。
 
 ccusage app の例:
+
 - 公開: `index.ts`, `calculate-cost.ts`, `data-loader.ts`, `debug.ts`, `logger.ts`
 - 内部: `_types.ts`, `_consts.ts`, `_utils.ts`, `_macro.ts`, `_pricing-fetcher.ts` 等
 
@@ -194,34 +195,34 @@ allowBuilds:
 // Bad: 各 app で類似の型を個別定義
 // apps/codex/src/_types.ts
 export type TokenUsageDelta = {
-	inputTokens: number;
-	cachedInputTokens: number;
-	outputTokens: number;
-	reasoningOutputTokens: number;  // Codex 固有
-	totalTokens: number;
+  inputTokens: number;
+  cachedInputTokens: number;
+  outputTokens: number;
+  reasoningOutputTokens: number; // Codex 固有
+  totalTokens: number;
 };
 
 // apps/amp/src/_types.ts
 export type TokenUsageDelta = {
-	inputTokens: number;
-	cacheCreationInputTokens: number;  // Amp 固有
-	cacheReadInputTokens: number;      // Amp 固有
-	outputTokens: number;
-	totalTokens: number;
+  inputTokens: number;
+  cacheCreationInputTokens: number; // Amp 固有
+  cacheReadInputTokens: number; // Amp 固有
+  outputTokens: number;
+  totalTokens: number;
 };
 ```
 
 ```typescript
 // Better: ジェネリックな基底型を packages/internal に定義
 interface BaseTokenUsage {
-	inputTokens: number;
-	outputTokens: number;
-	totalTokens: number;
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
 }
 // 各 app が拡張
 interface CodexTokenUsage extends BaseTokenUsage {
-	cachedInputTokens: number;
-	reasoningOutputTokens: number;
+  cachedInputTokens: number;
+  reasoningOutputTokens: number;
 }
 ```
 

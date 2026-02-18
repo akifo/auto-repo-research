@@ -30,14 +30,14 @@ export interface Effect<out A, out E = never, out R = never>
 
 ```typescript
 // packages/effect/src/Effect.ts:3160
-export const succeed: <A>(value: A) => Effect<A> = core.succeed
+export const succeed: <A>(value: A) => Effect<A> = core.succeed;
 ```
 
 `fail` は `Effect<never, E>` を返す。成功値は `never`（到達しない）、依存もない:
 
 ```typescript
 // packages/effect/src/Effect.ts:2575
-export const fail: <E>(error: E) => Effect<never, E> = core.fail
+export const fail: <E>(error: E) => Effect<never, E> = core.fail;
 ```
 
 ### 合成時の型自動伝播
@@ -77,7 +77,7 @@ export const flatMap = dual<
 // packages/effect/src/Effect.ts:168-171
 declare module "./Context.js" {
   interface Tag<Id, Value> extends Effect<Value, never, Id> {
-    [Symbol.iterator](): EffectGenerator<Tag<Id, Value>>
+    [Symbol.iterator](): EffectGenerator<Tag<Id, Value>>;
   }
 }
 ```
@@ -87,10 +87,10 @@ declare module "./Context.js" {
 ```typescript
 // packages/effect/src/Effect.ts:7453-7459 (ドキュメント内の例)
 const program = Effect.gen(function*() {
-  const service1 = yield* Service1  // R に Service1 が追加
-  const service2 = yield* Service2  // R に Service2 が追加
-  return "some result"
-})
+  const service1 = yield* Service1; // R に Service1 が追加
+  const service2 = yield* Service2; // R に Service2 が追加
+  return "some result";
+});
 // program: Effect<string, never, Service1 | Service2>
 ```
 
@@ -121,14 +121,14 @@ export const catchTag: {
 
 ```typescript
 // packages/effect/src/Effect.ts:8180
-export const either: <A, E, R>(self: Effect<A, E, R>) => Effect<Either.Either<A, E>, never, R>
+export const either: <A, E, R>(self: Effect<A, E, R>) => Effect<Either.Either<A, E>, never, R>;
 ```
 
 `orDie` は E を `never` に変えて失敗をデフェクト（回復不能エラー）に変換する:
 
 ```typescript
 // packages/effect/src/Effect.ts:11265
-export const orDie: <A, E, R>(self: Effect<A, E, R>) => Effect<A, never, R>
+export const orDie: <A, E, R>(self: Effect<A, E, R>) => Effect<A, never, R>;
 ```
 
 ### Option/Either の Effect 統合（Unify）
@@ -158,26 +158,26 @@ export const effectVariance = {
   _R: (_: never) => _,
   _E: (_: never) => _,
   _A: (_: never) => _,
-  _V: version.getCurrentVersion()
-}
+  _V: version.getCurrentVersion(),
+};
 ```
 
 ```typescript
 // packages/effect/src/internal/core.ts:127-161
 // Effect の内部表現。すべての Effect は EffectPrimitive として統一される
 class EffectPrimitive {
-  public effect_instruction_i0 = undefined
-  public effect_instruction_i1 = undefined
-  public effect_instruction_i2 = undefined
+  public effect_instruction_i0 = undefined;
+  public effect_instruction_i1 = undefined;
+  public effect_instruction_i2 = undefined;
   public trace = undefined;
-  [EffectTypeId] = effectVariance
+  [EffectTypeId] = effectVariance;
   constructor(readonly _op: Primitive["_op"]) {}
   // ...
   pipe() {
-    return pipeArguments(this, arguments)
+    return pipeArguments(this, arguments);
   }
   [Symbol.iterator]() {
-    return new SingleShotGen(new YieldWrap(this))
+    return new SingleShotGen(new YieldWrap(this));
   }
 }
 ```
@@ -186,9 +186,9 @@ class EffectPrimitive {
 // packages/effect/src/internal/core.ts:1419-1421
 // gen の実装: ジェネレータ関数を受け取り、fromIterator で Effect に変換
 export const gen: typeof Effect.gen = function() {
-  const f = arguments.length === 1 ? arguments[0] : arguments[1].bind(arguments[0])
-  return fromIterator(() => f(pipe))
-}
+  const f = arguments.length === 1 ? arguments[0] : arguments[1].bind(arguments[0]);
+  return fromIterator(() => f(pipe));
+};
 ```
 
 ```typescript
@@ -234,17 +234,13 @@ export const TaggedError = <Tag extends string>(tag: Tag):
 
 ```typescript
 // 単純な場合: Effect<number>
-const simple = Effect.succeed(42)
+const simple = Effect.succeed(42);
 
 // エラーが追加: Effect<number, Error>
-const withError = Effect.flatMap(simple, (n) =>
-  n > 0 ? Effect.succeed(n) : Effect.fail(new Error("negative"))
-)
+const withError = Effect.flatMap(simple, (n) => n > 0 ? Effect.succeed(n) : Effect.fail(new Error("negative")));
 
 // 依存が追加: Effect<number, Error, Database>
-const withDep = Effect.flatMap(withError, (n) =>
-  Effect.flatMap(Database, (db) => db.query(n))
-)
+const withDep = Effect.flatMap(withError, (n) => Effect.flatMap(Database, (db) => db.query(n)));
 ```
 
 - **Either/Option の Effect 統合**: 既存のデータ型を Effect のサブタイプにすることで、ジェネレータ構文内でシームレスに扱える。分岐のためのボイラープレートが不要になる。
@@ -265,7 +261,7 @@ export type Cause<E> =
   | Die
   | Interrupt
   | Sequential<E>
-  | Parallel<E>
+  | Parallel<E>;
 ```
 
 ## Anti-Patterns / 注意点
@@ -274,14 +270,12 @@ export type Cause<E> =
 
 ```typescript
 // Bad: エラーを握りつぶして型を綺麗にする
-const bad = myEffect.pipe(Effect.orDie)
+const bad = myEffect.pipe(Effect.orDie);
 
 // Better: 適切にハンドリングしてから型を消す
 const better = myEffect.pipe(
-  Effect.catchTag("NetworkError", (e) =>
-    Effect.succeed(fallbackValue)
-  )
-)
+  Effect.catchTag("NetworkError", (e) => Effect.succeed(fallbackValue)),
+);
 ```
 
 - **R パラメータの provide 忘れ**: `Effect.provide` なしで `Effect.runPromise` に渡そうとすると型エラーになる。これは意図的な設計だが、R が複雑な union になるとどの依存が不足しているか分かりにくくなる。
@@ -292,21 +286,21 @@ const better = myEffect.pipe(
 
 // Better: Layer で全依存を provide してから run
 const runnable = program.pipe(
-  Effect.provide(Layer.mergeAll(Service1Live, Service2Live))
-)
-Effect.runPromise(runnable) // OK: R = never
+  Effect.provide(Layer.mergeAll(Service1Live, Service2Live)),
+);
+Effect.runPromise(runnable); // OK: R = never
 ```
 
 - **エラー型に _tag を付け忘れる**: `catchTag` は `_tag` プロパティに依存しているため、素の `Error` や `string` をエラー型に使うと discriminated union ハンドリングが利用できない。
 
 ```typescript
 // Bad: 素の string をエラーに使う
-const bad = Effect.fail("something went wrong")
+const bad = Effect.fail("something went wrong");
 
 // Better: Data.TaggedError でタグ付きエラーを定義
 class NetworkError extends Data.TaggedError("NetworkError")<{
-  readonly url: string
-  readonly status: number
+  readonly url: string;
+  readonly status: number;
 }>() {}
 ```
 

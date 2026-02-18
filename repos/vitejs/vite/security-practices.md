@@ -28,10 +28,10 @@ DNS rebinding 攻撃では、攻撃者が所有するドメインの DNS レコ�
 ```typescript
 // packages/vite/src/node/server/index.ts:895-900
 // host check (to prevent DNS rebinding attacks)
-const { allowedHosts } = serverConfig
+const { allowedHosts } = serverConfig;
 // no need to check for HTTPS as HTTPS is not vulnerable to DNS rebinding attacks
 if (allowedHosts !== true && !serverConfig.https) {
-  middlewares.use(hostValidationMiddleware(allowedHosts, false))
+  middlewares.use(hostValidationMiddleware(allowedHosts, false));
 }
 ```
 
@@ -40,15 +40,15 @@ if (allowedHosts !== true && !serverConfig.https) {
 ```typescript
 // packages/vite/src/node/server/middlewares/hostCheck.ts:5-44
 export function getAdditionalAllowedHosts(
-  resolvedServerOptions: Pick<ResolvedServerOptions, 'host' | 'hmr' | 'origin'>,
-  resolvedPreviewOptions: Pick<ResolvedPreviewOptions, 'host'>,
+  resolvedServerOptions: Pick<ResolvedServerOptions, "host" | "hmr" | "origin">,
+  resolvedPreviewOptions: Pick<ResolvedPreviewOptions, "host">,
 ): string[] {
-  const list = []
-  if (typeof resolvedServerOptions.host === 'string' && resolvedServerOptions.host) {
-    list.push(resolvedServerOptions.host)
+  const list = [];
+  if (typeof resolvedServerOptions.host === "string" && resolvedServerOptions.host) {
+    list.push(resolvedServerOptions.host);
   }
   // ... hmr.host, preview.host, server.origin も同様に収集
-  return list
+  return list;
 }
 ```
 
@@ -71,16 +71,16 @@ webSocketToken: Buffer.from(
 ```typescript
 // packages/vite/src/node/server/ws.ts:104-116
 function hasValidToken(config: ResolvedConfig, url: URL) {
-  const token = url.searchParams.get('token')
-  if (!token) return false
+  const token = url.searchParams.get("token");
+  if (!token) return false;
   try {
     const isValidToken = crypto.timingSafeEqual(
       Buffer.from(token),
       Buffer.from(config.webSocketToken),
-    )
-    return isValidToken
+    );
+    return isValidToken;
   } catch {} // an error is thrown when the length is incorrect
-  return false
+  return false;
 }
 ```
 
@@ -89,21 +89,21 @@ function hasValidToken(config: ResolvedConfig, url: URL) {
 ```typescript
 // packages/vite/src/node/server/ws.ts:169-198
 const shouldHandle = (req: IncomingMessage) => {
-  const protocol = req.headers['sec-websocket-protocol']!
-  if (protocol === 'vite-ping') return true
+  const protocol = req.headers["sec-websocket-protocol"]!;
+  if (protocol === "vite-ping") return true;
 
   if (allowedHosts !== true && !isHostAllowed(req.headers.host, allowedHosts)) {
-    return false
+    return false;
   }
   if (config.legacy?.skipWebSocketTokenCheck) {
-    return true
+    return true;
   }
   if (req.headers.origin) {
-    const parsedUrl = new URL(`http://example.com${req.url!}`)
-    return hasValidToken(config, parsedUrl)
+    const parsedUrl = new URL(`http://example.com${req.url!}`);
+    return hasValidToken(config, parsedUrl);
   }
-  return true
-}
+  return true;
+};
 ```
 
 ### 3. XSSI 防御: Sec-Fetch メタデータによる no-cors スクリプト拒否
@@ -115,16 +115,16 @@ webpack-dev-server の脆弱性（GHSA-4v9v-hfq4-rm2v）を参照し、cross-ori
 export function rejectNoCorsRequestMiddleware(): Connect.NextHandleFunction {
   return function viteRejectNoCorsRequestMiddleware(req, res, next) {
     if (
-      req.headers['sec-fetch-mode'] === 'no-cors' &&
-      req.headers['sec-fetch-site'] !== 'same-origin' &&
-      req.headers['sec-fetch-dest'] === 'script'
+      req.headers["sec-fetch-mode"] === "no-cors"
+      && req.headers["sec-fetch-site"] !== "same-origin"
+      && req.headers["sec-fetch-dest"] === "script"
     ) {
-      res.statusCode = 403
-      res.end('Cross-origin requests for classic scripts must be made with CORS mode enabled.')
-      return
+      res.statusCode = 403;
+      res.end("Cross-origin requests for classic scripts must be made with CORS mode enabled.");
+      return;
     }
-    return next()
-  }
+    return next();
+  };
 }
 ```
 
@@ -136,13 +136,13 @@ Node.js は HTTP 仕様に違反する `#` を含む URL を受け入れるが�
 // packages/vite/src/node/server/middlewares/rejectInvalidRequest.ts:6-23
 export function rejectInvalidRequestMiddleware(): Connect.NextHandleFunction {
   return function viteRejectInvalidRequestMiddleware(req, res, next) {
-    if (req.url?.includes('#')) {
-      res.writeHead(400)
-      res.end()
-      return
+    if (req.url?.includes("#")) {
+      res.writeHead(400);
+      res.end();
+      return;
     }
-    return next()
-  }
+    return next();
+  };
 }
 ```
 
@@ -153,19 +153,19 @@ export function rejectInvalidRequestMiddleware(): Connect.NextHandleFunction {
 ```typescript
 // packages/vite/src/node/server/middlewares/static.ts:292-327
 export function isFileLoadingAllowed(config: ResolvedConfig, filePath: string): boolean {
-  const { fs } = config.server
-  if (!fs.strict) return true
-  const filePathWithoutTrailingSlash = filePath.endsWith('/') ? filePath.slice(0, -1) : filePath
-  if (config.fsDenyGlob(filePathWithoutTrailingSlash)) return false
-  if (config.safeModulePaths.has(filePath)) return true
-  if (fs.allow.some((uri) => isFileInTargetPath(uri, filePath))) return true
-  return false
+  const { fs } = config.server;
+  if (!fs.strict) return true;
+  const filePathWithoutTrailingSlash = filePath.endsWith("/") ? filePath.slice(0, -1) : filePath;
+  if (config.fsDenyGlob(filePathWithoutTrailingSlash)) return false;
+  if (config.safeModulePaths.has(filePath)) return true;
+  if (fs.allow.some((uri) => isFileInTargetPath(uri, filePath))) return true;
+  return false;
 }
 
-export function checkLoadingAccess(config: ResolvedConfig, path: string): 'allowed' | 'denied' | 'fallback' {
-  if (isFileLoadingAllowed(config, slash(path))) return 'allowed'
-  if (isFileReadable(path)) return 'denied'
-  return 'fallback'
+export function checkLoadingAccess(config: ResolvedConfig, path: string): "allowed" | "denied" | "fallback" {
+  if (isFileLoadingAllowed(config, slash(path))) return "allowed";
+  if (isFileReadable(path)) return "denied";
+  return "fallback";
 }
 ```
 
@@ -180,7 +180,7 @@ const error = ${JSON.stringify(prepareError(err)).replace(/</g, '\\u003c')}
 
 ```typescript
 // packages/vite/src/node/server/middlewares/static.ts:354
-return html`<p>${escapeHtml(msg).replace(/\n/g, '<br/>')}</p>`
+return html`<p>${escapeHtml(msg).replace(/\n/g, "<br/>")}</p>`;
 ```
 
 ## パターンカタログ
@@ -202,8 +202,7 @@ return html`<p>${escapeHtml(msg).replace(/\n/g, '<br/>')}</p>`
 
 ```typescript
 // packages/vite/src/node/constants.ts:217-218
-export const defaultAllowedOrigins: RegExp =
-  /^https?:\/\/(?:(?:[^:]+\.)?localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/
+export const defaultAllowedOrigins: RegExp = /^https?:\/\/(?:(?:[^:]+\.)?localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/;
 ```
 
 - **トークン比較に timingSafeEqual を使用する**: 文字列の `===` 比較はタイミング攻撃に脆弱。`crypto.timingSafeEqual` を使い、比較時間からトークンの文字を推測されることを防ぐ。長さ不一致時の例外は空 catch で処理し、false を返す。
@@ -213,7 +212,7 @@ export const defaultAllowedOrigins: RegExp =
 const isValidToken = crypto.timingSafeEqual(
   Buffer.from(token),
   Buffer.from(config.webSocketToken),
-)
+);
 ```
 
 - **許可ホストの配列を Object.freeze で凍結しキャッシュを有効化する**: ミドルウェアが毎リクエストで呼ばれるため、allowedHosts 配列の参照同一性を保証してキャッシュ効率を上げる。
@@ -238,17 +237,17 @@ return function viteRejectNoCorsRequestMiddleware(req, res, next) {
 ```typescript
 // Bad: 全オリジン許可
 export default defineConfig({
-  server: { cors: true }
-})
+  server: { cors: true },
+});
 
 // Better: 必要なオリジンのみ許可
 export default defineConfig({
   server: {
     cors: {
-      origin: ['http://localhost:3000', 'http://localhost:5173']
-    }
-  }
-})
+      origin: ["http://localhost:3000", "http://localhost:5173"],
+    },
+  },
+});
 ```
 
 - **allowedHosts を `true` に設定して全ホストを許可する**: DNS rebinding 攻撃への防御が無効化される。特に `.com` などの TLD を追加するのも危険。
@@ -256,26 +255,26 @@ export default defineConfig({
 ```typescript
 // Bad: DNS rebinding 防御の無効化
 export default defineConfig({
-  server: { allowedHosts: true }
-})
+  server: { allowedHosts: true },
+});
 
 // Better: 所有するドメインのみ許可
 export default defineConfig({
-  server: { allowedHosts: ['.myapp.example.com'] }
-})
+  server: { allowedHosts: [".myapp.example.com"] },
+});
 ```
 
 - **セキュリティチェック前に CORS ヘッダーを付与する**: ミドルウェアの順序を誤ると、拒否すべきリクエストに `Access-Control-Allow-Origin` が付与される。Vite は rejectInvalid → rejectNoCors → cors → hostValidation の順で設計上この問題を回避している。
 
 ```typescript
 // Bad: CORSヘッダー付与後にバリデーション
-app.use(corsMiddleware())
-app.use(rejectInvalidRequestMiddleware())
+app.use(corsMiddleware());
+app.use(rejectInvalidRequestMiddleware());
 
 // Better: バリデーション後にCORSヘッダー付与（Vite の実装）
-app.use(rejectInvalidRequestMiddleware())
-app.use(rejectNoCorsRequestMiddleware())
-app.use(corsMiddleware())
+app.use(rejectInvalidRequestMiddleware());
+app.use(rejectNoCorsRequestMiddleware());
+app.use(corsMiddleware());
 ```
 
 ## 導出ルール

@@ -34,10 +34,10 @@ _tag（種類）──── catchTag でディスパッチ、型レベルで Ex
 ```typescript
 // packages/sql/src/Migrator.ts:57-67
 export class MigrationError extends Data.TaggedError("MigrationError")<{
-  readonly _tag: "MigrationError"
-  readonly cause?: unknown
-  readonly reason: "bad-state" | "import-error" | "failed" | "duplicates" | "locked"
-  readonly message: string
+  readonly _tag: "MigrationError";
+  readonly cause?: unknown;
+  readonly reason: "bad-state" | "import-error" | "failed" | "duplicates" | "locked";
+  readonly message: string;
 }> {}
 ```
 
@@ -48,11 +48,12 @@ RPC やイベントソーシングなど、シリアライズ境界を超える�
 ```typescript
 // packages/platform/src/Multipart.ts:145-160
 export class MultipartError extends Schema.TaggedError<MultipartError>()("MultipartError", {
-  reason: Schema.Literal("FileTooLarge", "FieldTooLarge", "BodyTooLarge",
-    "TooManyParts", "InternalError", "Parse"),
-  cause: Schema.Defect
+  reason: Schema.Literal("FileTooLarge", "FieldTooLarge", "BodyTooLarge", "TooManyParts", "InternalError", "Parse"),
+  cause: Schema.Defect,
 }) {
-  get message(): string { return this.reason }
+  get message(): string {
+    return this.reason;
+  }
 }
 ```
 
@@ -63,15 +64,15 @@ TypeId によるブランド型付きエラー。外部に公開する API の�
 ```typescript
 // packages/platform/src/HttpClientError.ts:38-43
 export class RequestError extends Error.TypeIdError(TypeId, "RequestError")<{
-  readonly request: ClientRequest.HttpClientRequest
-  readonly reason: "Transport" | "Encode" | "InvalidUrl"
-  readonly cause?: unknown
-  readonly description?: string
+  readonly request: ClientRequest.HttpClientRequest;
+  readonly reason: "Transport" | "Encode" | "InvalidUrl";
+  readonly cause?: unknown;
+  readonly description?: string;
 }> {
   get message() {
-    return this.description ?
-      `${this.reason}: ${this.description} (${this.methodAndUrl})` :
-      `${this.reason} error (${this.methodAndUrl})`
+    return this.description
+      ? `${this.reason}: ${this.description} (${this.methodAndUrl})`
+      : `${this.reason} error (${this.methodAndUrl})`;
   }
 }
 ```
@@ -129,7 +130,7 @@ Effect.orDie,                                       // 4. 最終境界で残存�
 
 ```typescript
 // packages/sql/src/SqlEventJournal.ts:158-161
-Effect.mapError((cause) => new EventJournal.EventJournalError({ cause, method: "entries" }))
+Effect.mapError((cause) => new EventJournal.EventJournalError({ cause, method: "entries" }));
 ```
 
 `cause` フィールドに元のエラーを保持することで、ロスレス性を維持しつつ抽象化されたエラー型のみを外部に公開する。
@@ -157,17 +158,17 @@ get message() {
 // packages/effect/src/internal/core.ts:2230-2234
 class YieldableError extends globalThis.Error {
   commit() {
-    return fail(this)
+    return fail(this);
   }
 }
 
 // 使い方: yield* で直接 Effect に変換
 const program = Effect.gen(function*() {
   if (!isValid(input)) {
-    yield* new ValidationError({ reason: "InvalidFormat", cause: input })
+    yield* new ValidationError({ reason: "InvalidFormat", cause: input });
   }
   // ...
-})
+});
 ```
 
 ## Good Example
@@ -177,24 +178,28 @@ const program = Effect.gen(function*() {
 ```typescript
 // Good: reason がリテラルユニオンで、型安全なマッチと exhaustive check が可能
 class HttpError extends Data.TaggedError("HttpError")<{
-  readonly reason: "NotFound" | "Timeout" | "Unauthorized" | "ServerError"
-  readonly cause?: unknown
-  readonly url: string
+  readonly reason: "NotFound" | "Timeout" | "Unauthorized" | "ServerError";
+  readonly cause?: unknown;
+  readonly url: string;
 }> {
   get message() {
-    return `${this.reason}: ${this.url}`
+    return `${this.reason}: ${this.url}`;
   }
 }
 
 // ハンドラ内で reason を switch で分岐
 Effect.catchTag("HttpError", (e) => {
   switch (e.reason) {
-    case "NotFound": return Effect.succeed(defaultValue)
-    case "Timeout": return Effect.retry(schedule)
-    case "Unauthorized": return Effect.fail(new AuthError({ cause: e }))
-    case "ServerError": return Effect.fail(e)  // そのまま伝播
+    case "NotFound":
+      return Effect.succeed(defaultValue);
+    case "Timeout":
+      return Effect.retry(schedule);
+    case "Unauthorized":
+      return Effect.fail(new AuthError({ cause: e }));
+    case "ServerError":
+      return Effect.fail(e); // そのまま伝播
   }
-})
+});
 ```
 
 ### Effect.try で同期例外を具体的なエラー型に変換
@@ -204,21 +209,21 @@ Effect.catchTag("HttpError", (e) => {
 // packages/platform/src/MsgPack.ts:70-72
 Effect.try({
   try: () => Chunk.of(packr.pack(Chunk.toReadonlyArray(input))),
-  catch: (cause) => new MsgPackError({ reason: "Pack", cause })
-})
+  catch: (cause) => new MsgPackError({ reason: "Pack", cause }),
+});
 ```
 
 ### cause を保持してエラーチェーンを維持
 
 ```typescript
 // Good: 元エラーを cause に保持し、ロスレスな変換
-Effect.mapError((cause) => new AppError({ cause, method: "fetch" }))
+Effect.mapError((cause) => new AppError({ cause, method: "fetch" }));
 
 // Good: catchTags で複数エラーをドメインエラーに翻訳
 Effect.catchTags({
   SystemError: (cause) => Effect.fail(new DomainError({ reason: "Internal", cause })),
-  NetworkError: (cause) => Effect.fail(new DomainError({ reason: "Network", cause }))
-})
+  NetworkError: (cause) => Effect.fail(new DomainError({ reason: "Network", cause })),
+});
 ```
 
 ## Bad Example
@@ -228,7 +233,7 @@ Effect.catchTags({
 ```typescript
 // Bad: string 型では型安全なマッチができない
 class MyError extends Data.TaggedError("MyError")<{
-  readonly reason: string  // 任意の文字列が入り得る
+  readonly reason: string; // 任意の文字列が入り得る
 }> {}
 
 // switch で分岐しても exhaustive check が効かない
@@ -238,7 +243,7 @@ class MyError extends Data.TaggedError("MyError")<{
 ```typescript
 // Good: リテラルユニオンにする
 class MyError extends Data.TaggedError("MyError")<{
-  readonly reason: "NotFound" | "Timeout" | "Unauthorized"
+  readonly reason: "NotFound" | "Timeout" | "Unauthorized";
 }> {}
 ```
 
@@ -246,15 +251,15 @@ class MyError extends Data.TaggedError("MyError")<{
 
 ```typescript
 // Bad: catch なしの Effect.try は UnknownException を返す
-const bad = Effect.try(() => JSON.parse(input))
+const bad = Effect.try(() => JSON.parse(input));
 // 型: Effect<unknown, UnknownException>
 // UnknownException は _tag を持たず catchTag でディスパッチできない
 
 // Good: 具体的なエラー型に変換する
 const good = Effect.try({
   try: () => JSON.parse(input),
-  catch: (cause) => new ParseError({ cause })
-})
+  catch: (cause) => new ParseError({ cause }),
+});
 // 型: Effect<unknown, ParseError>
 ```
 
@@ -262,24 +267,24 @@ const good = Effect.try({
 
 ```typescript
 // Bad: 元エラーが消失し、デバッグ不能
-Effect.mapError(() => new AppError({ message: "Something went wrong" }))
+Effect.mapError(() => new AppError({ message: "Something went wrong" }));
 
 // Good: cause を保持してエラーチェーンを維持
-Effect.mapError((cause) => new AppError({ cause, method: "fetch" }))
+Effect.mapError((cause) => new AppError({ cause, method: "fetch" }));
 ```
 
 ### orDie の安易な多用
 
 ```typescript
 // Bad: ドメインロジック内で orDie するとエラー情報が構造的にアクセス不能になる
-const bad = fetchUser(id).pipe(Effect.orDie)
+const bad = fetchUser(id).pipe(Effect.orDie);
 
 // Good: catchTag で回復可能なものを処理し、モジュール境界でのみ orDie を使う
 const good = fetchUser(id).pipe(
   Effect.catchTag("NotFound", () => Effect.succeed(defaultUser)),
   Effect.catchTag("Timeout", () => Effect.retry(schedule)),
   // モジュール境界でのみ残存エラーを欠陥化
-)
+);
 ```
 
 ## 適用ガイド
@@ -293,12 +298,12 @@ const good = fetchUser(id).pipe(
 
 ### 二層分類の設計指針
 
-| 層 | 役割 | 使い方 | 設計原則 |
-|---|---|---|---|
-| `_tag` | エラーの「種類」 | `catchTag` / discriminated union のパターンマッチ | 1 エラークラスにつき 1 つのリテラル型 |
-| `reason` | エラーの「原因」 | ハンドラ内の分岐、ログ、メッセージ構築 | リテラルユニオンで網羅的に定義 |
-| `cause` | エラーチェーン | 元エラーの保持（ロスレス性） | 変換時には必ず保持する |
-| `message` getter | 人間向け表示 | ログ出力、デバッグ | 構造化フィールドから動的に合成 |
+| 層               | 役割             | 使い方                                            | 設計原則                              |
+| ---------------- | ---------------- | ------------------------------------------------- | ------------------------------------- |
+| `_tag`           | エラーの「種類」 | `catchTag` / discriminated union のパターンマッチ | 1 エラークラスにつき 1 つのリテラル型 |
+| `reason`         | エラーの「原因」 | ハンドラ内の分岐、ログ、メッセージ構築            | リテラルユニオンで網羅的に定義        |
+| `cause`          | エラーチェーン   | 元エラーの保持（ロスレス性）                      | 変換時には必ず保持する                |
+| `message` getter | 人間向け表示     | ログ出力、デバッグ                                | 構造化フィールドから動的に合成        |
 
 ### 導入時の注意点
 
@@ -314,11 +319,11 @@ const good = fetchUser(id).pipe(
 ```typescript
 // Effect-TS なしでの適用例
 type AppError =
-  | { readonly _tag: "HttpError"; readonly reason: "NotFound" | "Timeout"; readonly cause?: unknown }
-  | { readonly _tag: "ParseError"; readonly reason: "InvalidJson" | "InvalidSchema"; readonly cause?: unknown }
+  | { readonly _tag: "HttpError"; readonly reason: "NotFound" | "Timeout"; readonly cause?: unknown; }
+  | { readonly _tag: "ParseError"; readonly reason: "InvalidJson" | "InvalidSchema"; readonly cause?: unknown; };
 
 // Exclude で処理済みエラーを除去する型レベルのハンドリング
-type RemainingErrors = Exclude<AppError, { _tag: "HttpError" }>
+type RemainingErrors = Exclude<AppError, { _tag: "HttpError"; }>;
 // => { readonly _tag: "ParseError"; ... }
 ```
 

@@ -19,13 +19,13 @@ TanStack Query は 24 以上のパッケージを持つマルチフレームワ�
 
 各ツールの検出領域は以下のように分担されている。
 
-| ツール | 役割 | 検出する問題 |
-|---|---|---|
-| publint | exports 整合性 | package.json の exports/main/module/types とビルド成果物の不一致 |
-| @arethetypeswrong/cli (attw) | CJS/ESM 型解決 | ESM/CJS 各モジュール解決方式での型定義の解決失敗 |
-| size-limit | バンドルサイズ回帰 | PR によるバンドルサイズの意図しない増加 |
-| sherif | 依存バージョン整合性 | モノレポ内パッケージ間の依存バージョン不整合 |
-| knip | 未使用コード検出 | 未使用の export、依存関係、ファイル |
+| ツール                       | 役割                 | 検出する問題                                                     |
+| ---------------------------- | -------------------- | ---------------------------------------------------------------- |
+| publint                      | exports 整合性       | package.json の exports/main/module/types とビルド成果物の不一致 |
+| @arethetypeswrong/cli (attw) | CJS/ESM 型解決       | ESM/CJS 各モジュール解決方式での型定義の解決失敗                 |
+| size-limit                   | バンドルサイズ回帰   | PR によるバンドルサイズの意図しない増加                          |
+| sherif                       | 依存バージョン整合性 | モノレポ内パッケージ間の依存バージョン不整合                     |
+| knip                         | 未使用コード検出     | 未使用の export、依存関係、ファイル                              |
 
 ### 2. パッケージレベルのスクリプト定義
 
@@ -118,8 +118,10 @@ full import（全 API）と minimal import（最小利用パターン）の両�
     "**/ts-fixture/file.ts"
   ],
   "ignoreDependencies": [
-    "@types/react", "@types/react-dom",
-    "react", "react-dom"
+    "@types/react",
+    "@types/react-dom",
+    "react",
+    "react-dom"
   ],
   "ignoreWorkspaces": ["examples/**", "integrations/**"]
 }
@@ -130,6 +132,7 @@ full import（全 API）と minimal import（最小利用パターン）の両�
 ### 7. CI ワークフローへの組み込み
 
 :::: v-pre
+
 ```yaml
 # .github/workflows/pr.yml:6-8,34-35
 concurrency:
@@ -148,6 +151,7 @@ concurrency:
     skip_step: install
     build_script: build:all
 ```
+
 ::::
 
 ```yaml
@@ -226,12 +230,14 @@ PR では `test:pr`（`nx affected`）、リリースでは `test:ci`（`nx run-
 ## 適用ガイド
 
 ### どのような状況で使うべきか
+
 - npm に公開するパッケージを 3 つ以上持つモノレポ
 - CJS + ESM デュアル出力を行うライブラリ
 - バンドルサイズがユーザー体験に影響するフロントエンドライブラリ
 - 複数の開発者が並行して異なるパッケージを変更する環境
 
 ### 導入時の注意点
+
 - **段階的に導入する**: 5 ツール一括導入は初期ノイズが大きい。まず publint + attw（最も影響が大きい）から始め、sherif、knip、size-limit の順に追加するのが現実的
 - **sherif の除外設定**: 意図的に複数バージョンをインストールしている依存（TypeScript エイリアス等）は `-i` で明示的に除外する。除外漏れは CI の誤検知を招く
 - **knip の ignoreWorkspaces**: examples や integrations は検証対象から除外する。これらは意図的に異なるバージョンやパターンを使うため、ライブラリパッケージと同じ基準で検証すべきではない
@@ -239,6 +245,7 @@ PR では `test:pr`（`nx affected`）、リリースでは `test:ci`（`nx run-
 - **Nx のタスク依存**: `test:build` は必ず `dependsOn: ["build"]` を設定する。ビルド成果物がない状態で publint/attw を走らせると false negative になる
 
 ### カスタマイズポイント
+
 - **Turborepo 環境**: Nx の代わりに Turborepo を使う場合、`turbo.json` の `pipeline` で同等の依存グラフを定義できる。`test:build` -> `build` の依存は `"dependsOn": ["build"]` で表現する
 - **size-limit のエントリ**: ライブラリの主要ユースケースに合わせて full/minimal 以外のエントリ（例: サーバー専用 API、特定フレームワーク向け）を追加する
 - **knip のワークスペース別設定**: パッケージ固有のエントリポイントや ignore パターンは `workspaces` キーで個別に設定できる（Angular の production エントリ、codemods の testfixtures 除外など）

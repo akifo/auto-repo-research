@@ -26,7 +26,7 @@ Effect-TS の依存性注入（DI）パターンを分析する。Effect は型�
 ```typescript
 // packages/effect/src/Context.ts:507-524
 // クラスベースの Tag 定義: Self 型パラメータで名目的型付けを実現
-export const Tag: <const Id extends string>(id: Id) => <Self, Shape>() => TagClass<Self, Id, Shape>
+export const Tag: <const Id extends string>(id: Id) => <Self, Shape>() => TagClass<Self, Id, Shape>;
 ```
 
 リポジトリ全体で3つの Tag 定義パターンが使い分けられている:
@@ -42,16 +42,16 @@ export const Tag: <const Id extends string>(id: Id) => <Self, Shape>() => TagCla
 ```typescript
 // packages/effect/test/Effect/environment.test.ts:37-48
 class DateTag extends Effect.Tag("DateTag")<DateTag, Date>() {
-  static date = new Date(1970, 1, 1)
-  static Live = Layer.succeed(this, this.date)
+  static date = new Date(1970, 1, 1);
+  static Live = Layer.succeed(this, this.date);
 }
 
 class MapTag extends Effect.Tag("MapTag")<MapTag, Map<string, string>>() {
-  static Live = Layer.effect(this, Effect.sync(() => new Map()))
+  static Live = Layer.effect(this, Effect.sync(() => new Map()));
 }
 
 class NumberTag extends Effect.Tag("NumberTag")<NumberTag, number>() {
-  static Live = Layer.succeed(this, 100)
+  static Live = Layer.succeed(this, 100);
 }
 ```
 
@@ -60,19 +60,21 @@ class NumberTag extends Effect.Tag("NumberTag")<NumberTag, number>() {
 ```typescript
 // packages/effect/src/Effect.ts:13556-13572
 class Prefix extends Effect.Service<Prefix>()("Prefix", {
-  sync: () => ({ prefix: "PRE" })
+  sync: () => ({ prefix: "PRE" }),
 }) {}
 
 class Logger extends Effect.Service<Logger>()("Logger", {
   accessors: true,
-  effect: Effect.gen(function* () {
-    const { prefix } = yield* Prefix
+  effect: Effect.gen(function*() {
+    const { prefix } = yield* Prefix;
     return {
       info: (message: string) =>
-        Effect.sync(() => { console.log(`[${prefix}][${message}]`) })
-    }
+        Effect.sync(() => {
+          console.log(`[${prefix}][${message}]`);
+        }),
+    };
   }),
-  dependencies: [Prefix.Default]
+  dependencies: [Prefix.Default],
 }) {}
 ```
 
@@ -84,30 +86,30 @@ Layer は DAG（有向非巡回グラフ）を形成し、以下の合成演算�
 // packages/effect/src/Layer.ts:567-575 — 並列マージ
 export const merge: {
   <RIn2, E2, ROut2>(
-    that: Layer<ROut2, E2, RIn2>
-  ): <RIn, E1, ROut>(self: Layer<ROut, E1, RIn>) => Layer<ROut2 | ROut, E2 | E1, RIn2 | RIn>
-}
+    that: Layer<ROut2, E2, RIn2>,
+  ): <RIn, E1, ROut>(self: Layer<ROut, E1, RIn>) => Layer<ROut2 | ROut, E2 | E1, RIn2 | RIn>;
+};
 
 // packages/effect/src/Layer.ts:899-926 — 依存の提供
 export const provide: {
   <RIn, E, ROut>(
-    that: Layer<ROut, E, RIn>
-  ): <RIn2, E2, ROut2>(self: Layer<ROut2, E2, RIn2>) => Layer<ROut2, E | E2, RIn | Exclude<RIn2, ROut>>
-}
+    that: Layer<ROut, E, RIn>,
+  ): <RIn2, E2, ROut2>(self: Layer<ROut2, E2, RIn2>) => Layer<ROut2, E | E2, RIn | Exclude<RIn2, ROut>>;
+};
 ```
 
 実際の合成例（テストコードより）:
 
 ```typescript
 // packages/effect/test/Layer.test.ts:364-372
-const NumberTag = Context.GenericTag<number>("number")
-const StringTag = Context.GenericTag<string>("string")
-const needsNumberAndString = Effect.all([NumberTag, StringTag])
-const providesNumber = Layer.succeed(NumberTag, 10)
-const providesString = Layer.succeed(StringTag, "hi")
+const NumberTag = Context.GenericTag<number>("number");
+const StringTag = Context.GenericTag<string>("string");
+const needsNumberAndString = Effect.all([NumberTag, StringTag]);
+const providesNumber = Layer.succeed(NumberTag, 10);
+const providesString = Layer.succeed(StringTag, "hi");
 // 段階的に依存を満たしていく
-const needsString = needsNumberAndString.pipe(Effect.provide(providesNumber))
-const result = yield* pipe(needsString, Effect.provide(providesString))
+const needsString = needsNumberAndString.pipe(Effect.provide(providesNumber));
+const result = yield * pipe(needsString, Effect.provide(providesString));
 ```
 
 ### MemoMap による自動メモ化と Layer.fresh
@@ -117,22 +119,22 @@ Layer はデフォルトで自動メモ化される。同一 Layer 参照が複�
 ```typescript
 // packages/effect/test/Layer.test.ts:77-85
 // layer を2回 merge しても構築は1回
-const layer = makeLayer1(ref)
-const env = layer.pipe(Layer.merge(layer), Layer.build)
-yield* Effect.scoped(env)
-const result = yield* Ref.get(ref)
-deepStrictEqual(Array.from(result), [acquire1, release1]) // 1回だけ
+const layer = makeLayer1(ref);
+const env = layer.pipe(Layer.merge(layer), Layer.build);
+yield * Effect.scoped(env);
+const result = yield * Ref.get(ref);
+deepStrictEqual(Array.from(result), [acquire1, release1]); // 1回だけ
 ```
 
 `Layer.fresh` でメモ化を回避し、個別のインスタンスを強制的に構築できる:
 
 ```typescript
 // packages/effect/test/Layer.test.ts:192-199
-const layer = makeLayer1(ref)
-const env = layer.pipe(Layer.merge(Layer.fresh(layer)), Layer.build)
-yield* Effect.scoped(env)
-const result = yield* Ref.get(ref)
-deepStrictEqual(Array.from(result), [acquire1, acquire1, release1, release1]) // 2回
+const layer = makeLayer1(ref);
+const env = layer.pipe(Layer.merge(Layer.fresh(layer)), Layer.build);
+yield * Effect.scoped(env);
+const result = yield * Ref.get(ref);
+deepStrictEqual(Array.from(result), [acquire1, acquire1, release1, release1]); // 2回
 ```
 
 ### Context.Reference によるデフォルト値付きサービス
@@ -143,14 +145,14 @@ deepStrictEqual(Array.from(result), [acquire1, acquire1, release1, release1]) //
 // packages/effect/src/Context.ts:542-555
 class SpecialNumber extends Context.Reference<SpecialNumber>()(
   "SpecialNumber",
-  { defaultValue: () => 2048 }
+  { defaultValue: () => 2048 },
 ) {}
 
 // R が never になる — provide 不要
-const program = Effect.gen(function* () {
-  const specialNumber = yield* SpecialNumber
-})
-Effect.runPromise(program) // デフォルト値 2048 が使われる
+const program = Effect.gen(function*() {
+  const specialNumber = yield* SpecialNumber;
+});
+Effect.runPromise(program); // デフォルト値 2048 が使われる
 ```
 
 内部でも設定用途で活用されている:
@@ -159,8 +161,8 @@ Effect.runPromise(program) // デフォルト値 2048 が使われる
 // packages/effect/src/internal/layer.ts:73
 export const CurrentMemoMap = Context.Reference<Layer.CurrentMemoMap>()(
   "effect/Layer/CurrentMemoMap",
-  { defaultValue: () => unsafeMakeMemoMap() }
-)
+  { defaultValue: () => unsafeMakeMemoMap() },
+);
 ```
 
 ### 多層出力の Layer: 抽象 + 具象タグの同時提供
@@ -170,14 +172,14 @@ SQL パッケージでは、1つの Layer が汎用タグ（`SqlClient`）と具
 ```typescript
 // packages/sql-pg/src/PgClient.ts:550-558
 export const layer = (
-  config: PgClientConfig
+  config: PgClientConfig,
 ): Layer.Layer<PgClient | Client.SqlClient, SqlError> =>
   Layer.scopedContext(
     Effect.map(make(config), (client) =>
       Context.make(PgClient, client).pipe(
-        Context.add(Client.SqlClient, client)
-      ))
-  ).pipe(Layer.provide(Reactivity.layer))
+        Context.add(Client.SqlClient, client),
+      )),
+  ).pipe(Layer.provide(Reactivity.layer));
 ```
 
 ### LayerMap: 動的なキーベース DI
@@ -189,19 +191,19 @@ export const layer = (
 class GreeterMap extends LayerMap.Service<GreeterMap>()("GreeterMap", {
   lookup: (name: string) =>
     Layer.succeed(Greeter, {
-      greet: Effect.succeed(`Hello, ${name}!`)
+      greet: Effect.succeed(`Hello, ${name}!`),
     }),
   idleTimeToLive: "5 seconds",
-  dependencies: []
+  dependencies: [],
 }) {}
 
 // 利用時にキーを指定してサービスのバリアントを取得
 const program = Effect.gen(function*() {
-  const greeter = yield* Greeter
-  yield* Effect.log(yield* greeter.greet)
+  const greeter = yield* Greeter;
+  yield* Effect.log(yield* greeter.greet);
 }).pipe(
-  Effect.provide(GreeterMap.get("John"))
-)
+  Effect.provide(GreeterMap.get("John")),
+);
 ```
 
 ### テスト時の DI: Layer.mock
@@ -212,9 +214,9 @@ const program = Effect.gen(function*() {
 // packages/effect/src/Layer.ts:424-453
 // テスト用の部分実装レイヤー
 const MyServiceTest = Layer.mock(MyService, {
-  two: () => Effect.succeed(2)
+  two: () => Effect.succeed(2),
   // one は未提供 → 呼び出すと UnimplementedError
-})
+});
 ```
 
 ## パターンカタログ
@@ -244,8 +246,8 @@ const MyServiceTest = Layer.mock(MyService, {
 ```typescript
 // packages/effect/test/Effect/environment.test.ts:37-39
 class DateTag extends Effect.Tag("DateTag")<DateTag, Date>() {
-  static date = new Date(1970, 1, 1)
-  static Live = Layer.succeed(this, this.date)
+  static date = new Date(1970, 1, 1);
+  static Live = Layer.succeed(this, this.date);
 }
 ```
 
@@ -255,10 +257,8 @@ class DateTag extends Effect.Tag("DateTag")<DateTag, Date>() {
 // packages/sql-pg/src/PgClient.ts:550-558
 export const layer = (config: PgClientConfig): Layer.Layer<PgClient | Client.SqlClient, SqlError> =>
   Layer.scopedContext(
-    Effect.map(make(config), (client) =>
-      Context.make(PgClient, client).pipe(Context.add(Client.SqlClient, client))
-    )
-  ).pipe(Layer.provide(Reactivity.layer))
+    Effect.map(make(config), (client) => Context.make(PgClient, client).pipe(Context.add(Client.SqlClient, client))),
+  ).pipe(Layer.provide(Reactivity.layer));
 ```
 
 - **Effect.Service による Tag + Layer + 依存の一括定義**: `dependencies` オプションで依存 Layer を宣言すると、`Default` レイヤーに自動で組み込まれる。ボイラープレートが削減され、依存関係が明示的になる。
@@ -266,11 +266,11 @@ export const layer = (config: PgClientConfig): Layer.Layer<PgClient | Client.Sql
 ```typescript
 // packages/effect/src/Effect.ts:13560-13572
 class Logger extends Effect.Service<Logger>()("Logger", {
-  effect: Effect.gen(function* () {
-    const { prefix } = yield* Prefix
-    return { info: (message: string) => Effect.sync(() => console.log(`[${prefix}][${message}]`)) }
+  effect: Effect.gen(function*() {
+    const { prefix } = yield* Prefix;
+    return { info: (message: string) => Effect.sync(() => console.log(`[${prefix}][${message}]`)) };
   }),
-  dependencies: [Prefix.Default]
+  dependencies: [Prefix.Default],
 }) {}
 ```
 
@@ -280,8 +280,8 @@ class Logger extends Effect.Service<Logger>()("Logger", {
 
 ```typescript
 // Bad: 同じキーで異なる型のタグ — 実行時に区別できない
-const NumberTag = Context.GenericTag<number>("config")
-const StringTag = Context.GenericTag<string>("config")
+const NumberTag = Context.GenericTag<number>("config");
+const StringTag = Context.GenericTag<string>("config");
 
 // Better: クラスベースの Tag を使う
 class NumberConfig extends Context.Tag("NumberConfig")<NumberConfig, number>() {}
@@ -294,14 +294,14 @@ class StringConfig extends Context.Tag("StringConfig")<StringConfig, string>() {
 // Bad: fresh で DB 接続プールが2つ作られる
 const app = myService.pipe(
   Layer.provide(Layer.fresh(dbLayer)),
-  Layer.merge(otherService.pipe(Layer.provide(Layer.fresh(dbLayer))))
-)
+  Layer.merge(otherService.pipe(Layer.provide(Layer.fresh(dbLayer)))),
+);
 
 // Better: デフォルトのメモ化を活用
 const app = myService.pipe(
   Layer.provide(dbLayer),
-  Layer.merge(otherService.pipe(Layer.provide(dbLayer)))
-)
+  Layer.merge(otherService.pipe(Layer.provide(dbLayer))),
+);
 ```
 
 - **Effect.provideService の乱用**: テストや一時的なオーバーライドには有用だが、本番コードの依存注入には Layer を使うべき。`provideService` はリソースのライフサイクル管理やメモ化を提供しないため、スコープ管理が必要なサービスには不適切。
@@ -309,15 +309,15 @@ const app = myService.pipe(
 ```typescript
 // Bad: リソース管理が必要なサービスを provideService で提供
 const program = myEffect.pipe(
-  Effect.provideService(DbClient, await createConnection())
+  Effect.provideService(DbClient, await createConnection()),
   // 接続の close が管理されない
-)
+);
 
 // Better: Layer.scoped でリソースライフサイクルを管理
 const DbClientLive = Layer.scoped(
   DbClient,
-  Effect.acquireRelease(createConnection(), (conn) => conn.close())
-)
+  Effect.acquireRelease(createConnection(), (conn) => conn.close()),
+);
 ```
 
 ## 導出ルール

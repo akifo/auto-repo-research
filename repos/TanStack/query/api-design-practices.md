@@ -30,11 +30,11 @@ export function queryOptions<
 >(
   options: DefinedInitialDataOptions<TQueryFnData, TError, TData, TQueryKey>,
 ): DefinedInitialDataOptions<TQueryFnData, TError, TData, TQueryKey> & {
-  queryKey: DataTag<TQueryKey, TQueryFnData, TError>
-}
+  queryKey: DataTag<TQueryKey, TQueryFnData, TError>;
+};
 // ... 他のオーバーロード省略 ...
 export function queryOptions(options: unknown) {
-  return options
+  return options;
 }
 ```
 
@@ -46,21 +46,20 @@ export function queryOptions(options: unknown) {
 
 ```typescript
 // packages/query-core/src/types.ts:63-82
-export const dataTagSymbol = Symbol('dataTagSymbol')
-export type dataTagSymbol = typeof dataTagSymbol
-export const dataTagErrorSymbol = Symbol('dataTagErrorSymbol')
-export type dataTagErrorSymbol = typeof dataTagErrorSymbol
+export const dataTagSymbol = Symbol("dataTagSymbol");
+export type dataTagSymbol = typeof dataTagSymbol;
+export const dataTagErrorSymbol = Symbol("dataTagErrorSymbol");
+export type dataTagErrorSymbol = typeof dataTagErrorSymbol;
 
 export type DataTag<
   TType,
   TValue,
   TError = UnsetMarker,
-> = TType extends AnyDataTag
-  ? TType
+> = TType extends AnyDataTag ? TType
   : TType & {
-      [dataTagSymbol]: TValue
-      [dataTagErrorSymbol]: TError
-    }
+    [dataTagSymbol]: TValue;
+    [dataTagErrorSymbol]: TError;
+  };
 ```
 
 `InferDataFromTag` / `InferErrorFromTag` で Tagged QueryKey からデータ型・エラー型を抽出できる。`queryClient.getQueryData()` や `queryClient.setQueryData()` が `TTaggedQueryKey` を受け取り、自動推論を実現する（`queryClient.ts:129-138`）。
@@ -85,8 +84,9 @@ export interface Register {
 ```typescript
 // packages/query-core/src/types.ts:47-51
 export type DefaultError = Register extends {
-  defaultError: infer TError
-} ? TError : Error
+  defaultError: infer TError;
+} ? TError
+  : Error;
 ```
 
 ### オプションの多層デフォルトマージ
@@ -100,7 +100,7 @@ const defaultedOptions = {
   ...this.getQueryDefaults(options.queryKey),
   ...options,
   _defaulted: true,
-}
+};
 ```
 
 さらに依存デフォルト（`refetchOnReconnect` は `networkMode` に依存、`throwOnError` は `suspense` に依存）も同メソッド内で処理する（`queryClient.ts:604-618`）。
@@ -134,7 +134,7 @@ export type QueryObserverResult<TData = unknown, TError = DefaultError> =
   | QueryObserverLoadingErrorResult<TData, TError>
   | QueryObserverLoadingResult<TData, TError>
   | QueryObserverPendingResult<TData, TError>
-  | QueryObserverPlaceholderResult<TData, TError>
+  | QueryObserverPlaceholderResult<TData, TError>;
 ```
 
 ### experimental_ プレフィックスによる段階的 API 公開
@@ -177,8 +177,8 @@ export interface UseSuspenseQueryOptions<...>
 
 ```typescript
 // packages/query-core/src/utils.ts:423-424
-export const skipToken = Symbol()
-export type SkipToken = typeof skipToken
+export const skipToken = Symbol();
+export type SkipToken = typeof skipToken;
 ```
 
 `defaultQueryOptions()` 内で `skipToken` を検出すると自動的に `enabled = false` に設定する（`queryClient.ts:616-618`）。
@@ -255,26 +255,26 @@ export type SkipToken = typeof skipToken
 - **複数引数のオーバーロード（v4 以前の方式）**: 位置引数で `queryKey`, `queryFn`, `options` を別々に受け取る API は、引数の順序でバグが生じやすく、新しいオプションの追加が困難。TanStack Query は v5 で廃止し、codemods で自動マイグレーションを提供した。
   ```typescript
   // Bad: v4 style
-  useQuery(['todos'], fetchTodos, { staleTime: 5000 })
+  useQuery(["todos"], fetchTodos, { staleTime: 5000 });
 
   // Better: v5 style — 単一オブジェクト
-  useQuery({ queryKey: ['todos'], queryFn: fetchTodos, staleTime: 5000 })
+  useQuery({ queryKey: ["todos"], queryFn: fetchTodos, staleTime: 5000 });
   ```
 
 - **boolean 引数による条件付きクエリ**: `enabled: !!userId` のように boolean でクエリを無効化すると `queryFn` の引数型が `undefined` を含んでしまう。`skipToken` を使えば `queryFn` 自体を型安全に除外できる。
   ```typescript
   // Bad: queryFn 内で userId が undefined の可能性を処理する必要がある
   useQuery({
-    queryKey: ['user', userId],
+    queryKey: ["user", userId],
     queryFn: () => fetchUser(userId!), // 非null アサーションが必要
     enabled: !!userId,
-  })
+  });
 
   // Better: skipToken で queryFn ごと無効化
   useQuery({
-    queryKey: ['user', userId],
+    queryKey: ["user", userId],
     queryFn: userId ? () => fetchUser(userId) : skipToken,
-  })
+  });
   ```
 
 - **experimental 機能のプレフィックスなし公開**: 不安定な機能を正式 API と同じ名前空間で公開すると、ユーザーが安定性の保証を誤解する。`experimental_` プレフィックスで明示的にオプトインさせるべき。

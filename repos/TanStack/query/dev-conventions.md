@@ -52,22 +52,22 @@ export default [
 
 ```typescript
 // packages/react-query/eslint.config.js:1-29
-import pluginReact from '@eslint-react/eslint-plugin'
-import reactHooks from 'eslint-plugin-react-hooks'
-import rootConfig from './root.eslint.config.js'
+import pluginReact from "@eslint-react/eslint-plugin";
+import reactHooks from "eslint-plugin-react-hooks";
+import rootConfig from "./root.eslint.config.js";
 
 export default [
   ...rootConfig,
-  ...reactHooks.configs['recommended-latest'],
+  ...reactHooks.configs["recommended-latest"],
   {
-    files: ['**/*.{ts,tsx}'],
+    files: ["**/*.{ts,tsx}"],
     ...pluginReact.configs.recommended,
     rules: {
-      'react-hooks/exhaustive-deps': 'error',
-      'react-hooks/rules-of-hooks': 'error',
+      "react-hooks/exhaustive-deps": "error",
+      "react-hooks/rules-of-hooks": "error",
     },
   },
-]
+];
 ```
 
 シンボリックリンクの活用が鍵であり、`root.eslint.config.js -> ../../eslint.config.js` により各パッケージからルート設定を相対パスでインポートできる。
@@ -129,6 +129,7 @@ export const notifyManager = createNotifyManager()
 **型パラメータ**: `T` プレフィックス + PascalCase（`TQueryFnData`, `TError`, `TData`, `TQueryKey`）。一貫して 4 つの標準型パラメータを使い回す。
 
 **アンダースコアプレフィックスの使い分け**:
+
 - `_defaulted`、`_optimisticResults`: 内部使用プロパティ（パブリック API には含めるが、ユーザーが直接使わないことを示す）
 - `experimental_prefetchInRender`: 実験的 API のプレフィックス
 - `#field`: ES private fields を積極的に使用（`#queryCache`, `#client` 等）
@@ -156,11 +157,11 @@ describe('getQueryData', () => {
 
 ```typescript
 // packages/query-test-utils/src/queryKey.ts:1-6
-let queryKeyCount = 0
+let queryKeyCount = 0;
 export const queryKey = (): Array<string> => {
-  queryKeyCount++
-  return [`query_${queryKeyCount}`]
-}
+  queryKeyCount++;
+  return [`query_${queryKeyCount}`];
+};
 ```
 
 ### ビルド品質ゲートの多層設計
@@ -196,11 +197,13 @@ PR と main プッシュ時に `prettier --experimental-cli` を実行し、差�
 export function modernConfig(opts) {
   return {
     entry: opts.entry,
-    format: ['cjs', 'esm'],
-    target: ['chrome91', 'firefox90', 'edge91', 'safari15', 'ios15', 'opera77'],
-    outDir: 'build/modern',
-    dts: true, sourcemap: true, clean: true,
-  }
+    format: ["cjs", "esm"],
+    target: ["chrome91", "firefox90", "edge91", "safari15", "ios15", "opera77"],
+    outDir: "build/modern",
+    dts: true,
+    sourcemap: true,
+    clean: true,
+  };
 }
 ```
 
@@ -231,24 +234,24 @@ packages/query-core/root.tsup.config.js -> ../../scripts/getTsupConfig.js
 
 ```typescript
 // packages/query-core/src/__tests__/queryClient.test-d.tsx:19-26
-describe('getQueryData', () => {
-  it('should be typed if key is tagged', () => {
-    const queryKey = ['key'] as DataTag<Array<string>, number>
-    const data = queryClient.getQueryData(queryKey)
-    expectTypeOf(data).toEqualTypeOf<number | undefined>()
-  })
-})
+describe("getQueryData", () => {
+  it("should be typed if key is tagged", () => {
+    const queryKey = ["key"] as DataTag<Array<string>, number>;
+    const data = queryClient.getQueryData(queryKey);
+    expectTypeOf(data).toEqualTypeOf<number | undefined>();
+  });
+});
 ```
 
 - **`process.env.NODE_ENV` ガードによる開発時限定バリデーション**: プロダクションバンドルから除去される開発時限定の警告・エラーを `process.env.NODE_ENV !== 'production'` で囲む。バンドルサイズを増やさずに DX を向上する。
 
 ```typescript
 // packages/react-query/src/useBaseQuery.ts:44-49
-if (process.env.NODE_ENV !== 'production') {
-  if (typeof options !== 'object' || Array.isArray(options)) {
+if (process.env.NODE_ENV !== "production") {
+  if (typeof options !== "object" || Array.isArray(options)) {
     throw new Error(
       'Bad argument type. Starting with v5, only the "Object" form is allowed...',
-    )
+    );
   }
 }
 ```

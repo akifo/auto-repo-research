@@ -26,19 +26,19 @@ TanStack Query のコア抽象とフレームワークアダプターの共通�
 ```typescript
 // packages/query-core/src/subscribable.ts:1-30
 export class Subscribable<TListener extends Function> {
-  protected listeners = new Set<TListener>()
+  protected listeners = new Set<TListener>();
 
   subscribe(listener: TListener): () => void {
-    this.listeners.add(listener)
-    this.onSubscribe()
+    this.listeners.add(listener);
+    this.onSubscribe();
     return () => {
-      this.listeners.delete(listener)
-      this.onUnsubscribe()
-    }
+      this.listeners.delete(listener);
+      this.onUnsubscribe();
+    };
   }
 
-  protected onSubscribe(): void { /* Do nothing */ }
-  protected onUnsubscribe(): void { /* Do nothing */ }
+  protected onSubscribe(): void {/* Do nothing */}
+  protected onUnsubscribe(): void {/* Do nothing */}
 }
 ```
 
@@ -67,19 +67,19 @@ Subscribable<TListener>
 ```typescript
 // packages/query-core/src/removable.ts:5-39
 export abstract class Removable {
-  gcTime!: number
-  #gcTimeout?: ManagedTimerId
+  gcTime!: number;
+  #gcTimeout?: ManagedTimerId;
 
   protected scheduleGc(): void {
-    this.clearGcTimeout()
+    this.clearGcTimeout();
     if (isValidTimeout(this.gcTime)) {
       this.#gcTimeout = timeoutManager.setTimeout(() => {
-        this.optionalRemove()
-      }, this.gcTime)
+        this.optionalRemove();
+      }, this.gcTime);
     }
   }
 
-  protected abstract optionalRemove(): void
+  protected abstract optionalRemove(): void;
 }
 ```
 
@@ -89,16 +89,17 @@ export abstract class Removable {
 
 全 6 アダプターが同一の構造を持つ。
 
-| フレームワーク | ファイル | Observer の受け取り方 | subscribe の方法 |
-|---|---|---|---|
-| React | `useBaseQuery.ts` | 引数で Observer クラスを受取 | `useSyncExternalStore` |
-| Vue | `useBaseQuery.ts` | 引数で Observer クラスを受取 | `watch` + `observer.subscribe` |
-| Solid | `useBaseQuery.ts` | 引数で Observer クラスを受取 | `createResource` + `observer.subscribe` |
-| Svelte | `createBaseQuery.svelte.ts` | 引数で Observer クラスを受取 | `$effect` + `observer.subscribe` |
-| Angular | `create-base-query.ts` | 引数で Observer クラスを受取 | `effect` + `observer.subscribe` |
-| Preact | `useBaseQuery.ts` | 引数で Observer クラスを受取 | `useSyncExternalStore` |
+| フレームワーク | ファイル                    | Observer の受け取り方        | subscribe の方法                        |
+| -------------- | --------------------------- | ---------------------------- | --------------------------------------- |
+| React          | `useBaseQuery.ts`           | 引数で Observer クラスを受取 | `useSyncExternalStore`                  |
+| Vue            | `useBaseQuery.ts`           | 引数で Observer クラスを受取 | `watch` + `observer.subscribe`          |
+| Solid          | `useBaseQuery.ts`           | 引数で Observer クラスを受取 | `createResource` + `observer.subscribe` |
+| Svelte         | `createBaseQuery.svelte.ts` | 引数で Observer クラスを受取 | `$effect` + `observer.subscribe`        |
+| Angular        | `create-base-query.ts`      | 引数で Observer クラスを受取 | `effect` + `observer.subscribe`         |
+| Preact         | `useBaseQuery.ts`           | 引数で Observer クラスを受取 | `useSyncExternalStore`                  |
 
 共通パターン:
+
 1. QueryClient を取得（Context / DI / Provider から）
 2. `client.defaultQueryOptions(options)` でデフォルト適用
 3. `new Observer(client, defaultedOptions)` でコアのオブザーバーを生成
@@ -110,7 +111,7 @@ export abstract class Removable {
 // packages/react-query/src/useQuery.ts:50-52
 // useQuery は useBaseQuery に Observer クラスを渡すだけの薄いラッパー
 export function useQuery(options: UseQueryOptions, queryClient?: QueryClient) {
-  return useBaseQuery(options, QueryObserver, queryClient)
+  return useBaseQuery(options, QueryObserver, queryClient);
 }
 ```
 
@@ -119,23 +120,24 @@ export function useQuery(options: UseQueryOptions, queryClient?: QueryClient) {
 ```typescript
 // packages/query-core/src/notifyManager.ts:17-96
 export function createNotifyManager() {
-  let queue: Array<NotifyCallback> = []
-  let transactions = 0
+  let queue: Array<NotifyCallback> = [];
+  let transactions = 0;
 
   return {
     batch: <T>(callback: () => T): T => {
-      transactions++
-      try { result = callback() }
-      finally {
-        transactions--
-        if (!transactions) { flush() }
+      transactions++;
+      try {
+        result = callback();
+      } finally {
+        transactions--;
+        if (!transactions) flush();
       }
-      return result
+      return result;
     },
     setBatchNotifyFunction: (fn: BatchNotifyFunction) => {
-      batchNotifyFn = fn
+      batchNotifyFn = fn;
     },
-  }
+  };
 }
 ```
 
@@ -149,12 +151,12 @@ export interface QueryBehavior<TQueryFnData, TError, TData, TQueryKey> {
   onFetch: (
     context: FetchContext<TQueryFnData, TError, TData, TQueryKey>,
     query: Query,
-  ) => void
+  ) => void;
 }
 
 // packages/query-core/src/query.ts:502
 // Query.fetch() 内で behavior を呼び出す
-this.options.behavior?.onFetch(context, this as unknown as Query)
+this.options.behavior?.onFetch(context, this as unknown as Query);
 ```
 
 `infiniteQueryBehavior` はこの `onFetch` フックで `context.fetchFn` をページネーション対応版に差し替える（`infiniteQueryBehavior.ts:16-130`）。Query クラスを継承せずに振る舞いを変更できる。
@@ -225,11 +227,11 @@ subscribe(listener: TListener): () => void {
 ```typescript
 // packages/react-query/src/useQuery.ts:50-52
 export function useQuery(options: UseQueryOptions, queryClient?: QueryClient) {
-  return useBaseQuery(options, QueryObserver, queryClient)
+  return useBaseQuery(options, QueryObserver, queryClient);
 }
 // packages/react-query/src/useInfiniteQuery.ts (同じ useBaseQuery を使う)
 export function useInfiniteQuery(options, queryClient) {
-  return useBaseQuery(options, InfiniteQueryObserver, queryClient)
+  return useBaseQuery(options, InfiniteQueryObserver, queryClient);
 }
 ```
 
@@ -261,19 +263,19 @@ export function useInfiniteQuery(options, queryClient) {
 ```typescript
 // Bad: コアに React 固有の概念を持ち込む
 class QueryObserver {
-  useSyncExternalStore() { /* React 専用コード */ }
+  useSyncExternalStore() {/* React 専用コード */}
 }
 
 // Better: コアは subscribe/getCurrentResult だけ公開し、フレームワーク側で接続
 // packages/react-query/src/useBaseQuery.ts:103-120
 React.useSyncExternalStore(
   React.useCallback((onStoreChange) => {
-    const unsubscribe = observer.subscribe(notifyManager.batchCalls(onStoreChange))
-    return unsubscribe
+    const unsubscribe = observer.subscribe(notifyManager.batchCalls(onStoreChange));
+    return unsubscribe;
   }, [observer]),
   () => observer.getCurrentResult(),
   () => observer.getCurrentResult(),
-)
+);
 ```
 
 - **通知バッチを各箇所で個別に実装する**: 通知の最適化を各 Observer やコンポーネントで個別に行うと、一貫性が失われ、バグの温床になる。

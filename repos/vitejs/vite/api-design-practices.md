@@ -25,14 +25,14 @@ Vite の設定 API・プラグイン API・非推奨管理の設計プラクテ�
 
 ```typescript
 // packages/vite/src/node/config.ts:175-183
-export function defineConfig(config: UserConfig): UserConfig
-export function defineConfig(config: Promise<UserConfig>): Promise<UserConfig>
-export function defineConfig(config: UserConfigFnObject): UserConfigFnObject
-export function defineConfig(config: UserConfigFnPromise): UserConfigFnPromise
-export function defineConfig(config: UserConfigFn): UserConfigFn
-export function defineConfig(config: UserConfigExport): UserConfigExport
+export function defineConfig(config: UserConfig): UserConfig;
+export function defineConfig(config: Promise<UserConfig>): Promise<UserConfig>;
+export function defineConfig(config: UserConfigFnObject): UserConfigFnObject;
+export function defineConfig(config: UserConfigFnPromise): UserConfigFnPromise;
+export function defineConfig(config: UserConfigFn): UserConfigFn;
+export function defineConfig(config: UserConfigExport): UserConfigExport;
 export function defineConfig(config: UserConfigExport): UserConfigExport {
-  return config
+  return config;
 }
 ```
 
@@ -46,22 +46,22 @@ Vite は API の成熟度を三つの名前空間で明示する:
 // packages/vite/src/node/config.ts:547-614
 export interface ExperimentalOptions {
   // semver に従わない。ピン留め推奨
-  importGlobRestoreExtension?: boolean
-  enableNativePlugin?: boolean | 'v1' | 'v2'
-  bundledDev?: boolean
+  importGlobRestoreExtension?: boolean;
+  enableNativePlugin?: boolean | "v1" | "v2";
+  bundledDev?: boolean;
 }
 
 export interface FutureOptions {
   // 次期メジャーで削除予定の API に対する事前警告
-  removePluginHookHandleHotUpdate?: 'warn'
-  removeServerModuleGraph?: 'warn'
+  removePluginHookHandleHotUpdate?: "warn";
+  removeServerModuleGraph?: "warn";
   // ...
 }
 
 export interface LegacyOptions {
   // パッチ版でのみ semver に従う。マイナーで削除される可能性
-  skipWebSocketTokenCheck?: boolean
-  inconsistentCjsInterop?: boolean
+  skipWebSocketTokenCheck?: boolean;
+  inconsistentCjsInterop?: boolean;
 }
 ```
 
@@ -104,16 +104,16 @@ get moduleGraph() {
 
 ```typescript
 // packages/vite/src/node/server/pluginContainer.ts:418-431
-Object.defineProperty(normalizedOptions, 'ssr', {
+Object.defineProperty(normalizedOptions, "ssr", {
   get() {
     warnFutureDeprecation(
       topLevelConfig,
-      'removePluginHookSsrArgument',
+      "removePluginHookSsrArgument",
       `Used in plugin "${plugin.name}".`,
-    )
-    return ssrTemp
+    );
+    return ssrTemp;
   },
-})
+});
 ```
 
 ### rollupOptions → rolldownOptions: Proxy ベースの段階的移行
@@ -123,21 +123,21 @@ Rollup から Rolldown への移行に際して、`rollupOptions` を `rolldownO
 ```typescript
 // packages/vite/src/node/utils.ts:1250-1283
 export function setupRollupOptionCompat<
-  T extends Pick<BuildEnvironmentOptions, 'rollupOptions' | 'rolldownOptions'>,
+  T extends Pick<BuildEnvironmentOptions, "rollupOptions" | "rolldownOptions">,
 >(buildConfig: T, path: string) {
-  buildConfig.rolldownOptions ??= buildConfig.rollupOptions
+  buildConfig.rolldownOptions ??= buildConfig.rollupOptions;
   // proxy rolldownOptions to rollupOptions
-  Object.defineProperty(buildConfig, 'rollupOptions', {
+  Object.defineProperty(buildConfig, "rollupOptions", {
     get() {
-      return buildConfig.rolldownOptions
+      return buildConfig.rolldownOptions;
     },
     set(newValue) {
       if (runtimeDeprecatedPath.has(path)) {
-        rollupOptionsDeprecationCall()
+        rollupOptionsDeprecationCall();
       }
-      buildConfig.rolldownOptions = newValue
+      buildConfig.rolldownOptions = newValue;
     },
-  })
+  });
 }
 ```
 
@@ -149,14 +149,14 @@ export function setupRollupOptionCompat<
 
 ```typescript
 // packages/vite/src/node/plugin.ts:379-388
-export type FalsyPlugin = false | null | undefined
+export type FalsyPlugin = false | null | undefined;
 
 export type PluginOption = Thenable<
   | Plugin
-  | { name: string } // for rollup plugin compatibility
+  | { name: string; } // for rollup plugin compatibility
   | FalsyPlugin
   | PluginOption[]
->
+>;
 ```
 
 ```typescript
@@ -170,7 +170,7 @@ return [
   ...normalPlugins,
   ...postPlugins,
   ...buildPlugins.post,
-].filter(Boolean) as Plugin[]
+].filter(Boolean) as Plugin[];
 ```
 
 ### 公開 API と内部 API の分離
@@ -207,7 +207,7 @@ export type cases = [
   ExpectTrue<ExpectExtends<PluginOption, RolldownPlugin>>,
   ExpectTrue<ExpectExtends<PluginOption, RollupPlugin>>,
   ExpectTrue<ExpectExtends<PluginOption, Plugin>>,
-]
+];
 ```
 
 ## パターンカタログ
@@ -236,20 +236,22 @@ export type cases = [
 ```typescript
 // packages/vite/src/node/config.ts:306-314
 export interface EnvironmentOptions extends SharedEnvironmentOptions {
-  dev?: DevEnvironmentOptions     // optional
-  build?: BuildEnvironmentOptions // optional
+  dev?: DevEnvironmentOptions; // optional
+  build?: BuildEnvironmentOptions; // optional
 }
 
 // packages/vite/src/node/config.ts:264-272
-export type ResolvedDevEnvironmentOptions = Omit<
-  Required<DevEnvironmentOptions>,  // Required に変換
-  'sourcemapIgnoreList'
-> & {
-  sourcemapIgnoreList: Exclude<
-    DevEnvironmentOptions['sourcemapIgnoreList'],
-    false | undefined              // falsy を除外
+export type ResolvedDevEnvironmentOptions =
+  & Omit<
+    Required<DevEnvironmentOptions>, // Required に変換
+    "sourcemapIgnoreList"
   >
-}
+  & {
+    sourcemapIgnoreList: Exclude<
+      DevEnvironmentOptions["sourcemapIgnoreList"],
+      false | undefined // falsy を除外
+    >;
+  };
 ```
 
 - **構造化された非推奨メタデータ**: 非推奨メッセージ・ドキュメント URL・コードを `Record<keyof FutureOptions, string>` で一元管理し、`satisfies` で型安全性を保証する。
@@ -257,10 +259,10 @@ export type ResolvedDevEnvironmentOptions = Omit<
 ```typescript
 // packages/vite/src/node/deprecations.ts:6-18
 const deprecationCode = {
-  removePluginHookSsrArgument: 'this-environment-in-hooks',
-  removeServerModuleGraph: 'per-environment-apis',
-  removeSsrLoadModule: 'ssr-using-modulerunner',
-} satisfies Record<keyof FutureOptions, string>
+  removePluginHookSsrArgument: "this-environment-in-hooks",
+  removeServerModuleGraph: "per-environment-apis",
+  removeSsrLoadModule: "ssr-using-modulerunner",
+} satisfies Record<keyof FutureOptions, string>;
 ```
 
 - **Falsy 許容のプラグイン配列**: `PluginOption` 型が `false | null | undefined | PluginOption[]` を含むことで、条件式の結果をそのまま配列に入れ、`filter(Boolean)` で除去できる。ユーザーコードの可読性が大幅に向上する。
@@ -269,9 +271,9 @@ const deprecationCode = {
 // ユーザーコード例
 plugins: [
   react(),
-  isProduction && compress(),  // false が許容される
-  legacy ? legacyPlugin() : null,  // null が許容される
-]
+  isProduction && compress(), // false が許容される
+  legacy ? legacyPlugin() : null, // null が許容される
+];
 ```
 
 ## Anti-Patterns / 注意点
@@ -282,9 +284,9 @@ plugins: [
 // Bad: 互換コードが散在する resolveConfig 内部
 // packages/vite/src/node/config.ts:1495-1503
 // Backward compatibility: server.warmup.clientFiles/ssrFiles -> environment.dev.warmup
-const warmupOptions = config.server?.warmup
+const warmupOptions = config.server?.warmup;
 if (warmupOptions?.clientFiles) {
-  configEnvironmentsClient.dev.warmup = warmupOptions.clientFiles
+  configEnvironmentsClient.dev.warmup = warmupOptions.clientFiles;
 }
 ```
 

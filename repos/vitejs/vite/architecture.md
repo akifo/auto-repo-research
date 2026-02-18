@@ -53,16 +53,16 @@ this.config = new Proxy(
   options as ResolvedConfig & ResolvedEnvironmentOptions,
   {
     get: (target, prop: keyof ResolvedConfig) => {
-      if (prop === 'logger') {
-        return this.logger
+      if (prop === "logger") {
+        return this.logger;
       }
       if (prop in target) {
-        return this._options[prop as keyof ResolvedEnvironmentOptions]
+        return this._options[prop as keyof ResolvedEnvironmentOptions];
       }
-      return this._topLevelConfig[prop]
+      return this._topLevelConfig[prop];
     },
   },
-)
+);
 ```
 
 これにより `environment.config.resolve`（環境固有）と `environment.config.root`（トップレベル共有）が同じ `config` プロパティから透過的にアクセスできる。
@@ -93,16 +93,16 @@ this.config = new Proxy(
 export function perEnvironmentState<State>(
   initial: (environment: Environment) => State,
 ): (context: PluginContext) => State {
-  const stateMap = new WeakMap<Environment, State>()
-  return function (context: PluginContext) {
-    const { environment } = context
-    let state = stateMap.get(environment)
+  const stateMap = new WeakMap<Environment, State>();
+  return function(context: PluginContext) {
+    const { environment } = context;
+    let state = stateMap.get(environment);
     if (!state) {
-      state = initial(environment)
-      stateMap.set(environment, state)
+      state = initial(environment);
+      stateMap.set(environment, state);
     }
-    return state
-  }
+    return state;
+  };
 }
 ```
 
@@ -110,15 +110,15 @@ export function perEnvironmentState<State>(
 
 ```typescript
 const getDefineReplacer = perEnvironmentState((environment) => {
-  const userDefine: Record<string, any> = {}
+  const userDefine: Record<string, any> = {};
   for (const key in environment.config.define) {
-    if (!key.startsWith('import.meta.env.')) {
-      userDefine[key] = environment.config.define[key]
+    if (!key.startsWith("import.meta.env.")) {
+      userDefine[key] = environment.config.define[key];
     }
   }
-  const serializedDefines = serializeDefine(userDefine)
-  return (code: string) => code.replace(`__DEFINES__`, () => serializedDefines)
-})
+  const serializedDefines = serializeDefine(userDefine);
+  return (code: string) => code.replace(`__DEFINES__`, () => serializedDefines);
+});
 ```
 
 この関数は `manifest`, `html`, `reporter`, `dynamicImportVars`, `ssrManifest` など多くのプラグインで使われている。
@@ -178,16 +178,16 @@ node/          ← Node.js サーバー・ビルドの主要ロジック
   ```typescript
   // plugins/index.ts:159-187
   function getSortedPluginsByHook(hookName, plugins) {
-    let pre = 0, normal = 0, post = 0
+    let pre = 0, normal = 0, post = 0;
     for (const plugin of plugins) {
-      const hook = plugin[hookName]
+      const hook = plugin[hookName];
       if (hook) {
-        if (typeof hook === 'object' && hook.order === 'pre') {
-          sortedPlugins.splice(pre++, 0, plugin)
-        } else if (typeof hook === 'object' && hook.order === 'post') {
-          sortedPlugins.splice(pre + normal + post++, 0, plugin)
+        if (typeof hook === "object" && hook.order === "pre") {
+          sortedPlugins.splice(pre++, 0, plugin);
+        } else if (typeof hook === "object" && hook.order === "post") {
+          sortedPlugins.splice(pre + normal + post++, 0, plugin);
         } else {
-          sortedPlugins.splice(pre + normal++, 0, plugin)
+          sortedPlugins.splice(pre + normal++, 0, plugin);
         }
       }
     }
@@ -200,25 +200,25 @@ node/          ← Node.js サーバー・ビルドの主要ロジック
   export function perEnvironmentState<State>(
     initial: (environment: Environment) => State,
   ): (context: PluginContext) => State {
-    const stateMap = new WeakMap<Environment, State>()
-    return function (context: PluginContext) {
-      const { environment } = context
-      let state = stateMap.get(environment)
+    const stateMap = new WeakMap<Environment, State>();
+    return function(context: PluginContext) {
+      const { environment } = context;
+      let state = stateMap.get(environment);
       if (!state) {
-        state = initial(environment)
-        stateMap.set(environment, state)
+        state = initial(environment);
+        stateMap.set(environment, state);
       }
-      return state
-    }
+      return state;
+    };
   }
   ```
 
 - **configureServer の戻り値による pre/post ミドルウェア挿入**: プラグインフックの戻り値を使って、内部ミドルウェアの前後どちらにもユーザーのミドルウェアを挿入可能にする設計。単純な配列やイベントではなく、関数の戻り値という慣用句で前後の区別を実現している。
   ```typescript
   // server/index.ts:908-911
-  const postHooks: ((() => void) | void)[] = []
-  for (const hook of config.getSortedPluginHooks('configureServer')) {
-    postHooks.push(await hook.call(configureServerContext, reflexServer))
+  const postHooks: ((() => void) | void)[] = [];
+  for (const hook of config.getSortedPluginHooks("configureServer")) {
+    postHooks.push(await hook.call(configureServerContext, reflexServer));
   }
   ```
 
@@ -242,7 +242,7 @@ node/          ← Node.js サーバー・ビルドの主要ロジック
 - **フィルタキャッシュの WeakMap キー設計**: `getCachedFilterForPlugin` は Plugin オブジェクトを WeakMap のキーにしているが、プラグインが再生成されるとキャッシュが無効になる。プラグインの identity が安定していることを暗黙の前提としている。
   ```typescript
   // plugins/index.ts:200
-  const filterForPlugin = new WeakMap<Plugin, FilterForPluginValue>()
+  const filterForPlugin = new WeakMap<Plugin, FilterForPluginValue>();
   ```
   WeakMap のキーにするオブジェクトの identity が安定していることを保証する設計にすべき。
 

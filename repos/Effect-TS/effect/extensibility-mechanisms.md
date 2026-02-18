@@ -38,14 +38,14 @@ CommandExecutor | FileSystem | Path | Terminal | Worker.WorkerManager
 ```typescript
 // packages/sql-pg/src/PgClient.ts:550-558
 export const layer = (
-  config: PgClientConfig
+  config: PgClientConfig,
 ): Layer.Layer<PgClient | Client.SqlClient, SqlError> =>
   Layer.scopedContext(
     Effect.map(make(config), (client) =>
       Context.make(PgClient, client).pipe(
-        Context.add(Client.SqlClient, client)
-      ))
-  ).pipe(Layer.provide(Reactivity.layer))
+        Context.add(Client.SqlClient, client),
+      )),
+  ).pipe(Layer.provide(Reactivity.layer));
 ```
 
 この同一パターンは `MysqlClient`, `SqliteClient`, `MssqlClient`, `ClickhouseClient`, `LibsqlClient`, `D1Client` 等の全ドライバで一貫して適用されている。
@@ -166,19 +166,19 @@ export class OtelSpan implements EffectTracer.Span {
 ```typescript
 // packages/sql-drizzle/src/Pg.ts:20-47
 export const make = <TSchema extends Record<string, unknown>>(
-  config?: Omit<DrizzleConfig<TSchema>, "logger">
+  config?: Omit<DrizzleConfig<TSchema>, "logger">,
 ): Effect.Effect<PgRemoteDatabase<TSchema>, never, Client.SqlClient> =>
   Effect.gen(function*() {
-    const db = drizzle(yield* makeRemoteCallback, config)
-    return db
-  })
+    const db = drizzle(yield* makeRemoteCallback, config);
+    return db;
+  });
 
 export class PgDrizzle extends Context.Tag("@effect/sql-drizzle/Pg")<
-  PgDrizzle, PgRemoteDatabase
+  PgDrizzle,
+  PgRemoteDatabase
 >() {}
 
-export const layer: Layer.Layer<PgDrizzle, never, Client.SqlClient> =
-  Layer.effect(PgDrizzle, make())
+export const layer: Layer.Layer<PgDrizzle, never, Client.SqlClient> = Layer.effect(PgDrizzle, make());
 ```
 
 `SqlClient` を要求する Layer として定義されているため、どの SQL ドライバとも組み合わせ可能である。
@@ -193,27 +193,27 @@ export const layer: Layer.Layer<NodeContext> = pipe(
     NodePath.layer,
     NodeCommandExecutor.layer,
     NodeTerminal.layer,
-    NodeWorker.layerManager
+    NodeWorker.layerManager,
   ),
-  Layer.provideMerge(NodeFileSystem.layer)
-)
+  Layer.provideMerge(NodeFileSystem.layer),
+);
 ```
 
 ```typescript
 // packages/sql/src/SqlClient.ts:78
 // SqlClient Tag: 全ドライバの共通インターフェース
-export const SqlClient: Tag<SqlClient, SqlClient> = internal.clientTag
+export const SqlClient: Tag<SqlClient, SqlClient> = internal.clientTag;
 ```
 
 ```typescript
 // packages/sql-pg/src/PgClient.ts:52-58
 // PgClient: 汎用 SqlClient を拡張した専用インターフェース
 export interface PgClient extends Client.SqlClient {
-  readonly [TypeId]: TypeId
-  readonly config: PgClientConfig
-  readonly json: (_: unknown) => Fragment
-  readonly listen: (channel: string) => Stream.Stream<string, SqlError>
-  readonly notify: (channel: string, payload: string) => Effect.Effect<void, SqlError>
+  readonly [TypeId]: TypeId;
+  readonly config: PgClientConfig;
+  readonly json: (_: unknown) => Fragment;
+  readonly listen: (channel: string) => Stream.Stream<string, SqlError>;
+  readonly notify: (channel: string, payload: string) => Effect.Effect<void, SqlError>;
 }
 ```
 
@@ -221,9 +221,9 @@ export interface PgClient extends Client.SqlClient {
 // packages/rpc/src/RpcSerialization.ts:14-18
 // RpcSerialization: シリアライゼーション戦略の Tag
 export class RpcSerialization extends Context.Tag("@effect/rpc/RpcSerialization")<RpcSerialization, {
-  unsafeMake(): Parser
-  readonly contentType: string
-  readonly includesFraming: boolean
+  unsafeMake(): Parser;
+  readonly contentType: string;
+  readonly includesFraming: boolean;
 }>() {}
 ```
 
@@ -272,8 +272,8 @@ readonly onDialect: <A, B, C, D, E>(options: {
 ```typescript
 // packages/sql-pg/src/PgClient.ts:554-558
 Context.make(PgClient, client).pipe(
-  Context.add(Client.SqlClient, client)
-)
+  Context.add(Client.SqlClient, client),
+);
 ```
 
 - **ファクトリー関数による実装注入**: `HttpPlatform.make` のように、プラットフォーム固有のロジックだけを関数オブジェクトとして渡し、共通処理はファクトリー内で行う。これにより実装側のコードが最小限になる。
@@ -282,22 +282,22 @@ Context.make(PgClient, client).pipe(
 // packages/platform-bun/src/internal/httpPlatform.ts:8-19
 export const make = Platform.make({
   fileResponse(path, status, statusText, headers, start, end, _contentLength) {
-    let file = Bun.file(path)
-    if (start > 0 || end !== undefined) { file = file.slice(start, end) }
-    return ServerResponse.raw(file, { headers, status, statusText })
+    let file = Bun.file(path);
+    if (start > 0 || end !== undefined) file = file.slice(start, end);
+    return ServerResponse.raw(file, { headers, status, statusText });
   },
   fileWebResponse(file, status, statusText, headers, _options) {
-    return ServerResponse.raw(file, { headers, status, statusText })
-  }
-})
+    return ServerResponse.raw(file, { headers, status, statusText });
+  },
+});
 ```
 
 - **Statement Transformer による横断的関心事の注入**: `FiberRef` ベースの `Statement.Transformer` で、SQL 文の実行前にアクセス制御やロギング等のクロスカッティングな処理を注入できる。Layer として設定可能なため、テスト時の差し替えも容易。
 
 ```typescript
 // packages/sql/src/Statement.ts:80-107
-export const currentTransformer: FiberRef<Option<Statement.Transformer>> = internal.currentTransformer
-export const setTransformer: (f: Statement.Transformer) => Layer<never> = internal.setTransformer
+export const currentTransformer: FiberRef<Option<Statement.Transformer>> = internal.currentTransformer;
+export const setTransformer: (f: Statement.Transformer) => Layer<never> = internal.setTransformer;
 ```
 
 ## Anti-Patterns / 注意点
@@ -307,18 +307,17 @@ export const setTransformer: (f: Statement.Transformer) => Layer<never> = intern
 ```typescript
 // Bad: 汎用 Tag を登録していない
 Layer.scopedContext(
-  Effect.map(make(config), (client) =>
-    Context.make(PgClient, client)  // SqlClient が欠落
-  )
-)
+  Effect.map(make(config), (client) => Context.make(PgClient, client) // SqlClient が欠落
+  ),
+);
 
 // Better: 両方登録する
 Layer.scopedContext(
   Effect.map(make(config), (client) =>
     Context.make(PgClient, client).pipe(
-      Context.add(Client.SqlClient, client)
-    ))
-)
+      Context.add(Client.SqlClient, client),
+    )),
+);
 ```
 
 - **インターフェースにプラットフォーム固有の型を含める**: 抽象インターフェース（`@effect/platform` 側）に `node:fs` や `Bun.file` 等の型を含めると、プラットフォーム非依存性が壊れる。Effect では抽象レベルのインターフェースは Effect 固有の型（`Effect`, `Stream`, `Scope` 等）のみで構成されている。
@@ -326,12 +325,12 @@ Layer.scopedContext(
 ```typescript
 // Bad: 抽象インターフェースに Node 固有型
 interface FileSystem {
-  readonly readFile: (path: string) => fs.ReadStream  // Node 依存
+  readonly readFile: (path: string) => fs.ReadStream; // Node 依存
 }
 
 // Better: Effect 型で統一
 interface FileSystem {
-  readonly readFile: (path: string) => Stream<Uint8Array, PlatformError>
+  readonly readFile: (path: string) => Stream<Uint8Array, PlatformError>;
 }
 ```
 

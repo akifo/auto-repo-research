@@ -35,7 +35,7 @@ export type Action<TData, TError> =
   | InvalidateAction
   | PauseAction
   | SetStateAction<TData, TError>
-  | SuccessAction<TData>
+  | SuccessAction<TData>;
 ```
 
 ### status と fetchStatus の直交設計
@@ -45,18 +45,18 @@ Query の状態は `status`（`pending` / `success` / `error`）と `fetchStatus
 ```typescript
 // packages/query-core/src/query.ts:48-61
 export interface QueryState<TData = unknown, TError = DefaultError> {
-  data: TData | undefined
-  dataUpdateCount: number
-  dataUpdatedAt: number
-  error: TError | null
-  errorUpdateCount: number
-  errorUpdatedAt: number
-  fetchFailureCount: number
-  fetchFailureReason: TError | null
-  fetchMeta: FetchMeta | null
-  isInvalidated: boolean
-  status: QueryStatus
-  fetchStatus: FetchStatus
+  data: TData | undefined;
+  dataUpdateCount: number;
+  dataUpdatedAt: number;
+  error: TError | null;
+  errorUpdateCount: number;
+  errorUpdatedAt: number;
+  fetchFailureCount: number;
+  fetchFailureReason: TError | null;
+  fetchMeta: FetchMeta | null;
+  isInvalidated: boolean;
+  status: QueryStatus;
+  fetchStatus: FetchStatus;
 }
 ```
 
@@ -77,15 +77,15 @@ React.useSyncExternalStore(
     (onStoreChange) => {
       const unsubscribe = shouldSubscribe
         ? observer.subscribe(notifyManager.batchCalls(onStoreChange))
-        : noop
-      observer.updateResult()
-      return unsubscribe
+        : noop;
+      observer.updateResult();
+      return unsubscribe;
     },
     [observer, shouldSubscribe],
   ),
   () => observer.getCurrentResult(),
   () => observer.getCurrentResult(),
-)
+);
 ```
 
 ### GC とライフサイクル管理
@@ -95,15 +95,15 @@ React.useSyncExternalStore(
 ```typescript
 // packages/query-core/src/removable.ts:5-39
 export abstract class Removable {
-  gcTime!: number
-  #gcTimeout?: ManagedTimerId
+  gcTime!: number;
+  #gcTimeout?: ManagedTimerId;
 
   protected scheduleGc(): void {
-    this.clearGcTimeout()
+    this.clearGcTimeout();
     if (isValidTimeout(this.gcTime)) {
       this.#gcTimeout = timeoutManager.setTimeout(() => {
-        this.optionalRemove()
-      }, this.gcTime)
+        this.optionalRemove();
+      }, this.gcTime);
     }
   }
 
@@ -111,10 +111,10 @@ export abstract class Removable {
     this.gcTime = Math.max(
       this.gcTime || 0,
       newGcTime ?? (isServer ? Infinity : 5 * 60 * 1000),
-    )
+    );
   }
 
-  protected abstract optionalRemove(): void
+  protected abstract optionalRemove(): void;
 }
 ```
 
@@ -146,6 +146,7 @@ isStaleByTime(staleTime: StaleTime = 0): boolean {
 ```
 
 自動再取得は3つのトリガーで発動する:
+
 1. **マウント時** (`refetchOnMount`): `shouldFetchOnMount` で判定
 2. **ウィンドウフォーカス時** (`refetchOnWindowFocus`): `FocusManager` 経由
 3. **ネットワーク復帰時** (`refetchOnReconnect`): `OnlineManager` 経由
@@ -159,7 +160,7 @@ Retryer はリトライロジックを Query/Mutation から分離した専用�
 ```typescript
 // packages/query-core/src/retryer.ts:48-50
 function defaultRetryDelay(failureCount: number) {
-  return Math.min(1000 * 2 ** failureCount, 30000)
+  return Math.min(1000 * 2 ** failureCount, 30000);
 }
 ```
 
@@ -172,10 +173,10 @@ function defaultRetryDelay(failureCount: number) {
 ```typescript
 // packages/query-core/src/utils.ts:267-314
 export function replaceEqualDeep(a: any, b: any, depth = 0): any {
-  if (a === b) { return a }
-  if (depth > 500) return b
+  if (a === b) return a;
+  if (depth > 500) return b;
   // ...配列・オブジェクトを再帰的に比較し、変更のないサブツリーは旧参照を維持
-  return aSize === bSize && equalItems === aSize ? a : copy
+  return aSize === bSize && equalItems === aSize ? a : copy;
 }
 ```
 
@@ -206,14 +207,14 @@ Query の `fetch` メソッドでは、AbortSignal を `Object.defineProperty` �
 ```typescript
 // packages/query-core/src/query.ts:435-443
 const addSignalProperty = (object: unknown) => {
-  Object.defineProperty(object, 'signal', {
+  Object.defineProperty(object, "signal", {
     enumerable: true,
     get: () => {
-      this.#abortSignalConsumed = true
-      return abortController.signal
+      this.#abortSignalConsumed = true;
+      return abortController.signal;
     },
-  })
-}
+  });
+};
 ```
 
 ## パターンカタログ
@@ -262,14 +263,14 @@ addObserver(observer: QueryObserver<any, any, any, any, any>): void {
 
 ```typescript
 // Bad: 単一フラグ
-const [isLoading, setIsLoading] = useState(false)
+const [isLoading, setIsLoading] = useState(false);
 // 再取得時にもスピナーが表示される
 
 // Better: 直交する2軸
 interface AsyncState<T> {
-  status: 'pending' | 'success' | 'error'
-  fetchStatus: 'idle' | 'fetching'
-  data: T | undefined
+  status: "pending" | "success" | "error";
+  fetchStatus: "idle" | "fetching";
+  data: T | undefined;
 }
 // isRefetching = status === 'success' && fetchStatus === 'fetching'
 ```
@@ -278,11 +279,11 @@ interface AsyncState<T> {
 
 ```typescript
 // Bad: 直接参照
-const id = setTimeout(callback, delay)
+const id = setTimeout(callback, delay);
 
 // Better: 間接化してプロバイダー差し替え可能にする
-const timeoutManager = new TimeoutManager()
-timeoutManager.setTimeout(callback, delay)
+const timeoutManager = new TimeoutManager();
+timeoutManager.setTimeout(callback, delay);
 // テスト時: timeoutManager.setTimeoutProvider(fakeProvider)
 ```
 

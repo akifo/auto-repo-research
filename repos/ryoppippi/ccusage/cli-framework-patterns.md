@@ -26,19 +26,19 @@ ccusage アプリは 6 つのサブコマンドを持つ最大のアプリであ
 ```typescript
 // apps/ccusage/src/commands/index.ts:24-44
 export const subCommandUnion = [
-	['daily', dailyCommand],
-	['monthly', monthlyCommand],
-	['weekly', weeklyCommand],
-	['session', sessionCommand],
-	['blocks', blocksCommand],
-	['statusline', statuslineCommand],
+  ["daily", dailyCommand],
+  ["monthly", monthlyCommand],
+  ["weekly", weeklyCommand],
+  ["session", sessionCommand],
+  ["blocks", blocksCommand],
+  ["statusline", statuslineCommand],
 ] as const;
 
 export type CommandName = (typeof subCommandUnion)[number][0];
 
 const subCommands = new Map();
 for (const [name, command] of subCommandUnion) {
-	subCommands.set(name, command);
+  subCommands.set(name, command);
 }
 ```
 
@@ -77,16 +77,16 @@ const { order: _, ...sharedArgs } = sharedCommandConfig.args;
 ```typescript
 // apps/ccusage/src/_config-loader-tokens.ts:29-42
 function extractExplicitArgs(tokens: unknown[]): Record<string, boolean> {
-	const explicit: Record<string, boolean> = {};
-	for (const token of tokens) {
-		if (typeof token === 'object' && token !== null) {
-			const t = token as { kind?: string; name?: string };
-			if (t.kind === 'option' && typeof t.name === 'string') {
-				explicit[t.name] = true;
-			}
-		}
-	}
-	return explicit;
+  const explicit: Record<string, boolean> = {};
+  for (const token of tokens) {
+    if (typeof token === "object" && token !== null) {
+      const t = token as { kind?: string; name?: string; };
+      if (t.kind === "option" && typeof t.name === "string") {
+        explicit[t.name] = true;
+      }
+    }
+  }
+  return explicit;
 }
 ```
 
@@ -120,8 +120,8 @@ statusline コマンドではさらに高度な Valibot パイプラインを使
 ```typescript
 // apps/ccusage/src/commands/index.ts:53-57
 let args = process.argv.slice(2);
-if (args[0] === 'ccusage') {
-	args = args.slice(1);
+if (args[0] === "ccusage") {
+  args = args.slice(1);
 }
 ```
 
@@ -145,8 +145,8 @@ default: {
 // apps/ccusage/src/_shared-args.ts:117-121
 // 共有コマンド設定: 引数セットと toKebab を一つにバンドル
 export const sharedCommandConfig = {
-	args: sharedArgs,
-	toKebab: true,
+  args: sharedArgs,
+  toKebab: true,
 } as const;
 ```
 
@@ -154,24 +154,24 @@ export const sharedCommandConfig = {
 // apps/ccusage/src/commands/daily.ts:24-48
 // コマンド定義: sharedCommandConfig をスプレッドし、コマンド固有引数を追加
 export const dailyCommand = define({
-	name: 'daily',
-	description: 'Show usage report grouped by date',
-	...sharedCommandConfig,
-	args: {
-		...sharedCommandConfig.args,
-		instances: {
-			type: 'boolean',
-			short: 'i',
-			description: 'Show usage breakdown by project/instance',
-			default: false,
-		},
-		project: {
-			type: 'string',
-			short: 'p',
-			description: 'Filter to specific project name',
-		},
-	},
-	async run(ctx) { /* ... */ },
+  name: "daily",
+  description: "Show usage report grouped by date",
+  ...sharedCommandConfig,
+  args: {
+    ...sharedCommandConfig.args,
+    instances: {
+      type: "boolean",
+      short: "i",
+      description: "Show usage breakdown by project/instance",
+      default: false,
+    },
+    project: {
+      type: "string",
+      short: "p",
+      description: "Filter to specific project name",
+    },
+  },
+  async run(ctx) {/* ... */},
 });
 ```
 
@@ -179,17 +179,17 @@ export const dailyCommand = define({
 // apps/ccusage/src/commands/index.ts:51-66
 // エントリポイント: 薄いブートストラップ
 export async function run(): Promise<void> {
-	let args = process.argv.slice(2);
-	if (args[0] === 'ccusage') {
-		args = args.slice(1);
-	}
-	await cli(args, mainCommand, {
-		name,
-		version,
-		description,
-		subCommands,
-		renderHeader: null,
-	});
+  let args = process.argv.slice(2);
+  if (args[0] === "ccusage") {
+    args = args.slice(1);
+  }
+  await cli(args, mainCommand, {
+    name,
+    version,
+    description,
+    subCommands,
+    renderHeader: null,
+  });
 }
 ```
 
@@ -197,23 +197,23 @@ export async function run(): Promise<void> {
 // apps/ccusage/src/_config-loader-tokens.ts:222-269
 // 4 層優先度マージ: defaults → command config → CLI 明示引数
 export function mergeConfigWithArgs<T extends Record<string, unknown>>(
-	ctx: ConfigMergeContext<T>,
-	config?: ConfigData,
-	debug = false,
+  ctx: ConfigMergeContext<T>,
+  config?: ConfigData,
+  debug = false,
 ): T {
-	const merged = {} as T;
-	// 1. Apply defaults from config (lowest priority)
-	if (config.defaults != null) { /* ... */ }
-	// 2. Apply command-specific config
-	if (commandName != null && config.commands?.[commandName] != null) { /* ... */ }
-	// 3. Apply CLI arguments (highest priority) — only explicitly provided ones
-	const explicit = extractExplicitArgs(ctx.tokens);
-	for (const [key, value] of Object.entries(ctx.values)) {
-		if (value != null && explicit[key] === true) {
-			(merged as any)[key] = value;
-		}
-	}
-	return merged;
+  const merged = {} as T;
+  // 1. Apply defaults from config (lowest priority)
+  if (config.defaults != null) { /* ... */ }
+  // 2. Apply command-specific config
+  if (commandName != null && config.commands?.[commandName] != null) { /* ... */ }
+  // 3. Apply CLI arguments (highest priority) — only explicitly provided ones
+  const explicit = extractExplicitArgs(ctx.tokens);
+  for (const [key, value] of Object.entries(ctx.values)) {
+    if (value != null && explicit[key] === true) {
+      (merged as any)[key] = value;
+    }
+  }
+  return merged;
 }
 ```
 
@@ -249,8 +249,8 @@ export function mergeConfigWithArgs<T extends Record<string, unknown>>(
   ```typescript
   // apps/ccusage/src/_shared-args.ts:118-121
   export const sharedCommandConfig = {
-  	args: sharedArgs,
-  	toKebab: true,
+    args: sharedArgs,
+    toKebab: true,
   } as const;
   ```
 

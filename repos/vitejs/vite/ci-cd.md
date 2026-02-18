@@ -20,21 +20,22 @@ Vite の CI/CD パイプラインは、12 のワークフローファイルで�
 
 Vite は 12 のワークフローを役割ごとに明確に分離している:
 
-| カテゴリ | ワークフロー | トリガー |
-|---------|------------|---------|
-| テスト | `ci.yml` | push / PR |
-| リリース | `publish.yml`, `release-tag.yml` | tag push |
-| プレビュー | `preview-release.yml` | push to main / label |
-| エコシステム | `ecosystem-ci-trigger.yml` | issue comment |
-| 品質ゲート | `semantic-pull-request.yml` | PR |
-| Issue 管理 | `issue-labeled.yml`, `issue-close-require.yml`, `lock-closed-issues.yml`, `issue-template-check.yml`, `clarity-label.yml` | issue event / schedule |
-| AI 連携 | `copilot-setup-steps.yml` | workflow_dispatch |
+| カテゴリ     | ワークフロー                                                                                                              | トリガー               |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| テスト       | `ci.yml`                                                                                                                  | push / PR              |
+| リリース     | `publish.yml`, `release-tag.yml`                                                                                          | tag push               |
+| プレビュー   | `preview-release.yml`                                                                                                     | push to main / label   |
+| エコシステム | `ecosystem-ci-trigger.yml`                                                                                                | issue comment          |
+| 品質ゲート   | `semantic-pull-request.yml`                                                                                               | PR                     |
+| Issue 管理   | `issue-labeled.yml`, `issue-close-require.yml`, `lock-closed-issues.yml`, `issue-template-check.yml`, `clarity-label.yml` | issue event / schedule |
+| AI 連携      | `copilot-setup-steps.yml`                                                                                                 | workflow_dispatch      |
 
 ### CI パイプラインの最適化戦略
 
 CI ワークフローは変更検知 → テスト → ゲートジョブという3層構造を持つ。
 
 ::: v-pre
+
 ```yaml
 # .github/workflows/ci.yml:34-60
 jobs:
@@ -59,6 +60,7 @@ jobs:
     needs: changed
     if: needs.changed.outputs.should_skip != 'true'
 ```
+
 :::
 
 docs や `.github/` 配下のみの変更はテストをスキップするが、`ci.yml` 自体の変更はスキップ対象から除外している点が巧妙である。
@@ -100,25 +102,24 @@ test-failed:
 
 ```typescript
 // scripts/release.ts:1-21
-import { generateChangelog, release } from '@vitejs/release-scripts'
-import colors from 'picocolors'
-import { logRecentCommits, updateTemplateVersions } from './releaseUtils'
+import { generateChangelog, release } from "@vitejs/release-scripts";
+import colors from "picocolors";
+import { logRecentCommits, updateTemplateVersions } from "./releaseUtils";
 
 release({
-  repo: 'vite',
-  packages: ['vite', 'create-vite', 'plugin-legacy'],
-  toTag: (pkg, version) =>
-    pkg === 'vite' ? `v${version}` : `${pkg}@${version}`,
+  repo: "vite",
+  packages: ["vite", "create-vite", "plugin-legacy"],
+  toTag: (pkg, version) => pkg === "vite" ? `v${version}` : `${pkg}@${version}`,
   logChangelog: (pkg) => logRecentCommits(pkg),
   generateChangelog: async (pkgName) => {
-    if (pkgName === 'create-vite') await updateTemplateVersions()
-    console.log(colors.cyan('\nGenerating changelog...'))
+    if (pkgName === "create-vite") await updateTemplateVersions();
+    console.log(colors.cyan("\nGenerating changelog..."));
     await generateChangelog({
       getPkgDir: () => `packages/${pkgName}`,
-      tagPrefix: pkgName === 'vite' ? undefined : `${pkgName}@`,
-    })
+      tagPrefix: pkgName === "vite" ? undefined : `${pkgName}@`,
+    });
   },
-})
+});
 ```
 
 ### エコシステム CI のセキュリティモデル
@@ -131,17 +132,17 @@ release({
 
 ```javascript
 // .github/workflows/ecosystem-ci-trigger.yml:69-97
-const commentCreatedAt = new Date(context.payload.comment.created_at)
-const commitPushedAt = new Date(pr.head.repo.pushed_at)
+const commentCreatedAt = new Date(context.payload.comment.created_at);
+const commitPushedAt = new Date(pr.head.repo.pushed_at);
 
 if (commitPushedAt > commentCreatedAt) {
   const errorMsg = [
-    '⚠️ Security warning: PR was updated after the trigger command was posted.',
-    '',
-    'This could indicate an attempt to inject code after approval.',
-    'Please review the latest changes and re-run /ecosystem-ci run if they are acceptable.'
-  ].join('\n')
-  core.setFailed(errorMsg)
+    "⚠️ Security warning: PR was updated after the trigger command was posted.",
+    "",
+    "This could indicate an attempt to inject code after approval.",
+    "Please review the latest changes and re-run /ecosystem-ci run if they are acceptable.",
+  ].join("\n");
+  core.setFailed(errorMsg);
 }
 ```
 

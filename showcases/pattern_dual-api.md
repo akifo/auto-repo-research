@@ -25,25 +25,25 @@ export const dual: {
   // バリアント1: arity（固定長引数）で data-first を判定
   <DataLast extends (...args: Array<any>) => any, DataFirst extends (...args: Array<any>) => any>(
     arity: Parameters<DataFirst>["length"],
-    body: DataFirst
-  ): DataLast & DataFirst
+    body: DataFirst,
+  ): DataLast & DataFirst;
   // バリアント2: 述語関数で data-first を判定（可変長引数用）
   <DataLast extends (...args: Array<any>) => any, DataFirst extends (...args: Array<any>) => any>(
     isDataFirst: (args: IArguments) => boolean,
-    body: DataFirst
-  ): DataLast & DataFirst
+    body: DataFirst,
+  ): DataLast & DataFirst;
 } = function(arity, body) {
   if (typeof arity === "function") {
     // 述語関数バリアント: isDataFirst(arguments) で判定
     return function() {
       if (arity(arguments)) {
-        return body.apply(this, arguments)       // data-first: 全引数を渡す
+        return body.apply(this, arguments); // data-first: 全引数を渡す
       }
-      return ((self: any) => body(self, ...arguments)) as any  // data-last: カリー化
-    }
+      return ((self: any) => body(self, ...arguments)) as any; // data-last: カリー化
+    };
   }
   // arity バリアント: arguments.length で判定（arity 2〜5 は switch で個別最適化）
-}
+};
 ```
 
 ### パフォーマンス最適化
@@ -56,22 +56,22 @@ switch (arity) {
   case 2:
     return function(a: any, b: any) {
       if (arguments.length >= 2) {
-        return body(a, b)            // data-first: fn(self, arg)
+        return body(a, b); // data-first: fn(self, arg)
       }
       return function(self: any) {
-        return body(self, a)          // data-last: self.pipe(fn(arg))
-      }
-    }
+        return body(self, a); // data-last: self.pipe(fn(arg))
+      };
+    };
   case 3:
     return function(a: any, b: any, c: any) {
       if (arguments.length >= 3) {
-        return body(a, b, c)
+        return body(a, b, c);
       }
       return function(self: any) {
-        return body(self, a, b)
-      }
-    }
-  // case 4, 5 も同様
+        return body(self, a, b);
+      };
+    };
+    // case 4, 5 も同様
 }
 ```
 
@@ -82,17 +82,16 @@ switch (arity) {
 ```typescript
 // packages/effect/src/Option.ts:923-929
 export const map: {
-  <A, B>(f: (a: A) => B): (self: Option<A>) => Option<B>          // data-last
-  <A, B>(self: Option<A>, f: (a: A) => B): Option<B>              // data-first
+  <A, B>(f: (a: A) => B): (self: Option<A>) => Option<B>; // data-last
+  <A, B>(self: Option<A>, f: (a: A) => B): Option<B>; // data-first
 } = dual(
   2,
-  <A, B>(self: Option<A>, f: (a: A) => B): Option<B> =>
-    isNone(self) ? none() : some(f(self.value))
-)
+  <A, B>(self: Option<A>, f: (a: A) => B): Option<B> => isNone(self) ? none() : some(f(self.value)),
+);
 
 // 使い方: どちらのスタイルでも同じ関数を呼べる
-Option.map(Option.some(1), n => n + 1)           // data-first: Some(2)
-pipe(Option.some(1), Option.map(n => n + 1))     // data-last:  Some(2)
+Option.map(Option.some(1), n => n + 1); // data-first: Some(2)
+pipe(Option.some(1), Option.map(n => n + 1)); // data-last:  Some(2)
 ```
 
 ### 可変長引数パターン: Struct.pick
@@ -104,25 +103,25 @@ pipe(Option.some(1), Option.map(n => n + 1))     // data-last:  Some(2)
 export const pick: {
   <Keys extends Array<PropertyKey>>(
     ...keys: Keys
-  ): <S extends { [K in Keys[number]]?: any }>(s: S) => Simplify<Pick<S, Keys[number]>>
+  ): <S extends { [K in Keys[number]]?: any; }>(s: S) => Simplify<Pick<S, Keys[number]>>;
   <S extends object, Keys extends Array<keyof S>>(
     s: S,
     ...keys: Keys
-  ): Simplify<Pick<S, Keys[number]>>
+  ): Simplify<Pick<S, Keys[number]>>;
 } = dual(
-  (args) => Predicate.isObject(args[0]),  // 第1引数がオブジェクトなら data-first
+  (args) => Predicate.isObject(args[0]), // 第1引数がオブジェクトなら data-first
   <S extends object, Keys extends Array<keyof S>>(s: S, ...keys: Keys) => {
-    const out: any = {}
+    const out: any = {};
     for (const k of keys) {
-      if (k in s) { out[k] = (s as any)[k] }
+      if (k in s) out[k] = (s as any)[k];
     }
-    return out
-  }
-)
+    return out;
+  },
+);
 
 // 使い方
-Struct.pick({ a: 1, b: 2, c: 3 }, "a", "b")       // data-first: { a: 1, b: 2 }
-pipe({ a: 1, b: 2, c: 3 }, Struct.pick("a", "b"))  // data-last:  { a: 1, b: 2 }
+Struct.pick({ a: 1, b: 2, c: 3 }, "a", "b"); // data-first: { a: 1, b: 2 }
+pipe({ a: 1, b: 2, c: 3 }, Struct.pick("a", "b")); // data-last:  { a: 1, b: 2 }
 ```
 
 ### Refinement オーバーロードとの組み合わせ
@@ -132,11 +131,11 @@ pipe({ a: 1, b: 2, c: 3 }, Struct.pick("a", "b"))  // data-last:  { a: 1, b: 2 }
 ```typescript
 // packages/effect/src/Array.ts:2757-2761
 export const filter: {
-  <A, B extends A>(refinement: (a: NoInfer<A>, i: number) => a is B): (self: Iterable<A>) => Array<B>
-  <A>(predicate: (a: NoInfer<A>, i: number) => boolean): (self: Iterable<A>) => Array<A>
-  <A, B extends A>(self: Iterable<A>, refinement: (a: A, i: number) => a is B): Array<B>
-  <A>(self: Iterable<A>, predicate: (a: A, i: number) => boolean): Array<A>
-}
+  <A, B extends A>(refinement: (a: NoInfer<A>, i: number) => a is B): (self: Iterable<A>) => Array<B>;
+  <A>(predicate: (a: NoInfer<A>, i: number) => boolean): (self: Iterable<A>) => Array<A>;
+  <A, B extends A>(self: Iterable<A>, refinement: (a: A, i: number) => a is B): Array<B>;
+  <A>(self: Iterable<A>, predicate: (a: A, i: number) => boolean): Array<A>;
+};
 ```
 
 ### NoInfer による型推論の方向制御
@@ -156,41 +155,38 @@ data-last シグネチャのコールバック引数には `NoInfer<A>` を適�
 ```typescript
 // dual で data-first / data-last 両対応を単一実装から導出
 const filter: {
-  <A>(pred: (a: A) => boolean): (arr: A[]) => A[]
-  <A>(arr: A[], pred: (a: A) => boolean): A[]
-} = dual(2, <A>(arr: A[], pred: (a: A) => boolean) => arr.filter(pred))
+  <A>(pred: (a: A) => boolean): (arr: A[]) => A[];
+  <A>(arr: A[], pred: (a: A) => boolean): A[];
+} = dual(2, <A>(arr: A[], pred: (a: A) => boolean) => arr.filter(pred));
 
 // どちらのスタイルでも同じ関数を使える
-filter([1, 2, 3, 4], n => n % 2 === 0)           // data-first: [2, 4]
-pipe([1, 2, 3, 4], filter(n => n % 2 === 0))     // data-last:  [2, 4]
+filter([1, 2, 3, 4], n => n % 2 === 0); // data-first: [2, 4]
+pipe([1, 2, 3, 4], filter(n => n % 2 === 0)); // data-last:  [2, 4]
 
 // self / that の命名規約に従い、引数の役割を明確にする
 const concat: {
-  <A>(that: Array<A>): (self: Array<A>) => Array<A>
-  <A>(self: Array<A>, that: Array<A>): Array<A>
-} = dual(2, <A>(self: Array<A>, that: Array<A>) => [...self, ...that])
+  <A>(that: Array<A>): (self: Array<A>) => Array<A>;
+  <A>(self: Array<A>, that: Array<A>): Array<A>;
+} = dual(2, <A>(self: Array<A>, that: Array<A>) => [...self, ...that]);
 ```
 
 ## Bad Example
 
 ```typescript
 // Bad: data-last のみ — パイプライン外での呼び出しが不自然
-const filter = <A>(pred: (a: A) => boolean) => (arr: A[]): A[] =>
-  arr.filter(pred)
+const filter = <A>(pred: (a: A) => boolean) => (arr: A[]): A[] => arr.filter(pred);
 // 使用: filter(isEven)([1,2,3]) — 二重呼び出しが直感に反する
 
 // Bad: 2つの実装を別々にメンテナンス — 乖離のリスク
-const filterFirst = <A>(arr: A[], pred: (a: A) => boolean): A[] =>
-  arr.filter(pred)
-const filterLast = <A>(pred: (a: A) => boolean) => (arr: A[]): A[] =>
-  arr.filter(pred)
+const filterFirst = <A>(arr: A[], pred: (a: A) => boolean): A[] => arr.filter(pred);
+const filterLast = <A>(pred: (a: A) => boolean) => (arr: A[]): A[] => arr.filter(pred);
 // filterFirst にバグ修正しても filterLast を更新し忘れる可能性
 
 // Bad: Refinement オーバーロードの順序誤り — 型絞り込みが効かない
 export const find: {
-  <A>(predicate: (a: A) => boolean): (arr: A[]) => A | undefined         // 先にマッチしてしまう
-  <A, B extends A>(refinement: (a: A) => a is B): (arr: A[]) => B | undefined  // 到達しない
-}
+  <A>(predicate: (a: A) => boolean): (arr: A[]) => A | undefined; // 先にマッチしてしまう
+  <A, B extends A>(refinement: (a: A) => a is B): (arr: A[]) => B | undefined; // 到達しない
+};
 // TypeScript のオーバーロード解決は宣言順。Predicate が先だと型ガードが無視される
 ```
 
@@ -219,14 +215,14 @@ export const find: {
 // 最小限の dual 実装（自プロジェクトへの導入用）
 function dual<F extends (...args: any[]) => any>(
   arity: number,
-  body: F
+  body: F,
 ): F {
   return function(...args: any[]) {
     if (args.length >= arity) {
-      return body(...args)                          // data-first
+      return body(...args); // data-first
     }
-    return (self: any) => body(self, ...args)       // data-last
-  } as any
+    return (self: any) => body(self, ...args); // data-last
+  } as any;
 }
 ```
 

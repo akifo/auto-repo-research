@@ -22,9 +22,9 @@ ryoppippi/ccusage は複数の AI コーディングツール（Claude Code, Cod
 ```typescript
 // apps/ccusage/src/_types.ts:9-13
 export const modelNameSchema = v.pipe(
-	v.string(),
-	v.minLength(1, 'Model name cannot be empty'),
-	v.brand('ModelName'),
+  v.string(),
+  v.minLength(1, "Model name cannot be empty"),
+  v.brand("ModelName"),
 );
 ```
 
@@ -51,15 +51,15 @@ ccusage では同じ YYYY-MM-DD フォーマットでも用途に応じてブラ
 ```typescript
 // apps/ccusage/src/_types.ts:42-65
 export const dailyDateSchema = v.pipe(
-	v.string(),
-	v.regex(yyyymmddRegex, 'Date must be in YYYY-MM-DD format'),
-	v.brand('DailyDate'),
+  v.string(),
+  v.regex(yyyymmddRegex, "Date must be in YYYY-MM-DD format"),
+  v.brand("DailyDate"),
 );
 
 export const weeklyDateSchema = v.pipe(
-	v.string(),
-	v.regex(yyyymmddRegex, 'Date must be in YYYY-MM-DD format'),
-	v.brand('WeeklyDate'),
+  v.string(),
+  v.regex(yyyymmddRegex, "Date must be in YYYY-MM-DD format"),
+  v.brand("WeeklyDate"),
 );
 ```
 
@@ -72,11 +72,11 @@ export const weeklyDateSchema = v.pipe(
 ```typescript
 // apps/ccusage/src/_types.ts:126-132
 export function createBucket(value: string): Bucket {
-	const weeklyResult = v.safeParse(weeklyDateSchema, value);
-	if (weeklyResult.success) {
-		return weeklyResult.output;
-	}
-	return createMonthlyDate(value);
+  const weeklyResult = v.safeParse(weeklyDateSchema, value);
+  if (weeklyResult.success) {
+    return weeklyResult.output;
+  }
+  return createMonthlyDate(value);
 }
 ```
 
@@ -87,12 +87,12 @@ export function createBucket(value: string): Bucket {
 ```typescript
 // apps/ccusage/src/data-loader.ts:224-236
 export const modelBreakdownSchema = v.object({
-	modelName: modelNameSchema,
-	inputTokens: v.number(),
-	outputTokens: v.number(),
-	cacheCreationTokens: v.number(),
-	cacheReadTokens: v.number(),
-	cost: v.number(),
+  modelName: modelNameSchema,
+  inputTokens: v.number(),
+  outputTokens: v.number(),
+  cacheCreationTokens: v.number(),
+  cacheReadTokens: v.number(),
+  cost: v.number(),
 });
 export type ModelBreakdown = v.InferOutput<typeof modelBreakdownSchema>;
 ```
@@ -120,9 +120,9 @@ try {
 // apps/ccusage/src/_types.ts:9-13, 91, 109
 // 1. スキーマ: バリデーションルール + ブランドマーカー
 export const modelNameSchema = v.pipe(
-	v.string(),
-	v.minLength(1, 'Model name cannot be empty'),
-	v.brand('ModelName'),
+  v.string(),
+  v.minLength(1, "Model name cannot be empty"),
+  v.brand("ModelName"),
 );
 
 // 2. 型導出: スキーマから自動生成
@@ -135,13 +135,13 @@ export const createModelName = (value: string): ModelName => v.parse(modelNameSc
 利用側はファクトリ経由で値を作り、型が引数の取り違えを防ぐ。
 
 ```typescript
-function processSession(sessionId: SessionId, modelName: ModelName): void { /* ... */ }
+function processSession(sessionId: SessionId, modelName: ModelName): void {/* ... */}
 
 // OK: ファクトリ関数を経由
-processSession(createSessionId('sess_abc'), createModelName('claude-sonnet-4-20250514'));
+processSession(createSessionId("sess_abc"), createModelName("claude-sonnet-4-20250514"));
 
 // コンパイルエラー: 引数の順序が逆
-processSession(createModelName('claude-sonnet-4-20250514'), createSessionId('sess_abc'));
+processSession(createModelName("claude-sonnet-4-20250514"), createSessionId("sess_abc"));
 ```
 
 ## Bad Example
@@ -169,12 +169,12 @@ timestamp: createISOTimestamp('2024-01-01T00:00:00Z'),
 
 ```typescript
 // Bad: スキーマと型定義が独立しており、乖離するリスクがある
-const userIdSchema = v.pipe(v.string(), v.minLength(1), v.brand('UserId'));
-type UserId = string & { __brand: 'UserId' };  // 手書きの型定義
+const userIdSchema = v.pipe(v.string(), v.minLength(1), v.brand("UserId"));
+type UserId = string & { __brand: "UserId"; }; // 手書きの型定義
 
 // Good: スキーマから型を導出し、単一ソースを維持
-const userIdSchema = v.pipe(v.string(), v.minLength(1), v.brand('UserId'));
-type UserId = v.InferOutput<typeof userIdSchema>;  // スキーマが唯一の情報源
+const userIdSchema = v.pipe(v.string(), v.minLength(1), v.brand("UserId"));
+type UserId = v.InferOutput<typeof userIdSchema>; // スキーマが唯一の情報源
 ```
 
 ## 適用ガイド
@@ -202,13 +202,13 @@ type UserId = v.InferOutput<typeof userIdSchema>;  // スキーマが唯一の�
 新しいドメインプリミティブを追加する際のテンプレート:
 
 ```typescript
-import * as v from 'valibot';
+import * as v from "valibot";
 
 // 1. スキーマ
 export const fooIdSchema = v.pipe(
-	v.string(),
-	v.minLength(1, 'FooId cannot be empty'),
-	v.brand('FooId'),
+  v.string(),
+  v.minLength(1, "FooId cannot be empty"),
+  v.brand("FooId"),
 );
 
 // 2. 型導出

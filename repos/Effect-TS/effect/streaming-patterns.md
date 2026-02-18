@@ -26,20 +26,20 @@ Stream と Sink は Channel の特殊化であり、相互変換が可能:
 ```typescript
 // packages/effect/src/internal/stream.ts:2997-3012
 export const fromChannel = <A, E, R>(
-  channel: Channel.Channel<Chunk.Chunk<A>, unknown, E, unknown, unknown, unknown, R>
-): Stream.Stream<A, E, R> => new StreamImpl(channel)
+  channel: Channel.Channel<Chunk.Chunk<A>, unknown, E, unknown, unknown, unknown, R>,
+): Stream.Stream<A, E, R> => new StreamImpl(channel);
 
 export const toChannel = <A, E, R>(
-  stream: Stream.Stream<A, E, R>
+  stream: Stream.Stream<A, E, R>,
 ): Channel.Channel<Chunk.Chunk<A>, unknown, E, unknown, unknown, unknown, R> => {
   if ("channel" in stream) {
-    return (stream as StreamImpl<A, E, R>).channel
+    return (stream as StreamImpl<A, E, R>).channel;
   } else if (Effect.isEffect(stream)) {
-    return toChannel(fromEffect(stream)) as any
+    return toChannel(fromEffect(stream)) as any;
   } else {
-    throw new TypeError(`Expected a Stream.`)
+    throw new TypeError(`Expected a Stream.`);
   }
-}
+};
 ```
 
 Stream の `run` は Channel の `pipeToOrFail` + `runDrain` に帰着する:
@@ -49,8 +49,8 @@ Stream の `run` は Channel の `pipeToOrFail` + `runDrain` に帰着する:
 export const run = (self, sink) =>
   toChannel(self).pipe(
     channel.pipeToOrFail(sink_.toChannel(sink)),
-    channel.runDrain
-  )
+    channel.runDrain,
+  );
 ```
 
 ### Handoff: push→pull 変換のための同期プリミティブ
@@ -68,22 +68,21 @@ export const offer = dual(2, (self, value) => {
           (notifyConsumer) => [
             Effect.zipRight(
               Deferred.succeed(notifyConsumer, void 0),
-              Deferred.await(deferred)  // producer はここでブロック
+              Deferred.await(deferred), // producer はここでブロック
             ),
-            handoffStateFull(value, deferred)
+            handoffStateFull(value, deferred),
           ],
           // Full: 前のデータがまだ取られていないので、取られるまで待機して再試行
           (_, notifyProducer) => [
             Effect.flatMap(
               Deferred.await(notifyProducer),
-              () => offer(self, value)
+              () => offer(self, value),
             ),
-            state
-          ]
-        )
-      )
-    ))
-})
+            state,
+          ],
+        )),
+    ));
+});
 ```
 
 この Handoff は `aggregateWithin` で Sink とストリームを接続する際のブリッジとして使われ、Sink のスケジュール駆動フラッシュと upstream の非同期 push を協調させる。
@@ -102,9 +101,8 @@ class SingleProducerAsyncInputImpl<Err, Elem, Done> {
       Ref.modify(this.ref, (state) =>
         state._tag === OP_STATE_EMPTY
           ? [Deferred.await(state.notifyProducer), state]
-          : [Effect.void, state]
-      )
-    )
+          : [Effect.void, state]),
+    );
   }
   // ...
 }
@@ -140,10 +138,10 @@ return matchConcurrency(
 
 ```typescript
 // packages/effect/src/internal/stream/haltStrategy.ts:6-23
-export const Left: HaltStrategy.HaltStrategy = { _tag: OP_LEFT }   // 左が終了したら終了
-export const Right: HaltStrategy.HaltStrategy = { _tag: OP_RIGHT } // 右が終了したら終了
-export const Both: HaltStrategy.HaltStrategy = { _tag: OP_BOTH }   // 両方終了したら終了
-export const Either: HaltStrategy.HaltStrategy = { _tag: OP_EITHER } // いずれか終了したら終了
+export const Left: HaltStrategy.HaltStrategy = { _tag: OP_LEFT }; // 左が終了したら終了
+export const Right: HaltStrategy.HaltStrategy = { _tag: OP_RIGHT }; // 右が終了したら終了
+export const Both: HaltStrategy.HaltStrategy = { _tag: OP_BOTH }; // 両方終了したら終了
+export const Either: HaltStrategy.HaltStrategy = { _tag: OP_EITHER }; // いずれか終了したら終了
 ```
 
 ### MergeDecision / MergeStrategy: マージの挙動を代数的に表現
@@ -174,16 +172,19 @@ export const BufferSliding = (_: void): MergeStrategy => { ... }
 // packages/effect/src/internal/stream.ts:459-478
 const queueFromBufferOptions = (bufferSize) => {
   if (bufferSize === "unbounded") {
-    return Queue.unbounded()
+    return Queue.unbounded();
   } else if (typeof bufferSize === "number" || bufferSize === undefined) {
-    return Queue.bounded(bufferSize ?? 16)
+    return Queue.bounded(bufferSize ?? 16);
   }
   switch (bufferSize.strategy) {
-    case "dropping": return Queue.dropping(bufferSize.bufferSize ?? 16)
-    case "sliding":  return Queue.sliding(bufferSize.bufferSize ?? 16)
-    default:         return Queue.bounded(bufferSize.bufferSize ?? 16)
+    case "dropping":
+      return Queue.dropping(bufferSize.bufferSize ?? 16);
+    case "sliding":
+      return Queue.sliding(bufferSize.bufferSize ?? 16);
+    default:
+      return Queue.bounded(bufferSize.bufferSize ?? 16);
   }
-}
+};
 ```
 
 ## パターンカタログ
@@ -213,8 +214,8 @@ const queueFromBufferOptions = (bufferSize) => {
   // packages/effect/src/internal/stream.ts:5613-5615
   toChannel(self).pipe(
     channel.pipeToOrFail(sink_.toChannel(sink)),
-    channel.runDrain
-  )
+    channel.runDrain,
+  );
   ```
 
 - **Deferred ベースの同期によるロックフリーバックプレッシャー**: `Handoff` と `SingleProducerAsyncInput` は Mutex やセマフォではなく、`Ref.modify` + `Deferred` で状態遷移と待機を実現する。これにより OS レベルのロック不要でファイバー間のバックプレッシャーが成立する。
@@ -225,8 +226,8 @@ const queueFromBufferOptions = (bufferSize) => {
     pipe(
       Deferred.make<void>(),
       Effect.flatMap((deferred) => Ref.make(handoffStateEmpty<A>(deferred))),
-      Effect.map((ref): Handoff<A> => ({ [HandoffTypeId]: handoffVariance, ref }))
-    )
+      Effect.map((ref): Handoff<A> => ({ [HandoffTypeId]: handoffVariance, ref })),
+    );
   ```
 
 - **Take 型によるストリーム信号の統一**: `Take<A, E>` は `Exit<Chunk<A>, Option<E>>` のラッパーであり、データ (`Chunk<A>`)、エラー (`Some<E>`)、終了 (`None`) の3信号を1つの型で表現する。Queue を介した非同期ストリームでは、この Take を Queue に投入することで、信号の種類に関わらず同一チャネルで伝送できる。
@@ -234,7 +235,7 @@ const queueFromBufferOptions = (bufferSize) => {
   ```typescript
   // packages/effect/src/internal/take.ts:26-33
   export class TakeImpl<out A, out E = never> implements Take.Take<A, E> {
-    readonly [TakeTypeId] = takeVariance
+    readonly [TakeTypeId] = takeVariance;
     constructor(readonly exit: Exit.Exit<Chunk.Chunk<A>, Option.Option<E>>) {}
   }
   ```
@@ -247,20 +248,20 @@ const queueFromBufferOptions = (bufferSize) => {
 
   ```typescript
   // Bad: デフォルト任せ
-  Stream.async(register)
+  Stream.async(register);
 
   // Better: 明示的にバッファサイズと戦略を指定
-  Stream.async(register, { bufferSize: 256, strategy: "dropping" })
+  Stream.async(register, { bufferSize: 256, strategy: "dropping" });
   ```
 
 - **unbounded concurrency の安易な使用**: `concurrency: "unbounded"` は内部で `Number.MAX_SAFE_INTEGER` に変換される (`packages/effect/src/internal/stream.ts:2803`)。入力ストリームの要素数に上限がない場合、ファイバーが際限なく生成される。bounded concurrency + backpressure が安全なデフォルト。
 
   ```typescript
   // Bad: 入力サイズ不明で unbounded
-  Stream.flatMap(urls, fetchUrl, { concurrency: "unbounded" })
+  Stream.flatMap(urls, fetchUrl, { concurrency: "unbounded" });
 
   // Better: 上限を設定
-  Stream.flatMap(urls, fetchUrl, { concurrency: 10 })
+  Stream.flatMap(urls, fetchUrl, { concurrency: 10 });
   ```
 
 - **Scope 管理なしのリソースストリーム化**: ファイルやネットワーク接続をストリームのソースにする際、`Stream.scoped` を使わずに直接 `Stream.fromEffect` でリソースを取得すると、ストリーム処理中のエラーや中断時にリソースがリークする。
@@ -268,13 +269,13 @@ const queueFromBufferOptions = (bufferSize) => {
   ```typescript
   // Bad: acquireRelease なしで直接開く
   const stream = Stream.fromEffect(openFile(path)).pipe(
-    Stream.flatMap(readLines)
-  )
+    Stream.flatMap(readLines),
+  );
 
   // Better: scoped でライフサイクルを管理
   const stream = Stream.scoped(
-    Effect.acquireRelease(openFile(path), closeFile)
-  ).pipe(Stream.flatMap(readLines))
+    Effect.acquireRelease(openFile(path), closeFile),
+  ).pipe(Stream.flatMap(readLines));
   ```
 
 ## 導出ルール

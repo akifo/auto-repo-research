@@ -142,6 +142,7 @@ PR ごとに npm パッケージのプレビュー版を自動パブリッシュ
 publish ワークフローでは、各パッケージを NPM と JSR の両方に並列でパブリッシュする。
 
 ::: v-pre
+
 ```yaml
 # .github/workflows/publish.yml:13-47 (library の例)
   library_npm:
@@ -180,6 +181,7 @@ publish ワークフローでは、各パッケージを NPM と JSR の両方�
         run: npx jsr publish
         working-directory: library
 ```
+
 :::
 
 設計上の注目点:

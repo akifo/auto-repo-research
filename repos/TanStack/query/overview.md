@@ -21,26 +21,26 @@ TanStack Query は「フレームワーク非依存のコアに全ビジネス�
 
 ## 分析した視点
 
-| # | 視点 | ファイル | 概要 |
-| - | ---- | -------- | ---- |
-| 1 | プロジェクト構造 | project-structure.md | 24パッケージ4層構造のpnpmモノレポで、symlink設定共有とdual build出力を実現 |
-| 2 | アーキテクチャ | architecture.md | query-coreにビジネスロジックを集約し、Observer/Strategy/Facadeで6フレームワークに対応 |
-| 3 | 設計思想 | design-philosophy.md | フレームワーク非依存コア・Reducer-in-Class・構造的共有・Register型拡張の設計判断 |
-| 4 | 型システムパターン | type-system-patterns.md | DataTagによるQueryKey型伝播、NoInfer・再帰型深度制限・Register宣言マージの型技法 |
-| 5 | 抽象化パターン | abstraction-patterns.md | 30行のSubscribableから7派生クラス、QueryBehavior Strategyで拡張性を確保 |
-| 6 | 状態管理パターン | state-management-patterns.md | status/fetchStatusの2軸直交設計、Action-Reducer状態遷移、Observer連動GC |
-| 7 | エラーハンドリング | error-handling-idioms.md | 指数バックオフリトライ・throwOnError選択制・Error Boundaryリセットプロトコル |
-| 8 | テストプラクティス | testing-practices.md | コア純粋テスト+アダプター統合テストの二層構造、型テスト・マルチTSバージョン検証 |
-| 9 | API設計 | api-design-practices.md | 単一オブジェクト引数・queryOptionsビルダー・skipToken・experimental_プレフィクス |
-| 10 | パフォーマンス技法 | performance-techniques.md | 構造的共有・Proxyプロパティ追跡・NotifyManagerバッチ通知・遅延AbortSignal |
-| 11 | 拡張性メカニズム | extensibility-mechanisms.md | 最小契約インターフェース・Observable Cache・差し替え可能シングルトンの拡張設計 |
-| 12 | ビルド・ツーリング | build-and-tooling.md | tsup dual build・symlink設定共有・publint/attw/size-limit多層品質ゲート |
-| 13 | Observerパターン技法 | observer-pattern-techniques.md | Subscribable基盤・購読数連動リソース管理・バッチ通知・Proxy追跡の通知最適化 |
-| 14 | 並行パターン | concurrency-patterns.md | Promise重複排除・スコープ直列化・AbortSignal消費検出・CancelledErrorロールバック |
-| 15 | 開発規約 | dev-conventions.md | symlink設定DRY・ESLint flat config・cspell・knip/sherifの多層品質検証 |
-| 16 | 依存管理 | dependency-management.md | workspace:*/^使い分け・pnpm overrides型統一・sherif整合性検証・Changesets制御 |
-| 17 | フレームワークアダプター | framework-adapter-patterns.md | 3層分離(API/Base/Observer)・Observer注入Strategy・フレームワーク慣習準拠の命名 |
-| 18 | CI/CD | ci-cd.md | nx affected/run-many二段構え・Changesets自動リリース・pkg-pr-newプレビュー公開 |
+| #  | 視点                     | ファイル                       | 概要                                                                                  |
+| -- | ------------------------ | ------------------------------ | ------------------------------------------------------------------------------------- |
+| 1  | プロジェクト構造         | project-structure.md           | 24パッケージ4層構造のpnpmモノレポで、symlink設定共有とdual build出力を実現            |
+| 2  | アーキテクチャ           | architecture.md                | query-coreにビジネスロジックを集約し、Observer/Strategy/Facadeで6フレームワークに対応 |
+| 3  | 設計思想                 | design-philosophy.md           | フレームワーク非依存コア・Reducer-in-Class・構造的共有・Register型拡張の設計判断      |
+| 4  | 型システムパターン       | type-system-patterns.md        | DataTagによるQueryKey型伝播、NoInfer・再帰型深度制限・Register宣言マージの型技法      |
+| 5  | 抽象化パターン           | abstraction-patterns.md        | 30行のSubscribableから7派生クラス、QueryBehavior Strategyで拡張性を確保               |
+| 6  | 状態管理パターン         | state-management-patterns.md   | status/fetchStatusの2軸直交設計、Action-Reducer状態遷移、Observer連動GC               |
+| 7  | エラーハンドリング       | error-handling-idioms.md       | 指数バックオフリトライ・throwOnError選択制・Error Boundaryリセットプロトコル          |
+| 8  | テストプラクティス       | testing-practices.md           | コア純粋テスト+アダプター統合テストの二層構造、型テスト・マルチTSバージョン検証       |
+| 9  | API設計                  | api-design-practices.md        | 単一オブジェクト引数・queryOptionsビルダー・skipToken・experimental_プレフィクス      |
+| 10 | パフォーマンス技法       | performance-techniques.md      | 構造的共有・Proxyプロパティ追跡・NotifyManagerバッチ通知・遅延AbortSignal             |
+| 11 | 拡張性メカニズム         | extensibility-mechanisms.md    | 最小契約インターフェース・Observable Cache・差し替え可能シングルトンの拡張設計        |
+| 12 | ビルド・ツーリング       | build-and-tooling.md           | tsup dual build・symlink設定共有・publint/attw/size-limit多層品質ゲート               |
+| 13 | Observerパターン技法     | observer-pattern-techniques.md | Subscribable基盤・購読数連動リソース管理・バッチ通知・Proxy追跡の通知最適化           |
+| 14 | 並行パターン             | concurrency-patterns.md        | Promise重複排除・スコープ直列化・AbortSignal消費検出・CancelledErrorロールバック      |
+| 15 | 開発規約                 | dev-conventions.md             | symlink設定DRY・ESLint flat config・cspell・knip/sherifの多層品質検証                 |
+| 16 | 依存管理                 | dependency-management.md       | workspace:*/^使い分け・pnpm overrides型統一・sherif整合性検証・Changesets制御         |
+| 17 | フレームワークアダプター | framework-adapter-patterns.md  | 3層分離(API/Base/Observer)・Observer注入Strategy・フレームワーク慣習準拠の命名        |
+| 18 | CI/CD                    | ci-cd.md                       | nx affected/run-many二段構え・Changesets自動リリース・pkg-pr-newプレビュー公開        |
 
 ## 特に注目すべき知見
 

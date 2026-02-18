@@ -21,25 +21,25 @@ TanStack Query では、`queryFn` に `signal` プロパティを持つコンテ
 
 ```typescript
 // packages/query-core/src/query.ts:430-443
-const abortController = new AbortController()
+const abortController = new AbortController();
 
 const addSignalProperty = (object: unknown) => {
-  Object.defineProperty(object, 'signal', {
+  Object.defineProperty(object, "signal", {
     enumerable: true,
     get: () => {
-      this.#abortSignalConsumed = true
-      return abortController.signal
+      this.#abortSignalConsumed = true;
+      return abortController.signal;
     },
-  })
-}
+  });
+};
 ```
 
 フェッチ開始時にフラグをリセットし、`queryFn` が `signal` にアクセスしたかどうかを新たに検出する。
 
 ```typescript
 // packages/query-core/src/query.ts:463-465
-const queryFnContext = createQueryFnContext()
-this.#abortSignalConsumed = false
+const queryFnContext = createQueryFnContext();
+this.#abortSignalConsumed = false;
 ```
 
 ### 2. 消費状態に基づくキャンセル分岐（query.ts）
@@ -83,30 +83,30 @@ export function addConsumeAwareSignal<T>(
   object: T,
   getSignal: () => AbortSignal,
   onCancelled: VoidFunction,
-): T & { signal: AbortSignal } {
-  let consumed = false
-  let signal: AbortSignal | undefined
+): T & { signal: AbortSignal; } {
+  let consumed = false;
+  let signal: AbortSignal | undefined;
 
-  Object.defineProperty(object, 'signal', {
+  Object.defineProperty(object, "signal", {
     enumerable: true,
     get: () => {
-      signal ??= getSignal()
+      signal ??= getSignal();
       if (consumed) {
-        return signal
+        return signal;
       }
 
-      consumed = true
+      consumed = true;
       if (signal.aborted) {
-        onCancelled()
+        onCancelled();
       } else {
-        signal.addEventListener('abort', onCancelled, { once: true })
+        signal.addEventListener("abort", onCancelled, { once: true });
       }
 
-      return signal
+      return signal;
     },
-  })
+  });
 
-  return object as T & { signal: AbortSignal }
+  return object as T & { signal: AbortSignal; };
 }
 ```
 
@@ -119,16 +119,16 @@ Infinite Query はページごとに `queryFn` を呼び出すため、各ペー
 ```typescript
 // packages/query-core/src/infiniteQueryBehavior.ts:28-36
 const fetchFn = async () => {
-  let cancelled = false
+  let cancelled = false;
   const addSignalProperty = (object: unknown) => {
     addConsumeAwareSignal(
       object,
       () => context.signal,
       () => (cancelled = true),
-    )
-  }
+    );
+  };
   // ...
-}
+};
 ```
 
 signal が消費されると `cancelled` フラグが立ち、以降のページフェッチをスキップする。signal が消費されなければ、全ページの結果がキャッシュに残る。
@@ -138,22 +138,22 @@ signal が消費されると `cancelled` フラグが立ち、以降のページ
 ```typescript
 // signal を fetch に伝播 → 消費検出が正しく機能し、アンマウント時にリクエストが中断される
 const { data } = useQuery({
-  queryKey: ['users'],
+  queryKey: ["users"],
   queryFn: async ({ signal }) => {
-    const res = await fetch('/api/users', { signal })
-    return res.json()
+    const res = await fetch("/api/users", { signal });
+    return res.json();
   },
-})
+});
 
 // signal を使わない → 消費フラグが立たず、結果がキャッシュに残る
 // レガシー API クライアントなど、AbortSignal 非対応の場合に有効
 const { data } = useQuery({
-  queryKey: ['users'],
+  queryKey: ["users"],
   queryFn: async () => {
-    const res = await legacyHttpClient.get('/api/users')
-    return res.data
+    const res = await legacyHttpClient.get("/api/users");
+    return res.data;
   },
-})
+});
 ```
 
 どちらのケースも `queryFn` のシグネチャを変更する必要がなく、ライブラリ側が実行時に最適な挙動を選択する。
@@ -163,19 +163,19 @@ const { data } = useQuery({
 ```typescript
 // Bad: signal にアクセスするが fetch に渡さない
 // → 消費フラグが立つのでキャンセルが発動するが、実際のリクエストは中断されない
-queryFn: async ({ signal }) => {
-  console.log(signal.aborted) // signal consumed → #abortSignalConsumed = true
-  const res = await fetch('/api/data') // signal 未伝播 → リクエストは続行
-  return res.json()
-}
+queryFn: (async ({ signal }) => {
+  console.log(signal.aborted); // signal consumed → #abortSignalConsumed = true
+  const res = await fetch("/api/data"); // signal 未伝播 → リクエストは続行
+  return res.json();
+});
 
 // Bad: キャンセル対応をオプションで事前宣言させる設計
 // → ユーザーに不要な設定負担を課し、設定ミスで挙動が壊れる
 useQuery({
-  queryKey: ['users'],
+  queryKey: ["users"],
   queryFn: fetchUsers,
   supportsCancellation: true, // ← このようなオプションは不要
-})
+});
 ```
 
 前者の問題は、分割代入 `({ signal })` でアクセスが発生してフラグが立つが、実際の `fetch` 呼び出しに `signal` を渡していないため、キャンセルが発動してもリクエストは中断されない矛盾が生じること。後者は、ユーザーに判断と設定を強制する設計であり、consume-aware パターンが解決しようとしている問題そのもの。

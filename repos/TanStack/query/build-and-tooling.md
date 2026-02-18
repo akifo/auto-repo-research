@@ -39,14 +39,14 @@ packages/react-query/root.tsup.config.js  -> ../../scripts/getTsupConfig.js
 export function modernConfig(opts) {
   return {
     entry: opts.entry,
-    format: ['cjs', 'esm'],
-    target: ['chrome91', 'firefox90', 'edge91', 'safari15', 'ios15', 'opera77'],
-    outDir: 'build/modern',
+    format: ["cjs", "esm"],
+    target: ["chrome91", "firefox90", "edge91", "safari15", "ios15", "opera77"],
+    outDir: "build/modern",
     dts: true,
     sourcemap: true,
     clean: true,
-    esbuildPlugins: [esbuildPluginFilePathExtensions({ esmExtension: 'js' })],
-  }
+    esbuildPlugins: [esbuildPluginFilePathExtensions({ esmExtension: "js" })],
+  };
 }
 ```
 
@@ -55,14 +55,14 @@ export function modernConfig(opts) {
 export function legacyConfig(opts) {
   return {
     entry: opts.entry,
-    format: ['cjs', 'esm'],
-    target: ['es2020', 'node16'],
-    outDir: 'build/legacy',
+    format: ["cjs", "esm"],
+    target: ["es2020", "node16"],
+    outDir: "build/legacy",
     dts: true,
     sourcemap: true,
     clean: true,
-    esbuildPlugins: [esbuildPluginFilePathExtensions({ esmExtension: 'js' })],
-  }
+    esbuildPlugins: [esbuildPluginFilePathExtensions({ esmExtension: "js" })],
+  };
 }
 ```
 
@@ -98,13 +98,13 @@ export function legacyConfig(opts) {
 
 ### フレームワーク別ビルド戦略の分岐
 
-| パッケージ群 | ビルドツール | 理由 |
-|---|---|---|
-| query-core, react-query, vue-query 等 | tsup (共有設定) | 標準的な CJS + ESM 出力 |
-| eslint-plugin-query | tsup (独自設定) | CJS default export 互換、typescript externalize |
-| solid-query, query-devtools | tsup + tsup-preset-solid | SolidJS の JSX トランスフォーム、dev/prod 分離 |
-| svelte-query | svelte-package | Svelte コンポーネントのコンパイル |
-| angular-query-experimental | Vite + vite-plugin-dts | Angular の ESM-only 出力、prepack スクリプト |
+| パッケージ群                          | ビルドツール             | 理由                                            |
+| ------------------------------------- | ------------------------ | ----------------------------------------------- |
+| query-core, react-query, vue-query 等 | tsup (共有設定)          | 標準的な CJS + ESM 出力                         |
+| eslint-plugin-query                   | tsup (独自設定)          | CJS default export 互換、typescript externalize |
+| solid-query, query-devtools           | tsup + tsup-preset-solid | SolidJS の JSX トランスフォーム、dev/prod 分離  |
+| svelte-query                          | svelte-package           | Svelte コンポーネントのコンパイル               |
+| angular-query-experimental            | Vite + vite-plugin-dts   | Angular の ESM-only 出力、prepack スクリプト    |
 
 ### Nx によるタスクオーケストレーション
 
@@ -191,13 +191,13 @@ Changesets により「main への push -> テスト -> バージョン PR 自�
 
 ```ts
 // packages/query-core/tsup.config.ts:1-7
-import { defineConfig } from 'tsup'
-import { legacyConfig, modernConfig } from './root.tsup.config.js'
+import { defineConfig } from "tsup";
+import { legacyConfig, modernConfig } from "./root.tsup.config.js";
 
 export default defineConfig([
-  modernConfig({ entry: ['src/*.ts'] }),
-  legacyConfig({ entry: ['src/*.ts'] }),
-])
+  modernConfig({ entry: ["src/*.ts"] }),
+  legacyConfig({ entry: ["src/*.ts"] }),
+]);
 ```
 
 - **ビルド成果物に対する自動検証パイプライン**: `test:build` スクリプトで publint と attw を直列実行し、`package.json` の宣言とビルド成果物の不整合を自動検知する。CI の `dependsOn: ["build"]` でビルド後に必ず実行される。

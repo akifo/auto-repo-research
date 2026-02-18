@@ -82,16 +82,16 @@ describe("Deferred", () => {
 // packages/effect/test/Pool.test.ts:6-17
 it.scoped("preallocates pool items", () =>
   Effect.gen(function*() {
-    const count = yield* Ref.make(0)
+    const count = yield* Ref.make(0);
     const get = Effect.acquireRelease(
       Ref.updateAndGet(count, (n) => n + 1),
-      () => Ref.update(count, (n) => n - 1)
-    )
-    yield* Pool.make({ acquire: get, size: 10 })
-    yield* Effect.repeat(Ref.get(count), { until: (n) => n === 10 })
-    const result = yield* Ref.get(count)
-    strictEqual(result, 10)
-  }))
+      () => Ref.update(count, (n) => n - 1),
+    );
+    yield* Pool.make({ acquire: get, size: 10 });
+    yield* Effect.repeat(Ref.get(count), { until: (n) => n === 10 });
+    const result = yield* Ref.get(count);
+    strictEqual(result, 10);
+  }));
 ```
 
 ```ts
@@ -99,49 +99,49 @@ it.scoped("preallocates pool items", () =>
 layer(Foo.Live)((it) => {
   it.effect("adds context", () =>
     Effect.gen(function*() {
-      const foo = yield* Foo
-      expect(foo).toEqual("foo")
-    }))
+      const foo = yield* Foo;
+      expect(foo).toEqual("foo");
+    }));
 
   it.layer(Bar.Live)("nested", (it) => {
     it.effect("adds context", () =>
       Effect.gen(function*() {
-        const foo = yield* Foo
-        const bar = yield* Bar
-        expect(foo).toEqual("foo")
-        expect(bar).toEqual("bar")
-      }))
-  })
-})
+        const foo = yield* Foo;
+        const bar = yield* Bar;
+        expect(foo).toEqual("foo");
+        expect(bar).toEqual("bar");
+      }));
+  });
+});
 ```
 
 ```ts
 // packages/vitest/test/index.test.ts:213-228
-const realNumber = Schema.Finite.pipe(Schema.nonNaN())
+const realNumber = Schema.Finite.pipe(Schema.nonNaN());
 
-it.prop("symmetry", [realNumber, FastCheck.integer()], ([a, b]) => a + b === b + a)
+it.prop("symmetry", [realNumber, FastCheck.integer()], ([a, b]) => a + b === b + a);
 
 it.effect.prop("symmetry", [realNumber, FastCheck.integer()], ([a, b]) =>
   Effect.gen(function*() {
-    yield* Effect.void
-    return a + b === b + a
-  }))
+    yield* Effect.void;
+    return a + b === b + a;
+  }));
 ```
 
 ```ts
 // packages/effect/test/Effect/memoization.test.ts:10-15
 it.effect("non-memoized returns new instances on repeated calls", () =>
   it.flakyTest(Effect.gen(function*() {
-    const random = Random.nextInt
-    const [first, second] = yield* pipe(random, Effect.zip(random))
-    notStrictEqual(first, second)
-  })))
+    const random = Random.nextInt;
+    const [first, second] = yield* pipe(random, Effect.zip(random));
+    notStrictEqual(first, second);
+  })));
 ```
 
 ```ts
 // packages/vitest/src/utils.ts:188-203
 export function assertNone<A>(option: Option.Option<A>, ..._: Array<never>): asserts option is Option.None<never> {
-  deepStrictEqual(option, Option.none())
+  deepStrictEqual(option, Option.none());
 }
 
 export function assertSome<A>(
@@ -149,7 +149,7 @@ export function assertSome<A>(
   expected: A,
   ..._: Array<never>
 ): asserts option is Option.Some<A> {
-  deepStrictEqual(option, Option.some(expected))
+  deepStrictEqual(option, Option.some(expected));
 }
 ```
 
@@ -181,8 +181,8 @@ export function assertSome<A>(
 // packages/vitest/src/index.ts:280-283
 export const it: Vitest.Methods = Object.assign(V.it, {
   ...methods,
-  scopedFixtures: V.it.scoped.bind(V.it)
-})
+  scopedFixtures: V.it.scoped.bind(V.it),
+});
 ```
 
 - **ドメイン型に対する型安全アサーション**: `assertSome(option, expected)` は `asserts option is Option.Some<A>` を返すため、アサーション後のコードで `option.value` に安全にアクセスできる。vitest の `expect(option).toEqual(Option.some(expected))` では型が絞り込まれない。
@@ -194,7 +194,7 @@ export function assertSome<A>(
   expected: A,
   ..._: Array<never>
 ): asserts option is Option.Some<A> {
-  deepStrictEqual(option, Option.some(expected))
+  deepStrictEqual(option, Option.some(expected));
 }
 ```
 
@@ -205,11 +205,11 @@ export function assertSome<A>(
 class Letter extends Schema.Class<Letter>("Letter")({
   name: Schema.String.pipe(
     Schema.minLength(1),
-    Schema.filter((s) => s.match(/^[a-z]+$/) !== null)
+    Schema.filter((s) => s.match(/^[a-z]+$/) !== null),
   ),
-  age: Schema.Int.pipe(Schema.between(1, 77))
+  age: Schema.Int.pipe(Schema.between(1, 77)),
 }) {
-  static Array = Schema.Array(this)
+  static Array = Schema.Array(this);
 }
 ```
 
@@ -220,12 +220,12 @@ class Letter extends Schema.Class<Letter>("Letter")({
 export const suite = <E>(client: Layer.Layer<SqlClient.SqlClient, E>) => {
   const layer = PersistedQueue.layer.pipe(
     Layer.provide(SqlPersistedQueue.layerStore()),
-    Layer.provideMerge(client)
-  )
+    Layer.provideMerge(client),
+  );
   it.layer(layer, { timeout: "30 seconds" })("SqlPersistedQueue", (it) => {
     // tests...
-  })
-}
+  });
+};
 ```
 
 ## Anti-Patterns / 注意点
@@ -237,30 +237,30 @@ export const suite = <E>(client: Layer.Layer<SqlClient.SqlClient, E>) => {
 it("bad test", () => {
   const result = Effect.runSync(
     Effect.gen(function*() {
-      const ref = yield* Ref.make(0)
-      return yield* Ref.get(ref)
-    })
-  )
-  expect(result).toBe(0)
-})
+      const ref = yield* Ref.make(0);
+      return yield* Ref.get(ref);
+    }),
+  );
+  expect(result).toBe(0);
+});
 
 // Better: テストランナーが Effect ライフサイクルを管理
 it.effect("good test", () =>
   Effect.gen(function*() {
-    const ref = yield* Ref.make(0)
-    const result = yield* Ref.get(ref)
-    strictEqual(result, 0)
-  }))
+    const ref = yield* Ref.make(0);
+    const result = yield* Ref.get(ref);
+    strictEqual(result, 0);
+  }));
 ```
 
 - **Effect テストで vitest の expect を使う**: Effect の代数的データ型（`Option` / `Either` / `Exit`）は内部に Symbol ベースのタグを持つため、vitest の `expect().toEqual()` が `addEqualityTesters` 設定なしでは正しく比較できない場合がある。AGENTS.md でも「Never use `expect` from vitest in Effect tests - use `assert` methods instead」と明記されている。
 
 ```ts
 // Bad: Effect の Equal トレイトが無視される
-expect(Option.some(1)).toEqual(Option.some(1)) // addEqualityTesters なしだと失敗の可能性
+expect(Option.some(1)).toEqual(Option.some(1)); // addEqualityTesters なしだと失敗の可能性
 
 // Better: ドメイン特化アサーションを使用
-assertSome(option, 1)
+assertSome(option, 1);
 ```
 
 - **時間依存テストで it.live と it.effect を無意識に混在させる**: `it.effect` は TestClock を使うため `Effect.sleep` は即座に解決される。`it.live` は実時間を使うため待機が発生する。意図せず `it.effect` で書いた時間依存テストが「たまたま通る」状態を避けるため、時間に依存するテストでは `it.live` / `it.effect` の選択を意識的に行う必要がある。

@@ -24,37 +24,37 @@ TanStack Query のパフォーマンス最適化手法を分析する。この�
 // packages/query-core/src/utils.ts:267-314
 export function replaceEqualDeep(a: any, b: any, depth = 0): any {
   if (a === b) {
-    return a
+    return a;
   }
 
-  if (depth > 500) return b
+  if (depth > 500) return b;
 
-  const array = isPlainArray(a) && isPlainArray(b)
+  const array = isPlainArray(a) && isPlainArray(b);
 
-  if (!array && !(isPlainObject(a) && isPlainObject(b))) return b
+  if (!array && !(isPlainObject(a) && isPlainObject(b))) return b;
 
-  const aItems = array ? a : Object.keys(a)
-  const aSize = aItems.length
-  const bItems = array ? b : Object.keys(b)
-  const bSize = bItems.length
-  const copy: any = array ? new Array(bSize) : {}
+  const aItems = array ? a : Object.keys(a);
+  const aSize = aItems.length;
+  const bItems = array ? b : Object.keys(b);
+  const bSize = bItems.length;
+  const copy: any = array ? new Array(bSize) : {};
 
-  let equalItems = 0
+  let equalItems = 0;
 
   for (let i = 0; i < bSize; i++) {
-    const key: any = array ? i : bItems[i]
+    const key: any = array ? i : bItems[i];
     if (aItem === bItem) {
-      copy[key] = aItem
-      if (array ? i < aSize : hasOwn.call(a, key)) equalItems++
-      continue
+      copy[key] = aItem;
+      if (array ? i < aSize : hasOwn.call(a, key)) equalItems++;
+      continue;
     }
     // ... 再帰比較
-    const v = replaceEqualDeep(aItem, bItem, depth + 1)
-    copy[key] = v
-    if (v === aItem) equalItems++
+    const v = replaceEqualDeep(aItem, bItem, depth + 1);
+    copy[key] = v;
+    if (v === aItem) equalItems++;
   }
 
-  return aSize === bSize && equalItems === aSize ? a : copy
+  return aSize === bSize && equalItems === aSize ? a : copy;
 }
 ```
 
@@ -87,7 +87,7 @@ React 統合層 (`useBaseQuery.ts:167-169`) では `notifyOnChangeProps` が未�
 // packages/react-query/src/useBaseQuery.ts:167-169
 return !defaultedOptions.notifyOnChangeProps
   ? observer.trackResult(result)
-  : result
+  : result;
 ```
 
 追跡された props は `updateResult` 内で `shouldNotifyListeners` の判定に使われ、未使用プロパティの変更は通知をスキップする（`queryObserver.ts:662-696`）。
@@ -99,25 +99,25 @@ return !defaultedOptions.notifyOnChangeProps
 ```typescript
 // packages/query-core/src/notifyManager.ts:17-49
 export function createNotifyManager() {
-  let queue: Array<NotifyCallback> = []
-  let transactions = 0
+  let queue: Array<NotifyCallback> = [];
+  let transactions = 0;
   // ...
   return {
     batch: <T>(callback: () => T): T => {
-      let result
-      transactions++
+      let result;
+      transactions++;
       try {
-        result = callback()
+        result = callback();
       } finally {
-        transactions--
+        transactions--;
         if (!transactions) {
-          flush()
+          flush();
         }
       }
-      return result
+      return result;
     },
     // ...
-  }
+  };
 }
 ```
 
@@ -130,15 +130,15 @@ export function createNotifyManager() {
 ```typescript
 // packages/query-core/src/removable.ts:5-39
 export abstract class Removable {
-  gcTime!: number
-  #gcTimeout?: ManagedTimerId
+  gcTime!: number;
+  #gcTimeout?: ManagedTimerId;
 
   protected scheduleGc(): void {
-    this.clearGcTimeout()
+    this.clearGcTimeout();
     if (isValidTimeout(this.gcTime)) {
       this.#gcTimeout = timeoutManager.setTimeout(() => {
-        this.optionalRemove()
-      }, this.gcTime)
+        this.optionalRemove();
+      }, this.gcTime);
     }
   }
 
@@ -146,7 +146,7 @@ export abstract class Removable {
     this.gcTime = Math.max(
       this.gcTime || 0,
       newGcTime ?? (isServer ? Infinity : 5 * 60 * 1000),
-    )
+    );
   }
 }
 ```
@@ -165,28 +165,28 @@ export function addConsumeAwareSignal<T>(
   object: T,
   getSignal: () => AbortSignal,
   onCancelled: VoidFunction,
-): T & { signal: AbortSignal } {
-  let consumed = false
-  let signal: AbortSignal | undefined
+): T & { signal: AbortSignal; } {
+  let consumed = false;
+  let signal: AbortSignal | undefined;
 
-  Object.defineProperty(object, 'signal', {
+  Object.defineProperty(object, "signal", {
     enumerable: true,
     get: () => {
-      signal ??= getSignal()
+      signal ??= getSignal();
       if (consumed) {
-        return signal
+        return signal;
       }
-      consumed = true
+      consumed = true;
       if (signal.aborted) {
-        onCancelled()
+        onCancelled();
       } else {
-        signal.addEventListener('abort', onCancelled, { once: true })
+        signal.addEventListener("abort", onCancelled, { once: true });
       }
-      return signal
+      return signal;
     },
-  })
+  });
 
-  return object as T & { signal: AbortSignal }
+  return object as T & { signal: AbortSignal; };
 }
 ```
 
@@ -200,17 +200,17 @@ export function addConsumeAwareSignal<T>(
 // packages/query-core/src/queryObserver.ts:525-543
 if (options.select && data !== undefined && !skipSelect) {
   if (
-    prevResult &&
-    data === prevResultState?.data &&
-    options.select === this.#selectFn
+    prevResult
+    && data === prevResultState?.data
+    && options.select === this.#selectFn
   ) {
-    data = this.#selectResult
+    data = this.#selectResult;
   } else {
-    this.#selectFn = options.select
-    data = options.select(data as any)
-    data = replaceData(prevResult?.data, data, options)
-    this.#selectResult = data
-    this.#selectError = null
+    this.#selectFn = options.select;
+    data = options.select(data as any);
+    data = replaceData(prevResult?.data, data, options);
+    this.#selectResult = data;
+    this.#selectError = null;
   }
 }
 ```
@@ -281,14 +281,16 @@ if (options.select && data !== undefined && !skipSelect) {
 ```typescript
 // packages/query-core/src/utils.ts:382-405
 export function replaceData<TData, TOptions extends QueryOptions<any, any, any, any>>(
-  prevData: TData | undefined, data: TData, options: TOptions,
+  prevData: TData | undefined,
+  data: TData,
+  options: TOptions,
 ): TData {
-  if (typeof options.structuralSharing === 'function') {
-    return options.structuralSharing(prevData, data) as TData
+  if (typeof options.structuralSharing === "function") {
+    return options.structuralSharing(prevData, data) as TData;
   } else if (options.structuralSharing !== false) {
-    return replaceEqualDeep(prevData, data)
+    return replaceEqualDeep(prevData, data);
   }
-  return data
+  return data;
 }
 ```
 
@@ -297,7 +299,7 @@ export function replaceData<TData, TOptions extends QueryOptions<any, any, any, 
 ```typescript
 // packages/query-core/src/queryObserver.ts:656-658
 if (shallowEqualObjects(nextResult, prevResult)) {
-  return
+  return;
 }
 ```
 
@@ -318,17 +320,17 @@ if (shallowEqualObjects(nextResult, prevResult)) {
 ```typescript
 // Bad: 全プロパティの変更で再レンダリング
 const { data } = useQuery({
-  queryKey: ['todos'],
+  queryKey: ["todos"],
   queryFn: fetchTodos,
-  notifyOnChangeProps: 'all',
-})
+  notifyOnChangeProps: "all",
+});
 
 // Better: デフォルトの追跡に任せるか、明示的に指定
 const { data } = useQuery({
-  queryKey: ['todos'],
+  queryKey: ["todos"],
   queryFn: fetchTodos,
   // notifyOnChangeProps を省略すると自動追跡
-})
+});
 ```
 
 - **select 関数のインライン定義による不要再計算**: `select` に毎レンダリングで新しい関数参照を渡すと、メモ化が無効化される（`options.select === this.#selectFn` の比較が常に false になる）。`useCallback` で安定化するか、コンポーネント外に定義する。
@@ -336,18 +338,18 @@ const { data } = useQuery({
 ```typescript
 // Bad: 毎回新しい関数参照が生成される
 const { data } = useQuery({
-  queryKey: ['todos'],
+  queryKey: ["todos"],
   queryFn: fetchTodos,
   select: (data) => data.filter(t => t.done),
-})
+});
 
 // Better: 関数参照を安定化
-const selectDone = useCallback((data: Todo[]) => data.filter(t => t.done), [])
+const selectDone = useCallback((data: Todo[]) => data.filter(t => t.done), []);
 const { data } = useQuery({
-  queryKey: ['todos'],
+  queryKey: ["todos"],
   queryFn: fetchTodos,
   select: selectDone,
-})
+});
 ```
 
 - **gcTime: 0 によるキャッシュ無効化**: GC 時間を 0 にすると画面遷移のたびにデータが破棄され、戻る操作でローディング状態が表示される。キャッシュはユーザー体験の一部であり、安易に無効化すべきでない。

@@ -23,7 +23,7 @@ TanStack Query のエラーハンドリング戦略を分析する。このラ�
 ```typescript
 // packages/query-core/src/retryer.ts:48-49
 function defaultRetryDelay(failureCount: number) {
-  return Math.min(1000 * 2 ** failureCount, 30000)
+  return Math.min(1000 * 2 ** failureCount, 30000);
 }
 ```
 
@@ -35,7 +35,7 @@ function defaultRetryDelay(failureCount: number) {
 
 ```typescript
 // packages/query-core/src/retryer.ts:169
-const retry = config.retry ?? (isServer ? 0 : 3)
+const retry = config.retry ?? (isServer ? 0 : 3);
 ```
 
 SSR ではリトライしてもネットワーク状態が変わる見込みがなく、レスポンスが遅延するだけであるため 0 に設定している。
@@ -111,10 +111,10 @@ export function shouldThrowError<T extends (...args: Array<any>) => boolean>(
   throwOnError: boolean | T | undefined,
   params: Parameters<T>,
 ): boolean {
-  if (typeof throwOnError === 'function') {
-    return throwOnError(...params)
+  if (typeof throwOnError === "function") {
+    return throwOnError(...params);
   }
-  return !!throwOnError
+  return !!throwOnError;
 }
 ```
 
@@ -155,12 +155,12 @@ export const ensurePreventErrorBoundaryRetry = <...>(...) => {
 ```typescript
 // packages/query-core/src/retryer.ts:58-66
 export class CancelledError extends Error {
-  revert?: boolean
-  silent?: boolean
+  revert?: boolean;
+  silent?: boolean;
   constructor(options?: CancelOptions) {
-    super('CancelledError')
-    this.revert = options?.revert
-    this.silent = options?.silent
+    super("CancelledError");
+    this.revert = options?.revert;
+    this.silent = options?.silent;
   }
 }
 ```
@@ -203,17 +203,17 @@ Query の fetch メソッドでは `instanceof CancelledError` でキャンセ�
 
 ```typescript
 // RetryValue の型定義: packages/query-core/src/retryer.ts:34-39
-export type RetryValue<TError> = boolean | number | ShouldRetryFunction<TError>
+export type RetryValue<TError> = boolean | number | ShouldRetryFunction<TError>;
 type ShouldRetryFunction<TError = DefaultError> = (
   failureCount: number,
   error: TError,
-) => boolean
+) => boolean;
 
 // 利用例: 4xx はリトライしない
-retry: (failureCount, error) => {
-  if (error.status >= 400 && error.status < 500) return false
-  return failureCount < 3
-}
+retry: ((failureCount, error) => {
+  if (error.status >= 400 && error.status < 500) return false;
+  return failureCount < 3;
+});
 ```
 
 - **コールバックエラーの隔離と通知**: Mutation のエラーパスで各コールバックを独立した try-catch で囲み、`void Promise.reject(e)` でグローバルに通知する。後続コールバックの実行を保証しつつ、例外を黙殺しない。
@@ -249,14 +249,14 @@ export const defaultThrowOnError = <...>(
 ```typescript
 // Bad: status で最終エラーかリトライ中かを区別しない
 if (query.state.fetchFailureCount > 0) {
-  showErrorUI()  // リトライ中にエラー表示されてしまう
+  showErrorUI(); // リトライ中にエラー表示されてしまう
 }
 
 // Better: status と fetchStatus の組み合わせで判断
-if (query.state.status === 'error') {
-  showErrorUI()  // リトライ完了後のみ
+if (query.state.status === "error") {
+  showErrorUI(); // リトライ完了後のみ
 } else if (query.state.fetchFailureCount > 0) {
-  showRetryingIndicator()  // リトライ中のインジケーター
+  showRetryingIndicator(); // リトライ中のインジケーター
 }
 ```
 
@@ -280,10 +280,16 @@ if (query.state.status === 'error') {
 
 ```typescript
 // Bad: 例外を完全に黙殺
-try { await onError?.(error) } catch { /* 無視 */ }
+try {
+  await onError?.(error);
+} catch { /* 無視 */ }
 
 // Better: グローバルに通知しつつフロー継続
-try { await onError?.(error) } catch (e) { void Promise.reject(e) }
+try {
+  await onError?.(error);
+} catch (e) {
+  void Promise.reject(e);
+}
 ```
 
 ## 導出ルール

@@ -22,16 +22,16 @@ Vite はマルチ環境アーキテクチャ（client / SSR / カスタム環境
 export function perEnvironmentState<State>(
   initial: (environment: Environment) => State,
 ): (context: PluginContext) => State {
-  const stateMap = new WeakMap<Environment, State>()
-  return function (context: PluginContext) {
-    const { environment } = context
-    let state = stateMap.get(environment)
+  const stateMap = new WeakMap<Environment, State>();
+  return function(context: PluginContext) {
+    const { environment } = context;
+    let state = stateMap.get(environment);
     if (!state) {
-      state = initial(environment)
-      stateMap.set(environment, state)
+      state = initial(environment);
+      stateMap.set(environment, state);
     }
-    return state
-  }
+    return state;
+  };
 }
 ```
 
@@ -71,16 +71,16 @@ generateBundle(_options, bundle) {
 ```typescript
 // packages/vite/src/node/plugins/clientInjections.ts:22-33
 const getDefineReplacer = perEnvironmentState((environment) => {
-  const userDefine: Record<string, any> = {}
+  const userDefine: Record<string, any> = {};
   for (const key in environment.config.define) {
-    if (!key.startsWith('import.meta.env.')) {
-      userDefine[key] = environment.config.define[key]
+    if (!key.startsWith("import.meta.env.")) {
+      userDefine[key] = environment.config.define[key];
     }
   }
-  const serializedDefines = serializeDefine(userDefine)
-  const definesReplacement = () => serializedDefines
-  return (code: string) => code.replace(`__DEFINES__`, definesReplacement)
-})
+  const serializedDefines = serializeDefine(userDefine);
+  const definesReplacement = () => serializedDefines;
+  return (code: string) => code.replace(`__DEFINES__`, definesReplacement);
+});
 ```
 
 ### 例3: 動的インポートのフィルタ関数
@@ -88,10 +88,9 @@ const getDefineReplacer = perEnvironmentState((environment) => {
 ```typescript
 // packages/vite/src/node/plugins/dynamicImportVars.ts:192-196
 const getFilter = perEnvironmentState((environment: Environment) => {
-  const { include, exclude } =
-    environment.config.build.dynamicImportVarsOptions
-  return createFilter(include, exclude)
-})
+  const { include, exclude } = environment.config.build.dynamicImportVarsOptions;
+  return createFilter(include, exclude);
+});
 ```
 
 ### 例4: SSR マニフェストのシンプルな状態
@@ -99,8 +98,8 @@ const getFilter = perEnvironmentState((environment: Environment) => {
 ```typescript
 // packages/vite/src/node/ssr/ssrManifestPlugin.ts:21-23
 const getSsrManifest = perEnvironmentState(() => {
-  return {} as Record<string, string[]>
-})
+  return {} as Record<string, string[]>;
+});
 ```
 
 ファクトリ関数が `environment` 引数を使わないケースでも `perEnvironmentState` を使うことで、環境ごとの分離が保証される。
@@ -112,16 +111,16 @@ const getSsrManifest = perEnvironmentState(() => {
 ```typescript
 // Bad: クロージャの変数がすべての環境で共有される
 function myPlugin() {
-  const cache = new Map()  // client も SSR もこの 1 つの Map を共有
+  const cache = new Map(); // client も SSR もこの 1 つの Map を共有
   return {
-    name: 'my-plugin',
+    name: "my-plugin",
     transform(code, id) {
-      if (cache.has(id)) return cache.get(id)
-      const result = expensiveTransform(code)
-      cache.set(id, result)
-      return result
-    }
-  }
+      if (cache.has(id)) return cache.get(id);
+      const result = expensiveTransform(code);
+      cache.set(id, result);
+      return result;
+    },
+  };
 }
 ```
 
@@ -132,24 +131,24 @@ function myPlugin() {
 ```typescript
 // Bad: 環境ごとに Map を作るが、手動で管理が必要
 function myPlugin() {
-  const cacheMap = new Map<string, Map<string, unknown>>()
+  const cacheMap = new Map<string, Map<string, unknown>>();
   return {
-    name: 'my-plugin',
+    name: "my-plugin",
     configureServer() {
       // 初期化コードが必要
-      cacheMap.set('client', new Map())
-      cacheMap.set('ssr', new Map())
+      cacheMap.set("client", new Map());
+      cacheMap.set("ssr", new Map());
     },
     transform(code, id) {
-      const envName = this.environment.name
-      const cache = cacheMap.get(envName)!  // 初期化忘れで undefined の可能性
+      const envName = this.environment.name;
+      const cache = cacheMap.get(envName)!; // 初期化忘れで undefined の可能性
       // ...
     },
     buildEnd() {
       // 破棄コードが必要（忘れるとメモリリーク）
-      cacheMap.clear()
-    }
-  }
+      cacheMap.clear();
+    },
+  };
 }
 ```
 
@@ -158,14 +157,14 @@ function myPlugin() {
 ```typescript
 // Good: perEnvironmentState で自動管理
 function myPlugin() {
-  const getCache = perEnvironmentState(() => new Map<string, unknown>())
+  const getCache = perEnvironmentState(() => new Map<string, unknown>());
   return {
-    name: 'my-plugin',
+    name: "my-plugin",
     transform(code, id) {
-      const cache = getCache(this)  // 初期化は自動、GC で破棄も自動
+      const cache = getCache(this); // 初期化は自動、GC で破棄も自動
       // ...
     },
-  }
+  };
 }
 ```
 

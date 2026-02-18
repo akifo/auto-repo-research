@@ -31,8 +31,8 @@ Effect-TS はこのパターンを Option、Either、Effect、HashMap、Chunk、
 
 ```typescript
 // packages/effect/src/Option.ts:46
-export const TypeId: unique symbol = Symbol.for("effect/Option")
-export type TypeId = typeof TypeId
+export const TypeId: unique symbol = Symbol.for("effect/Option");
+export type TypeId = typeof TypeId;
 ```
 
 `Symbol.for("effect/Option")` は、プロセス内のどこから呼び出しても同一のシンボルを返す。`unique symbol` 型を付けることで、TypeScript の構造的型付けの中で名目的な区別を実現する。
@@ -41,13 +41,13 @@ export type TypeId = typeof TypeId
 
 ```typescript
 // packages/effect/src/HashMap.ts:14
-const TypeId: unique symbol = HM.HashMapTypeId as TypeId
+const TypeId: unique symbol = HM.HashMapTypeId as TypeId;
 
 // packages/effect/src/Chunk.ts
-const TypeId: unique symbol = Symbol.for("effect/Chunk") as TypeId
+const TypeId: unique symbol = Symbol.for("effect/Chunk") as TypeId;
 
 // packages/effect/src/Readable.ts:23
-export const TypeId: unique symbol = Symbol.for("effect/Readable")
+export const TypeId: unique symbol = Symbol.for("effect/Readable");
 ```
 
 ### Step 2: データ型の interface に TypeId を埋め込む
@@ -57,18 +57,18 @@ TypeId をプロパティキーとして interface に定義し、型パラメ�
 ```typescript
 // packages/effect/src/Option.ts:58-63
 export interface None<out A> extends Pipeable, Inspectable {
-  readonly _tag: "None"
+  readonly _tag: "None";
   readonly [TypeId]: {
-    readonly _A: Covariant<A>
-  }
+    readonly _A: Covariant<A>;
+  };
 }
 
 export interface Some<out A> extends Pipeable, Inspectable {
-  readonly _tag: "Some"
+  readonly _tag: "Some";
   readonly [TypeId]: {
-    readonly _A: Covariant<A>
-  }
-  readonly value: A
+    readonly _A: Covariant<A>;
+  };
+  readonly value: A;
 }
 ```
 
@@ -80,20 +80,18 @@ export interface Some<out A> extends Pipeable, Inspectable {
 // packages/effect/src/Predicate.ts
 export const hasProperty = <N extends PropertyKey>(
   self: unknown,
-  property: N
-): self is { [K in N]: unknown } =>
-  isObject(self) && property in (self as object)
+  property: N,
+): self is { [K in N]: unknown; } => isObject(self) && property in (self as object);
 
 // packages/effect/src/internal/option.ts:64
-export const isOption = (input: unknown): input is Option.Option<unknown> =>
-  hasProperty(input, TypeId)
+export const isOption = (input: unknown): input is Option.Option<unknown> => hasProperty(input, TypeId);
 
 // packages/effect/src/Readable.ts:36
-export const isReadable = (u: unknown): u is Readable<unknown, unknown, unknown> =>
-  hasProperty(u, TypeId)
+export const isReadable = (u: unknown): u is Readable<unknown, unknown, unknown> => hasProperty(u, TypeId);
 ```
 
 `hasProperty` は 2 つの検証を行う:
+
 1. `isObject(self)` -- `null` とプリミティブを除外する
 2. `property in self` -- プロパティの存在チェック（プロトタイプチェーンも含む）
 
@@ -105,21 +103,25 @@ export const isReadable = (u: unknown): u is Readable<unknown, unknown, unknown>
 // packages/effect/src/internal/option.ts:14-25
 const CommonProto = {
   ...EffectPrototype,
-  [TypeId]: { _A: (_: never) => _ },  // TypeId プロパティを付与
-  [NodeInspectSymbol]() { return this.toJSON() },
-  toString() { return format(this.toJSON()) }
-}
+  [TypeId]: { _A: (_: never) => _ }, // TypeId プロパティを付与
+  [NodeInspectSymbol]() {
+    return this.toJSON();
+  },
+  toString() {
+    return format(this.toJSON());
+  },
+};
 
 const SomeProto = Object.assign(Object.create(CommonProto), {
   _tag: "Some",
   // ...
-})
+});
 
 export const some = <A>(value: A): Option.Option<A> => {
-  const a = Object.create(SomeProto)
-  a.value = value
-  return a
-}
+  const a = Object.create(SomeProto);
+  a.value = value;
+  return a;
+};
 ```
 
 ### 補強: GlobalValue によるシングルトン保護
@@ -130,10 +132,10 @@ HMR 環境ではモジュール再読み込みでグローバル状態が再初�
 // packages/effect/src/GlobalValue.ts:42-53
 export const globalValue = <A>(id: string, compute: () => A): A => {
   if (!globalStore.has(id)) {
-    globalStore.set(id, compute())
+    globalStore.set(id, compute());
   }
-  return globalStore.get(id)!
-}
+  return globalStore.get(id)!;
+};
 ```
 
 `globalStore` は `globalThis` 上に配置されるため、HMR でモジュールが再読み込みされても既存の値が保持される。TypeId 自体は `Symbol.for` で保護されるが、TypeId に紐づくメタデータやレジストリは `globalValue` で保護する。
@@ -143,47 +145,48 @@ export const globalValue = <A>(id: string, compute: () => A): A => {
 ```typescript
 // --- ライブラリ側の実装 ---
 
-import { hasProperty } from "./predicate"
+import { hasProperty } from "./predicate";
 
 // 1. グローバルシンボルで TypeId を定義
-const TypeId: unique symbol = Symbol.for("mylib/Option") as unique symbol
-type TypeId = typeof TypeId
+const TypeId: unique symbol = Symbol.for("mylib/Option") as unique symbol;
+type TypeId = typeof TypeId;
 
 // 2. interface に TypeId を埋め込む
 interface None<A> {
-  readonly _tag: "None"
+  readonly _tag: "None";
   readonly [TypeId]: {
-    readonly _A: (_: never) => A  // 共変性のエンコード
-  }
+    readonly _A: (_: never) => A; // 共変性のエンコード
+  };
 }
 
 interface Some<A> {
-  readonly _tag: "Some"
+  readonly _tag: "Some";
   readonly [TypeId]: {
-    readonly _A: (_: never) => A
-  }
-  readonly value: A
+    readonly _A: (_: never) => A;
+  };
+  readonly value: A;
 }
 
-type Option<A> = None<A> | Some<A>
+type Option<A> = None<A> | Some<A>;
 
 // 3. hasProperty ベースの型ガード
-const isOption = (u: unknown): u is Option<unknown> =>
-  hasProperty(u, TypeId)
+const isOption = (u: unknown): u is Option<unknown> => hasProperty(u, TypeId);
 
 // 4. プロトタイプに TypeId を付与
 const Proto = {
-  [TypeId]: { _A: (_: never) => _ }
-}
+  [TypeId]: { _A: (_: never) => _ },
+};
 
-const none = <A>(): Option<A> => Object.create(Proto, {
-  _tag: { value: "None", enumerable: true }
-})
+const none = <A>(): Option<A> =>
+  Object.create(Proto, {
+    _tag: { value: "None", enumerable: true },
+  });
 
-const some = <A>(value: A): Option<A> => Object.create(Proto, {
-  _tag: { value: "Some", enumerable: true },
-  value: { value, enumerable: true }
-})
+const some = <A>(value: A): Option<A> =>
+  Object.create(Proto, {
+    _tag: { value: "Some", enumerable: true },
+    value: { value, enumerable: true },
+  });
 ```
 
 ```typescript
@@ -192,10 +195,10 @@ const some = <A>(value: A): Option<A> => Object.create(Proto, {
 // CJS でインポートしても ESM でインポートしても
 // Symbol.for("mylib/Option") は同一のシンボルを返すため
 // isOption の判定が壊れない
-import { isOption, some, none } from "mylib"
+import { isOption, none, some } from "mylib";
 
-const opt = some(42)
-console.log(isOption(opt))  // true（常に正しく判定される）
+const opt = some(42);
+console.log(isOption(opt)); // true（常に正しく判定される）
 ```
 
 ## Bad Example
@@ -209,7 +212,7 @@ class OptionImpl<A> {
 }
 
 function isOption(value: unknown): value is OptionImpl<unknown> {
-  return value instanceof OptionImpl
+  return value instanceof OptionImpl;
 }
 
 // CJS と ESM で別々のクラスが読み込まれた場合:
@@ -222,7 +225,7 @@ function isOption(value: unknown): value is OptionImpl<unknown> {
 
 ```typescript
 // Bad: Symbol() はモジュールごとに異なるシンボルを生成する
-const TypeId = Symbol("Option")
+const TypeId = Symbol("Option");
 
 // バンドラーがモジュールを重複させると:
 // chunk-a.js: const TypeId = Symbol("Option")  // シンボル A
@@ -235,12 +238,12 @@ const TypeId = Symbol("Option")
 ```typescript
 // Bad: 文字列プロパティは衝突リスクがある
 interface Option<A> {
-  readonly __type: "Option"  // 他のライブラリと衝突する可能性
-  readonly value: A
+  readonly __type: "Option"; // 他のライブラリと衝突する可能性
+  readonly value: A;
 }
 
 function isOption(u: unknown): u is Option<unknown> {
-  return typeof u === "object" && u !== null && (u as any).__type === "Option"
+  return typeof u === "object" && u !== null && (u as any).__type === "Option";
 }
 
 // 別のライブラリが同じ __type: "Option" を使っていた場合、

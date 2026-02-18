@@ -20,17 +20,17 @@ TanStack Query はフレームワーク非依存のコアライブラリ `query-
 
 `query-core` のクラス群は明確な責務分離を持つ。
 
-| クラス | 責務 | 基底クラス |
-|--------|------|-----------|
-| `Subscribable<T>` | リスナー管理（add/remove/notify） | - |
-| `Removable` | GC タイマー管理 | - |
-| `Query` | 個別クエリの状態マシン + フェッチ実行 | `Removable` |
-| `Mutation` | 個別ミューテーションの状態マシン | `Removable` |
-| `QueryCache` | Query インスタンスのコレクション管理 | `Subscribable` |
-| `MutationCache` | Mutation インスタンスのコレクション管理 | `Subscribable` |
-| `QueryObserver` | Query の状態を購読し、変更通知を発行 | `Subscribable` |
+| クラス             | 責務                                    | 基底クラス     |
+| ------------------ | --------------------------------------- | -------------- |
+| `Subscribable<T>`  | リスナー管理（add/remove/notify）       | -              |
+| `Removable`        | GC タイマー管理                         | -              |
+| `Query`            | 個別クエリの状態マシン + フェッチ実行   | `Removable`    |
+| `Mutation`         | 個別ミューテーションの状態マシン        | `Removable`    |
+| `QueryCache`       | Query インスタンスのコレクション管理    | `Subscribable` |
+| `MutationCache`    | Mutation インスタンスのコレクション管理 | `Subscribable` |
+| `QueryObserver`    | Query の状態を購読し、変更通知を発行    | `Subscribable` |
 | `MutationObserver` | Mutation の状態を購読し、変更通知を発行 | `Subscribable` |
-| `QueryClient` | ファサード（全体の統合 API） | - |
+| `QueryClient`      | ファサード（全体の統合 API）            | -              |
 
 `Query` と `Mutation` は `Removable` を継承して GC を管理し、`QueryObserver` と `MutationObserver` は `Subscribable` を継承して購読を管理する。この 2 つの関心が基底クラスレベルで分離されている。
 
@@ -66,21 +66,23 @@ React.useSyncExternalStore(
 
 ```typescript
 // Vue: packages/vue-query/src/useBaseQuery.ts:110-143
-const observer = new Observer(client, defaultedOptions.value)
-const state = reactive(observer.getCurrentResult())
+const observer = new Observer(client, defaultedOptions.value);
+const state = reactive(observer.getCurrentResult());
 // watch で購読を管理
-watch(defaultedOptions, updater)
-onScopeDispose(() => { unsubscribe() })
+watch(defaultedOptions, updater);
+onScopeDispose(() => {
+  unsubscribe();
+});
 ```
 
 ```typescript
 // Angular: packages/angular-query-experimental/src/create-base-query.ts:66-78
 const observerSignal = (() => {
-  let instance = null
+  let instance = null;
   return computed(() => {
-    return (instance ||= new Observer(queryClient, defaultedOptionsSignal()))
-  })
-})()
+    return (instance ||= new Observer(queryClient, defaultedOptionsSignal()));
+  });
+})();
 ```
 
 各アダプターのコア差分は「フレームワーク固有のリアクティビティへの橋渡し」だけであり、状態管理ロジック・キャッシュ制御・再試行ロジック等は一切重複していない。
@@ -222,7 +224,7 @@ export type Action<TData, TError> =
   | InvalidateAction
   | PauseAction
   | SetStateAction<TData, TError>
-  | SuccessAction<TData>
+  | SuccessAction<TData>;
 ```
 
 - **アダプター層は Observer のコンストラクタを引数で受け取る**: `useBaseQuery` は `Observer: typeof QueryObserver` を引数に取る。これにより `QueryObserver` と `InfiniteQueryObserver` を同じ `useBaseQuery` で扱える。
@@ -244,7 +246,7 @@ export function useBaseQuery<...>(
 // Bad: コアで直接 window を参照
 class FocusManager {
   constructor() {
-    window.addEventListener('visibilitychange', this.onFocus)
+    window.addEventListener("visibilitychange", this.onFocus);
   }
 }
 
@@ -252,14 +254,14 @@ class FocusManager {
 // packages/query-core/src/focusManager.ts:18-32
 this.#setup = (onFocus) => {
   if (!isServer && window.addEventListener) {
-    const listener = () => onFocus()
-    window.addEventListener('visibilitychange', listener, false)
+    const listener = () => onFocus();
+    window.addEventListener("visibilitychange", listener, false);
     return () => {
-      window.removeEventListener('visibilitychange', listener)
-    }
+      window.removeEventListener("visibilitychange", listener);
+    };
   }
-  return
-}
+  return;
+};
 ```
 
 - **アダプター層にコアロジックを漏洩させる**: アダプター層でキャッシュ操作やフェッチ判定を再実装すると、フレームワーク間で不整合が発生する。TanStack Query では `shouldFetchOnMount` 等の判定ロジックもコア側に置き、アダプターからは呼び出すだけにしている。

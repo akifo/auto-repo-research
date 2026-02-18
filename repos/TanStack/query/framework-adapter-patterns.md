@@ -32,7 +32,7 @@ React の `useQuery` は Observer クラスを Base 関数に渡すだけの 1 �
 ```typescript
 // packages/react-query/src/useQuery.ts:50-52
 export function useQuery(options: UseQueryOptions, queryClient?: QueryClient) {
-  return useBaseQuery(options, QueryObserver, queryClient)
+  return useBaseQuery(options, QueryObserver, queryClient);
 }
 ```
 
@@ -44,7 +44,7 @@ export function createQuery(
   options: Accessor<CreateQueryOptions>,
   queryClient?: Accessor<QueryClient>,
 ) {
-  return createBaseQuery(options, QueryObserver, queryClient)
+  return createBaseQuery(options, QueryObserver, queryClient);
 }
 ```
 
@@ -61,15 +61,15 @@ React.useSyncExternalStore(
     (onStoreChange) => {
       const unsubscribe = shouldSubscribe
         ? observer.subscribe(notifyManager.batchCalls(onStoreChange))
-        : noop
-      observer.updateResult()
-      return unsubscribe
+        : noop;
+      observer.updateResult();
+      return unsubscribe;
     },
     [observer, shouldSubscribe],
   ),
   () => observer.getCurrentResult(),
   () => observer.getCurrentResult(),
-)
+);
 ```
 
 **Vue**: `reactive()` でラップした状態オブジェクトを作り、Observer の通知で `updateState` を呼んでプロパティを逐次更新。戻り値は `toRefs(readonly(state))` で個々の `Ref` に分解。
@@ -78,15 +78,14 @@ React.useSyncExternalStore(
 // packages/vue-query/src/useBaseQuery.ts:112-114
 const state = defaultedOptions.value.shallow
   ? shallowReactive(observer.getCurrentResult())
-  : reactive(observer.getCurrentResult())
+  : reactive(observer.getCurrentResult());
 ```
 
 **Solid**: `createStore` + `createResource` を組み合わせ、SSR ストリーミングと Suspense に対応。`reconcile` で構造的共有を実現。
 
 ```typescript
 // packages/solid-query/src/useBaseQuery.ts:148-149
-const [state, setState] =
-  createStore<QueryObserverResult<TData, TError>>(observerResult)
+const [state, setState] = createStore<QueryObserverResult<TData, TError>>(observerResult);
 ```
 
 **Svelte**: Svelte 5 の `$state` と `$effect` を使用し、カスタム `createRawRef` で Proxy ベースのリアクティブ参照を構築。
@@ -98,7 +97,7 @@ let observer = $state(
     client,
     resolvedOptions,
   ),
-)
+);
 ```
 
 **Angular**: `signal()` + `computed()` + `effect()` を使用し、`signalProxy` でプロパティごとに遅延 `computed` を生成。NgZone の内外を明示的に制御。
@@ -108,10 +107,10 @@ let observer = $state(
 return observer.subscribe(
   notifyManager.batchCalls((state) => {
     ngZone.run(() => {
-      resultFromSubscriberSignal.set(state)
-    })
+      resultFromSubscriberSignal.set(state);
+    });
   }),
-)
+);
 ```
 
 ### Observer 注入による拡張性
@@ -121,7 +120,7 @@ return observer.subscribe(
 ```typescript
 // packages/react-query/src/useInfiniteQuery.ts（構造的に同一パターン）
 export function useInfiniteQuery(options, queryClient) {
-  return useBaseQuery(options, InfiniteQueryObserver, queryClient)
+  return useBaseQuery(options, InfiniteQueryObserver, queryClient);
 }
 ```
 
@@ -129,13 +128,13 @@ export function useInfiniteQuery(options, queryClient) {
 
 QueryClient の DI メカニズムはフレームワークの標準的なパターンに従っている:
 
-| フレームワーク | 提供方法 | 取得方法 |
-|---|---|---|
-| React | `React.createContext` + Provider | `useContext` |
-| Vue | `app.provide()` / Vue 2 mixin | `inject()` |
-| Solid | `createContext` + Provider | `useContext` |
-| Svelte | `setContext` / `getContext` | `getContext` |
-| Angular | DI Token (`QueryClient` class) | `inject(QueryClient)` |
+| フレームワーク | 提供方法                         | 取得方法              |
+| -------------- | -------------------------------- | --------------------- |
+| React          | `React.createContext` + Provider | `useContext`          |
+| Vue            | `app.provide()` / Vue 2 mixin    | `inject()`            |
+| Solid          | `createContext` + Provider       | `useContext`          |
+| Svelte         | `setContext` / `getContext`      | `getContext`          |
+| Angular        | DI Token (`QueryClient` class)   | `inject(QueryClient)` |
 
 ### 結果の Proxy ラッピングによる最適化
 
@@ -145,13 +144,13 @@ React と Svelte はプロパティアクセス追跡のために `Proxy` を使
 // packages/angular-query-experimental/src/signal-proxy.ts:19-31
 return new Proxy<MapToSignals<TInput>>(internalState, {
   get(target, prop) {
-    const computedField = target[prop]
-    if (computedField) return computedField
-    const targetField = untracked(inputSignal)[prop]
-    if (typeof targetField === 'function') return targetField
-    return (target[prop] = computed(() => inputSignal()[prop]))
+    const computedField = target[prop];
+    if (computedField) return computedField;
+    const targetField = untracked(inputSignal)[prop];
+    if (typeof targetField === "function") return targetField;
+    return (target[prop] = computed(() => inputSignal()[prop]));
   },
-})
+});
 ```
 
 React では `observer.trackResult` が Proxy を使い、アクセスされたプロパティのみを追跡して不要な再レンダリングを防ぐ:
@@ -177,17 +176,17 @@ Vue アダプターは `MaybeRefDeep<T>` 型と `cloneDeepUnref` ユーティリ
 // packages/vue-query/src/utils.ts:70-97
 export function cloneDeepUnref<T>(obj: MaybeRefDeep<T>, unrefGetters = false): T {
   return cloneDeep(obj, (val, key, level) => {
-    if (level === 1 && key === 'queryKey') {
-      return cloneDeepUnref(val, true)
+    if (level === 1 && key === "queryKey") {
+      return cloneDeepUnref(val, true);
     }
     if (unrefGetters && isFunction(val)) {
-      return cloneDeepUnref((val as Function)(), unrefGetters)
+      return cloneDeepUnref((val as Function)(), unrefGetters);
     }
     if (isRef(val)) {
-      return cloneDeepUnref(unref(val), unrefGetters)
+      return cloneDeepUnref(unref(val), unrefGetters);
     }
-    return undefined
-  })
+    return undefined;
+  });
 }
 ```
 
@@ -223,7 +222,7 @@ export function cloneDeepUnref<T>(obj: MaybeRefDeep<T>, unrefGetters = false): T
 ```typescript
 // packages/react-query/src/queryOptions.ts:85-87
 export function queryOptions(options: unknown) {
-  return options
+  return options;
 }
 ```
 
@@ -231,14 +230,14 @@ export function queryOptions(options: unknown) {
 
 ```typescript
 // packages/react-query/src/useBaseQuery.ts:107
-observer.subscribe(notifyManager.batchCalls(onStoreChange))
+observer.subscribe(notifyManager.batchCalls(onStoreChange));
 ```
 
 - **getOptimisticResult によるチラつき防止**: 購読前に楽観的な結果を取得し、初回レンダリングから正しい状態を表示する。これにより「ローディング → 即座にデータ表示」のチラつきを防ぐ。
 
 ```typescript
 // packages/react-query/src/useBaseQuery.ts:100
-const result = observer.getOptimisticResult(defaultedOptions)
+const result = observer.getOptimisticResult(defaultedOptions);
 ```
 
 - **フレームワーク慣習に準拠した命名の徹底**: 同一の内部処理でも API 名はフレームワーク慣習に厳密に従う。React/Vue は `use*`、Svelte は `create*`、Angular は `inject*`。これによりフレームワークユーザーに認知負荷を与えない。
@@ -250,10 +249,10 @@ const result = observer.getOptimisticResult(defaultedOptions)
 ```typescript
 // Bad: アダプター内でキャッシュ無効化ロジックを実装
 function useQuery(options) {
-  const result = useBaseQuery(options, QueryObserver)
+  const result = useBaseQuery(options, QueryObserver);
   // アダプターでキャッシュ制御 → フレームワーク間で不整合の原因
-  if (result.isStale) queryClient.invalidateQueries(options.queryKey)
-  return result
+  if (result.isStale) queryClient.invalidateQueries(options.queryKey);
+  return result;
 }
 ```
 
@@ -267,14 +266,18 @@ function useQuery(options) {
 
 ```typescript
 // Bad: アダプターで独自の結果型を定義
-interface MyQueryResult { data: any; isLoading: boolean; error: any }
+interface MyQueryResult {
+  data: any;
+  isLoading: boolean;
+  error: any;
+}
 
 // Better: コアの型をフレームワーク固有の型で拡張する
-type UseQueryResult<TData, TError> = QueryObserverResult<TData, TError>
+type UseQueryResult<TData, TError> = QueryObserverResult<TData, TError>;
 // Vue の場合: 各プロパティを Ref に変換する型マッピング
 type UseBaseQueryReturnType<TData, TError> = {
-  [K in keyof TResult]: K extends 'refetch' ? TResult[K] : Ref<Readonly<TResult>[K]>
-}
+  [K in keyof TResult]: K extends "refetch" ? TResult[K] : Ref<Readonly<TResult>[K]>;
+};
 ```
 
 - **フレームワーク固有の更新機構を無視した直接的な状態変更**: Angular で `ngZone.runOutsideAngular` を使わずに頻繁な購読通知を処理すると、不要な変更検出サイクルが走る。
@@ -282,15 +285,15 @@ type UseBaseQueryReturnType<TData, TError> = {
 ```typescript
 // Bad: Angular で Zone 内で直接購読
 observer.subscribe((state) => {
-  resultSignal.set(state) // 毎回 Zone 内で変更検出が走る
-})
+  resultSignal.set(state); // 毎回 Zone 内で変更検出が走る
+});
 
 // Better: Zone 外で購読し、必要時のみ Zone 内で更新
 ngZone.runOutsideAngular(() => {
   observer.subscribe(notifyManager.batchCalls((state) => {
-    ngZone.run(() => resultSignal.set(state))
-  }))
-})
+    ngZone.run(() => resultSignal.set(state));
+  }));
+});
 ```
 
 ## 導出ルール

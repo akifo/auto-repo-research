@@ -32,7 +32,7 @@ Vite のプラグインフックは plain function と `{ handler, order?, filte
 export function getHookHandler<T extends ObjectHook<Function>>(
   hook: T,
 ): HookHandler<T> {
-  return (typeof hook === 'object' ? hook.handler : hook) as HookHandler<T>
+  return (typeof hook === "object" ? hook.handler : hook) as HookHandler<T>;
 }
 ```
 
@@ -49,17 +49,17 @@ export function getHookHandler<T extends ObjectHook<Function>>(
 export function sortUserPlugins(
   plugins: (Plugin | Plugin[])[] | undefined,
 ): [Plugin[], Plugin[], Plugin[]] {
-  const prePlugins: Plugin[] = []
-  const postPlugins: Plugin[] = []
-  const normalPlugins: Plugin[] = []
+  const prePlugins: Plugin[] = [];
+  const postPlugins: Plugin[] = [];
+  const normalPlugins: Plugin[] = [];
   if (plugins) {
     plugins.flat().forEach((p) => {
-      if (p.enforce === 'pre') prePlugins.push(p)
-      else if (p.enforce === 'post') postPlugins.push(p)
-      else normalPlugins.push(p)
-    })
+      if (p.enforce === "pre") prePlugins.push(p);
+      else if (p.enforce === "post") postPlugins.push(p);
+      else normalPlugins.push(p);
+    });
   }
-  return [prePlugins, normalPlugins, postPlugins]
+  return [prePlugins, normalPlugins, postPlugins];
 }
 ```
 
@@ -71,25 +71,25 @@ export function getSortedPluginsByHook<K extends keyof Plugin>(
   hookName: K,
   plugins: readonly Plugin[],
 ): PluginWithRequiredHook<K>[] {
-  const sortedPlugins: Plugin[] = []
-  let pre = 0, normal = 0, post = 0
+  const sortedPlugins: Plugin[] = [];
+  let pre = 0, normal = 0, post = 0;
   for (const plugin of plugins) {
-    const hook = plugin[hookName]
+    const hook = plugin[hookName];
     if (hook) {
-      if (typeof hook === 'object') {
-        if (hook.order === 'pre') {
-          sortedPlugins.splice(pre++, 0, plugin)
-          continue
+      if (typeof hook === "object") {
+        if (hook.order === "pre") {
+          sortedPlugins.splice(pre++, 0, plugin);
+          continue;
         }
-        if (hook.order === 'post') {
-          sortedPlugins.splice(pre + normal + post++, 0, plugin)
-          continue
+        if (hook.order === "post") {
+          sortedPlugins.splice(pre + normal + post++, 0, plugin);
+          continue;
         }
       }
-      sortedPlugins.splice(pre + normal++, 0, plugin)
+      sortedPlugins.splice(pre + normal++, 0, plugin);
     }
   }
-  return sortedPlugins as PluginWithRequiredHook<K>[]
+  return sortedPlugins as PluginWithRequiredHook<K>[];
 }
 ```
 
@@ -103,16 +103,16 @@ this.config = new Proxy(
   options as ResolvedConfig & ResolvedEnvironmentOptions,
   {
     get: (target, prop: keyof ResolvedConfig) => {
-      if (prop === 'logger') {
-        return this.logger
+      if (prop === "logger") {
+        return this.logger;
       }
       if (prop in target) {
-        return this._options[prop as keyof ResolvedEnvironmentOptions]
+        return this._options[prop as keyof ResolvedEnvironmentOptions];
       }
-      return this._topLevelConfig[prop]
+      return this._topLevelConfig[prop];
     },
   },
-)
+);
 ```
 
 `environment.config.xxx` でアクセスすると、環境固有オプションに存在するプロパティは環境固有値を、それ以外はトップレベル設定値を返す。プラグインが `this.environment.config` を参照するだけで、環境固有の設定と共通設定が自動的に解決される。
@@ -124,16 +124,16 @@ this.config = new Proxy(
 export function perEnvironmentState<State>(
   initial: (environment: Environment) => State,
 ): (context: PluginContext) => State {
-  const stateMap = new WeakMap<Environment, State>()
-  return function (context: PluginContext) {
-    const { environment } = context
-    let state = stateMap.get(environment)
+  const stateMap = new WeakMap<Environment, State>();
+  return function(context: PluginContext) {
+    const { environment } = context;
+    let state = stateMap.get(environment);
     if (!state) {
-      state = initial(environment)
-      stateMap.set(environment, state)
+      state = initial(environment);
+      stateMap.set(environment, state);
     }
-    return state
-  }
+    return state;
+  };
 }
 ```
 
@@ -144,12 +144,12 @@ export function perEnvironmentState<State>(
 ```typescript
 // packages/vite/src/node/utils.ts:1326-1414 (mergeConfigRecursively)
 // 特殊なキーに対するカスタムマージロジック
-if (key === 'alias' && (rootPath === 'resolve' || rootPath === '')) {
-  merged[key] = mergeAlias(existing, value)
-  continue
-} else if (key === 'assetsInclude' && rootPath === '') {
-  merged[key] = [].concat(existing, value)
-  continue
+if (key === "alias" && (rootPath === "resolve" || rootPath === "")) {
+  merged[key] = mergeAlias(existing, value);
+  continue;
+} else if (key === "assetsInclude" && rootPath === "") {
+  merged[key] = [].concat(existing, value);
+  continue;
 }
 ```
 
@@ -159,13 +159,13 @@ if (key === 'alias' && (rootPath === 'resolve' || rootPath === '')) {
 
 ```typescript
 // packages/vite/src/node/plugins/index.ts:200-241
-const filterForPlugin = new WeakMap<Plugin, FilterForPluginValue>()
+const filterForPlugin = new WeakMap<Plugin, FilterForPluginValue>();
 export function getCachedFilterForPlugin<
-  H extends 'resolveId' | 'load' | 'transform',
+  H extends "resolveId" | "load" | "transform",
 >(plugin: Plugin, hookName: H): FilterForPluginValue[H] | undefined {
-  let filters = filterForPlugin.get(plugin)
+  let filters = filterForPlugin.get(plugin);
   if (filters && hookName in filters) {
-    return filters[hookName]
+    return filters[hookName];
   }
   // ... フィルタ生成・キャッシュ
 }
@@ -177,13 +177,13 @@ export function getCachedFilterForPlugin<
 
 ```typescript
 // packages/vite/src/node/server/index.ts:908-978
-const postHooks: ((() => void) | void)[] = []
-for (const hook of config.getSortedPluginHooks('configureServer')) {
-  postHooks.push(await hook.call(configureServerContext, reflexServer))
+const postHooks: ((() => void) | void)[] = [];
+for (const hook of config.getSortedPluginHooks("configureServer")) {
+  postHooks.push(await hook.call(configureServerContext, reflexServer));
 }
 // ... 内部ミドルウェアの登録 ...
 // apply configureServer post hooks
-postHooks.forEach((fn) => fn && fn())
+postHooks.forEach((fn) => fn && fn());
 ```
 
 `configureServer` フックが関数を返すと、それが内部ミドルウェア適用後に実行される。プラグインは「内部ミドルウェアの前」と「後」の両方にロジックを配置できる。
@@ -248,9 +248,12 @@ const getState = perEnvironmentState(() => {
   return {
     manifest: {} as Manifest,
     outputCount: 0,
-    reset() { this.manifest = {}; this.outputCount = 0 },
-  }
-})
+    reset() {
+      this.manifest = {};
+      this.outputCount = 0;
+    },
+  };
+});
 // フック内で getState(this) で環境固有の状態を取得
 ```
 
@@ -262,7 +265,7 @@ export function isFutureDeprecationEnabled(
   config: ResolvedConfig,
   type: keyof FutureOptions,
 ): boolean {
-  return !!config.future?.[type]
+  return !!config.future?.[type];
 }
 ```
 
@@ -274,10 +277,10 @@ export function isFutureDeprecationEnabled(
 // Bad: Proxy で暗黙にフォールバックし、明示性が失われる
 this.config = new Proxy(options, {
   get: (target, prop) => {
-    if (prop in target) return target[prop]
-    return this._topLevelConfig[prop]  // どのプロパティがフォールバックされるか不明
+    if (prop in target) return target[prop];
+    return this._topLevelConfig[prop]; // どのプロパティがフォールバックされるか不明
   },
-})
+});
 
 // Better: 必要な場合は Proxy に debug ログや型定義でフォールバック先を明示する
 // Vite はこのトレードオフを認識した上で、

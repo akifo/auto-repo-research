@@ -23,9 +23,9 @@ ccusage のコアアプリ（`apps/ccusage`）では、12 種類のドメイン�
 ```typescript
 // apps/ccusage/src/_types.ts:9-13
 export const modelNameSchema = v.pipe(
-	v.string(),
-	v.minLength(1, 'Model name cannot be empty'),
-	v.brand('ModelName'),
+  v.string(),
+  v.minLength(1, "Model name cannot be empty"),
+  v.brand("ModelName"),
 );
 ```
 
@@ -34,15 +34,15 @@ export const modelNameSchema = v.pipe(
 ```typescript
 // apps/ccusage/src/_types.ts:42-65
 export const dailyDateSchema = v.pipe(
-	v.string(),
-	v.regex(yyyymmddRegex, 'Date must be in YYYY-MM-DD format'),
-	v.brand('DailyDate'),
+  v.string(),
+  v.regex(yyyymmddRegex, "Date must be in YYYY-MM-DD format"),
+  v.brand("DailyDate"),
 );
 
 export const weeklyDateSchema = v.pipe(
-	v.string(),
-	v.regex(yyyymmddRegex, 'Date must be in YYYY-MM-DD format'),
-	v.brand('WeeklyDate'),
+  v.string(),
+  v.regex(yyyymmddRegex, "Date must be in YYYY-MM-DD format"),
+  v.brand("WeeklyDate"),
 );
 ```
 
@@ -72,11 +72,11 @@ export const createDailyDate = (value: string): DailyDate => v.parse(dailyDateSc
 ```typescript
 // apps/ccusage/src/_types.ts:126-132
 export function createBucket(value: string): Bucket {
-	const weeklyResult = v.safeParse(weeklyDateSchema, value);
-	if (weeklyResult.success) {
-		return weeklyResult.output;
-	}
-	return createMonthlyDate(value);
+  const weeklyResult = v.safeParse(weeklyDateSchema, value);
+  if (weeklyResult.success) {
+    return weeklyResult.output;
+  }
+  return createMonthlyDate(value);
 }
 ```
 
@@ -87,12 +87,12 @@ export function createBucket(value: string): Bucket {
 ```typescript
 // apps/ccusage/src/data-loader.ts:224-236
 export const modelBreakdownSchema = v.object({
-	modelName: modelNameSchema,
-	inputTokens: v.number(),
-	outputTokens: v.number(),
-	cacheCreationTokens: v.number(),
-	cacheReadTokens: v.number(),
-	cost: v.number(),
+  modelName: modelNameSchema,
+  inputTokens: v.number(),
+  outputTokens: v.number(),
+  cacheCreationTokens: v.number(),
+  cacheReadTokens: v.number(),
+  cost: v.number(),
 });
 export type ModelBreakdown = v.InferOutput<typeof modelBreakdownSchema>;
 ```
@@ -104,14 +104,14 @@ byethrow の `Result` をパイプラインスタイルで使い、try-catch を
 ```typescript
 // apps/ccusage/src/_utils.ts:14-23
 export async function getFileModifiedTime(filePath: string): Promise<number> {
-	return Result.pipe(
-		Result.try({
-			try: stat(filePath),
-			catch: (error) => error,
-		}),
-		Result.map((stats) => stats.mtime.getTime()),
-		Result.unwrap(0),
-	);
+  return Result.pipe(
+    Result.try({
+      try: stat(filePath),
+      catch: (error) => error,
+    }),
+    Result.map((stats) => stats.mtime.getTime()),
+    Result.unwrap(0),
+  );
 }
 ```
 
@@ -155,18 +155,18 @@ return Result.unwrap(result, 0);
 ```typescript
 // apps/mcp/src/codex.ts:56-62 (zod)
 export const codexParametersShape = {
-	since: z.string().optional(),
-	until: z.string().optional(),
-	timezone: z.string().optional(),
+  since: z.string().optional(),
+  until: z.string().optional(),
+  timezone: z.string().optional(),
 } as const satisfies Record<string, z.ZodTypeAny>;
 ```
 
 ```typescript
 // apps/ccusage/src/_types.ts:9-13 (valibot)
 export const modelNameSchema = v.pipe(
-	v.string(),
-	v.minLength(1, 'Model name cannot be empty'),
-	v.brand('ModelName'),
+  v.string(),
+  v.minLength(1, "Model name cannot be empty"),
+  v.brand("ModelName"),
 );
 ```
 
@@ -176,7 +176,7 @@ export const modelNameSchema = v.pipe(
 
 ```typescript
 // apps/ccusage/src/_types.ts:140-145
-export const CostModes = ['auto', 'calculate', 'display'] as const;
+export const CostModes = ["auto", "calculate", "display"] as const;
 export type CostMode = TupleToUnion<typeof CostModes>;
 ```
 
@@ -192,7 +192,7 @@ default: 'auto' as const satisfies CostMode,
 ```typescript
 // apps/ccusage/src/_utils.ts:5-7
 export function unreachable(value: never): never {
-	throw new Error(`Unreachable code reached with value: ${value as any}`);
+  throw new Error(`Unreachable code reached with value: ${value as any}`);
 }
 ```
 
@@ -213,7 +213,7 @@ unreachable(mode);  // CostMode の分岐が漏れていればコンパイルエ
 const parsed = JSON.parse(line) as unknown;
 const result = v.safeParse(usageDataSchema, parsed);
 if (!result.success) {
-	return;  // 不正な行を静かにスキップ
+  return; // 不正な行を静かにスキップ
 }
 const data = result.output;
 ```
@@ -264,7 +264,7 @@ const data = result.output;
   ```typescript
   // apps/ccusage/src/data-loader.ts:796-799
   const result = v.safeParse(usageDataSchema, parsed);
-  if (!result.success) { return; }
+  if (!result.success) return;
   ```
 
 ## Anti-Patterns / 注意点
@@ -281,9 +281,9 @@ const data = result.output;
 - **検証ライブラリの混在による認知負荷**: valibot と zod が共存しているため、開発者はどちらを使うべきか判断する必要がある。ccusage では MCP 境界で zod を使うルールが暗黙的に存在するが、明文化しないとルールが崩れやすい。
   ```typescript
   // apps/mcp/src/codex.ts:2 — zod
-  import { z } from 'zod';
+  import { z } from "zod";
   // apps/ccusage/src/_types.ts:2 — valibot
-  import * as v from 'valibot';
+  import * as v from "valibot";
   ```
 
 ## 導出ルール

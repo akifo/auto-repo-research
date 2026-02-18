@@ -90,9 +90,9 @@ export default defineConfig({
 ```typescript
 // apps/mcp/src/mcp.ts:11, apps/mcp/src/command.ts:1,4-5
 // 外部パッケージからは公開 API のみ参照可能
-import type { LoadOptions } from 'ccusage/data-loader';
-import { getClaudePaths } from 'ccusage/data-loader';
-import { logger } from 'ccusage/logger';
+import type { LoadOptions } from "ccusage/data-loader";
+import { getClaudePaths } from "ccusage/data-loader";
+import { logger } from "ccusage/logger";
 ```
 
 ```typescript
@@ -110,8 +110,8 @@ import { logger } from 'ccusage/logger';
 ```typescript
 // apps/ccusage/src/logger.ts:10-22
 // 公開ファイルが共有パッケージをラップし、アプリ固有の設定を注入
-import { createLogger, log as internalLog } from '@ccusage/internal/logger';
-import { name } from '../package.json';
+import { createLogger, log as internalLog } from "@ccusage/internal/logger";
+import { name } from "../package.json";
 
 export const logger = createLogger(name);
 export const log = internalLog;
@@ -168,7 +168,7 @@ const DEFAULT_TIERED_THRESHOLD = 200_000;
 
 ```typescript
 // apps/codex/src/token-utils.ts:2
-import { formatCurrency, formatTokens } from '@ccusage/internal/format';
+import { formatCurrency, formatTokens } from "@ccusage/internal/format";
 // pricing は import しない -> バンドルサイズに含まれない
 ```
 

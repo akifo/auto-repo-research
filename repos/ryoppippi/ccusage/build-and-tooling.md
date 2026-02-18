@@ -32,6 +32,7 @@ pnpm catalogs はバージョンの一元管理だけでなく、依存の意味
 6 つの app すべてが tsdown を使用し、共通の設定パターンを持つ。ライブラリパッケージ（ccusage, mcp, pi）向けの「フル品質チェック付き」設定と、実行専用バイナリ（amp, opencode）向けの「軽量」設定の 2 パターンに分かれる。
 
 **ライブラリ向け共通設定**:
+
 - `minify: 'dce-only'`（Dead Code Elimination のみ、難読化なし）
 - `treeshake: true`
 - `publint: true` + `unused: true`（品質ゲート）
@@ -40,6 +41,7 @@ pnpm catalogs はバージョンの一元管理だけでなく、依存の意味
 - `define: { 'import.meta.vitest': 'undefined' }`（in-source test の除去）
 
 **実行専用バイナリ向け設定**（amp, opencode）:
+
 - `dts: false`（型定義不要）
 - `shims: true` + `platform: 'node'` + `target: 'node20'`
 - publint/unused なし（npm に publish しないか、エクスポートを持たないため）
@@ -77,74 +79,74 @@ prepack (各 app)    → build && clean-pkg-json（パッケージ最小化）
 
 ```typescript
 // apps/ccusage/tsdown.config.ts:1-35
-import { defineConfig } from 'tsdown';
-import Macros from 'unplugin-macros/rolldown';
+import { defineConfig } from "tsdown";
+import Macros from "unplugin-macros/rolldown";
 
 export default defineConfig({
-	entry: [
-		'./src/*.ts',
-		'!./src/**/*.test.ts', // Exclude test files
-		'!./src/_*.ts', // Exclude internal files with underscore prefix
-	],
-	outDir: 'dist',
-	format: 'esm',
-	clean: true,
-	sourcemap: false,
-	minify: 'dce-only',
-	treeshake: true,
-	fixedExtension: false,
-	dts: {
-		tsgo: false,
-		resolve: ['type-fest', 'valibot', '@ccusage/internal', '@ccusage/terminal'],
-	},
-	publint: true,
-	unused: true,
-	exports: {
-		devExports: true,
-	},
-	nodeProtocol: true,
-	plugins: [
-		Macros({
-			include: ['src/index.ts', 'src/_pricing-fetcher.ts'],
-		}),
-	],
-	define: {
-		'import.meta.vitest': 'undefined',
-	},
+  entry: [
+    "./src/*.ts",
+    "!./src/**/*.test.ts", // Exclude test files
+    "!./src/_*.ts", // Exclude internal files with underscore prefix
+  ],
+  outDir: "dist",
+  format: "esm",
+  clean: true,
+  sourcemap: false,
+  minify: "dce-only",
+  treeshake: true,
+  fixedExtension: false,
+  dts: {
+    tsgo: false,
+    resolve: ["type-fest", "valibot", "@ccusage/internal", "@ccusage/terminal"],
+  },
+  publint: true,
+  unused: true,
+  exports: {
+    devExports: true,
+  },
+  nodeProtocol: true,
+  plugins: [
+    Macros({
+      include: ["src/index.ts", "src/_pricing-fetcher.ts"],
+    }),
+  ],
+  define: {
+    "import.meta.vitest": "undefined",
+  },
 });
 ```
 
 ```typescript
 // apps/ccusage/src/_macro.ts:1-24
-import type { LiteLLMModelPricing } from '@ccusage/internal/pricing';
+import type { LiteLLMModelPricing } from "@ccusage/internal/pricing";
 import {
-	createPricingDataset,
-	fetchLiteLLMPricingDataset,
-	filterPricingDataset,
-} from '@ccusage/internal/pricing-fetch-utils';
+  createPricingDataset,
+  fetchLiteLLMPricingDataset,
+  filterPricingDataset,
+} from "@ccusage/internal/pricing-fetch-utils";
 
 function isClaudeModel(modelName: string, _pricing: LiteLLMModelPricing): boolean {
-	return (
-		modelName.startsWith('claude-') ||
-		modelName.startsWith('anthropic.claude-') ||
-		modelName.startsWith('anthropic/claude-')
-	);
+  return (
+    modelName.startsWith("claude-")
+    || modelName.startsWith("anthropic.claude-")
+    || modelName.startsWith("anthropic/claude-")
+  );
 }
 
 export async function prefetchClaudePricing(): Promise<Record<string, LiteLLMModelPricing>> {
-	try {
-		const dataset = await fetchLiteLLMPricingDataset();
-		return filterPricingDataset(dataset, isClaudeModel);
-	} catch (error) {
-		console.warn('Failed to prefetch Claude pricing data, proceeding with empty cache.', error);
-		return createPricingDataset();
-	}
+  try {
+    const dataset = await fetchLiteLLMPricingDataset();
+    return filterPricingDataset(dataset, isClaudeModel);
+  } catch (error) {
+    console.warn("Failed to prefetch Claude pricing data, proceeding with empty cache.", error);
+    return createPricingDataset();
+  }
 }
 ```
 
 ```typescript
 // apps/ccusage/src/_pricing-fetcher.ts:3
-import { prefetchClaudePricing } from './_macro.ts' with { type: 'macro' };
+import { prefetchClaudePricing } from "./_macro.ts" with { type: "macro" };
 
 const PREFETCHED_CLAUDE_PRICING = prefetchClaudePricing();
 ```
@@ -264,13 +266,13 @@ catalogs:
 // Bad: 9ファイルに同一設定が重複
 // apps/ccusage/tsconfig.json
 {
-    "compilerOptions": {
-        "strict": true,
-        "noUncheckedIndexedAccess": true,
-        "verbatimModuleSyntax": true,
-        "erasableSyntaxOnly": true
-        // ... 他の共通設定
-    }
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true
+    // ... 他の共通設定
+  }
 }
 ```
 

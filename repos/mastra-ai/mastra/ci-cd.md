@@ -34,6 +34,7 @@
 ### テスト分割と並列化
 
 ::: v-pre
+
 ```
 # vitest-all.yml:19-20, 47-54 -- 4 シャードに分割して並列実行
 strategy:
@@ -48,6 +49,7 @@ pnpm vitest run \
   --shard=${{ matrix.shard }}/4 \
   --passWithNoTests
 ```
+
 :::
 
 `fail-fast: false` により、1 シャードの失敗が他のシャードを中断しない。Vitest の blob reporter で各シャードの結果をアーティファクトとして保存し、`merge-reports` ジョブで統合する。
@@ -57,6 +59,7 @@ pnpm vitest run \
 ### Trusted Actions パターン: フォーク PR のセキュリティ
 
 ::: v-pre
+
 ```yaml
 # vitest-changed.yml:67-79
 - name: Checkout trusted actions from base branch
@@ -71,6 +74,7 @@ pnpm vitest run \
     rm -rf .github/actions
     cp -r trusted-actions/.github/actions .github/actions
 ```
+
 :::
 
 PR のコードをチェックアウトした後、ベースブランチからアクション定義のみを sparse-checkout で取得し、PR 由来のアクションを上書きする。これにより、悪意ある PR がアクション定義を改竄してもシークレットを窃取できない。
@@ -115,6 +119,7 @@ TURBO_CACHE: remote:rw
 ### PR ステータス管理の統一パターン
 
 ::: v-pre
+
 ```yaml
 # .github/workflows/shared-actions/set-pr-status/action.yml:37-52
 - name: Set PR Status
@@ -128,6 +133,7 @@ TURBO_CACHE: remote:rw
       --field context="${{ inputs.context }}" \
       --field description="${{ inputs.description }}"
 ```
+
 :::
 
 GitHub Checks API ではなく Commit Status API を使い、`workflow_run` 経由のジョブでも PR に正しくステータスを表示する。各テストワークフローは pending -> (skip-tests で success | test で success/failure) という 3 分岐パターンを統一的に実装している。
@@ -170,6 +176,7 @@ Renovate は self-hosted で 6 時間ごとに実行され（`renovate.yml`）�
 - **Composite Action によるセットアップの DRY 化**: `setup-pnpm-node` アクションで pnpm + Node.js + install を 1 ステップに集約。オプションパラメータ（`install-dependencies`, `package-manager-cache`）で柔軟性を確保しつつ、全ワークフローのセットアップを統一する。
 
 ::: v-pre
+
 ```yaml
 # .github/actions/setup-pnpm-node/action.yaml:14-33
 runs:
@@ -183,11 +190,13 @@ runs:
     - if: ${{ inputs.install-dependencies == 'true' }}
       run: pnpm install --frozen-lockfile
 ```
+
 :::
 
 - **Concurrency グループによる重複実行の排除**: ワークフローごとに適切な concurrency キーを設定し、同一 PR への連続 push で古い実行をキャンセルする。
 
 ::: v-pre
+
 ```yaml
 # prebuild.yml:8-10
 concurrency:
@@ -199,6 +208,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.workflow_run.head_sha }}
   cancel-in-progress: true
 ```
+
 :::
 
 - **権限の最小化**: ワークフローレベルで `permissions: {}` を宣言し、ジョブごとに必要な権限のみを付与する。

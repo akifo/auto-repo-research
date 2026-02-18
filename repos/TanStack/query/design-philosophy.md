@@ -24,6 +24,7 @@ TanStack Query の設計思想を分析する。48k+ スターを持つこのラ
 TanStack Query は「Headless UI」の思想をデータ取得ライブラリに適用した。コアが提供するのは `QueryClient` / `QueryCache` / `QueryObserver` / `Mutation` / `Retryer` などの純粋な JavaScript クラスであり、DOM にも React にも Vue にも一切依存しない。
 
 各フレームワークアダプターの責務は以下の 3 点に限定される:
+
 1. **Observer のライフサイクル管理**: コンポーネントのマウント/アンマウントに Observer の subscribe/destroy を同期させる
 2. **リアクティビティの橋渡し**: Observer の通知をフレームワーク固有のリアクティブ機構に変換する
 3. **フレームワーク固有の最適化**: React の Suspense 統合、Vue の `Ref` 変換など
@@ -31,7 +32,7 @@ TanStack Query は「Headless UI」の思想をデータ取得ライブラリに
 ```typescript
 // packages/react-query/src/useQuery.ts:50-52
 export function useQuery(options: UseQueryOptions, queryClient?: QueryClient) {
-  return useBaseQuery(options, QueryObserver, queryClient)
+  return useBaseQuery(options, QueryObserver, queryClient);
 }
 ```
 
@@ -75,11 +76,11 @@ React の `useQuery` は 1 行で Observer クラスを注入しているだけ�
 ```typescript
 // packages/query-core/src/utils.ts:267-314
 export function replaceEqualDeep(a: any, b: any, depth = 0): any {
-  if (a === b) { return a }
-  if (depth > 500) return b
-  const array = isPlainArray(a) && isPlainArray(b)
+  if (a === b) return a;
+  if (depth > 500) return b;
+  const array = isPlainArray(a) && isPlainArray(b);
   // ... 各プロパティを再帰的に比較 ...
-  return aSize === bSize && equalItems === aSize ? a : copy
+  return aSize === bSize && equalItems === aSize ? a : copy;
 }
 ```
 
@@ -92,21 +93,22 @@ export function replaceEqualDeep(a: any, b: any, depth = 0): any {
 ```typescript
 // packages/query-core/src/notifyManager.ts:17-64
 export function createNotifyManager() {
-  let queue: Array<NotifyCallback> = []
-  let transactions = 0
+  let queue: Array<NotifyCallback> = [];
+  let transactions = 0;
   // ...
   return {
     batch: <T>(callback: () => T): T => {
-      transactions++
-      try { result = callback() }
-      finally {
-        transactions--
-        if (!transactions) { flush() }
+      transactions++;
+      try {
+        result = callback();
+      } finally {
+        transactions--;
+        if (!transactions) flush();
       }
-      return result
+      return result;
     },
     // ...
-  }
+  };
 }
 ```
 
@@ -123,8 +125,7 @@ export interface Register {
   // queryMeta: Record<string, unknown>
 }
 
-export type DefaultError = Register extends { defaultError: infer TError }
-  ? TError : Error
+export type DefaultError = Register extends { defaultError: infer TError; } ? TError : Error;
 ```
 
 ユーザーは `declare module '@tanstack/react-query' { interface Register { defaultError: AxiosError } }` と書くだけで全クエリのエラー型を変更できる。ジェネリクスを毎回指定する方式もあったが、「1 回の宣言で全体に適用」という DX を優先した。
@@ -136,14 +137,14 @@ export type DefaultError = Register extends { defaultError: infer TError }
 ```typescript
 // packages/query-core/src/query.ts:435-443
 const addSignalProperty = (object: unknown) => {
-  Object.defineProperty(object, 'signal', {
+  Object.defineProperty(object, "signal", {
     enumerable: true,
     get: () => {
-      this.#abortSignalConsumed = true
-      return abortController.signal
+      this.#abortSignalConsumed = true;
+      return abortController.signal;
     },
-  })
-}
+  });
+};
 ```
 
 Observer がなくなった時、`signal` が消費されていれば fetch をキャンセルし、消費されていなければキャッシュのために fetch を続行する (`query.ts:360-366`)。これは「ユーザーがキャンセルを気にしていないなら結果をキャッシュに残す」という実用的な判断。
@@ -204,13 +205,13 @@ trackResult(result, onPropTracked) {
 
 ```typescript
 // Bad: タイマー使用後にプロバイダー変更
-queryClient.mount()
-timeoutManager.setTimeoutProvider(customProvider) // 既存タイマーが壊れる
+queryClient.mount();
+timeoutManager.setTimeoutProvider(customProvider); // 既存タイマーが壊れる
 
 // Better: QueryClient.mount() より前にプロバイダーを設定
-timeoutManager.setTimeoutProvider(customProvider)
-const queryClient = new QueryClient()
-queryClient.mount()
+timeoutManager.setTimeoutProvider(customProvider);
+const queryClient = new QueryClient();
+queryClient.mount();
 ```
 
 - **GC 時間の暗黙のサーバー/クライアント分岐**: `Removable.updateGcTime` はクライアントで 5 分、サーバーで Infinity をデフォルトにする。SSR 環境での意図しないメモリリークにつながりうるが、これは意図的なトレードオフで、SSR 時のプリフェッチデータが GC されないことを保証するため。

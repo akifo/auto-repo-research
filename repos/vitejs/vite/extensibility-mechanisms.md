@@ -37,27 +37,27 @@ export function getSortedPluginsByHook<K extends keyof Plugin>(
   hookName: K,
   plugins: readonly Plugin[],
 ): PluginWithRequiredHook<K>[] {
-  const sortedPlugins: Plugin[] = []
+  const sortedPlugins: Plugin[] = [];
   let pre = 0,
     normal = 0,
-    post = 0
+    post = 0;
   for (const plugin of plugins) {
-    const hook = plugin[hookName]
+    const hook = plugin[hookName];
     if (hook) {
-      if (typeof hook === 'object') {
-        if (hook.order === 'pre') {
-          sortedPlugins.splice(pre++, 0, plugin)
-          continue
+      if (typeof hook === "object") {
+        if (hook.order === "pre") {
+          sortedPlugins.splice(pre++, 0, plugin);
+          continue;
         }
-        if (hook.order === 'post') {
-          sortedPlugins.splice(pre + normal + post++, 0, plugin)
-          continue
+        if (hook.order === "post") {
+          sortedPlugins.splice(pre + normal + post++, 0, plugin);
+          continue;
         }
       }
-      sortedPlugins.splice(pre + normal++, 0, plugin)
+      sortedPlugins.splice(pre + normal++, 0, plugin);
     }
   }
-  return sortedPlugins as PluginWithRequiredHook<K>[]
+  return sortedPlugins as PluginWithRequiredHook<K>[];
 }
 ```
 
@@ -69,16 +69,16 @@ export function getSortedPluginsByHook<K extends keyof Plugin>(
 
 ```typescript
 // packages/vite/src/node/server/index.ts:908-978
-const postHooks: ((() => void) | void)[] = []
-for (const hook of config.getSortedPluginHooks('configureServer')) {
-  postHooks.push(await hook.call(configureServerContext, reflexServer))
+const postHooks: ((() => void) | void)[] = [];
+for (const hook of config.getSortedPluginHooks("configureServer")) {
+  postHooks.push(await hook.call(configureServerContext, reflexServer));
 }
 
 // Internal middlewares (proxy, base, static files, etc.)
 // ...
 
 // apply configureServer post hooks
-postHooks.forEach((fn) => fn && fn())
+postHooks.forEach((fn) => fn && fn());
 ```
 
 このパターンにより、プラグインは内部ミドルウェアの「前」と「後」の両方にミドルウェアを挿入できる。`configurePreviewServer` も同一パターンを採用している（`packages/vite/src/node/preview.ts:223-269`）。
@@ -92,7 +92,7 @@ Vite のフックは「関数そのもの」か「関数 + メタデータのオ
 export function getHookHandler<T extends ObjectHook<Function>>(
   hook: T,
 ): HookHandler<T> {
-  return (typeof hook === 'object' ? hook.handler : hook) as HookHandler<T>
+  return (typeof hook === "object" ? hook.handler : hook) as HookHandler<T>;
 }
 ```
 
@@ -119,23 +119,23 @@ load: {
 export async function resolveEnvironmentPlugins(
   environment: PartialEnvironment,
 ): Promise<Plugin[]> {
-  const environmentPlugins: Plugin[] = []
+  const environmentPlugins: Plugin[] = [];
   for (const plugin of environment.getTopLevelConfig().plugins) {
     if (plugin.applyToEnvironment) {
-      const applied = await plugin.applyToEnvironment(environment)
+      const applied = await plugin.applyToEnvironment(environment);
       if (!applied) {
-        continue                          // false: プラグインを無効化
+        continue; // false: プラグインを無効化
       }
       if (applied !== true) {
-        environmentPlugins.push(          // PluginOption: 別プラグインに差し替え
+        environmentPlugins.push( // PluginOption: 別プラグインに差し替え
           ...((await asyncFlatten(arraify(applied))).filter(Boolean) as Plugin[]),
-        )
-        continue
+        );
+        continue;
       }
     }
-    environmentPlugins.push(plugin)       // true / 未定義: そのまま使う
+    environmentPlugins.push(plugin); // true / 未定義: そのまま使う
   }
-  return environmentPlugins
+  return environmentPlugins;
 }
 ```
 
@@ -152,7 +152,7 @@ export function perEnvironmentPlugin(
   return {
     name,
     applyToEnvironment,
-  }
+  };
 }
 ```
 
@@ -164,14 +164,14 @@ export function perEnvironmentPlugin(
 
 ```typescript
 // packages/vite/src/node/plugins/index.ts:200-241
-const filterForPlugin = new WeakMap<Plugin, FilterForPluginValue>()
+const filterForPlugin = new WeakMap<Plugin, FilterForPluginValue>();
 
 export function getCachedFilterForPlugin<
-  H extends 'resolveId' | 'load' | 'transform',
+  H extends "resolveId" | "load" | "transform",
 >(plugin: Plugin, hookName: H): FilterForPluginValue[H] | undefined {
-  let filters = filterForPlugin.get(plugin)
+  let filters = filterForPlugin.get(plugin);
   if (filters && hookName in filters) {
-    return filters[hookName]
+    return filters[hookName];
   }
   // ... フィルタ生成・キャッシュ
 }
@@ -187,18 +187,18 @@ export function createFilterForTransform(
   moduleTypeFilter: ModuleTypeFilter | undefined,
   cwd?: string,
 ): TransformHookFilter | undefined {
-  if (!idFilter && !codeFilter && !moduleTypeFilter) return
-  const idFilterFn = createIdFilter(idFilter, cwd)
-  const codeFilterFn = createCodeFilter(codeFilter)
-  const moduleTypeFilterFn = createModuleTypeFilter(moduleTypeFilter)
+  if (!idFilter && !codeFilter && !moduleTypeFilter) return;
+  const idFilterFn = createIdFilter(idFilter, cwd);
+  const codeFilterFn = createCodeFilter(codeFilter);
+  const moduleTypeFilterFn = createModuleTypeFilter(moduleTypeFilter);
   return (id, code, moduleType) => {
-    let fallback = moduleTypeFilterFn?.(moduleType) ?? true
-    if (!fallback) return false
-    if (idFilterFn) { fallback &&= idFilterFn(id) }
-    if (!fallback) return false
-    if (codeFilterFn) { fallback &&= codeFilterFn(code) }
-    return fallback
-  }
+    let fallback = moduleTypeFilterFn?.(moduleType) ?? true;
+    if (!fallback) return false;
+    if (idFilterFn) fallback &&= idFilterFn(id);
+    if (!fallback) return false;
+    if (codeFilterFn) fallback &&= codeFilterFn(code);
+    return fallback;
+  };
 }
 ```
 
@@ -210,17 +210,17 @@ export function createFilterForTransform(
 // packages/vite/src/node/plugin.ts:383-388
 export type PluginOption = Thenable<
   | Plugin
-  | { name: string }
+  | { name: string; }
   | FalsyPlugin
-  | PluginOption[]     // 再帰的にネスト可能
->
+  | PluginOption[] // 再帰的にネスト可能
+>;
 
 // packages/vite/src/node/utils.ts:1504-1511
 export async function asyncFlatten<T extends unknown[]>(arr: T) {
   do {
-    arr = (await Promise.all(arr)).flat(Infinity) as any
-  } while (arr.some((v: any) => v?.then))
-  return arr
+    arr = (await Promise.all(arr)).flat(Infinity) as any;
+  } while (arr.some((v: any) => v?.then));
+  return arr;
 }
 ```
 
@@ -229,9 +229,9 @@ export async function asyncFlatten<T extends unknown[]>(arr: T) {
 ```typescript
 plugins: [
   vue(),
-  condition && somePlugin(),  // falsy は自動除外
-  [pluginA(), pluginB()],     // 配列もフラット化
-]
+  condition && somePlugin(), // falsy は自動除外
+  [pluginA(), pluginB()], // 配列もフラット化
+];
 ```
 
 ### 7. HMR フックの段階的移行パターン
@@ -240,7 +240,7 @@ plugins: [
 
 ```typescript
 // packages/vite/src/node/server/hmr.ts:341
-const hook = plugin['hotUpdate'] ?? plugin['handleHotUpdate']
+const hook = plugin["hotUpdate"] ?? plugin["handleHotUpdate"];
 ```
 
 ```typescript
@@ -249,17 +249,17 @@ if (plugin.hotUpdate) {
   const filteredModules = await getHookHandler(plugin.hotUpdate).call(
     clientContext,
     clientHotUpdateOptions,
-  )
+  );
   // ...
-} else if (type === 'update') {
+} else if (type === "update") {
   warnFutureDeprecation(
     config,
-    'removePluginHookHandleHotUpdate',
+    "removePluginHookHandleHotUpdate",
     `Used in plugin "${plugin.name}".`,
-  )
+  );
   const filteredModules = await getHookHandler(
     plugin.handleHotUpdate!,
-  ).call(contextForHandleHotUpdate, mixedHmrContext)
+  ).call(contextForHandleHotUpdate, mixedHmrContext);
   // ...
 }
 ```
@@ -305,7 +305,7 @@ configureServer(server) {
 
 ```typescript
 // packages/vite/src/node/plugins/index.ts:200
-const filterForPlugin = new WeakMap<Plugin, FilterForPluginValue>()
+const filterForPlugin = new WeakMap<Plugin, FilterForPluginValue>();
 ```
 
 - **asyncFlatten による宣言的なプラグイン構成**: Promise、配列、falsy 値を再帰的にフラット化し、条件分岐を `&&` で自然に記述できるようにしている。
@@ -314,9 +314,9 @@ const filterForPlugin = new WeakMap<Plugin, FilterForPluginValue>()
 // packages/vite/src/node/utils.ts:1504-1511
 export async function asyncFlatten<T extends unknown[]>(arr: T) {
   do {
-    arr = (await Promise.all(arr)).flat(Infinity) as any
-  } while (arr.some((v: any) => v?.then))
-  return arr
+    arr = (await Promise.all(arr)).flat(Infinity) as any;
+  } while (arr.some((v: any) => v?.then));
+  return arr;
 }
 ```
 
@@ -339,11 +339,11 @@ transform(code, id) {
 
 ```typescript
 // Bad: フックを直接呼び出す
-const result = plugin.resolveId.call(ctx, id, importer, options)
+const result = plugin.resolveId.call(ctx, id, importer, options);
 
 // Better: getHookHandler で関数を取り出す
-const handler = getHookHandler(plugin.resolveId)
-const result = handler.call(ctx, id, importer, options)
+const handler = getHookHandler(plugin.resolveId);
+const result = handler.call(ctx, id, importer, options);
 ```
 
 - **環境固有のキャッシュをグローバルに保持**: `perEnvironmentPlugin` を使わずに、プラグインの closure でキャッシュを保持すると、client と ssr で意図せずキャッシュが共有される。Vite では `WeakMap<Environment, ...>` パターンでキャッシュを分離している（`packages/vite/src/node/plugins/define.ts:108-119`）。
@@ -351,20 +351,23 @@ const result = handler.call(ctx, id, importer, options)
 ```typescript
 // Bad: closure でキャッシュを保持（環境間で共有される）
 function myPlugin() {
-  const cache = new Map()
-  return { name: 'my-plugin', transform(code, id) { /* cache 使用 */ } }
+  const cache = new Map();
+  return { name: "my-plugin", transform(code, id) {/* cache 使用 */} };
 }
 
 // Better: 環境をキーにした WeakMap
 function myPlugin() {
-  const cache = new WeakMap<Environment, Map<string, unknown>>()
+  const cache = new WeakMap<Environment, Map<string, unknown>>();
   return {
-    name: 'my-plugin',
+    name: "my-plugin",
     transform(code, id) {
-      let envCache = cache.get(this.environment)
-      if (!envCache) { envCache = new Map(); cache.set(this.environment, envCache) }
-    }
-  }
+      let envCache = cache.get(this.environment);
+      if (!envCache) {
+        envCache = new Map();
+        cache.set(this.environment, envCache);
+      }
+    },
+  };
 }
 ```
 

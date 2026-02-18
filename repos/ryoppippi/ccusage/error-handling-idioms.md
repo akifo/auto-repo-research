@@ -32,8 +32,8 @@ ccusage は `@praha/byethrow` の Result 型を採用し、try-catch に代わ�
 ```typescript
 // apps/ccusage/src/debug.ts:116-119
 const parseParser = Result.try({
-	try: () => JSON.parse(line) as unknown,
-	catch: () => new Error('Invalid JSON'),
+  try: () => JSON.parse(line) as unknown,
+  catch: () => new Error("Invalid JSON"),
 });
 const parseResult = parseParser();
 ```
@@ -43,8 +43,8 @@ const parseResult = parseParser();
 ```typescript
 // apps/codex/src/data-loader.ts:204-207
 const statResult = await Result.try({
-	try: stat(directoryPath),
-	catch: (error) => error,
+  try: stat(directoryPath),
+  catch: (error) => error,
 });
 ```
 
@@ -57,13 +57,13 @@ const statResult = await Result.try({
 ```typescript
 // apps/codex/src/data-loader.ts:249-257
 const parseLine = Result.try({
-	try: () => JSON.parse(trimmed) as unknown,
-	catch: (error) => error,
+  try: () => JSON.parse(trimmed) as unknown,
+  catch: (error) => error,
 });
 const parsedResult = parseLine();
 
 if (Result.isFailure(parsedResult)) {
-	continue;
+  continue;
 }
 ```
 
@@ -76,14 +76,14 @@ if (Result.isFailure(parsedResult)) {
 ```typescript
 // apps/ccusage/src/_utils.ts:15-23
 export async function getFileModifiedTime(filePath: string): Promise<number> {
-	return Result.pipe(
-		Result.try({
-			try: stat(filePath),
-			catch: (error) => error,
-		}),
-		Result.map((stats) => stats.mtime.getTime()),
-		Result.unwrap(0),
-	);
+  return Result.pipe(
+    Result.try({
+      try: stat(filePath),
+      catch: (error) => error,
+    }),
+    Result.map((stats) => stats.mtime.getTime()),
+    Result.unwrap(0),
+  );
 }
 ```
 
@@ -92,19 +92,19 @@ export async function getFileModifiedTime(filePath: string): Promise<number> {
 ```typescript
 // apps/ccusage/src/commands/statusline.ts:289-301
 const getCcusageCost = async (): Promise<number | undefined> => {
-	return Result.pipe(
-		Result.try({
-			try: async () =>
-				loadSessionUsageById(sessionId, {
-					mode: 'auto',
-					offline: mergedOptions.offline,
-				}),
-			catch: (error) => error,
-		})(),
-		Result.map((sessionCost) => sessionCost?.totalCost),
-		Result.inspectError((error) => logger.error('Failed to load session data:', error)),
-		Result.unwrap(undefined),
-	);
+  return Result.pipe(
+    Result.try({
+      try: async () =>
+        loadSessionUsageById(sessionId, {
+          mode: "auto",
+          offline: mergedOptions.offline,
+        }),
+      catch: (error) => error,
+    })(),
+    Result.map((sessionCost) => sessionCost?.totalCost),
+    Result.inspectError((error) => logger.error("Failed to load session data:", error)),
+    Result.unwrap(undefined),
+  );
 };
 ```
 
@@ -115,8 +115,8 @@ Result から値を取り出す際に、失敗時のデフォルト値を指定�
 ```typescript
 // apps/ccusage/src/data-loader.ts:642-645
 return Result.unwrap(
-	fetcher.calculateCostFromTokens(data.message.usage, data.message.model),
-	0,
+  fetcher.calculateCostFromTokens(data.message.usage, data.message.model),
+  0,
 );
 ```
 
@@ -199,20 +199,20 @@ export async function executeCliCommand(...): Promise<string> {
 ```typescript
 // apps/ccusage/src/data-loader.ts:563-590 (getEarliestTimestamp)
 export async function getEarliestTimestamp(filePath: string): Promise<Date | null> {
-	try {
-		// ストリーム処理 + 内部の JSON パースも try-catch
-		await processJSONLFileByLine(filePath, (line) => {
-			try {
-				// ...
-			} catch {
-				// Skip invalid JSON lines
-			}
-		});
-		return earliestDate;
-	} catch (error) {
-		logger.debug(`Failed to get earliest timestamp for ${filePath}:`, error);
-		return null;
-	}
+  try {
+    // ストリーム処理 + 内部の JSON パースも try-catch
+    await processJSONLFileByLine(filePath, (line) => {
+      try {
+        // ...
+      } catch {
+        // Skip invalid JSON lines
+      }
+    });
+    return earliestDate;
+  } catch (error) {
+    logger.debug(`Failed to get earliest timestamp for ${filePath}:`, error);
+    return null;
+  }
 }
 ```
 
@@ -254,12 +254,12 @@ const todayCost = await Result.pipe(
 ```typescript
 // apps/codex/src/data-loader.ts:249-257
 const parseLine = Result.try({
-	try: () => JSON.parse(trimmed) as unknown,
-	catch: (error) => error,
+  try: () => JSON.parse(trimmed) as unknown,
+  catch: (error) => error,
 });
 const parsedResult = parseLine();
 if (Result.isFailure(parsedResult)) {
-	continue;
+  continue;
 }
 ```
 
@@ -282,15 +282,15 @@ Result.andThrough((response) => {
 ```typescript
 // Bad: エラーを無視してデフォルト値で続行
 return Result.unwrap(
-	fetcher.calculateCostFromTokens(data.message.usage, data.message.model),
-	0,
+  fetcher.calculateCostFromTokens(data.message.usage, data.message.model),
+  0,
 );
 
 // Better: inspectError でログを残してからデフォルト値を使う
 return Result.pipe(
-	fetcher.calculateCostFromTokens(data.message.usage, data.message.model),
-	Result.inspectError((error) => logger.warn('Cost calculation failed:', error)),
-	Result.unwrap(0),
+  fetcher.calculateCostFromTokens(data.message.usage, data.message.model),
+  Result.inspectError((error) => logger.warn("Cost calculation failed:", error)),
+  Result.unwrap(0),
 );
 ```
 

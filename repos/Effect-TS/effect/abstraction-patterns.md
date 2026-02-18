@@ -43,42 +43,46 @@ export const EffectPrototype: Effect.Effect<never> & Equal.Equal = {
   [SinkTypeId]: sinkVariance,
   [ChannelTypeId]: channelVariance,
   [Equal.symbol](that: any) {
-    return this === that
+    return this === that;
   },
   [Hash.symbol]() {
-    return Hash.cached(this, Hash.random(this))
+    return Hash.cached(this, Hash.random(this));
   },
   [Symbol.iterator]() {
-    return new SingleShotGen(new YieldWrap(this)) as any
+    return new SingleShotGen(new YieldWrap(this)) as any;
   },
   pipe() {
-    return pipeArguments(this, arguments)
-  }
-}
+    return pipeArguments(this, arguments);
+  },
+};
 ```
 
 ```typescript
 // packages/effect/src/internal/option.ts:14-25
 const CommonProto = {
-  ...EffectPrototype,           // 第1層: pipe, Equal, Hash, iterator
-  [TypeId]: { _A: (_: never) => _ },  // 第2層: Option 固有の TypeId
-  [NodeInspectSymbol]() { return this.toJSON() },
-  toString() { return format(this.toJSON()) }
-}
+  ...EffectPrototype, // 第1層: pipe, Equal, Hash, iterator
+  [TypeId]: { _A: (_: never) => _ }, // 第2層: Option 固有の TypeId
+  [NodeInspectSymbol]() {
+    return this.toJSON();
+  },
+  toString() {
+    return format(this.toJSON());
+  },
+};
 
 // packages/effect/src/internal/option.ts:27-43
 const SomeProto = Object.assign(Object.create(CommonProto), {
-  _tag: "Some",                 // 第3層: バリアント固有
-  [Equal.symbol](that) {       // Equal のオーバーライド
-    return isOption(that) && isSome(that) && Equal.equals(this.value, that.value)
+  _tag: "Some", // 第3層: バリアント固有
+  [Equal.symbol](that) { // Equal のオーバーライド
+    return isOption(that) && isSome(that) && Equal.equals(this.value, that.value);
   },
   [Hash.symbol]() {
-    return Hash.cached(this, Hash.combine(Hash.hash(this._tag))(Hash.hash(this.value)))
+    return Hash.cached(this, Hash.combine(Hash.hash(this._tag))(Hash.hash(this.value)));
   },
   toJSON() {
-    return { _id: "Option", _tag: this._tag, value: toJSON(this.value) }
-  }
-})
+    return { _id: "Option", _tag: this._tag, value: toJSON(this.value) };
+  },
+});
 ```
 
 同一パターンが `Either`（`internal/either.ts:20-67`）、`Chunk`（`Chunk.ts:125-163`）、`List`（`List.ts:100-152`）、`MutableRef`（`MutableRef.ts:27-44`）など全データ型で一貫して使われている。
@@ -90,22 +94,22 @@ const SomeProto = Object.assign(Object.create(CommonProto), {
 export const dual: {
   <DataLast extends (...args: Array<any>) => any, DataFirst extends (...args: Array<any>) => any>(
     arity: Parameters<DataFirst>["length"],
-    body: DataFirst
-  ): DataLast & DataFirst
+    body: DataFirst,
+  ): DataLast & DataFirst;
 } = function(arity, body) {
   switch (arity) {
     case 2:
       return function(a, b) {
         if (arguments.length >= 2) {
-          return body(a, b)    // data-first: fn(self, arg)
+          return body(a, b); // data-first: fn(self, arg)
         }
         return function(self: any) {
-          return body(self, a)  // data-last: self.pipe(fn(arg))
-        }
-      }
-    // case 3, 4, 5 も同様...
+          return body(self, a); // data-last: self.pipe(fn(arg))
+        };
+      };
+      // case 3, 4, 5 も同様...
   }
-}
+};
 ```
 
 コードベース全体で 254 箇所以上で使用されている（`Chunk.ts` 43 箇所、`Effect.ts` 3 箇所以上、`Readable.ts` 2 箇所など）。引数の数で data-first/data-last を自動判定するため、同一関数を `pipe` チェーンでもスタンドアロンでも使える。
@@ -114,12 +118,10 @@ export const dual: {
 
 ```typescript
 // packages/effect/src/internal/option.ts:64
-export const isOption = (input: unknown): input is Option.Option<unknown> =>
-  hasProperty(input, TypeId)
+export const isOption = (input: unknown): input is Option.Option<unknown> => hasProperty(input, TypeId);
 
 // packages/effect/src/Readable.ts:36
-export const isReadable = (u: unknown): u is Readable<unknown, unknown, unknown> =>
-  hasProperty(u, TypeId)
+export const isReadable = (u: unknown): u is Readable<unknown, unknown, unknown> => hasProperty(u, TypeId);
 ```
 
 `instanceof` ではなく `Symbol.for` ベースの TypeId の存在チェックで型判定する。これにより CJS/ESM の境界やバージョン違いでも正しく型判定できる。
@@ -169,11 +171,10 @@ declare module "./Option.js" {
 
 ```typescript
 // packages/effect/src/internal/option.ts:12
-const TypeId: Option.TypeId = Symbol.for("effect/Option") as Option.TypeId
+const TypeId: Option.TypeId = Symbol.for("effect/Option") as Option.TypeId;
 
 // packages/effect/src/internal/option.ts:64
-export const isOption = (input: unknown): input is Option.Option<unknown> =>
-  hasProperty(input, TypeId)
+export const isOption = (input: unknown): input is Option.Option<unknown> => hasProperty(input, TypeId);
 ```
 
 - **Hash のキャッシュ**: `Hash.cached()` でハッシュ値を `Object.defineProperty` で不変プロパティとしてオブジェクトに焼き込み、再計算を防ぐ。`enumerable: false` にすることで JSON シリアライズに影響しない。
@@ -181,14 +182,16 @@ export const isOption = (input: unknown): input is Option.Option<unknown> =>
 ```typescript
 // packages/effect/src/Hash.ts:169-195
 export const cached = function() {
-  const self = arguments[0] as object
-  const hash = arguments[1] as number
+  const self = arguments[0] as object;
+  const hash = arguments[1] as number;
   Object.defineProperty(self, symbol, {
-    value() { return hash },
-    enumerable: false
-  })
-  return hash
-}
+    value() {
+      return hash;
+    },
+    enumerable: false,
+  });
+  return hash;
+};
 ```
 
 - **Inspectable の toJSON → toString → NodeInspect の統一チェーン**: `toJSON()` を唯一の真のソースとし、`toString()` は `format(this.toJSON())` を、`[NodeInspectSymbol]()` は `this.toJSON()` を返す。デバッグ表現が全データ型で一貫する。
@@ -196,10 +199,16 @@ export const cached = function() {
 ```typescript
 // packages/effect/src/Inspectable.ts:170-180
 export const BaseProto: Inspectable = {
-  toJSON() { return toJSON(this) },
-  [NodeInspectSymbol]() { return this.toJSON() },
-  toString() { return format(this.toJSON()) }
-}
+  toJSON() {
+    return toJSON(this);
+  },
+  [NodeInspectSymbol]() {
+    return this.toJSON();
+  },
+  toString() {
+    return format(this.toJSON());
+  },
+};
 ```
 
 - **Variance の Phantom Type エンコード**: ランタイムの関数 `(_: never) => _` をダミー値として型パラメータに埋め込み、TypeScript の型推論で共変性を正しく扱わせる。
@@ -210,8 +219,8 @@ export const effectVariance = {
   _R: (_: never) => _,
   _E: (_: never) => _,
   _A: (_: never) => _,
-  _V: version.getCurrentVersion()
-}
+  _V: version.getCurrentVersion(),
+};
 ```
 
 ## Anti-Patterns / 注意点
@@ -220,14 +229,14 @@ export const effectVariance = {
 
 ```typescript
 // Bad: プロトコルなしの生オブジェクト
-const a = { name: "Alice", age: 30 }
-const b = { name: "Alice", age: 30 }
-Equal.equals(a, b) // false（参照比較になる）
+const a = { name: "Alice", age: 30 };
+const b = { name: "Alice", age: 30 };
+Equal.equals(a, b); // false（参照比較になる）
 
 // Better: Data.struct でプロトコルを付与
-const a = Data.struct({ name: "Alice", age: 30 })
-const b = Data.struct({ name: "Alice", age: 30 })
-Equal.equals(a, b) // true（構造的等価性）
+const a = Data.struct({ name: "Alice", age: 30 });
+const b = Data.struct({ name: "Alice", age: 30 });
+Equal.equals(a, b); // true（構造的等価性）
 ```
 
 - **instanceof による型判定**: バンドラーの tree-shaking やモジュール重複で `instanceof` が壊れるため、`hasProperty(u, TypeId)` パターンを使うべき。

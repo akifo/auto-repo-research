@@ -26,11 +26,11 @@ Effect の内部実装は、計算を AST (抽象構文木) として構築し�
 ```typescript
 // packages/effect/src/internal/core.ts:127-161
 class EffectPrimitive {
-  public effect_instruction_i0 = undefined
-  public effect_instruction_i1 = undefined
-  public effect_instruction_i2 = undefined
+  public effect_instruction_i0 = undefined;
+  public effect_instruction_i1 = undefined;
+  public effect_instruction_i2 = undefined;
   public trace = undefined;
-  [EffectTypeId] = effectVariance
+  [EffectTypeId] = effectVariance;
   constructor(readonly _op: Primitive["_op"]) {}
   // Equal, Hash, pipe, Symbol.iterator を実装
 }
@@ -40,13 +40,13 @@ class EffectPrimitive {
 
 ```typescript
 // packages/effect/src/internal/opCodes/effect.ts:5-83
-export const OP_ASYNC = "Async" as const
-export const OP_FAILURE = "Failure" as const
-export const OP_ON_SUCCESS = "OnSuccess" as const
-export const OP_SUCCESS = "Success" as const
-export const OP_SYNC = "Sync" as const
-export const OP_WHILE = "While" as const
-export const OP_ITERATOR = "Iterator" as const
+export const OP_ASYNC = "Async" as const;
+export const OP_FAILURE = "Failure" as const;
+export const OP_ON_SUCCESS = "OnSuccess" as const;
+export const OP_SUCCESS = "Success" as const;
+export const OP_SYNC = "Sync" as const;
+export const OP_WHILE = "While" as const;
+export const OP_ITERATOR = "Iterator" as const;
 // ...
 ```
 
@@ -59,24 +59,26 @@ export const OP_ITERATOR = "Iterator" as const
 ```typescript
 // packages/effect/src/Function.ts:95-138
 export const dual: {
-  <DataLast, DataFirst>(arity: Parameters<DataFirst>["length"], body: DataFirst): DataLast & DataFirst
-  <DataLast, DataFirst>(isDataFirst: (args: IArguments) => boolean, body: DataFirst): DataLast & DataFirst
+  <DataLast, DataFirst>(arity: Parameters<DataFirst>["length"], body: DataFirst): DataLast & DataFirst;
+  <DataLast, DataFirst>(isDataFirst: (args: IArguments) => boolean, body: DataFirst): DataLast & DataFirst;
 } = function(arity, body) {
   if (typeof arity === "function") {
     return function() {
-      if (arity(arguments)) { return body.apply(this, arguments) }
-      return ((self: any) => body(self, ...arguments)) as any
-    }
+      if (arity(arguments)) return body.apply(this, arguments);
+      return ((self: any) => body(self, ...arguments)) as any;
+    };
   }
   switch (arity) {
     case 2:
       return function(a, b) {
-        if (arguments.length >= 2) { return body(a, b) }
-        return function(self: any) { return body(self, a) }
-      }
-    // case 3, 4, 5 も同様にインライン展開
+        if (arguments.length >= 2) return body(a, b);
+        return function(self: any) {
+          return body(self, a);
+        };
+      };
+      // case 3, 4, 5 も同様にインライン展開
   }
-}
+};
 ```
 
 これにより同一関数が 2 つのスタイルで利用できる:
@@ -84,9 +86,11 @@ export const dual: {
 ```typescript
 // packages/effect/src/Array.ts:2498-2503
 export const map: {
-  <S extends ReadonlyArray<any>, B>(f: (a: ReadonlyArray.Infer<S>, i: number) => B): (self: S) => ReadonlyArray.With<S, B>
-  <S extends ReadonlyArray<any>, B>(self: S, f: (a: ReadonlyArray.Infer<S>, i: number) => B): ReadonlyArray.With<S, B>
-} = dual(2, <A, B>(self: ReadonlyArray<A>, f: (a: A, i: number) => B): Array<B> => self.map(f))
+  <S extends ReadonlyArray<any>, B>(
+    f: (a: ReadonlyArray.Infer<S>, i: number) => B,
+  ): (self: S) => ReadonlyArray.With<S, B>;
+  <S extends ReadonlyArray<any>, B>(self: S, f: (a: ReadonlyArray.Infer<S>, i: number) => B): ReadonlyArray.With<S, B>;
+} = dual(2, <A, B>(self: ReadonlyArray<A>, f: (a: A, i: number) => B): Array<B> => self.map(f));
 ```
 
 ### ジェネレータ構文によるモナディック合成の平坦化
@@ -96,9 +100,9 @@ export const map: {
 ```typescript
 // packages/effect/src/internal/core.ts:1419-1422
 export const gen: typeof Effect.gen = function() {
-  const f = arguments.length === 1 ? arguments[0] : arguments[1].bind(arguments[0])
-  return fromIterator(() => f(pipe))
-}
+  const f = arguments.length === 1 ? arguments[0] : arguments[1].bind(arguments[0]);
+  return fromIterator(() => f(pipe));
+};
 ```
 
 内部では `SingleShotGen` が `yield*` による値の取り出しを 1 回限りのイテレータとして実装する:
@@ -106,12 +110,12 @@ export const gen: typeof Effect.gen = function() {
 ```typescript
 // packages/effect/src/internal/singleShotGen.ts:1-35
 export class SingleShotGen<T, A> implements Generator<T, A> {
-  called = false
+  called = false;
   constructor(readonly self: T) {}
   next(a: A): IteratorResult<T, A> {
     return this.called
       ? ({ value: a, done: true })
-      : (this.called = true, ({ value: this.self, done: false }))
+      : (this.called = true, ({ value: this.self, done: false }));
   }
 }
 ```
@@ -122,19 +126,19 @@ Effect は `unique symbol` を TypeId として使い、型の同一性を `Symb
 
 ```typescript
 // packages/effect/src/internal/effectable.ts:14
-export const EffectTypeId: Effect.EffectTypeId = Symbol.for("effect/Effect") as Effect.EffectTypeId
+export const EffectTypeId: Effect.EffectTypeId = Symbol.for("effect/Effect") as Effect.EffectTypeId;
 ```
 
 ```typescript
 // packages/effect/src/GlobalValue.ts:42-53
 export const globalValue = <A>(id: unknown, compute: () => A): A => {
   if (!globalStore) {
-    globalThis[globalStoreId] ??= new Map()
-    globalStore = globalThis[globalStoreId] as Map<unknown, any>
+    globalThis[globalStoreId] ??= new Map();
+    globalStore = globalThis[globalStoreId] as Map<unknown, any>;
   }
-  if (!globalStore.has(id)) { globalStore.set(id, compute()) }
-  return globalStore.get(id)!
-}
+  if (!globalStore.has(id)) globalStore.set(id, compute());
+  return globalStore.get(id)!;
+};
 ```
 
 ### Variance Annotation による型安全性
@@ -143,9 +147,9 @@ Effect は TypeScript の構造的型付けの意図しない型の互換性を�
 
 ```typescript
 // packages/effect/src/Types.ts:301-333
-export type Covariant<A> = (_: never) => A       // 共変
-export type Contravariant<A> = (_: A) => void     // 反変
-export type Invariant<A> = (_: A) => A            // 不変
+export type Covariant<A> = (_: never) => A; // 共変
+export type Contravariant<A> = (_: A) => void; // 反変
+export type Invariant<A> = (_: A) => A; // 不変
 ```
 
 ```typescript
@@ -193,7 +197,7 @@ export interface Scope extends Pipeable { readonly [ScopeTypeId]: ScopeTypeId; .
 
 ```typescript
 // packages/effect/src/Array.ts:2498-2503
-export const map = dual(2, (self, f) => self.map(f))
+export const map = dual(2, (self, f) => self.map(f));
 // 使い方: Array.map([1,2,3], n => n * 2) or pipe([1,2,3], Array.map(n => n * 2))
 ```
 
@@ -201,7 +205,7 @@ export const map = dual(2, (self, f) => self.map(f))
 
 ```typescript
 // packages/effect/src/internal/effectable.ts:14
-export const EffectTypeId = Symbol.for("effect/Effect") as Effect.EffectTypeId
+export const EffectTypeId = Symbol.for("effect/Effect") as Effect.EffectTypeId;
 ```
 
 - **GlobalValue による singleton の安定管理**: ホットリロードやモジュール重複時にもグローバル状態を安全に共有する。WeakMap キャッシュやデフォルトサービスの一意性保証に使われる。
@@ -209,21 +213,21 @@ export const EffectTypeId = Symbol.for("effect/Effect") as Effect.EffectTypeId
 ```typescript
 // packages/effect/src/GlobalValue.ts:42-53
 export const globalValue = <A>(id: unknown, compute: () => A): A => {
-  globalThis[globalStoreId] ??= new Map()
+  globalThis[globalStoreId] ??= new Map();
   // ...compute は初回のみ実行
-}
+};
 ```
 
 - **ジェネレータ構文でモナディック合成を手続き的に記述**: `yield*` で Effect の成功値を取り出す記法により、`flatMap` のネストを回避。TypeScript の既存構文を活用するため追加のコンパイラプラグインが不要。
 
 ```typescript
 // Effect.gen の利用例 (packages/effect/src/Effect.ts:2745-2755)
-const program = Effect.gen(function* () {
-  const amount = yield* fetchTransactionAmount
-  const rate = yield* fetchDiscountRate
-  const discounted = yield* applyDiscount(amount, rate)
-  return `Final: ${addServiceCharge(discounted)}`
-})
+const program = Effect.gen(function*() {
+  const amount = yield* fetchTransactionAmount;
+  const rate = yield* fetchDiscountRate;
+  const discounted = yield* applyDiscount(amount, rate);
+  return `Final: ${addServiceCharge(discounted)}`;
+});
 ```
 
 ## Anti-Patterns / 注意点
@@ -232,41 +236,39 @@ const program = Effect.gen(function* () {
 
 ```typescript
 // Bad: エラー型を any で消す
-const result = Effect.runSync(program as Effect.Effect<string, any>)
+const result = Effect.runSync(program as Effect.Effect<string, any>);
 
 // Better: 型を保持し、明示的にハンドリングする
 const result = program.pipe(
   Effect.catchTag("NetworkError", (e) => Effect.succeed(fallback)),
-  Effect.runSync
-)
+  Effect.runSync,
+);
 ```
 
 - **Effect 外でのスロー**: `Effect.gen` 内で `throw` を使うと Cause のトラッキングを迂回し、エラーが `Die` (予期しないエラー) として処理される。エフェクトシステム内では `Effect.fail` を使う。
 
 ```typescript
 // Bad: throw で Cause トラッキングを迂回
-const program = Effect.gen(function* () {
-  throw new Error("something went wrong")
-})
+const program = Effect.gen(function*() {
+  throw new Error("something went wrong");
+});
 
 // Better: Effect.fail でエラー型を追跡
-const program = Effect.gen(function* () {
-  return yield* Effect.fail(new MyError("something went wrong"))
-})
+const program = Effect.gen(function*() {
+  return yield* Effect.fail(new MyError("something went wrong"));
+});
 ```
 
 - **Layer を使わず直接サービスを注入する**: `Effect.provideService` のみで依存を注入するとサービスのライフサイクル管理が手動になる。`Layer` を使えばリソースの自動解放・共有が保証される。
 
 ```typescript
 // Bad: 手動でリソース管理
-const db = await createDbConnection()
-const program = myEffect.pipe(Effect.provideService(DbTag, db))
+const db = await createDbConnection();
+const program = myEffect.pipe(Effect.provideService(DbTag, db));
 // db の解放を忘れるリスク
 
 // Better: Layer でライフサイクルを宣言的に管理
-const DbLive = Layer.scoped(DbTag,
-  Effect.acquireRelease(createDbConnection, (db) => db.close())
-)
+const DbLive = Layer.scoped(DbTag, Effect.acquireRelease(createDbConnection, (db) => db.close()));
 ```
 
 ## 導出ルール

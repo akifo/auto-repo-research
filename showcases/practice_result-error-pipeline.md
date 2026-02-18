@@ -20,8 +20,8 @@ throw する可能性のある操作を `Result.try()` でラップし、例外�
 ```typescript
 // apps/ccusage/src/debug.ts:116-119
 const parseParser = Result.try({
-	try: () => JSON.parse(line) as unknown,
-	catch: () => new Error('Invalid JSON'),
+  try: () => JSON.parse(line) as unknown,
+  catch: () => new Error("Invalid JSON"),
 });
 const parseResult = parseParser();
 ```
@@ -31,8 +31,8 @@ const parseResult = parseParser();
 ```typescript
 // apps/codex/src/data-loader.ts:204-207
 const statResult = await Result.try({
-	try: stat(directoryPath),
-	catch: (error) => error,
+  try: stat(directoryPath),
+  catch: (error) => error,
 });
 ```
 
@@ -43,14 +43,14 @@ const statResult = await Result.try({
 ```typescript
 // apps/ccusage/src/_utils.ts:14-23
 export async function getFileModifiedTime(filePath: string): Promise<number> {
-	return Result.pipe(
-		Result.try({
-			try: stat(filePath),
-			catch: (error) => error,
-		}),
-		Result.map((stats) => stats.mtime.getTime()),
-		Result.unwrap(0),
-	);
+  return Result.pipe(
+    Result.try({
+      try: stat(filePath),
+      catch: (error) => error,
+    }),
+    Result.map((stats) => stats.mtime.getTime()),
+    Result.unwrap(0),
+  );
 }
 ```
 
@@ -61,8 +61,8 @@ Result から値を取り出す際に、失敗時のデフォルト値を指定�
 ```typescript
 // apps/ccusage/src/data-loader.ts:642-645
 return Result.unwrap(
-	fetcher.calculateCostFromTokens(data.message.usage, data.message.model),
-	0,
+  fetcher.calculateCostFromTokens(data.message.usage, data.message.model),
+  0,
 );
 ```
 
@@ -73,13 +73,13 @@ return Result.unwrap(
 ```typescript
 // apps/codex/src/data-loader.ts:249-257
 const parseLine = Result.try({
-	try: () => JSON.parse(trimmed) as unknown,
-	catch: (error) => error,
+  try: () => JSON.parse(trimmed) as unknown,
+  catch: (error) => error,
 });
 const parsedResult = parseLine();
 
 if (Result.isFailure(parsedResult)) {
-	continue;
+  continue;
 }
 ```
 
@@ -92,44 +92,44 @@ if (Result.isFailure(parsedResult)) {
 ```typescript
 // apps/ccusage/src/commands/statusline.ts:288-301
 const getCcusageCost = async (): Promise<number | undefined> => {
-	return Result.pipe(
-		Result.try({
-			try: async () =>
-				loadSessionUsageById(sessionId, {
-					mode: 'auto',
-					offline: mergedOptions.offline,
-				}),
-			catch: (error) => error,
-		})(),
-		Result.map((sessionCost) => sessionCost?.totalCost),
-		Result.inspectError((error) => logger.error('Failed to load session data:', error)),
-		Result.unwrap(undefined),
-	);
+  return Result.pipe(
+    Result.try({
+      try: async () =>
+        loadSessionUsageById(sessionId, {
+          mode: "auto",
+          offline: mergedOptions.offline,
+        }),
+      catch: (error) => error,
+    })(),
+    Result.map((sessionCost) => sessionCost?.totalCost),
+    Result.inspectError((error) => logger.error("Failed to load session data:", error)),
+    Result.unwrap(undefined),
+  );
 };
 ```
 
 ```typescript
 // apps/ccusage/src/commands/statusline.ts:339-358
 const todayCost = await Result.pipe(
-	Result.try({
-		try: async () =>
-			loadDailyUsageData({
-				since: todayStr,
-				until: todayStr,
-				mode: 'auto',
-				offline: mergedOptions.offline,
-			}),
-		catch: (error) => error,
-	})(),
-	Result.map((dailyData) => {
-		if (dailyData.length > 0) {
-			const totals = calculateTotals(dailyData);
-			return totals.totalCost;
-		}
-		return 0;
-	}),
-	Result.inspectError((error) => logger.error('Failed to load daily data:', error)),
-	Result.unwrap(0),
+  Result.try({
+    try: async () =>
+      loadDailyUsageData({
+        since: todayStr,
+        until: todayStr,
+        mode: "auto",
+        offline: mergedOptions.offline,
+      }),
+    catch: (error) => error,
+  })(),
+  Result.map((dailyData) => {
+    if (dailyData.length > 0) {
+      const totals = calculateTotals(dailyData);
+      return totals.totalCost;
+    }
+    return 0;
+  }),
+  Result.inspectError((error) => logger.error("Failed to load daily data:", error)),
+  Result.unwrap(0),
 );
 ```
 
@@ -183,15 +183,15 @@ private async ensurePricingLoaded(): Result.ResultAsync<Map<string, LiteLLMModel
 ```typescript
 // Bad: エラーが発生しても気づけない
 return Result.unwrap(
-	fetcher.calculateCostFromTokens(data.message.usage, data.message.model),
-	0,
+  fetcher.calculateCostFromTokens(data.message.usage, data.message.model),
+  0,
 );
 
 // Good: inspectError でログを残してからデフォルト値を使う
 return Result.pipe(
-	fetcher.calculateCostFromTokens(data.message.usage, data.message.model),
-	Result.inspectError((error) => logger.warn('Cost calculation failed:', error)),
-	Result.unwrap(0),
+  fetcher.calculateCostFromTokens(data.message.usage, data.message.model),
+  Result.inspectError((error) => logger.warn("Cost calculation failed:", error)),
+  Result.unwrap(0),
 );
 ```
 
@@ -202,21 +202,21 @@ Result 型を使わない場合、失敗しうる操作のチェーンが深く�
 ```typescript
 // Bad: try-catch のネストで正常パスが埋もれる
 async function getFileModifiedTime(filePath: string): Promise<number> {
-	try {
-		const stats = await stat(filePath);
-		return stats.mtime.getTime();
-	} catch {
-		return 0;
-	}
+  try {
+    const stats = await stat(filePath);
+    return stats.mtime.getTime();
+  } catch {
+    return 0;
+  }
 }
 
 // Good: Result.pipe で宣言的に記述
 async function getFileModifiedTime(filePath: string): Promise<number> {
-	return Result.pipe(
-		Result.try({ try: stat(filePath), catch: (error) => error }),
-		Result.map((stats) => stats.mtime.getTime()),
-		Result.unwrap(0),
-	);
+  return Result.pipe(
+    Result.try({ try: stat(filePath), catch: (error) => error }),
+    Result.map((stats) => stats.mtime.getTime()),
+    Result.unwrap(0),
+  );
 }
 ```
 
@@ -230,24 +230,24 @@ async function getFileModifiedTime(filePath: string): Promise<number> {
 // Good: プロセス境界では try-catch が適切
 // apps/mcp/src/cli-utils.ts:78-101
 export async function executeCliCommand(
-	executable: string,
-	args: string[],
-	env?: Record<string, string>,
+  executable: string,
+  args: string[],
+  env?: Record<string, string>,
 ): Promise<string> {
-	try {
-		const result = await spawn(executable, args, { env: { ...process.env, ...env } });
-		const output = (result.stdout ?? result.output ?? '').trim();
-		if (output === '') {
-			throw new Error('CLI command returned empty output');
-		}
-		return output;
-	} catch (error: unknown) {
-		if (error instanceof SubprocessError) {
-			const message = (error.stderr ?? error.stdout ?? error.output ?? error.message).trim();
-			throw new Error(message);
-		}
-		throw error;
-	}
+  try {
+    const result = await spawn(executable, args, { env: { ...process.env, ...env } });
+    const output = (result.stdout ?? result.output ?? "").trim();
+    if (output === "") {
+      throw new Error("CLI command returned empty output");
+    }
+    return output;
+  } catch (error: unknown) {
+    if (error instanceof SubprocessError) {
+      const message = (error.stderr ?? error.stdout ?? error.output ?? error.message).trim();
+      throw new Error(message);
+    }
+    throw error;
+  }
 }
 ```
 
@@ -262,13 +262,13 @@ export async function executeCliCommand(
 
 ### try-catch との使い分け基準
 
-| 使い分け | Result 型 | try-catch |
-|---|---|---|
-| JSON パース・API フェッチ | 使う | 使わない |
-| ファイル stat / readFile | 使う | 使わない |
-| 子プロセス呼び出し | 使わない | 使う |
-| ストリーム処理 | 使わない | 使う |
-| 境界の判断基準 | エラーを値として伝搬できる | プロセス境界・複雑な例外階層 |
+| 使い分け                  | Result 型                  | try-catch                    |
+| ------------------------- | -------------------------- | ---------------------------- |
+| JSON パース・API フェッチ | 使う                       | 使わない                     |
+| ファイル stat / readFile  | 使う                       | 使わない                     |
+| 子プロセス呼び出し        | 使わない                   | 使う                         |
+| ストリーム処理            | 使わない                   | 使う                         |
+| 境界の判断基準            | エラーを値として伝搬できる | プロセス境界・複雑な例外階層 |
 
 ### 導入時の注意点
 

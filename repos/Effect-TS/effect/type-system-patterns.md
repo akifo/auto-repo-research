@@ -28,10 +28,10 @@ TypeScript は HKT をネイティブにサポートしないため、Effect-TS 
 ```typescript
 // packages/effect/src/HKT.ts:21-26
 export interface TypeLambda {
-  readonly In: unknown
-  readonly Out2: unknown
-  readonly Out1: unknown
-  readonly Target: unknown
+  readonly In: unknown;
+  readonly Out2: unknown;
+  readonly Out1: unknown;
+  readonly Target: unknown;
 }
 ```
 
@@ -40,12 +40,12 @@ export interface TypeLambda {
 ```typescript
 // packages/effect/src/Effect.ts:150-152
 export interface EffectTypeLambda extends TypeLambda {
-  readonly type: Effect<this["Target"], this["Out1"], this["Out2"]>
+  readonly type: Effect<this["Target"], this["Out1"], this["Out2"]>;
 }
 
 // packages/effect/src/Either.ts:93-95
 export interface EitherTypeLambda extends TypeLambda {
-  readonly type: Either<this["Target"], this["Out1"]>
+  readonly type: Either<this["Target"], this["Out1"]>;
 }
 ```
 
@@ -54,14 +54,14 @@ export interface EitherTypeLambda extends TypeLambda {
 ```typescript
 // packages/effect/src/HKT.ts:31-45
 export type Kind<F extends TypeLambda, In, Out2, Out1, Target> = F extends {
-  readonly type: unknown
+  readonly type: unknown;
 } ? (F & {
-    readonly In: In
-    readonly Out2: Out2
-    readonly Out1: Out1
-    readonly Target: Target
+    readonly In: In;
+    readonly Out2: Out2;
+    readonly Out1: Out1;
+    readonly Target: Target;
   })["type"]
-  : { /* fallback for safety */ }
+  : {/* fallback for safety */};
 ```
 
 この仕組みにより、Do 記法のような高階の操作を型安全に複数のデータ型に対して汎用実装できる（`packages/effect/src/internal/doNotation.ts`）。
@@ -72,9 +72,9 @@ Effect-TS は型パラメータの共変性・反変性・不変性を関数型�
 
 ```typescript
 // packages/effect/src/Types.ts:281-332
-export type Invariant<A> = (_: A) => A
-export type Covariant<A> = (_: never) => A
-export type Contravariant<A> = (_: A) => void
+export type Invariant<A> = (_: A) => A;
+export type Covariant<A> = (_: never) => A;
+export type Contravariant<A> = (_: A) => void;
 ```
 
 これらのヘルパーが `TypeId` 配下の分散フィールドに適用される:
@@ -83,26 +83,26 @@ export type Contravariant<A> = (_: A) => void
 // packages/effect/src/Option.ts:58-63 (共変)
 export interface None<out A> extends Pipeable, Inspectable {
   readonly [TypeId]: {
-    readonly _A: Covariant<A>
-  }
+    readonly _A: Covariant<A>;
+  };
 }
 
 // packages/effect/src/Layer.ts:75-81 (ROut が反変)
 export interface Variance<in ROut, out E, out RIn> {
   readonly [LayerTypeId]: {
-    readonly _ROut: Types.Contravariant<ROut>
-    readonly _E: Types.Covariant<E>
-    readonly _RIn: Types.Covariant<RIn>
-  }
+    readonly _ROut: Types.Contravariant<ROut>;
+    readonly _E: Types.Covariant<E>;
+    readonly _RIn: Types.Covariant<RIn>;
+  };
 }
 
 // packages/effect/src/Schema.ts:324-330 (A と I が不変)
 export interface Variance<A, I, R> {
   readonly [TypeId]: {
-    readonly _A: Types.Invariant<A>
-    readonly _I: Types.Invariant<I>
-    readonly _R: Types.Covariant<R>
-  }
+    readonly _A: Types.Invariant<A>;
+    readonly _I: Types.Invariant<I>;
+    readonly _R: Types.Covariant<R>;
+  };
 }
 ```
 
@@ -114,8 +114,8 @@ export const effectVariance = {
   _R: (_: never) => _,
   _E: (_: never) => _,
   _A: (_: never) => _,
-  _V: version.getCurrentVersion()
-}
+  _V: version.getCurrentVersion(),
+};
 ```
 
 ### ブランド型: 型安全な値の区別
@@ -126,12 +126,12 @@ Brand モジュールは `unique symbol` を活用したブランド型システ
 // packages/effect/src/Brand.ts:56-60
 export interface Brand<in out K extends string | symbol> {
   readonly [BrandTypeId]: {
-    readonly [k in K]: K
-  }
+    readonly [k in K]: K;
+  };
 }
 
 // packages/effect/src/Brand.ts:165
-export type Branded<A, K extends string | symbol> = A & Brand<K>
+export type Branded<A, K extends string | symbol> = A & Brand<K>;
 ```
 
 Brand は交差型として実装されるため、元の型の全操作を保持しつつ、型レベルの区別を追加できる。`Brand.all` で複数のブランドを合成する際、`EnsureCommonBase` 型がベース型の一致を型レベルで強制する:
@@ -139,13 +139,12 @@ Brand は交差型として実装されるため、元の型の全操作を保�
 ```typescript
 // packages/effect/src/Brand.ts:149-158
 export type EnsureCommonBase<
-  Brands extends readonly [Brand.Constructor<any>, ...Array<Brand.Constructor<any>>]
+  Brands extends readonly [Brand.Constructor<any>, ...Array<Brand.Constructor<any>>],
 > = {
   [B in keyof Brands]: Brand.Unbranded<Brand.FromConstructor<Brands[0]>> extends
-    Brand.Unbranded<Brand.FromConstructor<Brands[B]>>
-    ? /* ... */ Brands[B]
-    : "ERROR: All brands should have the same base type"
-}
+    Brand.Unbranded<Brand.FromConstructor<Brands[B]>> ? /* ... */ Brands[B]
+    : "ERROR: All brands should have the same base type";
+};
 ```
 
 ### 型レベル統合（Unify）
@@ -153,6 +152,7 @@ export type EnsureCommonBase<
 Unify モジュールは、union 型のメンバーを型レベルで「統合」する仕組みを提供する。`Effect<number, E1, R1> | Effect<string, E2, R2>` を `Effect<number | string, E1 | E2, R1 | R2>` に変換する。
 
 この仕組みは 3 つの symbol に基づく:
+
 - `typeSymbol`: 型を統合可能にマークする
 - `unifySymbol`: 統合ロジックを定義する
 - `ignoreSymbol`: 統合から除外するキーを指定する
@@ -163,21 +163,20 @@ export type Unify<A> = Values<
   ExtractTypes<
     (
       & FilterIn<A>
-      & { [typeSymbol]: A }
+      & { [typeSymbol]: A; }
     )
   >
-> extends infer Z ? Z | Exclude<A, Z> | FilterOut<A> : never
+> extends infer Z ? Z | Exclude<A, Z> | FilterOut<A> : never;
 ```
 
 各データ型が Unify に参加する方法:
 
 ```typescript
 // packages/effect/src/Effect.ts:111-115
-export interface Effect<out A, out E = never, out R = never>
-  extends Effect.Variance<A, E, R>, Pipeable {
-  readonly [Unify.typeSymbol]?: unknown
-  readonly [Unify.unifySymbol]?: EffectUnify<this>
-  readonly [Unify.ignoreSymbol]?: EffectUnifyIgnore
+export interface Effect<out A, out E = never, out R = never> extends Effect.Variance<A, E, R>, Pipeable {
+  readonly [Unify.typeSymbol]?: unknown;
+  readonly [Unify.unifySymbol]?: EffectUnify<this>;
+  readonly [Unify.ignoreSymbol]?: EffectUnifyIgnore;
 }
 ```
 
@@ -189,12 +188,12 @@ Effect-TS は `declare module` を使い、`Either` と `Option` を `Effect` �
 // packages/effect/src/Effect.ts:186-199
 declare module "./Either.js" {
   interface Left<E, A> extends Effect<A, E> {
-    readonly _tag: "Left"
-    [Symbol.iterator](): EffectGenerator<Left<E, A>>
+    readonly _tag: "Left";
+    [Symbol.iterator](): EffectGenerator<Left<E, A>>;
   }
   interface Right<E, A> extends Effect<A, E> {
-    readonly _tag: "Right"
-    [Symbol.iterator](): EffectGenerator<Right<E, A>>
+    readonly _tag: "Right";
+    [Symbol.iterator](): EffectGenerator<Right<E, A>>;
   }
 }
 ```
@@ -205,8 +204,7 @@ declare module "./Either.js" {
 
 ```typescript
 // packages/effect/src/Effect.ts:247
-export type Context<T extends Effect<any, any, any>> =
-  [T] extends [Effect<infer _A, infer _E, infer _R>] ? _R : never
+export type Context<T extends Effect<any, any, any>> = [T] extends [Effect<infer _A, infer _E, infer _R>] ? _R : never;
 ```
 
 ### NoExcessProperties: 余剰プロパティチェックの強制
@@ -215,9 +213,11 @@ TypeScript の構造的部分型付けではオブジェクトリテラル以外
 
 ```typescript
 // packages/effect/src/Types.ts:348
-export type NoExcessProperties<T, U> = T & {
-  readonly [K in Exclude<keyof U, keyof T>]: never
-}
+export type NoExcessProperties<T, U> =
+  & T
+  & {
+    readonly [K in Exclude<keyof U, keyof T>]: never;
+  };
 ```
 
 ## コード例
@@ -226,28 +226,28 @@ export type NoExcessProperties<T, U> = T & {
 // packages/effect/src/Types.ts:110-111
 // UnionToIntersection: 反変ポジションの推論を利用した union → intersection 変換
 export type UnionToIntersection<T> = (T extends any ? (x: T) => any : never) extends (x: infer R) => any ? R
-  : never
+  : never;
 
 // packages/effect/src/Types.ts:144-147
 // 型の同値判定: 条件型の分配特性を利用した正確な比較
 export type Equals<X, Y> = (<T>() => T extends X ? 1 : 2) extends <
-  T
+  T,
 >() => T extends Y ? 1 : 2 ? true
-  : false
+  : false;
 
 // packages/effect/src/Types.ts:126-128
 // Simplify: マップ型による交差型のフラット化
 export type Simplify<A> = {
-  [K in keyof A]: A[K]
-} extends infer B ? B : never
+  [K in keyof A]: A[K];
+} extends infer B ? B : never;
 
 // packages/effect/src/Data.ts:20-25
 // Equals を利用した条件付きコンストラクタ: フィールドが空なら引数不要
 export interface Constructor<A, Tag extends keyof A = never> {
   (
     args: Types.Equals<Omit<A, Tag>, {}> extends true ? void
-      : { readonly [P in keyof A as P extends Tag ? never : P]: A[P] }
-  ): A
+      : { readonly [P in keyof A as P extends Tag ? never : P]: A[P]; },
+  ): A;
 }
 ```
 
@@ -277,9 +277,9 @@ export interface Constructor<A, Tag extends keyof A = never> {
 
 ```typescript
 // packages/effect/src/Types.ts:281-321
-export type Invariant<A> = (_: A) => A
-export type Covariant<A> = (_: never) => A
-export type Contravariant<A> = (_: A) => void
+export type Invariant<A> = (_: A) => A;
+export type Covariant<A> = (_: never) => A;
+export type Contravariant<A> = (_: A) => void;
 ```
 
 - **TypeId + Variance の二層構造**: `unique symbol` による名目的区別と、分散情報のエンコーディングを一つのインターフェースフィールドにまとめている。型の識別と分散制御を分離しつつ、単一の `readonly [TypeId]` プロパティで表現する。
@@ -287,10 +287,10 @@ export type Contravariant<A> = (_: A) => void
 ```typescript
 // packages/effect/src/Option.ts:58-63
 export interface None<out A> extends Pipeable, Inspectable {
-  readonly _tag: "None"
+  readonly _tag: "None";
   readonly [TypeId]: {
-    readonly _A: Covariant<A>
-  }
+    readonly _A: Covariant<A>;
+  };
 }
 ```
 
@@ -298,12 +298,9 @@ export interface None<out A> extends Pipeable, Inspectable {
 
 ```typescript
 // packages/effect/src/Effect.ts:247-257
-export type Context<T extends Effect<any, any, any>> =
-  [T] extends [Effect<infer _A, infer _E, infer _R>] ? _R : never
-export type Error<T extends Effect<any, any, any>> =
-  [T] extends [Effect<infer _A, infer _E, infer _R>] ? _E : never
-export type Success<T extends Effect<any, any, any>> =
-  [T] extends [Effect<infer _A, infer _E, infer _R>] ? _A : never
+export type Context<T extends Effect<any, any, any>> = [T] extends [Effect<infer _A, infer _E, infer _R>] ? _R : never;
+export type Error<T extends Effect<any, any, any>> = [T] extends [Effect<infer _A, infer _E, infer _R>] ? _E : never;
+export type Success<T extends Effect<any, any, any>> = [T] extends [Effect<infer _A, infer _E, infer _R>] ? _A : never;
 ```
 
 - **型レベルのエラーメッセージ**: `EnsureCommonBase` が型制約違反時にリテラル文字列型 `"ERROR: All brands should have the same base type"` を返し、型エラーの原因を開発者に伝える。
@@ -321,17 +318,17 @@ export type Success<T extends Effect<any, any, any>> =
 // Bad: Layer の Output を共変にする（消費側なので反変が正しい）
 interface BadLayer<ROut, E, RIn> {
   readonly [LayerTypeId]: {
-    readonly _ROut: Types.Covariant<ROut> // 誤: 提供される型は反変
-  }
+    readonly _ROut: Types.Covariant<ROut>; // 誤: 提供される型は反変
+  };
 }
 
 // Better: 実際の意味論に合わせる
 interface Layer<in ROut, out E, out RIn> {
   readonly [LayerTypeId]: {
-    readonly _ROut: Types.Contravariant<ROut>
-    readonly _E: Types.Covariant<E>
-    readonly _RIn: Types.Covariant<RIn>
-  }
+    readonly _ROut: Types.Contravariant<ROut>;
+    readonly _E: Types.Covariant<E>;
+    readonly _RIn: Types.Covariant<RIn>;
+  };
 }
 ```
 
@@ -339,12 +336,12 @@ interface Layer<in ROut, out E, out RIn> {
 
 ```typescript
 // Bad: union が分配されてしまう
-type Context<T> = T extends Effect<infer _A, infer _E, infer R> ? R : never
+type Context<T> = T extends Effect<infer _A, infer _E, infer R> ? R : never;
 // Context<Effect<1, 2, 3> | Effect<4, 5, 6>> は 3 | 6 になるが、
 // 分配を防ぎたい場面では意図しない結果になる
 
 // Better: タプルで包んで分配を制御
-type Context<T> = [T] extends [Effect<infer _A, infer _E, infer R>] ? R : never
+type Context<T> = [T] extends [Effect<infer _A, infer _E, infer R>] ? R : never;
 ```
 
 ## 導出ルール

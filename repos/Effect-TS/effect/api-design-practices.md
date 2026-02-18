@@ -24,6 +24,7 @@ Effect は 177 モジュールからなる大規模 TypeScript ライブラリ�
 `dual` は Effect のほぼ全操作関数で使用されており、593 箇所（58 ファイル）で適用されている。引数の数（arity）を判定基準として、data-first と data-last を自動的に切り替える。
 
 基本構造は以下の通り:
+
 1. オーバーロードシグネチャで data-last（引数なし → カリー化関数を返す）と data-first（全引数渡し）を宣言
 2. `dual(arity, bodyFn)` で実装を 1 つだけ記述
 3. `dual` が `arguments.length` を判定し、arity 未満なら data-last として部分適用関数を返す
@@ -97,23 +98,23 @@ data-first スタイルでは一貫して第 1 引数を `self`、第 2 引数�
 export const dual: {
   <DataLast extends (...args: Array<any>) => any, DataFirst extends (...args: Array<any>) => any>(
     arity: Parameters<DataFirst>["length"],
-    body: DataFirst
-  ): DataLast & DataFirst
+    body: DataFirst,
+  ): DataLast & DataFirst;
   <DataLast extends (...args: Array<any>) => any, DataFirst extends (...args: Array<any>) => any>(
     isDataFirst: (args: IArguments) => boolean,
-    body: DataFirst
-  ): DataLast & DataFirst
+    body: DataFirst,
+  ): DataLast & DataFirst;
 } = function(arity, body) {
   if (typeof arity === "function") {
     return function() {
       if (arity(arguments)) {
-        return body.apply(this, arguments)
+        return body.apply(this, arguments);
       }
-      return ((self: any) => body(self, ...arguments)) as any
-    }
+      return ((self: any) => body(self, ...arguments)) as any;
+    };
   }
   // arity 2〜5 は switch で最適化（省略）
-}
+};
 ```
 
 ```typescript
@@ -122,33 +123,33 @@ export const dual: {
 export const pick: {
   <Keys extends Array<PropertyKey>>(
     ...keys: Keys
-  ): <S extends { [K in Keys[number]]?: any }>(s: S) => Simplify<Pick<S, Keys[number]>>
+  ): <S extends { [K in Keys[number]]?: any; }>(s: S) => Simplify<Pick<S, Keys[number]>>;
   <S extends object, Keys extends Array<keyof S>>(
     s: S,
     ...keys: Keys
-  ): Simplify<Pick<S, Keys[number]>>
+  ): Simplify<Pick<S, Keys[number]>>;
 } = dual(
-  (args) => Predicate.isObject(args[0]),  // 第1引数がオブジェクトなら data-first
+  (args) => Predicate.isObject(args[0]), // 第1引数がオブジェクトなら data-first
   <S extends object, Keys extends Array<keyof S>>(s: S, ...keys: Keys) => {
-    const out: any = {}
+    const out: any = {};
     for (const k of keys) {
-      if (k in s) { out[k] = (s as any)[k] }
+      if (k in s) out[k] = (s as any)[k];
     }
-    return out
-  }
-)
+    return out;
+  },
+);
 ```
 
 ```typescript
 // packages/effect/src/Option.ts:923-929
 // 最もシンプルな dual パターンの実例
 export const map: {
-  <A, B>(f: (a: A) => B): (self: Option<A>) => Option<B>
-  <A, B>(self: Option<A>, f: (a: A) => B): Option<B>
+  <A, B>(f: (a: A) => B): (self: Option<A>) => Option<B>;
+  <A, B>(self: Option<A>, f: (a: A) => B): Option<B>;
 } = dual(
   2,
-  <A, B>(self: Option<A>, f: (a: A) => B): Option<B> => isNone(self) ? none() : some(f(self.value))
-)
+  <A, B>(self: Option<A>, f: (a: A) => B): Option<B> => isNone(self) ? none() : some(f(self.value)),
+);
 ```
 
 ```typescript
@@ -158,21 +159,21 @@ const SomeProto = Object.assign(Object.create(CommonProto), {
   _tag: "Some",
   _op: "Some",
   [Equal.symbol]<A>(this: Option.Some<A>, that: unknown): boolean {
-    return isOption(that) && isSome(that) && Equal.equals(this.value, that.value)
+    return isOption(that) && isSome(that) && Equal.equals(this.value, that.value);
   },
   [Hash.symbol]<A>(this: Option.Some<A>) {
-    return Hash.cached(this, Hash.combine(Hash.hash(this._tag))(Hash.hash(this.value)))
+    return Hash.cached(this, Hash.combine(Hash.hash(this._tag))(Hash.hash(this.value)));
   },
   toJSON<A>(this: Option.Some<A>) {
-    return { _id: "Option", _tag: this._tag, value: toJSON(this.value) }
-  }
-})
+    return { _id: "Option", _tag: this._tag, value: toJSON(this.value) };
+  },
+});
 
 export const some = <A>(value: A): Option.Option<A> => {
-  const a = Object.create(SomeProto)
-  a.value = value
-  return a
-}
+  const a = Object.create(SomeProto);
+  a.value = value;
+  return a;
+};
 ```
 
 ```typescript
@@ -181,12 +182,12 @@ export const some = <A>(value: A): Option.Option<A> => {
 export const tryPromise: {
   <A, E>(
     options: {
-      readonly try: (signal: AbortSignal) => PromiseLike<A>
-      readonly catch: (error: unknown) => E
-    }
-  ): Effect<A, E>
-  <A>(evaluate: (signal: AbortSignal) => PromiseLike<A>): Effect<A, Cause.UnknownException>
-} = effect.tryPromise
+      readonly try: (signal: AbortSignal) => PromiseLike<A>;
+      readonly catch: (error: unknown) => E;
+    },
+  ): Effect<A, E>;
+  <A>(evaluate: (signal: AbortSignal) => PromiseLike<A>): Effect<A, Cause.UnknownException>;
+} = effect.tryPromise;
 ```
 
 ## パターンカタログ
@@ -221,12 +222,12 @@ export const tryPromise: {
 
 ```typescript
 // 簡易版: エラー型は UnknownException
-Effect.tryPromise(() => fetch("/api"))
+Effect.tryPromise(() => fetch("/api"));
 // 詳細版: エラー型を明示的に制御
 Effect.tryPromise({
   try: (signal) => fetch("/api", { signal }),
-  catch: (error) => new NetworkError(String(error))
-})
+  catch: (error) => new NetworkError(String(error)),
+});
 ```
 
 - **JSDoc `@category` タグによる API のセマンティック分類**: Array.ts では `constructors`, `conversions`, `pattern matching`, `concatenating`, `folding`, `guards`, `getters`, `filtering`, `splitting`, `mapping` 等のカテゴリで 142 以上の関数を分類。ドキュメント生成ツールがこの情報を使ってグループ化した API リファレンスを生成できる。
@@ -246,15 +247,14 @@ pipe() {
 
 ```typescript
 // Bad: data-last のみ
-const filter = <A>(pred: (a: A) => boolean) => (arr: A[]): A[] =>
-  arr.filter(pred)
+const filter = <A>(pred: (a: A) => boolean) => (arr: A[]): A[] => arr.filter(pred);
 // 使用: filter(isEven)([1,2,3]) — 不自然
 
 // Better: dual で両対応
 const filter: {
-  <A>(pred: (a: A) => boolean): (arr: A[]) => A[]
-  <A>(arr: A[], pred: (a: A) => boolean): A[]
-} = dual(2, <A>(arr: A[], pred: (a: A) => boolean) => arr.filter(pred))
+  <A>(pred: (a: A) => boolean): (arr: A[]) => A[];
+  <A>(arr: A[], pred: (a: A) => boolean): A[];
+} = dual(2, <A>(arr: A[], pred: (a: A) => boolean) => arr.filter(pred));
 // 使用: filter([1,2,3], isEven) も pipe([1,2,3], filter(isEven)) も可
 ```
 
@@ -263,15 +263,15 @@ const filter: {
 ```typescript
 // Bad: predicate が先
 export const find: {
-  <A>(predicate: (a: A) => boolean): (arr: A[]) => A | undefined     // こちらが先にマッチ
-  <A, B extends A>(refinement: (a: A) => a is B): (arr: A[]) => B | undefined
-}
+  <A>(predicate: (a: A) => boolean): (arr: A[]) => A | undefined; // こちらが先にマッチ
+  <A, B extends A>(refinement: (a: A) => a is B): (arr: A[]) => B | undefined;
+};
 
 // Better: refinement が先
 export const find: {
-  <A, B extends A>(refinement: (a: A) => a is B): (arr: A[]) => B | undefined  // 先にマッチ
-  <A>(predicate: (a: A) => boolean): (arr: A[]) => A | undefined
-}
+  <A, B extends A>(refinement: (a: A) => a is B): (arr: A[]) => B | undefined; // 先にマッチ
+  <A>(predicate: (a: A) => boolean): (arr: A[]) => A | undefined;
+};
 ```
 
 - **instanceof に依存した型判定**: Effect は `Symbol.for` ベースの TypeId で型判定を行い、`instanceof` を一切使わない。`instanceof` はプロトタイプチェーンに依存するため、異なるバンドルやモジュール重複環境で偽陰性を返す。
@@ -279,13 +279,13 @@ export const find: {
 ```typescript
 // Bad: instanceof に依存
 function isOption(value: unknown): value is Option<unknown> {
-  return value instanceof OptionImpl
+  return value instanceof OptionImpl;
 }
 
 // Better: Symbol.for + hasProperty
-const TypeId = Symbol.for("effect/Option")
+const TypeId = Symbol.for("effect/Option");
 function isOption(value: unknown): value is Option<unknown> {
-  return hasProperty(value, TypeId)
+  return hasProperty(value, TypeId);
 }
 ```
 

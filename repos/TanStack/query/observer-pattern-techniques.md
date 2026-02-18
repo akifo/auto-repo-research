@@ -26,23 +26,23 @@ TanStack Query は Observer パターンを中核アーキテクチャとして�
 ```typescript
 // packages/query-core/src/subscribable.ts:1-30
 export class Subscribable<TListener extends Function> {
-  protected listeners = new Set<TListener>()
+  protected listeners = new Set<TListener>();
 
   constructor() {
-    this.subscribe = this.subscribe.bind(this)
+    this.subscribe = this.subscribe.bind(this);
   }
 
   subscribe(listener: TListener): () => void {
-    this.listeners.add(listener)
-    this.onSubscribe()
+    this.listeners.add(listener);
+    this.onSubscribe();
     return () => {
-      this.listeners.delete(listener)
-      this.onUnsubscribe()
-    }
+      this.listeners.delete(listener);
+      this.onUnsubscribe();
+    };
   }
 
   hasListeners(): boolean {
-    return this.listeners.size > 0
+    return this.listeners.size > 0;
   }
 
   protected onSubscribe(): void {
@@ -56,6 +56,7 @@ export class Subscribable<TListener extends Function> {
 ```
 
 設計上の重要な判断:
+
 1. `subscribe` メソッドをコンストラクタで `bind` している。これは React の `useSyncExternalStore` に渡す際にメソッド参照が安定している必要があるため。
 2. `onSubscribe`/`onUnsubscribe` はテンプレートメソッドパターンで、サブクラスが購読数の変化に応じた副作用を実装できる。
 3. リスナーを `Set` で管理することで、同一リスナーの重複登録を自然に防止している。
@@ -96,49 +97,58 @@ protected onUnsubscribe(): void {
 ```typescript
 // packages/query-core/src/notifyManager.ts:17-63
 export function createNotifyManager() {
-  let queue: Array<NotifyCallback> = []
-  let transactions = 0
-  let notifyFn: NotifyFunction = (callback) => { callback() }
-  let batchNotifyFn: BatchNotifyFunction = (callback: () => void) => { callback() }
-  let scheduleFn = defaultScheduler
+  let queue: Array<NotifyCallback> = [];
+  let transactions = 0;
+  let notifyFn: NotifyFunction = (callback) => {
+    callback();
+  };
+  let batchNotifyFn: BatchNotifyFunction = (callback: () => void) => {
+    callback();
+  };
+  let scheduleFn = defaultScheduler;
 
   const schedule = (callback: NotifyCallback): void => {
     if (transactions) {
-      queue.push(callback)
+      queue.push(callback);
     } else {
-      scheduleFn(() => { notifyFn(callback) })
+      scheduleFn(() => {
+        notifyFn(callback);
+      });
     }
-  }
+  };
   const flush = (): void => {
-    const originalQueue = queue
-    queue = []
+    const originalQueue = queue;
+    queue = [];
     if (originalQueue.length) {
       scheduleFn(() => {
         batchNotifyFn(() => {
-          originalQueue.forEach((callback) => { notifyFn(callback) })
-        })
-      })
+          originalQueue.forEach((callback) => {
+            notifyFn(callback);
+          });
+        });
+      });
     }
-  }
+  };
 
   return {
     batch: <T>(callback: () => T): T => {
-      let result
-      transactions++
+      let result;
+      transactions++;
       try {
-        result = callback()
+        result = callback();
       } finally {
-        transactions--
-        if (!transactions) { flush() }
+        transactions--;
+        if (!transactions) flush();
       }
-      return result
+      return result;
     },
     // ...
-  }
+  };
 }
 ```
 
 3つの差し替え可能な関数が連携する:
+
 - `scheduleFn`: 通知のスケジューリング（デフォルトは `setTimeout(cb, 0)` で次ティック遅延）
 - `notifyFn`: 個別通知のラッパー（テスト時に `React.act` で包む用途）
 - `batchNotifyFn`: バッチ通知のラッパー（ReactDOM の `unstable_batchedUpdates` を差し込む用途）
@@ -169,20 +179,20 @@ trackResult(
 ```typescript
 // packages/query-core/src/queryObserver.ts:662-696
 const shouldNotifyListeners = (): boolean => {
-  if (!prevResult) { return true }
+  if (!prevResult) return true;
 
-  const { notifyOnChangeProps } = this.options
+  const { notifyOnChangeProps } = this.options;
   // ...
   const includedProps = new Set(
     notifyOnChangePropsValue ?? this.#trackedProps,
-  )
+  );
 
   return Object.keys(this.#currentResult).some((key) => {
-    const typedKey = key as keyof QueryObserverResult
-    const changed = this.#currentResult[typedKey] !== prevResult[typedKey]
-    return changed && includedProps.has(typedKey)
-  })
-}
+    const typedKey = key as keyof QueryObserverResult;
+    const changed = this.#currentResult[typedKey] !== prevResult[typedKey];
+    return changed && includedProps.has(typedKey);
+  });
+};
 ```
 
 ### QueriesObserver: Observer の Observer（Composite パターン）
@@ -310,15 +320,15 @@ React.useSyncExternalStore(
     (onStoreChange) => {
       const unsubscribe = shouldSubscribe
         ? observer.subscribe(notifyManager.batchCalls(onStoreChange))
-        : noop
-      observer.updateResult()
-      return unsubscribe
+        : noop;
+      observer.updateResult();
+      return unsubscribe;
     },
     [observer, shouldSubscribe],
   ),
   () => observer.getCurrentResult(),
   () => observer.getCurrentResult(),
-)
+);
 ```
 
 - **構造的共有（Structural Sharing）によるイミュータブル最適化**: `replaceEqualDeep` は新旧データを再帰比較し、等価な部分は前回の参照を保持する。これにより `===` 比較だけで変化検知でき、React の `useMemo` 依存配列やセレクタの最適化が自然に効く。
@@ -326,9 +336,9 @@ React.useSyncExternalStore(
 ```typescript
 // packages/query-core/src/utils.ts:267-313
 export function replaceEqualDeep(a: any, b: any, depth = 0): any {
-  if (a === b) { return a }
+  if (a === b) return a;
   // ...再帰比較して等価なサブツリーの参照を保持
-  return aSize === bSize && equalItems === aSize ? a : copy
+  return aSize === bSize && equalItems === aSize ? a : copy;
 }
 ```
 
@@ -347,33 +357,33 @@ setScheduler: (fn: ScheduleFunction) => { scheduleFn = fn },
 
 ```typescript
 // Bad: 状態を変更したが通知しない
-this.#currentResult = newResult
+this.#currentResult = newResult;
 // 通知忘れ
 
 // Better: TanStack Query の実装のように、変更検知と通知を一体化する
 // packages/query-core/src/queryObserver.ts:656-697
 if (shallowEqualObjects(nextResult, prevResult)) {
-  return  // 変更なし → 通知不要（意図的スキップ）
+  return; // 変更なし → 通知不要（意図的スキップ）
 }
-this.#currentResult = nextResult
-this.#notify({ listeners: shouldNotifyListeners() })
+this.#currentResult = nextResult;
+this.#notify({ listeners: shouldNotifyListeners() });
 ```
 
 - **バッチなしでの複数通知**: Observer が多い場合、バッチングなしで個別に通知すると N 回のフレームワーク再レンダリングが走る。TanStack Query は `notifyManager.batch` で全通知を1ティックにまとめている。
 
 ```typescript
 // Bad: 個別に通知
-observers.forEach(observer => observer.onQueryUpdate())
-cache.notify({ type: 'updated' })
+observers.forEach(observer => observer.onQueryUpdate());
+cache.notify({ type: "updated" });
 
 // Better: バッチでまとめる
 // packages/query-core/src/query.ts:680-686
 notifyManager.batch(() => {
   this.observers.forEach((observer) => {
-    observer.onQueryUpdate()
-  })
-  this.#cache.notify({ query: this, type: 'updated', action })
-})
+    observer.onQueryUpdate();
+  });
+  this.#cache.notify({ query: this, type: "updated", action });
+});
 ```
 
 - **Observer の購読解除漏れによるメモリリーク**: Observer が Query から離脱しないと GC タイマーが起動せず、キャッシュエントリが永続する。TanStack Query は `onUnsubscribe` で自動 `destroy` し、`destroy` 内で `removeObserver` を呼ぶことで確実にクリーンアップする。

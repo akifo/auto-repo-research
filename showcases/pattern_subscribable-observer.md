@@ -20,25 +20,25 @@ TanStack Query は24パッケージのモノレポで、`query-core` がフレ�
 ```typescript
 // packages/query-core/src/subscribable.ts:1-30
 export class Subscribable<TListener extends Function> {
-  protected listeners = new Set<TListener>()
+  protected listeners = new Set<TListener>();
 
   constructor() {
-    this.subscribe = this.subscribe.bind(this)
+    this.subscribe = this.subscribe.bind(this);
   }
 
   subscribe(listener: TListener): () => void {
-    this.listeners.add(listener)
+    this.listeners.add(listener);
 
-    this.onSubscribe()
+    this.onSubscribe();
 
     return () => {
-      this.listeners.delete(listener)
-      this.onUnsubscribe()
-    }
+      this.listeners.delete(listener);
+      this.onUnsubscribe();
+    };
   }
 
   hasListeners(): boolean {
-    return this.listeners.size > 0
+    return this.listeners.size > 0;
   }
 
   protected onSubscribe(): void {
@@ -139,47 +139,61 @@ protected onUnsubscribe() {
 ```typescript
 // packages/query-core/src/notifyManager.ts:17-96
 export function createNotifyManager() {
-  let queue: Array<NotifyCallback> = []
-  let transactions = 0
-  let notifyFn: NotifyFunction = (callback) => { callback() }
-  let batchNotifyFn: BatchNotifyFunction = (callback: () => void) => { callback() }
-  let scheduleFn = defaultScheduler
+  let queue: Array<NotifyCallback> = [];
+  let transactions = 0;
+  let notifyFn: NotifyFunction = (callback) => {
+    callback();
+  };
+  let batchNotifyFn: BatchNotifyFunction = (callback: () => void) => {
+    callback();
+  };
+  let scheduleFn = defaultScheduler;
 
   const schedule = (callback: NotifyCallback): void => {
     if (transactions) {
-      queue.push(callback)
+      queue.push(callback);
     } else {
-      scheduleFn(() => { notifyFn(callback) })
+      scheduleFn(() => {
+        notifyFn(callback);
+      });
     }
-  }
+  };
   const flush = (): void => {
-    const originalQueue = queue
-    queue = []
+    const originalQueue = queue;
+    queue = [];
     if (originalQueue.length) {
       scheduleFn(() => {
         batchNotifyFn(() => {
-          originalQueue.forEach((callback) => { notifyFn(callback) })
-        })
-      })
+          originalQueue.forEach((callback) => {
+            notifyFn(callback);
+          });
+        });
+      });
     }
-  }
+  };
 
   return {
     batch: <T>(callback: () => T): T => {
-      let result
-      transactions++
+      let result;
+      transactions++;
       try {
-        result = callback()
+        result = callback();
       } finally {
-        transactions--
-        if (!transactions) { flush() }
+        transactions--;
+        if (!transactions) flush();
       }
-      return result
+      return result;
     },
-    setBatchNotifyFunction: (fn: BatchNotifyFunction) => { batchNotifyFn = fn },
-    setNotifyFunction: (fn: NotifyFunction) => { notifyFn = fn },
-    setScheduler: (fn: ScheduleFunction) => { scheduleFn = fn },
-  }
+    setBatchNotifyFunction: (fn: BatchNotifyFunction) => {
+      batchNotifyFn = fn;
+    },
+    setNotifyFunction: (fn: NotifyFunction) => {
+      notifyFn = fn;
+    },
+    setScheduler: (fn: ScheduleFunction) => {
+      scheduleFn = fn;
+    },
+  };
 }
 ```
 
@@ -201,15 +215,15 @@ React.useSyncExternalStore(
     (onStoreChange) => {
       const unsubscribe = shouldSubscribe
         ? observer.subscribe(notifyManager.batchCalls(onStoreChange))
-        : noop
-      observer.updateResult()
-      return unsubscribe  // クリーンアップで自動的に購読解除
+        : noop;
+      observer.updateResult();
+      return unsubscribe; // クリーンアップで自動的に購読解除
     },
     [observer, shouldSubscribe],
   ),
   () => observer.getCurrentResult(),
   () => observer.getCurrentResult(),
-)
+);
 ```
 
 ```typescript
@@ -217,10 +231,10 @@ React.useSyncExternalStore(
 // 複数 Observer への通知をバッチでまとめる
 notifyManager.batch(() => {
   this.observers.forEach((observer) => {
-    observer.onQueryUpdate()
-  })
-  this.#cache.notify({ query: this, type: 'updated', action })
-})
+    observer.onQueryUpdate();
+  });
+  this.#cache.notify({ query: this, type: "updated", action });
+});
 ```
 
 ```typescript
@@ -239,29 +253,29 @@ protected onUnsubscribe(): void {
 // Bad: 購読解除を手動管理に任せる
 class Store {
   subscribe(listener: Function) {
-    this.listeners.push(listener)
+    this.listeners.push(listener);
     // unsubscribe を返さない → 解除は呼び出し側が ID 管理する必要がある
   }
   unsubscribe(listener: Function) {
-    this.listeners = this.listeners.filter(l => l !== listener)
+    this.listeners = this.listeners.filter(l => l !== listener);
   }
 }
 
 // 使用側: リスナーの参照を自分で管理しなければならない
-const listener = () => { /* ... */ }
-store.subscribe(listener)
+const listener = () => {/* ... */};
+store.subscribe(listener);
 // 忘れやすく、useEffect 等のクリーンアップに直接渡せない
 useEffect(() => {
-  store.subscribe(listener)
-  return () => store.unsubscribe(listener)  // 面倒で漏れやすい
-}, [])
+  store.subscribe(listener);
+  return () => store.unsubscribe(listener); // 面倒で漏れやすい
+}, []);
 ```
 
 ```typescript
 // Bad: バッチなしで個別に通知 → N 回の再レンダリングが走る
-this.state = reducer(this.state)
-this.observers.forEach(observer => observer.onQueryUpdate())
-this.cache.notify({ type: 'updated' })
+this.state = reducer(this.state);
+this.observers.forEach(observer => observer.onQueryUpdate());
+this.cache.notify({ type: "updated" });
 // 2つの通知が別々に発火し、フレームワーク側で複数回の更新サイクルが走る
 ```
 
@@ -270,7 +284,7 @@ this.cache.notify({ type: 'updated' })
 class FocusManager {
   constructor() {
     // 購読者がいなくてもイベントリスナーを登録し続ける
-    window.addEventListener('visibilitychange', this.onFocus)
+    window.addEventListener("visibilitychange", this.onFocus);
   }
 }
 ```

@@ -35,13 +35,13 @@ AGENTS.md は以下の階層構造で情報を整理している:
 
 AGENTS.md が指示するバリデーション手順は CI ワークフロー（`.github/workflows/check.yml`）と一致している:
 
-| AGENTS.md の指示 | CI ジョブ |
-|---|---|
-| `pnpm lint-fix` | `lint` ジョブの `pnpm lint` |
-| `pnpm check` | `types` ジョブの `pnpm check` |
-| `pnpm test run <file>` | `test` ジョブの `pnpm vitest --shard` |
-| `pnpm docgen` | `lint` ジョブの `pnpm codegen` + `git diff --exit-code` |
-| `pnpm build` | 明示的にはないが release ワークフローで実行 |
+| AGENTS.md の指示       | CI ジョブ                                               |
+| ---------------------- | ------------------------------------------------------- |
+| `pnpm lint-fix`        | `lint` ジョブの `pnpm lint`                             |
+| `pnpm check`           | `types` ジョブの `pnpm check`                           |
+| `pnpm test run <file>` | `test` ジョブの `pnpm vitest --shard`                   |
+| `pnpm docgen`          | `lint` ジョブの `pnpm codegen` + `git diff --exit-code` |
+| `pnpm build`           | 明示的にはないが release ワークフローで実行             |
 
 CI には AGENTS.md に記述されていない追加チェックもある: `pnpm circular`（循環依存チェック）、`pnpm test-types`（型テスト）、`pnpm codegen` の結果が git diff を生まないこと。これらは AI 向けには不要と判断されて省略されている。
 
@@ -203,12 +203,12 @@ The `index.ts` files are automatically generated. Do not manually edit them. Use
 
 ```typescript
 // Bad: AGENTS.md の記述に従った場合の想定コード
-import { assert } from "@effect/vitest"
-assert.deepStrictEqual(actual, expected)
+import { assert } from "@effect/vitest";
+assert.deepStrictEqual(actual, expected);
 
 // Better: 実際のコードベースのパターン
-import { deepStrictEqual, strictEqual } from "@effect/vitest/utils"
-deepStrictEqual(actual, expected)
+import { deepStrictEqual, strictEqual } from "@effect/vitest/utils";
+deepStrictEqual(actual, expected);
 ```
 
 - **暗黙の前提知識への依存**: AGENTS.md は `.repos/effect-v4` への参照を記載しているが、このディレクトリのセットアップ手順は書かれていない。AI がこのパスにアクセスしようとして失敗した場合のフォールバックも定義されていない。

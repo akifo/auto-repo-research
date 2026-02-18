@@ -26,17 +26,17 @@ TanStack Query は React, Solid, Vue, Svelte, Angular, Preact の6つのフレ�
 ```typescript
 // packages/query-core/src/__tests__/queryClient.test.tsx:21-32
 beforeEach(() => {
-  vi.useFakeTimers()
-  queryClient = new QueryClient()
-  queryCache = queryClient.getQueryCache()
-  queryClient.mount()
-})
+  vi.useFakeTimers();
+  queryClient = new QueryClient();
+  queryCache = queryClient.getQueryCache();
+  queryClient.mount();
+});
 
 afterEach(() => {
-  queryClient.clear()
-  queryClient.unmount()
-  vi.useRealTimers()
-})
+  queryClient.clear();
+  queryClient.unmount();
+  vi.useRealTimers();
+});
 ```
 
 一方、React アダプター層のテストは `renderWithClient` ヘルパーを使ってコンポーネントをレンダリングする:
@@ -49,14 +49,14 @@ export function renderWithClient(
 ): ReturnType<typeof render> {
   const { rerender, ...result } = render(
     <QueryClientProvider client={client}>{ui}</QueryClientProvider>,
-  )
+  );
   return {
     ...result,
     rerender: (rerenderUi: React.ReactElement) =>
       rerender(
         <QueryClientProvider client={client}>{rerenderUi}</QueryClientProvider>,
       ),
-  } as any
+  } as any;
 }
 ```
 
@@ -68,12 +68,12 @@ export function renderWithClient(
 
 ```typescript
 // packages/query-test-utils/src/queryKey.ts:1-6
-let queryKeyCount = 0
+let queryKeyCount = 0;
 
 export const queryKey = (): Array<string> => {
-  queryKeyCount++
-  return [`query_${queryKeyCount}`]
-}
+  queryKeyCount++;
+  return [`query_${queryKeyCount}`];
+};
 ```
 
 全テストファイルで `const key = queryKey()` として使われ、テスト間のキャッシュ衝突を防いでいる。テスト同士が独立した状態を持つための最小限の仕組みである。
@@ -104,16 +104,16 @@ it('should be inferred as a correct result type', () => {
 
 ```typescript
 // packages/react-query/src/__tests__/queryOptions.test-d.tsx:23-28
-it('should not allow excess properties', () => {
+it("should not allow excess properties", () => {
   assertType(
     queryOptions({
-      queryKey: ['key'],
+      queryKey: ["key"],
       queryFn: () => Promise.resolve(5),
       // @ts-expect-error this is a good error, because stallTime does not exist!
       stallTime: 1000,
     }),
-  )
-})
+  );
+});
 ```
 
 ### マルチ TypeScript バージョンテスト
@@ -138,8 +138,8 @@ React のテストで最も注意すべき点は、ライブラリ内部の状�
 // packages/react-query/test-setup.ts:13-16
 // Wrap notifications with act to make sure React knows about React Query updates
 notifyManager.setNotifyFunction((fn) => {
-  act(fn)
-})
+  act(fn);
+});
 ```
 
 この設定により、テスト内で `vi.advanceTimersByTimeAsync` を呼ぶだけでクエリの状態遷移が React の更新サイクルに正しく伝播する。
@@ -189,9 +189,9 @@ retry: process.env.CI ? 3 : 0,
 
 ```typescript
 // packages/query-test-utils/src/index.ts:1-3
-export { sleep } from './sleep'
-export { queryKey } from './queryKey'
-export { mockVisibilityState } from './mockVisibilityState'
+export { mockVisibilityState } from "./mockVisibilityState";
+export { queryKey } from "./queryKey";
+export { sleep } from "./sleep";
 ```
 
 - **フレームワーク統合をグローバル setup で吸収**: テスト本体に `act()` ラッパーを書く代わりに、`notifyManager.setNotifyFunction` でグローバルにフックする。テスト本体はフレームワーク固有の儀式から解放され、ビジネスロジックの検証に集中できる。
@@ -199,8 +199,8 @@ export { mockVisibilityState } from './mockVisibilityState'
 ```typescript
 // packages/react-query/test-setup.ts:14-16
 notifyManager.setNotifyFunction((fn) => {
-  act(fn)
-})
+  act(fn);
+});
 ```
 
 - **型テストと実行時テストの同一ランナー統合**: `.test-d.ts` ファイルを Vitest の `typecheck: { enabled: true }` で実行することで、`vitest` コマンド一発で型テストとランタイムテストの両方が走る。CI パイプラインが簡潔になる。
@@ -219,10 +219,9 @@ typecheck: { enabled: true },
 ```typescript
 // Bad: CI でのみリトライして通す
 retry: process.env.CI ? 3 : 0,
-
-// Better: fake timer で時間を制御し、テストを決定的にする
-vi.useFakeTimers()
-await vi.advanceTimersByTimeAsync(100)
+  // Better: fake timer で時間を制御し、テストを決定的にする
+  vi.useFakeTimers();
+await vi.advanceTimersByTimeAsync(100);
 ```
 
 ただし TanStack Query では fake timer を基本戦略としつつ、フレームワーク内部のマイクロタスクスケジューリングに起因する避けがたい不安定さに対してのみリトライを適用している。コア層のテストにはリトライが設定されていないことが、この使い分けの意図を示している。
@@ -231,16 +230,16 @@ await vi.advanceTimersByTimeAsync(100)
 
 ```typescript
 // 大量のテストケースそれぞれにインラインの queryFn が定義される
-it('should ...', async () => {
-  const key = queryKey()
+it("should ...", async () => {
+  const key = queryKey();
   function Page() {
     const { data } = useQuery({
       queryKey: key,
-      queryFn: () => sleep(10).then(() => 'specific-test-data'),
-    })
+      queryFn: () => sleep(10).then(() => "specific-test-data"),
+    });
     // ...
   }
-})
+});
 ```
 
 ## 導出ルール

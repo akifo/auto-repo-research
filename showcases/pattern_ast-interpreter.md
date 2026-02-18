@@ -45,7 +45,7 @@ export type AST =
   | TypeLiteral
   | Union
   | Suspend
-  | Transformation
+  | Transformation;
 ```
 
 ### 2. Match 型と getCompiler 関数
@@ -56,17 +56,16 @@ export type AST =
 // SchemaAST.ts:2629-2639
 export type Match<A> = {
   [K in AST["_tag"]]: (
-    ast: Extract<AST, { _tag: K }>,
+    ast: Extract<AST, { _tag: K; }>,
     compile: Compiler<A>,
-    path: ReadonlyArray<PropertyKey>
-  ) => A
-}
+    path: ReadonlyArray<PropertyKey>,
+  ) => A;
+};
 
 export const getCompiler = <A>(match: Match<A>): Compiler<A> => {
-  const compile = (ast: AST, path: ReadonlyArray<PropertyKey>): A =>
-    match[ast._tag](ast as any, compile, path)
-  return compile
-}
+  const compile = (ast: AST, path: ReadonlyArray<PropertyKey>): A => match[ast._tag](ast as any, compile, path);
+  return compile;
+};
 ```
 
 `getCompiler` は `match` オブジェクトを受け取り、再帰的にAST を走査する `compile` 関数を返す。`compile` が第2引数として各ハンドラに渡されるため、子ノードの再帰的処理が可能になる。
@@ -75,13 +74,13 @@ export const getCompiler = <A>(match: Match<A>): Compiler<A> => {
 
 5つのインタプリタが同一の AST を走査し、それぞれ異なる成果物を生成する。
 
-| インタプリタ | 出力型 | ファイル |
-|---|---|---|
-| Parser | バリデーション結果 | `ParseResult.ts:778` |
-| JSONSchema | JSON Schema オブジェクト | `JSONSchema.ts:638` |
-| Pretty | Pretty Print 関数 | `Pretty.ts:52` |
-| Arbitrary | テストデータ生成器 | `Arbitrary.ts:774` |
-| Equivalence | 等価性判定関数 | `Equivalence.ts` |
+| インタプリタ | 出力型                   | ファイル             |
+| ------------ | ------------------------ | -------------------- |
+| Parser       | バリデーション結果       | `ParseResult.ts:778` |
+| JSONSchema   | JSON Schema オブジェクト | `JSONSchema.ts:638`  |
+| Pretty       | Pretty Print 関数        | `Pretty.ts:52`       |
+| Arbitrary    | テストデータ生成器       | `Arbitrary.ts:774`   |
+| Equivalence  | 等価性判定関数           | `Equivalence.ts`     |
 
 Pretty Printer の例:
 
@@ -106,24 +105,23 @@ AST には「型を絞り込む」Refinement と「型を変換する」Transfor
 // SchemaAST.ts:1805-1818
 // Refinement: 入力型は不変、制約だけを追加する
 export class Refinement<From extends AST = AST> {
-  readonly _tag = "Refinement"
+  readonly _tag = "Refinement";
   constructor(
     readonly from: From,
-    readonly filter: (input: any, options: ParseOptions, self: Refinement) =>
-      Option.Option<ParseIssue>,
-    readonly annotations: Annotations = {}
+    readonly filter: (input: any, options: ParseOptions, self: Refinement) => Option.Option<ParseIssue>,
+    readonly annotations: Annotations = {},
   ) {}
 }
 
 // SchemaAST.ts:1927-1937
 // Transformation: 入力型と出力型が異なる
 export class Transformation {
-  readonly _tag = "Transformation"
+  readonly _tag = "Transformation";
   constructor(
     readonly from: AST,
     readonly to: AST,
     readonly transformation: TransformationKind,
-    readonly annotations: Annotations = {}
+    readonly annotations: Annotations = {},
   ) {}
 }
 ```
@@ -148,8 +146,8 @@ export const getAnnotation: {
 // ParseResult.ts:743-770
 const decodeMemoMap = globalValue(
   Symbol.for("effect/ParseResult/decodeMemoMap"),
-  () => new WeakMap<AST.AST, Parser>()
-)
+  () => new WeakMap<AST.AST, Parser>(),
+);
 ```
 
 **構造共有 (changeMap)**: AST の再帰的変換で、変更がないサブツリーは元の配列をそのまま返し、不要なオブジェクト生成を回避する。
@@ -157,15 +155,15 @@ const decodeMemoMap = globalValue(
 ```typescript
 // SchemaAST.ts:2739-2751
 function changeMap<A>(as: ReadonlyArray<A>, f: (a: A) => A): ReadonlyArray<A> {
-  let changed = false
-  const out = Arr.allocate(as.length) as Array<A>
+  let changed = false;
+  const out = Arr.allocate(as.length) as Array<A>;
   for (let i = 0; i < as.length; i++) {
-    const a = as[i]
-    const fa = f(a)
-    if (fa !== a) { changed = true }
-    out[i] = fa
+    const a = as[i];
+    const fa = f(a);
+    if (fa !== a) changed = true;
+    out[i] = fa;
   }
-  return changed ? out : as
+  return changed ? out : as;
 }
 ```
 
@@ -175,15 +173,15 @@ function changeMap<A>(as: ReadonlyArray<A>, f: (a: A) => A): ReadonlyArray<A> {
 // Match 型で全ノードのハンドラを強制するインタプリタ定義
 const jsonSchemaMatch: AST.Match<JSONSchema> = {
   Declaration: (ast, compile) => {
-    const annotation = ast.annotations[JSONSchemaAnnotationId]
-    if (annotation) return annotation as JSONSchema
-    throw new Error("Missing JSONSchema annotation for Declaration")
+    const annotation = ast.annotations[JSONSchemaAnnotationId];
+    if (annotation) return annotation as JSONSchema;
+    throw new Error("Missing JSONSchema annotation for Declaration");
   },
   Literal: (ast) => {
-    if (typeof ast.literal === "string") return { const: ast.literal }
-    if (typeof ast.literal === "number") return { const: ast.literal }
-    if (typeof ast.literal === "boolean") return { const: ast.literal }
-    return {} // null
+    if (typeof ast.literal === "string") return { const: ast.literal };
+    if (typeof ast.literal === "number") return { const: ast.literal };
+    if (typeof ast.literal === "boolean") return { const: ast.literal };
+    return {}; // null
   },
   StringKeyword: () => ({ type: "string" }),
   NumberKeyword: () => ({ type: "number" }),
@@ -195,7 +193,7 @@ const jsonSchemaMatch: AST.Match<JSONSchema> = {
   TypeLiteral: (ast, compile) => ({
     type: "object",
     properties: Object.fromEntries(
-      ast.propertySignatures.map((ps) => [ps.name, compile(ps.type, [])])
+      ast.propertySignatures.map((ps) => [ps.name, compile(ps.type, [])]),
     ),
   }),
   Union: (ast, compile) => ({
@@ -205,14 +203,14 @@ const jsonSchemaMatch: AST.Match<JSONSchema> = {
   Transformation: (ast, compile) => compile(ast.from, []),
   // ... 残りのノードも全て定義が必須
   //     1つでも欠けるとコンパイルエラー
-}
+};
 
 // 5行でインタプリタ(コンパイラ)を取得
-const compileJSONSchema = AST.getCompiler(jsonSchemaMatch)
+const compileJSONSchema = AST.getCompiler(jsonSchemaMatch);
 
 // 使用例: スキーマの AST から JSON Schema を生成
-const schema = Schema.Struct({ name: Schema.String, age: Schema.Number })
-const jsonSchema = compileJSONSchema(schema.ast, [])
+const schema = Schema.Struct({ name: Schema.String, age: Schema.Number });
+const jsonSchema = compileJSONSchema(schema.ast, []);
 ```
 
 ## Bad Example
@@ -221,27 +219,33 @@ const jsonSchema = compileJSONSchema(schema.ast, [])
 // Bad: switch 文で分岐（新ノード追加時に全箇所に波及、コンパイル時チェックなし）
 function toJSON(ast: AST): JSONSchema {
   switch (ast._tag) {
-    case "StringKeyword": return { type: "string" }
-    case "NumberKeyword": return { type: "number" }
-    case "BooleanKeyword": return { type: "boolean" }
-    case "TypeLiteral": return {
-      type: "object",
-      properties: Object.fromEntries(
-        ast.propertySignatures.map((ps) => [ps.name, toJSON(ps.type)])
-      ),
-    }
+    case "StringKeyword":
+      return { type: "string" };
+    case "NumberKeyword":
+      return { type: "number" };
+    case "BooleanKeyword":
+      return { type: "boolean" };
+    case "TypeLiteral":
+      return {
+        type: "object",
+        properties: Object.fromEntries(
+          ast.propertySignatures.map((ps) => [ps.name, toJSON(ps.type)]),
+        ),
+      };
     // 新しいノード（例: TemplateLiteral）を追加しても
     // ここにケースを追加し忘れてもコンパイルエラーにならない
-    default: return {}
+    default:
+      return {};
   }
 }
 
 // Bad: 各インタプリタが独自の再帰走査ロジックを持つ
 function toPretty(ast: AST): string {
   switch (ast._tag) {
-    case "StringKeyword": return "string"
-    // ... 同じ分岐構造を毎回書き直す
-    // toJSON と toPretty で走査ロジックが重複する
+    case "StringKeyword":
+      return "string";
+      // ... 同じ分岐構造を毎回書き直す
+      // toJSON と toPretty で走査ロジックが重複する
   }
 }
 ```

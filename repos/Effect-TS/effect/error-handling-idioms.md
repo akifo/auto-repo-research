@@ -31,7 +31,7 @@ export type Cause<E> =
   | Die
   | Interrupt
   | Sequential<E>
-  | Parallel<E>
+  | Parallel<E>;
 ```
 
 `Parallel` は並行実行で複数エラーが同時発生した場合に両方を保持し、`Sequential` はメイン処理の失敗とファイナライザの失敗を連鎖保持する。`CauseReducer` インタフェース（`Cause.ts:296-303`）により、この再帰構造を任意の型に畳み込める。
@@ -43,28 +43,27 @@ export type Cause<E> =
 ```typescript
 // packages/sql/src/Migrator.ts:57-67
 export class MigrationError extends Data.TaggedError("MigrationError")<{
-  readonly _tag: "MigrationError"
-  readonly cause?: unknown
+  readonly _tag: "MigrationError";
+  readonly cause?: unknown;
   readonly reason:
     | "bad-state"
     | "import-error"
     | "failed"
     | "duplicates"
-    | "locked"
-  readonly message: string
+    | "locked";
+  readonly message: string;
 }> {}
 ```
 
 ```typescript
 // packages/platform/src/Multipart.ts:145-160
 export class MultipartError extends Schema.TaggedError<MultipartError>()("MultipartError", {
-  reason: Schema.Literal("FileTooLarge", "FieldTooLarge", "BodyTooLarge",
-    "TooManyParts", "InternalError", "Parse"),
-  cause: Schema.Defect
+  reason: Schema.Literal("FileTooLarge", "FieldTooLarge", "BodyTooLarge", "TooManyParts", "InternalError", "Parse"),
+  cause: Schema.Defect,
 }) {
-  readonly [ErrorTypeId]: ErrorTypeId = ErrorTypeId
+  readonly [ErrorTypeId]: ErrorTypeId = ErrorTypeId;
   get message(): string {
-    return this.reason
+    return this.reason;
   }
 }
 ```
@@ -198,7 +197,7 @@ class RequestError extends Error.TypeIdError(TypeId, "RequestError")<{
 // packages/effect/src/internal/core.ts:2230-2234
 class YieldableError extends globalThis.Error {
   commit() {
-    return fail(this)
+    return fail(this);
   }
 }
 ```
@@ -219,35 +218,39 @@ Effect.orDie,
 
 ```typescript
 // Bad: 型が Effect<A, UnknownException>
-const bad = Effect.try(() => JSON.parse(input))
+const bad = Effect.try(() => JSON.parse(input));
 
 // Better: 具体的なエラー型を生成
 const better = Effect.try({
   try: () => JSON.parse(input),
-  catch: (cause) => new ParseError({ cause })
-})
+  catch: (cause) => new ParseError({ cause }),
+});
 ```
 
 - **安易な orDie の多用**: `orDie` は期待エラーを欠陥に変換し型から消すが、エラー情報自体はスタックトレースに残るだけで構造的にアクセスできなくなる。モジュール内部ではなくモジュール境界で意図的に使うべき。
 
 ```typescript
 // Bad: ドメインロジック内で orDie
-const bad = fetchUser(id).pipe(Effect.orDie)
+const bad = fetchUser(id).pipe(Effect.orDie);
 
 // Better: 境界で mapError してから必要なら orDie
 const better = fetchUser(id).pipe(
-  Effect.mapError((e) => new AppError({ cause: e }))
-)
+  Effect.mapError((e) => new AppError({ cause: e })),
+);
 ```
 
 - **reason フィールドの文字列リテラル型を省略**: `reason` を `string` 型にすると型安全なパターンマッチができない。リテラルユニオンにすべき。
 
 ```typescript
 // Bad
-class MyError { readonly reason: string }
+class MyError {
+  readonly reason: string;
+}
 
 // Better
-class MyError { readonly reason: "NotFound" | "Timeout" | "Unauthorized" }
+class MyError {
+  readonly reason: "NotFound" | "Timeout" | "Unauthorized";
+}
 ```
 
 ## 導出ルール

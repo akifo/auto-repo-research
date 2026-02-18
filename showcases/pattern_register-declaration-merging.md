@@ -39,29 +39,25 @@ export interface Register {
 ```typescript
 // packages/query-core/src/types.ts:47-61
 export type DefaultError = Register extends {
-  defaultError: infer TError
-}
-  ? TError
-  : Error
+  defaultError: infer TError;
+} ? TError
+  : Error;
 
 export type QueryKey = Register extends {
-  queryKey: infer TQueryKey
-}
-  ? TQueryKey extends ReadonlyArray<unknown>
-    ? TQueryKey
-    : TQueryKey extends Array<unknown>
-      ? TQueryKey
-      : ReadonlyArray<unknown>
+  queryKey: infer TQueryKey;
+} ? TQueryKey extends ReadonlyArray<unknown> ? TQueryKey
+  : TQueryKey extends Array<unknown> ? TQueryKey
   : ReadonlyArray<unknown>
+  : ReadonlyArray<unknown>;
 ```
 
 ### 3. ユーザーが declaration merging で型を上書きする
 
 ```typescript
 // ユーザーのプロジェクトで1回だけ宣言する
-declare module '@tanstack/query-core' {
+declare module "@tanstack/query-core" {
   interface Register {
-    defaultError: AxiosError
+    defaultError: AxiosError;
   }
 }
 ```
@@ -74,29 +70,27 @@ declare module '@tanstack/query-core' {
 
 ```typescript
 // packages/query-core/src/types.ts:63-82
-export const dataTagSymbol = Symbol('dataTagSymbol')
-export type dataTagSymbol = typeof dataTagSymbol
-export const dataTagErrorSymbol = Symbol('dataTagErrorSymbol')
-export type dataTagErrorSymbol = typeof dataTagErrorSymbol
+export const dataTagSymbol = Symbol("dataTagSymbol");
+export type dataTagSymbol = typeof dataTagSymbol;
+export const dataTagErrorSymbol = Symbol("dataTagErrorSymbol");
+export type dataTagErrorSymbol = typeof dataTagErrorSymbol;
 
 export type DataTag<
   TType,
   TValue,
   TError = UnsetMarker,
-> = TType extends AnyDataTag
-  ? TType
+> = TType extends AnyDataTag ? TType
   : TType & {
-      [dataTagSymbol]: TValue
-      [dataTagErrorSymbol]: TError
-    }
+    [dataTagSymbol]: TValue;
+    [dataTagErrorSymbol]: TError;
+  };
 ```
 
 ```typescript
 // packages/query-core/src/types.ts:84-87
-export type InferDataFromTag<TQueryFnData, TTaggedQueryKey extends QueryKey> =
-  TTaggedQueryKey extends DataTag<unknown, infer TaggedValue, unknown>
-    ? TaggedValue
-    : TQueryFnData
+export type InferDataFromTag<TQueryFnData, TTaggedQueryKey extends QueryKey> = TTaggedQueryKey extends
+  DataTag<unknown, infer TaggedValue, unknown> ? TaggedValue
+  : TQueryFnData;
 ```
 
 `queryOptions` は identity 関数だが、オーバーロードシグネチャで `queryKey` に `DataTag` を付与する。
@@ -111,14 +105,14 @@ export function queryOptions<
 >(
   options: DefinedInitialDataOptions<TQueryFnData, TError, TData, TQueryKey>,
 ): DefinedInitialDataOptions<TQueryFnData, TError, TData, TQueryKey> & {
-  queryKey: DataTag<TQueryKey, TQueryFnData, TError>
-}
+  queryKey: DataTag<TQueryKey, TQueryFnData, TError>;
+};
 
 // ... 他のオーバーロード省略 ...
 
 // packages/react-query/src/queryOptions.ts:85-87
 export function queryOptions(options: unknown) {
-  return options
+  return options;
 }
 ```
 
@@ -138,39 +132,39 @@ getQueryData<
 `queryOptions` で定義した型情報が、手動のジェネリクス指定なしに `getQueryData` / `setQueryData` まで伝播する。
 
 ```typescript
-import { queryOptions, useQuery } from '@tanstack/react-query'
-import type { AxiosError } from 'axios'
+import { queryOptions, useQuery } from "@tanstack/react-query";
+import type { AxiosError } from "axios";
 
 // 1. グローバルなデフォルトエラー型を1回だけ宣言
-declare module '@tanstack/query-core' {
+declare module "@tanstack/query-core" {
   interface Register {
-    defaultError: AxiosError
+    defaultError: AxiosError;
   }
 }
 
 // 2. queryOptions でクエリを定義 — queryKey に DataTag が自動付与される
 const todosOptions = queryOptions({
-  queryKey: ['todos'] as const,
+  queryKey: ["todos"] as const,
   queryFn: async () => {
-    const res = await axios.get<Array<Todo>>('/api/todos')
-    return res.data
+    const res = await axios.get<Array<Todo>>("/api/todos");
+    return res.data;
   },
-})
+});
 
 // 3. useQuery — TError は自動で AxiosError に推論される
-const { data, error } = useQuery(todosOptions)
+const { data, error } = useQuery(todosOptions);
 //     ^? Todo[] | undefined
 //            ^? AxiosError | null
 
 // 4. getQueryData — queryKey の DataTag からデータ型が自動推論される
-const cached = queryClient.getQueryData(todosOptions.queryKey)
+const cached = queryClient.getQueryData(todosOptions.queryKey);
 //    ^? Todo[] | undefined （ジェネリクス指定不要）
 
 // 5. setQueryData — updater の型も自動推論される
 queryClient.setQueryData(todosOptions.queryKey, (old) => {
   //                                              ^? Todo[] | undefined
-  return old?.filter(todo => !todo.completed)
-})
+  return old?.filter(todo => !todo.completed);
+});
 ```
 
 ## Bad Example
@@ -178,29 +172,29 @@ queryClient.setQueryData(todosOptions.queryKey, (old) => {
 Register パターンなしでは、全ての呼び出し箇所にジェネリクスを手動指定する必要がある。
 
 ```typescript
-import { useQuery } from '@tanstack/react-query'
-import type { AxiosError } from 'axios'
+import { useQuery } from "@tanstack/react-query";
+import type { AxiosError } from "axios";
 
 // Bad: 全ての useQuery に TError を手動で指定する必要がある
 const { data, error } = useQuery<Todo[], AxiosError>({
-  queryKey: ['todos'],
+  queryKey: ["todos"],
   queryFn: fetchTodos,
-})
+});
 
 // Bad: getQueryData にも手動で型を渡す必要がある
-const cached = queryClient.getQueryData<Todo[]>(['todos'])
+const cached = queryClient.getQueryData<Todo[]>(["todos"]);
 
 // Bad: setQueryData も手動
-queryClient.setQueryData<Todo[]>(['todos'], (old) => {
-  return old?.filter(todo => !todo.completed)
-})
+queryClient.setQueryData<Todo[]>(["todos"], (old) => {
+  return old?.filter(todo => !todo.completed);
+});
 
 // Bad: 数十箇所に同じジェネリクスを書く必要があり、
 //      書き漏れた箇所では TError がデフォルトの Error になってしまう
 const { error: err2 } = useQuery({
-  queryKey: ['users'],
+  queryKey: ["users"],
   queryFn: fetchUsers,
-})
+});
 // err2 は Error 型 — AxiosError ではない（書き漏れ）
 ```
 

@@ -37,9 +37,10 @@ packages:
 ```
 
 この4層構造は、workspace の役割を明確に分離している:
+
 1. **packages/\***: npm に公開されるパッケージ（vite, create-vite, plugin-legacy）
 2. **playground/\*\***: E2E テストの実行対象となる実アプリケーション（40+）
-3. **packages/\*\*/__tests__/\*\***: ユニットテスト内で使う fixture プロジェクト
+3. **packages/\*\*/**tests**/\*\***: ユニットテスト内で使う fixture プロジェクト
 4. **docs**: VitePress ドキュメントサイト
 
 playground を workspace メンバーにすることで、`vite: "workspace:*"` としてローカルの開発版 Vite を直接参照でき、ビルドなしでの E2E テストが可能になる。
@@ -61,6 +62,7 @@ patchedDependencies:
 ```
 
 注目すべきプラクティス:
+
 - `$rolldown` 構文でルートの devDependencies のバージョンを参照し、バージョン一元管理を実現
 - `debug` パッケージを `obug` に npm alias で置換（軽量化またはバンドル互換性のため）
 - `patches/` ディレクトリで外部パッケージの不具合を monorepo 内でローカル修正
@@ -94,6 +96,7 @@ patchedDependencies:
 ```
 
 `exports` マップの設計ポイント:
+
 - `"./types/internal/*": null` で内部型の外部公開を明示的にブロック
 - `./client` は型定義のみ公開（ランタイムコードはブラウザで別途ロード）
 - `./internal` エントリで「公開だが安定性を保証しない」API を分離
@@ -103,13 +106,13 @@ patchedDependencies:
 
 `packages/vite/src/` 配下の5ディレクトリは明確な実行環境に対応:
 
-| ディレクトリ | 実行環境 | 役割 |
-|---|---|---|
-| `node/` | Node.js (サーバー) | CLI、開発サーバー、ビルドパイプライン |
-| `client/` | ブラウザ | HMR クライアント、オーバーレイ |
-| `module-runner/` | 汎用 JS ランタイム | SSR モジュール実行環境 |
-| `shared/` | 両環境 | 環境非依存のユーティリティ |
-| `types/` | コンパイル時のみ | 型定義 |
+| ディレクトリ     | 実行環境           | 役割                                  |
+| ---------------- | ------------------ | ------------------------------------- |
+| `node/`          | Node.js (サーバー) | CLI、開発サーバー、ビルドパイプライン |
+| `client/`        | ブラウザ           | HMR クライアント、オーバーレイ        |
+| `module-runner/` | 汎用 JS ランタイム | SSR モジュール実行環境                |
+| `shared/`        | 両環境             | 環境非依存のユーティリティ            |
+| `types/`         | コンパイル時のみ   | 型定義                                |
 
 この分離は `package.json` の `exports` と直接対応しており、バンドラーが環境ごとに適切なエントリポイントを選択できる。
 
@@ -117,11 +120,11 @@ patchedDependencies:
 
 monorepo 内の3パッケージは明確に異なる責務を持つ:
 
-| パッケージ | 目的 | ビルドツール | 依存の方向 |
-|---|---|---|---|
-| `vite` | コアビルドツール | Rolldown (セルフバンドル) | 独立 |
-| `create-vite` | プロジェクトスキャフォールド | tsdown | vite に依存しない |
-| `plugin-legacy` | レガシーブラウザ対応 | tsdown | vite に peerDependency |
+| パッケージ      | 目的                         | ビルドツール              | 依存の方向             |
+| --------------- | ---------------------------- | ------------------------- | ---------------------- |
+| `vite`          | コアビルドツール             | Rolldown (セルフバンドル) | 独立                   |
+| `create-vite`   | プロジェクトスキャフォールド | tsdown                    | vite に依存しない      |
+| `plugin-legacy` | レガシーブラウザ対応         | tsdown                    | vite に peerDependency |
 
 `create-vite` は `vite` への依存が一切なく、完全に独立したパッケージとして設計されている。`plugin-legacy` は `vite` を `peerDependencies` として宣言し、`devDependencies` で `workspace:*` 参照を持つことで開発時のみローカル版を使用する。
 
@@ -150,6 +153,7 @@ pnpm のデフォルトでは厳格な依存分離が行われるが、特定の
 ```
 
 テストは3段階に分離:
+
 1. **test-unit**: Vitest によるユニットテスト（`vitest.config.ts`）
 2. **test-serve**: 開発サーバーモードでの E2E テスト（`vitest.config.e2e.ts`）
 3. **test-build**: ビルドモードでの E2E テスト（同じ config、環境変数で切り替え）

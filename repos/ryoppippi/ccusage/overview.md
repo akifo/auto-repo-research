@@ -21,22 +21,22 @@ ccusage は pnpm workspace monorepo 上に構築された CLI ツール群であ
 
 ## 分析した視点
 
-| # | 視点 | ファイル | 概要 |
-| - | ---- | -------- | ---- |
-| 1 | project-structure | project-structure.md | pnpm workspace monorepo で apps/packages 分離、devDependencies-only 戦略、pnpm catalogs strict、_ prefix 内部ファイル規約 |
-| 2 | architecture | architecture.md | 扇形依存の一方向アーキテクチャ、4段データパイプライン、Branded 型・Result 型・in-source testing の一貫適用 |
-| 3 | design-philosophy | design-philosophy.md | バンドル前提の devDeps 集約、AI ファーストの階層的 CLAUDE.md、スキーマ駆動型定義、safeParse + サイレントスキップ |
-| 4 | type-system-patterns | type-system-patterns.md | Valibot brand() で 12 種のドメインプリミティブを型安全化、ファクトリ関数 + スキーマ型導出、Result パイプライン |
-| 5 | abstraction-patterns | abstraction-patterns.md | 表現層・インフラ層を共有パッケージに集約しデータ変換層はアプリ固有に保持、ビルド時マクロ、意図的重複の管理 |
-| 6 | code-organization | code-organization.md | _ prefix 命名 + tsdown entry 除外 + exports 三層で API 境界を制御、subpath exports で機能別公開 |
-| 7 | error-handling-idioms | error-handling-idioms.md | Result.try/pipe/unwrap の 3 イディオムで統一、isFailure + continue の早期スキップ、境界でのみ try-catch 許容 |
-| 8 | testing-practices | testing-practices.md | 全ファイルで in-source testing、await using + createFixture で宣言的フィクスチャ + 自動クリーンアップ |
-| 9 | cli-framework-patterns | cli-framework-patterns.md | Gunshi define() による宣言的コマンド定義、共有引数のスプレッド拡張、tokens 活用の 4 層設定優先度マージ |
-| 10 | build-and-tooling | build-and-tooling.md | tsdown + publint + unused 品質ゲート統合、unplugin-macros ビルド時データ埋め込み、DCE-only minify |
-| 11 | data-processing-patterns | data-processing-patterns.md | JSONL ストリーミング解析 + safeParse サイレントスキップ、階層的時系列集約、3 モードコスト計算 |
-| 12 | dependency-management | dependency-management.md | catalogMode:strict + 8 カテゴリで 153 箇所の依存を一元管理、4 層サプライチェーン防御 |
-| 13 | ai-settings | ai-settings.md | 10 個の CLAUDE.md 階層的コンテキスト、AGENTS.md シンボリックリンク、npm 化 LLM ドキュメント + skills |
-| 14 | dev-conventions | dev-conventions.md | verbatimModuleSyntax + .ts 拡張子 import、ESLint 論理ルール + oxfmt フォーマット分離、構造化ロガー |
+| #  | 視点                     | ファイル                    | 概要                                                                                                                      |
+| -- | ------------------------ | --------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| 1  | project-structure        | project-structure.md        | pnpm workspace monorepo で apps/packages 分離、devDependencies-only 戦略、pnpm catalogs strict、_ prefix 内部ファイル規約 |
+| 2  | architecture             | architecture.md             | 扇形依存の一方向アーキテクチャ、4段データパイプライン、Branded 型・Result 型・in-source testing の一貫適用                |
+| 3  | design-philosophy        | design-philosophy.md        | バンドル前提の devDeps 集約、AI ファーストの階層的 CLAUDE.md、スキーマ駆動型定義、safeParse + サイレントスキップ          |
+| 4  | type-system-patterns     | type-system-patterns.md     | Valibot brand() で 12 種のドメインプリミティブを型安全化、ファクトリ関数 + スキーマ型導出、Result パイプライン            |
+| 5  | abstraction-patterns     | abstraction-patterns.md     | 表現層・インフラ層を共有パッケージに集約しデータ変換層はアプリ固有に保持、ビルド時マクロ、意図的重複の管理                |
+| 6  | code-organization        | code-organization.md        | _ prefix 命名 + tsdown entry 除外 + exports 三層で API 境界を制御、subpath exports で機能別公開                           |
+| 7  | error-handling-idioms    | error-handling-idioms.md    | Result.try/pipe/unwrap の 3 イディオムで統一、isFailure + continue の早期スキップ、境界でのみ try-catch 許容              |
+| 8  | testing-practices        | testing-practices.md        | 全ファイルで in-source testing、await using + createFixture で宣言的フィクスチャ + 自動クリーンアップ                     |
+| 9  | cli-framework-patterns   | cli-framework-patterns.md   | Gunshi define() による宣言的コマンド定義、共有引数のスプレッド拡張、tokens 活用の 4 層設定優先度マージ                    |
+| 10 | build-and-tooling        | build-and-tooling.md        | tsdown + publint + unused 品質ゲート統合、unplugin-macros ビルド時データ埋め込み、DCE-only minify                         |
+| 11 | data-processing-patterns | data-processing-patterns.md | JSONL ストリーミング解析 + safeParse サイレントスキップ、階層的時系列集約、3 モードコスト計算                             |
+| 12 | dependency-management    | dependency-management.md    | catalogMode:strict + 8 カテゴリで 153 箇所の依存を一元管理、4 層サプライチェーン防御                                      |
+| 13 | ai-settings              | ai-settings.md              | 10 個の CLAUDE.md 階層的コンテキスト、AGENTS.md シンボリックリンク、npm 化 LLM ドキュメント + skills                      |
+| 14 | dev-conventions          | dev-conventions.md          | verbatimModuleSyntax + .ts 拡張子 import、ESLint 論理ルール + oxfmt フォーマット分離、構造化ロガー                        |
 
 ## 特に注目すべき知見
 

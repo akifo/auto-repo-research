@@ -30,48 +30,49 @@ export function transformRequest(
   url: string,
   options: TransformOptionsInternal = {},
 ): Promise<TransformResult | null> {
-  if (environment._closing && environment.config.dev.recoverable)
-    throwClosedServerError()
+  if (environment._closing && environment.config.dev.recoverable) {
+    throwClosedServerError();
+  }
 
   // リクエスト開始時のタイムスタンプを記録（単調増加を保証）
-  const timestamp = monotonicDateNow()
+  const timestamp = monotonicDateNow();
 
-  url = removeTimestampQuery(url)
+  url = removeTimestampQuery(url);
 
   // --- (1) 進行中のリクエストがあれば合流を試みる ---
-  const pending = environment._pendingRequests.get(url)
+  const pending = environment._pendingRequests.get(url);
   if (pending) {
     return environment.moduleGraph.getModuleByUrl(url).then((module) => {
       if (!module || pending.timestamp > module.lastInvalidationTimestamp) {
         // pending のタイムスタンプが無効化より新しい → 結果はまだ有効
-        return pending.request
+        return pending.request;
       } else {
         // pending 中に無効化が発生 → 古い結果を破棄して再処理
-        pending.abort()
-        return transformRequest(environment, url, options)
+        pending.abort();
+        return transformRequest(environment, url, options);
       }
-    })
+    });
   }
 
   // --- (2) 新規リクエストを開始し、Map に登録する ---
-  const request = doTransform(environment, url, options, timestamp)
+  const request = doTransform(environment, url, options, timestamp);
 
-  let cleared = false
+  let cleared = false;
   const clearCache = () => {
     if (!cleared) {
-      environment._pendingRequests.delete(url)
-      cleared = true
+      environment._pendingRequests.delete(url);
+      cleared = true;
     }
-  }
+  };
 
   environment._pendingRequests.set(url, {
     request,
     timestamp,
     abort: clearCache,
-  })
+  });
 
   // --- (3) 完了時に自動クリーンアップ ---
-  return request.finally(clearCache)
+  return request.finally(clearCache);
 }
 ```
 
@@ -102,8 +103,9 @@ invalidateModule(
 ```typescript
 // packages/vite/src/node/server/transformRequest.ts:435-436
 // 処理中に無効化されていなければ結果をキャッシュする
-if (timestamp > mod.lastInvalidationTimestamp)
-  moduleGraph.updateModuleTransformResult(mod, result)
+if (timestamp > mod.lastInvalidationTimestamp) {
+  moduleGraph.updateModuleTransformResult(mod, result);
+}
 ```
 
 ## Good Example
@@ -112,12 +114,12 @@ if (timestamp > mod.lastInvalidationTimestamp)
 
 ```typescript
 // packages/vite/src/node/server/transformRequest.ts:109-146
-const pending = environment._pendingRequests.get(url)
+const pending = environment._pendingRequests.get(url);
 if (pending) {
   return environment.moduleGraph.getModuleByUrl(url).then((module) => {
     if (!module || pending.timestamp > module.lastInvalidationTimestamp) {
       // The pending request is still valid, we can safely reuse its result
-      return pending.request
+      return pending.request;
     } else {
       // Request 1 for module A     (pending.timestamp)
       // Invalidate module A        (module.lastInvalidationTimestamp)
@@ -125,34 +127,35 @@ if (pending) {
 
       // First request has been invalidated, abort it to clear the cache,
       // then perform a new doTransform.
-      pending.abort()
-      return transformRequest(environment, url, options)
+      pending.abort();
+      return transformRequest(environment, url, options);
     }
-  })
+  });
 }
 
-const request = doTransform(environment, url, options, timestamp)
+const request = doTransform(environment, url, options, timestamp);
 
 // Avoid clearing the cache of future requests if aborted
-let cleared = false
+let cleared = false;
 const clearCache = () => {
   if (!cleared) {
-    environment._pendingRequests.delete(url)
-    cleared = true
+    environment._pendingRequests.delete(url);
+    cleared = true;
   }
-}
+};
 
 // Cache the request and clear it once processing is done
 environment._pendingRequests.set(url, {
   request,
   timestamp,
   abort: clearCache,
-})
+});
 
-return request.finally(clearCache)
+return request.finally(clearCache);
 ```
 
 ポイント:
+
 - `pending.timestamp > module.lastInvalidationTimestamp` で結果の有効性を検証
 - `abort()` で無効化されたリクエストの Map エントリを即座にクリア
 - `clearCache` 内の `cleared` フラグで二重削除を防止
@@ -164,25 +167,26 @@ return request.finally(clearCache)
 
 ```typescript
 // Bad: 無効化を考慮しない実装
-const pendingRequests = new Map<string, Promise<Result>>()
+const pendingRequests = new Map<string, Promise<Result>>();
 
 function processRequest(url: string): Promise<Result> {
-  const pending = pendingRequests.get(url)
+  const pending = pendingRequests.get(url);
   if (pending) {
     // 危険: pending 中にリソースが無効化されていても古い結果を返す
-    return pending
+    return pending;
   }
 
-  const request = doExpensiveWork(url)
-  pendingRequests.set(url, request)
+  const request = doExpensiveWork(url);
+  pendingRequests.set(url, request);
 
   return request.finally(() => {
-    pendingRequests.delete(url)
-  })
+    pendingRequests.delete(url);
+  });
 }
 ```
 
 この実装の問題点:
+
 - **古いデータの利用**: リクエスト処理中にリソースが変更されても、古い結果がそのまま返される
 - **abort 機構の欠如**: 無効化された処理を中断する手段がない
 - **整合性の破綻**: HMR のような頻繁な更新がある環境では、ブラウザに古いコードが配信される
