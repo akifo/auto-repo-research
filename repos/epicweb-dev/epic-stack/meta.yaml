@@ -1,0 +1,99 @@
+url: https://github.com/epicweb-dev/epic-stack
+stars: 5531
+language: TypeScript
+license: MIT
+description: "This is a Full Stack app starter with the foundational things setup and configured for you to hit the ground running on your next EPIC idea."
+analyzed_at: "2026-02-18"
+local_path: /Users/akiho/github/github.com/epicweb-dev/epic-stack
+scale: medium
+
+perspectives:
+  - name: project-structure
+    file: project-structure.md
+    wave: 1
+    intent: "ディレクトリ構成とモジュール分割の戦略を明らかにし、フルスタックアプリのコード編成パターンを抽出する"
+    summary: ".server.tsサフィックスによるバンドル境界制御、コロケーション優先の配置、Node.js subpath importsによるエイリアス統一"
+
+  - name: architecture
+    file: architecture.md
+    wave: 1
+    intent: "サーバー・クライアント・DB のレイヤー構成と依存関係の方向性を分析し、フルスタックアプリの境界設計を評価する"
+    summary: "Express+React Router+Prismaの3層構造、一方向依存、ミドルウェアへのインフラ関心事集約、selectによるデータ最小取得"
+
+  - name: design-philosophy
+    file: design-philosophy.md
+    wave: 1
+    intent: "技術選定の根拠と設計哲学を解明し、スターターテンプレートとしての意図的な設計判断を抽出する"
+    summary: "47件のADRによる判断追跡、サービス最小化、段階的サービス導入（Deferred Setup）、Web標準への収束"
+
+  - name: testing-strategy
+    file: testing-strategy.md
+    wave: 1
+    intent: "Testing Trophy モデルに基づくテスト種別の使い分け戦略と、Vitest/Playwright/MSW の役割分担を明らかにする"
+    summary: "統合テスト中心主義、MSWによる外部APIモック共用、DBスナップショットコピー分離、カスタムマッチャーによるドメインアサーション"
+
+  - name: test-infrastructure
+    file: test-infrastructure.md
+    wave: 1
+    intent: "テスト基盤の設計（グローバルセットアップ・DB分離・カスタムマッチャー・console スパイ）を分析し、再利用可能なテスト環境構築パターンを抽出する"
+    summary: "globalSetup/setupFilesの多層構成、VITEST_POOL_IDによるDB分離、console.error throw化、Viteプラグインによるモジュール差し替え"
+
+  - name: e2e-testing-patterns
+    file: e2e-testing-patterns.md
+    wave: 1
+    intent: "Playwright によるE2Eテスト設計パターン（カスタムfixtures・認証フロー・ページオブジェクト的手法）を分析する"
+    summary: "test.extendによる宣言的フィクスチャ、Cookie直接注入の認証バイパス、ARIAロールベースセレクタ、型安全ナビゲーション"
+
+  - name: mock-and-stub-patterns
+    file: mock-and-stub-patterns.md
+    wave: 2
+    intent: "MSW を中心としたモック戦略の設計と、開発環境・テスト環境で共用するモックサーバーのパターンを分析する"
+    summary: "MSWハンドラの開発・テスト・E2E共用、環境変数プレフィックスによるMock/Real切り替え、デフォルト正常系+テスト内異常系上書き"
+
+  - name: test-data-management
+    file: test-data-management.md
+    wave: 2
+    intent: "faker によるテストデータ生成、DB のセットアップ/ティアダウン、フィクスチャ管理のパターンを体系化する"
+    summary: "3層ファクトリ構造（プリミティブ→DB操作→フィクスチャ）、UniqueEnforcerによる一意性保証、mtime比較によるbase DB再生成スキップ"
+
+  - name: test-fixture-patterns
+    file: test-fixture-patterns.md
+    wave: 2
+    intent: "Playwright の test.extend によるフィクスチャ設計と Vitest のセットアップファイルによるテスト環境構成パターンを比較分析する"
+    summary: "Playwrightはuse()コールバックで宣言的リソース管理、Vitestはプロセスレベルの環境構成、テスト粒度に応じた管理単位の使い分け"
+
+  - name: authentication-testing
+    file: authentication-testing.md
+    wave: 2
+    intent: "セッション・Cookie・OAuth（GitHub）のテスト手法を分析し、認証フローの統合テストパターンを抽出する"
+    summary: "DB+Cookie直接注入による認証バイパス、MSW+ファイルフィクスチャによるOAuthモック、フォールセーフ外部APIの異常系テスト"
+
+  - name: error-handling-idioms
+    file: error-handling-idioms.md
+    wave: 2
+    intent: "Error Boundary・バリデーション・invariant の使い分けとエラー伝播パターンを横断的に分析する"
+    summary: "invariant/invariantResponseの使い分け、Zod+Conformのフォームバリデーション、GeneralErrorBoundaryのstatusHandlersパターン"
+
+  - name: type-system-patterns
+    file: type-system-patterns.md
+    wave: 2
+    intent: "Zod スキーマ・Prisma 型・カスタム型拡張（Vitest matchers 等）の活用パターンを分析する"
+    summary: "Zodスキーマ駆動型定義、z.infer/z.inputの使い分け、Prisma型のIndexed Access、satisfiesによる型整合性検証"
+
+  - name: security-practices
+    file: security-practices.md
+    wave: 2
+    intent: "CSP・rate limiting・honeypot・TOTP・パスキーなどのセキュリティ実装パターンを横断的に分析する"
+    summary: "階層化レート制限、CSP nonce注入、統一TOTP検証基盤、HIBP漏洩チェック、SameSite=LaxによるCSRFトークン不要化"
+
+  - name: ci-cd
+    file: ci-cd.md
+    wave: 2
+    intent: "GitHub Actions でのテスト並列化・DB キャッシュ・ビルド最適化・デプロイ戦略を分析する"
+    summary: "5ジョブ並列実行、スキーマハッシュベースのDBキャッシュ、Build-then-Deployパターン、SHAベースのイメージタグ"
+
+  - name: dev-conventions
+    file: dev-conventions.md
+    wave: 2
+    intent: "ESLint・Prettier・import エイリアス・コード規約の設計と enforcement パターンを分析する"
+    summary: "@epic-web/configによる設定一元管理、Node.js subpath importsへの段階的移行、.server.tsによるバンドル境界宣言"
