@@ -70,36 +70,6 @@ find <repo_path> -type f \( -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -na
 - Git hooks（`.husky/`, `.lefthook.yml` 等）
 - CI ワークフロー（`.github/workflows/`）
 
-### Step 2.5: repomix コードダイジェストの生成
-
-リポジトリの圧縮ダイジェストを生成し、perspective-writer agent に共有する。
-
-**コマンド**:
-
-```bash
-npx repomix@latest <repo_path> \
-  --compress \
-  --style xml \
-  --output /tmp/repomix-<org>-<repo>.xml \
-  --output-show-line-numbers \
-  --no-security-check \
-  --quiet \
-  -i "*.test.*,*.spec.*,__tests__/**,test/**,tests/**,*.md,*.lock,dist/**,build/**,coverage/**,*.min.*,*.map,fixtures/**,__fixtures__/**,__snapshots__/**,*.d.ts"
-```
-
-**規模別戦略**:
-
-| 規模                  | 戦略                 | 詳細                                                             |
-| --------------------- | -------------------- | ---------------------------------------------------------------- |
-| 小規模（~50ファイル） | `full`               | テスト除外のみで全ファイル                                       |
-| 中規模（50-200）      | `full`               | 上記コマンドそのまま                                             |
-| 大規模（200+）        | `full` + `--include` | `src/**` 等に絞る。生成後ファイルサイズ確認（1MB超なら更に絞る） |
-| フォールバック        | `none`               | repomix 失敗時 or 1MB超で絞れない場合。従来モードで続行          |
-
-**フォールバック**: repomix 失敗時は `digest_mode = none` で続行する（研究を中断しない）
-
-**Resume 対応**: `/tmp/repomix-<org>-<repo>.xml` が既に存在すればそのまま再利用する
-
 ### Step 3: 視点の適応的生成
 
 Step 2 の情報を基に、分析する視点リストを生成する。
@@ -204,8 +174,6 @@ perspectives:
   - 出力先ファイルパス（`repos/<org>/<repo>/<perspective>.md`）
   - テンプレートファイルのパス（`templates/perspective.md`）
   - Step 2 で収集した初期調査情報（技術スタック、ディレクトリ構成等）
-  - `digest_path`: Step 2.5 で生成したダイジェストのパス
-  - `digest_mode`: `full` | `none`
 - agent の subagent_type は `general-purpose` を使用する
 - 各 agent のプロンプトの冒頭で `.claude/agents/perspective-writer.md` の内容を参照するよう指示する
 - 「導出ルール」セクションと「適用チェックリスト」セクションが **必須** であることを明記する
@@ -224,15 +192,11 @@ perspectives:
 - repo_path: /Users/.../github.com/honojs/hono
 - output_path: /Users/.../repos/honojs/hono/architecture.md
 - template_path: /Users/.../templates/perspective.md
-- digest_path: /tmp/repomix-honojs-hono.xml
-- digest_mode: full
 
 ## リポジトリの初期調査情報
 [Step 2 の結果をここに貼り付け]
 
 ## 分析の注意事項
-- **まず digest_path のファイルを Read で読み取り**、コードベースの全体像を把握すること
-- ダイジェストで得た知見をベースに、焦点を絞った深掘りのみ Glob/Grep/Read で行うこと
 - コードベース全体を横断して分析すること（特定のモジュールや機能に閉じない）
 - 機能の実装解説ではなく、プラクティスの収集・体系化を行うこと
 - 導出ルールは「このリポを知らない開発者が自分のコードに適用できる」汎用性を持たせること
@@ -291,8 +255,6 @@ templates/perspective.md を Read で読み、そのフォーマットに従っ�
    - 分析視点の総数（Wave 1 / Wave 2 の内訳）
    - 未完了の視点があればその一覧
    - rules.md の生成状況
-   - ダイジェストモード（`full` / `none`）
-   - ダイジェストファイルの場所とサイズ（`full` の場合。不要なら `rm /tmp/repomix-<org>-<repo>.xml` で削除可能）
    - 出力ファイルの場所
    - `/showcase` コマンドの案内（「研究結果から実用的な知見を抽出するには `/showcase <theme> <name>` を実行してください」）
 
