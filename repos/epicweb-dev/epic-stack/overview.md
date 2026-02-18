@@ -21,23 +21,23 @@ Epic Stack はフルスタック React アプリケーションのリファレ�
 
 ## 分析した視点
 
-| # | 視点 | ファイル | 概要 |
-| - | ---- | -------- | ---- |
-| 1 | プロジェクト構成 | project-structure.md | .server.tsサフィックスによるバンドル境界制御、コロケーション優先の配置、Node.js subpath importsによるエイリアス統一 |
-| 2 | アーキテクチャ | architecture.md | Express+React Router+Prismaの3層構造、一方向依存、ミドルウェアへのインフラ関心事集約、selectによるデータ最小取得 |
-| 3 | 設計哲学 | design-philosophy.md | 47件のADRによる判断追跡、サービス最小化、段階的サービス導入（Deferred Setup）、Web標準への収束 |
-| 4 | テスト戦略 | testing-strategy.md | 統合テスト中心主義、MSWによる外部APIモック共用、DBスナップショットコピー分離、カスタムマッチャーによるドメインアサーション |
-| 5 | テスト基盤 | test-infrastructure.md | globalSetup/setupFilesの多層構成、VITEST_POOL_IDによるDB分離、console.error throw化、Viteプラグインによるモジュール差し替え |
-| 6 | E2Eテストパターン | e2e-testing-patterns.md | test.extendによる宣言的フィクスチャ、Cookie直接注入の認証バイパス、ARIAロールベースセレクタ、型安全ナビゲーション |
-| 7 | モック・スタブパターン | mock-and-stub-patterns.md | MSWハンドラの開発・テスト・E2E共用、環境変数プレフィックスによるMock/Real切り替え、デフォルト正常系+テスト内異常系上書き |
-| 8 | テストデータ管理 | test-data-management.md | 3層ファクトリ構造、UniqueEnforcerによる一意性保証、mtime比較によるbase DB再生成スキップ |
-| 9 | テストフィクスチャパターン | test-fixture-patterns.md | Playwrightはuse()コールバックで宣言的リソース管理、Vitestはプロセスレベルの環境構成 |
-| 10 | 認証テスト | authentication-testing.md | DB+Cookie直接注入による認証バイパス、MSW+ファイルフィクスチャによるOAuthモック、フォールセーフ外部APIの異常系テスト |
-| 11 | エラーハンドリング | error-handling-idioms.md | invariant/invariantResponseの使い分け、Zod+Conformのフォームバリデーション、GeneralErrorBoundaryのstatusHandlersパターン |
-| 12 | 型システムパターン | type-system-patterns.md | Zodスキーマ駆動型定義、z.infer/z.inputの使い分け、Prisma型のIndexed Access、satisfiesによる型整合性検証 |
-| 13 | セキュリティ実装 | security-practices.md | 階層化レート制限、CSP nonce注入、統一TOTP検証基盤、HIBP漏洩チェック、SameSite=LaxによるCSRFトークン不要化 |
-| 14 | CI/CD | ci-cd.md | 5ジョブ並列実行、スキーマハッシュベースのDBキャッシュ、Build-then-Deployパターン、SHAベースのイメージタグ |
-| 15 | 開発規約 | dev-conventions.md | @epic-web/configによる設定一元管理、Node.js subpath importsへの段階的移行、.server.tsによるバンドル境界宣言 |
+| #  | 視点                       | ファイル                  | 概要                                                                                                                        |
+| -- | -------------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| 1  | プロジェクト構成           | project-structure.md      | .server.tsサフィックスによるバンドル境界制御、コロケーション優先の配置、Node.js subpath importsによるエイリアス統一         |
+| 2  | アーキテクチャ             | architecture.md           | Express+React Router+Prismaの3層構造、一方向依存、ミドルウェアへのインフラ関心事集約、selectによるデータ最小取得            |
+| 3  | 設計哲学                   | design-philosophy.md      | 47件のADRによる判断追跡、サービス最小化、段階的サービス導入（Deferred Setup）、Web標準への収束                              |
+| 4  | テスト戦略                 | testing-strategy.md       | 統合テスト中心主義、MSWによる外部APIモック共用、DBスナップショットコピー分離、カスタムマッチャーによるドメインアサーション  |
+| 5  | テスト基盤                 | test-infrastructure.md    | globalSetup/setupFilesの多層構成、VITEST_POOL_IDによるDB分離、console.error throw化、Viteプラグインによるモジュール差し替え |
+| 6  | E2Eテストパターン          | e2e-testing-patterns.md   | test.extendによる宣言的フィクスチャ、Cookie直接注入の認証バイパス、ARIAロールベースセレクタ、型安全ナビゲーション           |
+| 7  | モック・スタブパターン     | mock-and-stub-patterns.md | MSWハンドラの開発・テスト・E2E共用、環境変数プレフィックスによるMock/Real切り替え、デフォルト正常系+テスト内異常系上書き    |
+| 8  | テストデータ管理           | test-data-management.md   | 3層ファクトリ構造、UniqueEnforcerによる一意性保証、mtime比較によるbase DB再生成スキップ                                     |
+| 9  | テストフィクスチャパターン | test-fixture-patterns.md  | Playwrightはuse()コールバックで宣言的リソース管理、Vitestはプロセスレベルの環境構成                                         |
+| 10 | 認証テスト                 | authentication-testing.md | DB+Cookie直接注入による認証バイパス、MSW+ファイルフィクスチャによるOAuthモック、フォールセーフ外部APIの異常系テスト         |
+| 11 | エラーハンドリング         | error-handling-idioms.md  | invariant/invariantResponseの使い分け、Zod+Conformのフォームバリデーション、GeneralErrorBoundaryのstatusHandlersパターン    |
+| 12 | 型システムパターン         | type-system-patterns.md   | Zodスキーマ駆動型定義、z.infer/z.inputの使い分け、Prisma型のIndexed Access、satisfiesによる型整合性検証                     |
+| 13 | セキュリティ実装           | security-practices.md     | 階層化レート制限、CSP nonce注入、統一TOTP検証基盤、HIBP漏洩チェック、SameSite=LaxによるCSRFトークン不要化                   |
+| 14 | CI/CD                      | ci-cd.md                  | 5ジョブ並列実行、スキーマハッシュベースのDBキャッシュ、Build-then-Deployパターン、SHAベースのイメージタグ                   |
+| 15 | 開発規約                   | dev-conventions.md        | @epic-web/configによる設定一元管理、Node.js subpath importsへの段階的移行、.server.tsによるバンドル境界宣言                 |
 
 ## 特に注目すべき知見
 

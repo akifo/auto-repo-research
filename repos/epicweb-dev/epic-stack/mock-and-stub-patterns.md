@@ -26,29 +26,29 @@ MSW (Mock Service Worker) を中心としたモック戦略の設計と、開発
 ```typescript
 // tests/mocks/index.ts:8-39
 export const server = setupServer(
-	...resendHandlers,
-	...githubHandlers,
-	...tigrisHandlers,
-	...pwnedPasswordApiHandlers,
-)
+  ...resendHandlers,
+  ...githubHandlers,
+  ...tigrisHandlers,
+  ...pwnedPasswordApiHandlers,
+);
 
 server.listen({
-	onUnhandledRequest(request, print) {
-		if (request.url.includes('.sentry.io')) {
-			return
-		}
-		if (request.url.includes('__rrdt')) {
-			return
-		}
-		print.warning()
-	},
-})
+  onUnhandledRequest(request, print) {
+    if (request.url.includes(".sentry.io")) {
+      return;
+    }
+    if (request.url.includes("__rrdt")) {
+      return;
+    }
+    print.warning();
+  },
+});
 
-if (process.env.NODE_ENV !== 'test') {
-	console.info('🔶 Mock server installed')
-	closeWithGrace(() => {
-		server.close()
-	})
+if (process.env.NODE_ENV !== "test") {
+  console.info("🔶 Mock server installed");
+  closeWithGrace(() => {
+    server.close();
+  });
 }
 ```
 
@@ -56,8 +56,8 @@ if (process.env.NODE_ENV !== 'test') {
 
 ```typescript
 // index.ts:19-21
-if (process.env.MOCKS === 'true') {
-	await import('./tests/mocks/index.ts')
+if (process.env.MOCKS === "true") {
+  await import("./tests/mocks/index.ts");
 }
 ```
 
@@ -74,19 +74,18 @@ GitHub モックハンドラは `passthrough()` を活用し、実際の GitHub 
 
 ```typescript
 // tests/mocks/github.ts:131-139
-const passthroughGitHub =
-	!process.env.GITHUB_CLIENT_ID?.startsWith('MOCK_') &&
-	process.env.NODE_ENV !== 'test'
+const passthroughGitHub = !process.env.GITHUB_CLIENT_ID?.startsWith("MOCK_")
+  && process.env.NODE_ENV !== "test";
 
 export const handlers: Array<HttpHandler> = [
-	http.post(
-		'https://github.com/login/oauth/access_token',
-		async ({ request }) => {
-			if (passthroughGitHub) return passthrough()
-			// ... mock implementation
-		},
-	),
-]
+  http.post(
+    "https://github.com/login/oauth/access_token",
+    async ({ request }) => {
+      if (passthroughGitHub) return passthrough();
+      // ... mock implementation
+    },
+  ),
+];
 ```
 
 `.env.example` でデフォルト値に `MOCK_` プレフィックスを付与し、初期セットアップ時に自動的にモックモードで動作させる。
@@ -106,13 +105,13 @@ GitHub モックはテストワーカーの並列実行に対応するため、`
 ```typescript
 // tests/mocks/github.ts:13-20
 const githubUserFixturePath = path.join(
-	here(
-		'..',
-		'fixtures',
-		'github',
-		`users.${process.env.VITEST_POOL_ID || 0}.local.json`,
-	),
-)
+  here(
+    "..",
+    "fixtures",
+    "github",
+    `users.${process.env.VITEST_POOL_ID || 0}.local.json`,
+  ),
+);
 ```
 
 メール送信モックも同じパターンで、モックハンドラがメール内容をフィクスチャに書き出し、E2E テストがそのファイルを読み取って内容を検証する。
@@ -120,9 +119,9 @@ const githubUserFixturePath = path.join(
 ```typescript
 // tests/mocks/utils.ts:31-35
 export async function writeEmail(rawEmail: unknown) {
-	const email = EmailSchema.parse(rawEmail)
-	await createFixture('email', email.to, email)
-	return email
+  const email = EmailSchema.parse(rawEmail);
+  await createFixture("email", email.to, email);
+  return email;
 }
 ```
 
@@ -133,16 +132,16 @@ export async function writeEmail(rawEmail: unknown) {
 ```typescript
 // vite.config.ts:16-26
 const cacheServerStubPlugin = {
-	name: 'vitest-cache-server-stub',
-	enforce: 'pre' as const,
-	resolveId(source: string) {
-		if (!process.env.VITEST) return null
-		if (source.endsWith('cache.server.ts')) {
-			return path.resolve('tests/mocks/cache-server.ts')
-		}
-		return null
-	},
-}
+  name: "vitest-cache-server-stub",
+  enforce: "pre" as const,
+  resolveId(source: string) {
+    if (!process.env.VITEST) return null;
+    if (source.endsWith("cache.server.ts")) {
+      return path.resolve("tests/mocks/cache-server.ts");
+    }
+    return null;
+  },
+};
 ```
 
 スタブ実装は `Map` ベースのインメモリキャッシュで、`cachified` 関数は常に `getFreshValue` を呼ぶ簡易実装を提供する。
@@ -150,13 +149,13 @@ const cacheServerStubPlugin = {
 ```typescript
 // tests/mocks/cache-server.ts:50-58
 export async function cachified<Value>(
-	options: {
-		getFreshValue: (context: { metadata: CacheEntry<unknown>['metadata'] }) => Promise<Value> | Value
-	},
+  options: {
+    getFreshValue: (context: { metadata: CacheEntry<unknown>["metadata"]; }) => Promise<Value> | Value;
+  },
 ): Promise<Value> {
-	return options.getFreshValue({
-		metadata: { createdTime: Date.now(), ttl: null, swr: null },
-	})
+  return options.getFreshValue({
+    metadata: { createdTime: Date.now(), ttl: null, swr: null },
+  });
 }
 ```
 
@@ -198,19 +197,19 @@ async handleMockAction(request: Request) {
 
 ```typescript
 // app/utils/auth.server.test.ts:45-56
-test('checkIsCommonPassword returns false when API returns 500', async () => {
-	const password = 'testpassword'
-	const [prefix] = getPasswordHashParts(password)
+test("checkIsCommonPassword returns false when API returns 500", async () => {
+  const password = "testpassword";
+  const [prefix] = getPasswordHashParts(password);
 
-	server.use(
-		http.get(`https://api.pwnedpasswords.com/range/${prefix}`, () => {
-			return new HttpResponse(null, { status: 500 })
-		}),
-	)
+  server.use(
+    http.get(`https://api.pwnedpasswords.com/range/${prefix}`, () => {
+      return new HttpResponse(null, { status: 500 });
+    }),
+  );
 
-	const result = await checkIsCommonPassword(password)
-	expect(result).toBe(false)
-})
+  const result = await checkIsCommonPassword(password);
+  expect(result).toBe(false);
+});
 ```
 
 ## パターンカタログ
@@ -235,9 +234,8 @@ test('checkIsCommonPassword returns false when API returns 500', async () => {
 
 ```typescript
 // tests/mocks/github.ts:131-133
-const passthroughGitHub =
-	!process.env.GITHUB_CLIENT_ID?.startsWith('MOCK_') &&
-	process.env.NODE_ENV !== 'test'
+const passthroughGitHub = !process.env.GITHUB_CLIENT_ID?.startsWith("MOCK_")
+  && process.env.NODE_ENV !== "test";
 ```
 
 - **VITEST_POOL_ID によるフィクスチャ分離**: 並列テスト実行時にフィクスチャファイルの競合を避けるため、テストワーカー ID をファイル名に含める。データベースファイル (`db-setup.ts:7`) と GitHub ユーザーフィクスチャ (`github.ts:18`) の両方で同じ手法を適用している。
@@ -251,15 +249,15 @@ const passthroughGitHub =
 ```typescript
 // Bad: モック内で認証プロトコルの詳細を検証
 function validateAuth(headers: Headers) {
-	const authHeader = headers.get('Authorization')
-	if (!authHeader?.startsWith('AWS4-HMAC-SHA256')) return false
-	if (authHeader.includes(`Credential=${STORAGE_ACCESS_KEY}/`)) return true
-	return false
+  const authHeader = headers.get("Authorization");
+  if (!authHeader?.startsWith("AWS4-HMAC-SHA256")) return false;
+  if (authHeader.includes(`Credential=${STORAGE_ACCESS_KEY}/`)) return true;
+  return false;
 }
 
 // Better: モックでは認証ヘッダーの存在のみ検証
 function validateAuth(headers: Headers) {
-	return headers.has('Authorization')
+  return headers.has("Authorization");
 }
 ```
 
@@ -267,9 +265,8 @@ function validateAuth(headers: Headers) {
 
 ```typescript
 // app/utils/providers/github.server.ts:23-25
-const shouldMock =
-	process.env.GITHUB_CLIENT_ID?.startsWith('MOCK_') ||
-	process.env.NODE_ENV === 'test'
+const shouldMock = process.env.GITHUB_CLIENT_ID?.startsWith("MOCK_")
+  || process.env.NODE_ENV === "test";
 ```
 
 ## 導出ルール

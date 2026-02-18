@@ -46,6 +46,7 @@ index.ts (dotenv + source-map + mocks)
 `.server.ts` サフィックスを持つファイルはサーバーサイドのみで使用される。この規約はルーティング設定 (`app/routes.ts:15-16`) と Vite プラグイン `vite-env-only` で強制される。
 
 サーバー専用ファイルの分類:
+
 - **データアクセス**: `db.server.ts`, `cache.server.ts`, `storage.server.ts`
 - **認証・認可**: `auth.server.ts`, `session.server.ts`, `permissions.server.ts`
 - **外部サービス**: `email.server.ts`, `connections.server.ts`
@@ -89,22 +90,22 @@ app/routes/users/$username/notes/
 // app/utils/auth.server.ts:29-46
 export async function getUserId(request: Request) {
   const authSession = await authSessionStorage.getSession(
-    request.headers.get('cookie'),
-  )
-  const sessionId = authSession.get(sessionKey)
-  if (!sessionId) return null
+    request.headers.get("cookie"),
+  );
+  const sessionId = authSession.get(sessionKey);
+  if (!sessionId) return null;
   const session = await prisma.session.findUnique({
     select: { userId: true },
     where: { id: sessionId, expirationDate: { gt: new Date() } },
-  })
+  });
   if (!session?.userId) {
-    throw redirect('/', {
+    throw redirect("/", {
       headers: {
-        'set-cookie': await authSessionStorage.destroySession(authSession),
+        "set-cookie": await authSessionStorage.destroySession(authSession),
       },
-    })
+    });
   }
-  return session.userId
+  return session.userId;
 }
 ```
 
@@ -135,7 +136,7 @@ export function getEnv() {
     MODE: process.env.NODE_ENV,
     SENTRY_DSN: process.env.SENTRY_DSN,
     ALLOW_INDEXING: process.env.ALLOW_INDEXING,
-  }
+  };
 }
 ```
 
@@ -173,7 +174,7 @@ const note = await prisma.note.findUnique({
       select: { id: true, altText: true, objectKey: true },
     },
   },
-})
+});
 ```
 
 - **関心事ベースのミドルウェア順序**: `server/index.ts` でミドルウェアを「セキュリティ (HTTPS, Helmet) → パフォーマンス (compression) → 監視 (morgan) → レートリミット → 静的ファイル → アプリケーション」の順序で配置し、リクエストが到達する前に横断的関心事を処理する。
@@ -193,11 +194,11 @@ app.use(/* レートリミット */)
 
 ```typescript
 // app/utils/db.server.ts:6
-export const prisma = remember('prisma', () => {
-  const client = new PrismaClient({ /* ... */ })
-  void client.$connect()
-  return client
-})
+export const prisma = remember("prisma", () => {
+  const client = new PrismaClient({/* ... */});
+  void client.$connect();
+  return client;
+});
 ```
 
 ## Anti-Patterns / 注意点
@@ -207,16 +208,16 @@ export const prisma = remember('prisma', () => {
 ```typescript
 // Bad: ルートファイル内に複雑なビジネスロジックが直接展開
 export async function action({ request }) {
-  const userId = await requireUserId(request)
+  const userId = await requireUserId(request);
   // 50行の複雑なビジネスロジック...
-  await prisma.note.update({ /* 複雑なネスト */ })
+  await prisma.note.update({/* 複雑なネスト */});
 }
 
 // Better: 隣接する .server.ts ファイルに委譲
 // route.tsx
-export { action } from './route.server.ts'
+export { action } from "./route.server.ts";
 // route.server.ts
-export async function action({ request }) { /* ... */ }
+export async function action({ request }) {/* ... */}
 ```
 
 - **LiteFS キャッシュ同期の fire-and-forget**: `cache.server.ts:166` でセカンダリからプライマリへのキャッシュ更新を `void` で fire-and-forget している。ネットワーク障害時にキャッシュ不整合が発生しうるが、キャッシュの特性上許容している。本番データに同じパターンを適用すると危険。
@@ -224,13 +225,13 @@ export async function action({ request }) { /* ... */ }
 ```typescript
 // app/utils/cache.server.ts:166-177
 // Bad: ビジネスクリティカルなデータに fire-and-forget
-void updateCriticalData({ key, value })
+void updateCriticalData({ key, value });
 
 // Better: キャッシュのように再生成可能なデータにのみ使用
 void updatePrimaryCacheValue({ key, cacheValue: entry })
   .then((response) => {
-    if (!response.ok) console.error(/* エラーログ */)
-  })
+    if (!response.ok) console.error(); /* エラーログ */
+  });
 ```
 
 ## 導出ルール

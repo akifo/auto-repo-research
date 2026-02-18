@@ -30,6 +30,7 @@ Epic Stack は `docs/decisions/` に 47 件の ADR（Architecture Decision Recor
 Epic Stack は外部依存の採用に明確な基準を持っている。CONTRIBUTING.md には「コードを外部ライブラリにするのは歓迎するが、採用は保証しない。メンテナンスの委譲と適応性のバランスは繊細」と記されている（`CONTRIBUTING.md:82-93`）。
 
 具体的な判断例:
+
 - **自前**: セッション管理は remix-auth-form を使っていたが、独自実装に切り替えた（`docs/decisions/029-remix-auth.md`）。「何の価値も加えていない」が理由。
 - **外部依存**: Radix UI + shadcn/ui はコード所有権を保ちつつヘッドレスコンポーネントの恩恵を受ける構成（`docs/decisions/019-components.md`）。shadcn/ui はライブラリではなくコードレジストリなので、更新は手動だが自由にカスタマイズできる。
 - **Node.js 組み込みへの移行**: `better-sqlite3` から `node:sqlite` への移行は「依存を1つ減らす」「ネイティブモジュールのコンパイル不要」が動機（`docs/decisions/042-node-sqlite.md`）。
@@ -40,8 +41,8 @@ Guiding Principles に「Offline Development」が明記されており、すべ
 
 ```ts
 // index.ts:19-21
-if (process.env.MOCKS === 'true') {
-	await import('./tests/mocks/index.ts')
+if (process.env.MOCKS === "true") {
+  await import("./tests/mocks/index.ts");
 }
 ```
 
@@ -54,39 +55,39 @@ GitHub OAuth のモックは `MOCK_` プレフィックス付きの環境変数�
 ```ts
 // server/index.ts:110-149
 const strongestRateLimit = rateLimit({
-	...rateLimitDefault,
-	windowMs: 60 * 1000,
-	limit: 10 * maxMultiple,
-})
+  ...rateLimitDefault,
+  windowMs: 60 * 1000,
+  limit: 10 * maxMultiple,
+});
 
 const strongRateLimit = rateLimit({
-	...rateLimitDefault,
-	windowMs: 60 * 1000,
-	limit: 100 * maxMultiple,
-})
+  ...rateLimitDefault,
+  windowMs: 60 * 1000,
+  limit: 100 * maxMultiple,
+});
 
-const generalRateLimit = rateLimit(rateLimitDefault)
+const generalRateLimit = rateLimit(rateLimitDefault);
 app.use((req, res, next) => {
-	const strongPaths = [
-		'/login',
-		'/signup',
-		'/verify',
-		'/admin',
-		'/onboarding',
-		'/reset-password',
-		'/settings/profile',
-		'/resources/login',
-		'/resources/verify',
-	]
-	if (req.method !== 'GET' && req.method !== 'HEAD') {
-		if (strongPaths.some((p) => req.path.includes(p))) {
-			return strongestRateLimit(req, res, next)
-		}
-		return strongRateLimit(req, res, next)
-	}
-	// ...
-	return generalRateLimit(req, res, next)
-})
+  const strongPaths = [
+    "/login",
+    "/signup",
+    "/verify",
+    "/admin",
+    "/onboarding",
+    "/reset-password",
+    "/settings/profile",
+    "/resources/login",
+    "/resources/verify",
+  ];
+  if (req.method !== "GET" && req.method !== "HEAD") {
+    if (strongPaths.some((p) => req.path.includes(p))) {
+      return strongestRateLimit(req, res, next);
+    }
+    return strongRateLimit(req, res, next);
+  }
+  // ...
+  return generalRateLimit(req, res, next);
+});
 ```
 
 テスト・開発環境では `maxMultiple` を 10,000 倍にして実質的に無効化する（`server/index.ts:92-93`）。ADR では「最初はインメモリ、必要に応じて Redis に進化」という段階的アプローチを明記している。
@@ -96,61 +97,61 @@ app.use((req, res, next) => {
 ```ts
 // app/utils/env.server.ts:3-29 — Zod による環境変数バリデーション + 段階的サービス導入
 const schema = z.object({
-	NODE_ENV: z.enum(['production', 'development', 'test'] as const),
-	DATABASE_PATH: z.string(),
-	DATABASE_URL: z.string(),
-	SESSION_SECRET: z.string(),
-	// If you plan on using Sentry, remove the .optional()
-	SENTRY_DSN: z.string().optional(),
-	// If you plan to use Resend, remove the .optional()
-	RESEND_API_KEY: z.string().optional(),
-	// If you plan to use GitHub auth, remove the .optional()
-	GITHUB_CLIENT_ID: z.string().optional(),
-	GITHUB_CLIENT_SECRET: z.string().optional(),
-})
+  NODE_ENV: z.enum(["production", "development", "test"] as const),
+  DATABASE_PATH: z.string(),
+  DATABASE_URL: z.string(),
+  SESSION_SECRET: z.string(),
+  // If you plan on using Sentry, remove the .optional()
+  SENTRY_DSN: z.string().optional(),
+  // If you plan to use Resend, remove the .optional()
+  RESEND_API_KEY: z.string().optional(),
+  // If you plan to use GitHub auth, remove the .optional()
+  GITHUB_CLIENT_ID: z.string().optional(),
+  GITHUB_CLIENT_SECRET: z.string().optional(),
+});
 ```
 
 ```ts
 // app/utils/email.server.ts:43-53 — 外部サービス未設定時のグレースフルフォールバック
 if (!process.env.RESEND_API_KEY && !process.env.MOCKS) {
-	console.error(`RESEND_API_KEY not set and we're not in mocks mode.`)
-	console.error(`To send emails, set the RESEND_API_KEY environment variable.`)
-	console.error(`Would have sent the following email:`, JSON.stringify(email))
-	return {
-		status: 'success',
-		data: { id: 'mocked' },
-	} as const
+  console.error(`RESEND_API_KEY not set and we're not in mocks mode.`);
+  console.error(`To send emails, set the RESEND_API_KEY environment variable.`);
+  console.error(`Would have sent the following email:`, JSON.stringify(email));
+  return {
+    status: "success",
+    data: { id: "mocked" },
+  } as const;
 }
 ```
 
 ```ts
 // app/utils/db.server.ts:6-37 — remember パターンによる開発時のモジュール再読み込み対策
-export const prisma = remember('prisma', () => {
-	const logThreshold = 20
-	const client = new PrismaClient({
-		log: [
-			{ level: 'query', emit: 'event' },
-			{ level: 'error', emit: 'stdout' },
-			{ level: 'warn', emit: 'stdout' },
-		],
-	})
-	client.$on('query', async (e) => {
-		if (e.duration < logThreshold) return
-		// ... color-coded slow query logging
-	})
-	void client.$connect()
-	return client
-})
+export const prisma = remember("prisma", () => {
+  const logThreshold = 20;
+  const client = new PrismaClient({
+    log: [
+      { level: "query", emit: "event" },
+      { level: "error", emit: "stdout" },
+      { level: "warn", emit: "stdout" },
+    ],
+  });
+  client.$on("query", async (e) => {
+    if (e.duration < logThreshold) return;
+    // ... color-coded slow query logging
+  });
+  void client.$connect();
+  return client;
+});
 ```
 
 ```ts
 // app/utils/user.ts:28-46 — 型安全な RBAC パーミッション文字列
-type Action = 'create' | 'read' | 'update' | 'delete'
-type Entity = 'user' | 'note'
-type Access = 'own' | 'any' | 'own,any' | 'any,own'
+type Action = "create" | "read" | "update" | "delete";
+type Entity = "user" | "note";
+type Access = "own" | "any" | "own,any" | "any,own";
 export type PermissionString =
-	| `${Action}:${Entity}`
-	| `${Action}:${Entity}:${Access}`
+  | `${Action}:${Entity}`
+  | `${Action}:${Entity}:${Access}`;
 ```
 
 ## パターンカタログ
@@ -187,11 +188,16 @@ if (!process.env.RESEND_API_KEY && !process.env.MOCKS) {
 
 ```markdown
 <!-- docs/decisions/000-template.md -->
+
 # Title
+
 Date: YYYY-MM-DD
 Status: proposed | rejected | accepted | deprecated | superseded by [0005]
+
 ## Context
+
 ## Decision
+
 ## Consequences
 ```
 
@@ -200,8 +206,8 @@ Status: proposed | rejected | accepted | deprecated | superseded by [0005]
 ```ts
 // app/utils/user.ts:31-33
 export type PermissionString =
-	| `${Action}:${Entity}`
-	| `${Action}:${Entity}:${Access}`
+  | `${Action}:${Entity}`
+  | `${Action}:${Entity}:${Access}`;
 ```
 
 ## Anti-Patterns / 注意点

@@ -46,12 +46,12 @@ const SignupFormSchema = z
     username: UsernameSchema,
     name: NameSchema,
     agreeToTermsOfServiceAndPrivacyPolicy: z.boolean({
-      required_error: 'You must agree to the terms of service and privacy policy',
+      required_error: "You must agree to the terms of service and privacy policy",
     }),
     remember: z.boolean().optional(),
     redirectTo: z.string().optional(),
   })
-  .and(PasswordAndConfirmPasswordSchema)
+  .and(PasswordAndConfirmPasswordSchema);
 ```
 
 ### 環境変数の型安全化
@@ -84,10 +84,10 @@ const SignupFormSchema = z
 // app/utils/env.server.ts:1-48
 // Zod スキーマ → declare global で process.env を型安全化
 const schema = z.object({
-  NODE_ENV: z.enum(['production', 'development', 'test'] as const),
+  NODE_ENV: z.enum(["production", "development", "test"] as const),
   DATABASE_PATH: z.string(),
   // ...
-})
+});
 
 declare global {
   namespace NodeJS {
@@ -96,10 +96,10 @@ declare global {
 }
 
 export function init() {
-  const parsed = schema.safeParse(process.env)
+  const parsed = schema.safeParse(process.env);
   if (parsed.success === false) {
-    console.error('Invalid environment variables:', parsed.error.flatten().fieldErrors)
-    throw new Error('Invalid environment variables')
+    console.error("Invalid environment variables:", parsed.error.flatten().fieldErrors);
+    throw new Error("Invalid environment variables");
   }
 }
 ```
@@ -111,11 +111,11 @@ const ToastSchema = z.object({
   description: z.string(),
   id: z.string().default(() => cuid()),
   title: z.string().optional(),
-  type: z.enum(['message', 'success', 'error']).default('message'),
-})
+  type: z.enum(["message", "success", "error"]).default("message"),
+});
 
-export type Toast = z.infer<typeof ToastSchema>      // parse 後: id と type が必須
-export type ToastInput = z.input<typeof ToastSchema>  // parse 前: id と type は省略可
+export type Toast = z.infer<typeof ToastSchema>; // parse 後: id と type が必須
+export type ToastInput = z.input<typeof ToastSchema>; // parse 前: id と type は省略可
 ```
 
 ```typescript
@@ -127,46 +127,51 @@ export const RegistrationResponseSchema = z.object({
   response: z.object({
     clientDataJSON: z.string(),
     attestationObject: z.string(),
-    transports: z.array(z.enum(['ble', 'cable', 'hybrid', 'internal', 'nfc', 'smart-card', 'usb'])).optional(),
+    transports: z.array(z.enum(["ble", "cable", "hybrid", "internal", "nfc", "smart-card", "usb"])).optional(),
   }),
-  authenticatorAttachment: z.enum(['cross-platform', 'platform']).optional(),
+  authenticatorAttachment: z.enum(["cross-platform", "platform"]).optional(),
   clientExtensionResults: z.object({ credProps: z.object({ rk: z.boolean() }).optional() }),
-  type: z.literal('public-key'),
-}) satisfies z.ZodType<RegistrationResponseJSON>
+  type: z.literal("public-key"),
+}) satisfies z.ZodType<RegistrationResponseJSON>;
 ```
 
 ```typescript
 // app/utils/auth.server.ts:76-82, 151-163
 // Prisma 型の Indexed Access による部分利用
-import { type Connection, type Password, type User } from '@prisma/client'
+import { type Connection, type Password, type User } from "@prisma/client";
 
 export async function login({ username, password }: {
-  username: User['username']
-  password: string
-}) { /* ... */ }
+  username: User["username"];
+  password: string;
+}) {/* ... */}
 
 export async function signupWithConnection({
-  email, username, name, providerId, providerName, imageUrl,
+  email,
+  username,
+  name,
+  providerId,
+  providerName,
+  imageUrl,
 }: {
-  email: User['email']
-  username: User['username']
-  name: User['name']
-  providerId: Connection['providerId']
-  providerName: Connection['providerName']
-  imageUrl?: string
-}) { /* ... */ }
+  email: User["email"];
+  username: User["username"];
+  name: User["name"];
+  providerId: Connection["providerId"];
+  providerName: Connection["providerName"];
+  imageUrl?: string;
+}) {/* ... */}
 ```
 
 ```typescript
 // tests/setup/custom-matchers.ts:160-169
 // Vitest カスタムマッチャーの型拡張
 interface CustomMatchers<R = unknown> {
-  toHaveRedirect(redirectTo: string | null): R
-  toHaveSessionForUser(userId: string): Promise<R>
-  toSendToast(toast: ToastInput): Promise<R>
+  toHaveRedirect(redirectTo: string | null): R;
+  toHaveSessionForUser(userId: string): Promise<R>;
+  toSendToast(toast: ToastInput): Promise<R>;
 }
 
-declare module 'vitest' {
+declare module "vitest" {
   interface Assertion<T = any> extends CustomMatchers<T> {}
   interface AsymmetricMatchersContaining extends CustomMatchers {}
 }
@@ -175,12 +180,12 @@ declare module 'vitest' {
 ```typescript
 // app/utils/user.ts:28-33
 // テンプレートリテラル型で Permission 文字列を型制約
-type Action = 'create' | 'read' | 'update' | 'delete'
-type Entity = 'user' | 'note'
-type Access = 'own' | 'any' | 'own,any' | 'any,own'
+type Action = "create" | "read" | "update" | "delete";
+type Entity = "user" | "note";
+type Access = "own" | "any" | "own,any" | "any,own";
 export type PermissionString =
   | `${Action}:${Entity}`
-  | `${Action}:${Entity}:${Access}`
+  | `${Action}:${Entity}:${Access}`;
 ```
 
 ```typescript
@@ -188,14 +193,14 @@ export type PermissionString =
 // 型ガード関数で Zod 導出型を絞り込み
 function imageHasFile(
   image: ImageFieldset,
-): image is ImageFieldset & { file: NonNullable<ImageFieldset['file']> } {
-  return Boolean(image.file?.size && image.file?.size > 0)
+): image is ImageFieldset & { file: NonNullable<ImageFieldset["file"]>; } {
+  return Boolean(image.file?.size && image.file?.size > 0);
 }
 
 function imageHasId(
   image: ImageFieldset,
-): image is ImageFieldset & { id: string } {
-  return Boolean(image.id)
+): image is ImageFieldset & { id: string; } {
+  return Boolean(image.id);
 }
 ```
 
@@ -203,18 +208,18 @@ function imageHasId(
 // app/utils/cache.server.ts:78-90
 // satisfies で Cache インターフェース準拠を検証しつつ型推論を保持
 export const lruCache = {
-  name: 'app-memory-cache',
+  name: "app-memory-cache",
   set: (key, value) => {
-    const ttl = totalTtl(value?.metadata)
+    const ttl = totalTtl(value?.metadata);
     lru.set(key, value, {
       ttl: ttl === Infinity ? undefined : ttl,
       start: value?.metadata?.createdTime,
-    })
-    return value
+    });
+    return value;
   },
   get: (key) => lru.get(key),
   delete: (key) => lru.delete(key),
-} satisfies Cache
+} satisfies Cache;
 ```
 
 ## パターンカタログ
@@ -237,22 +242,22 @@ export const lruCache = {
   ```typescript
   // app/utils/user-validation.ts:6-14
   export const UsernameSchema = z
-    .string({ required_error: 'Username is required' })
-    .min(USERNAME_MIN_LENGTH, { message: 'Username is too short' })
-    .max(USERNAME_MAX_LENGTH, { message: 'Username is too long' })
-    .regex(/^[a-zA-Z0-9_]+$/, { message: '...' })
-    .transform((value) => value.toLowerCase())
+    .string({ required_error: "Username is required" })
+    .min(USERNAME_MIN_LENGTH, { message: "Username is too short" })
+    .max(USERNAME_MAX_LENGTH, { message: "Username is too long" })
+    .regex(/^[a-zA-Z0-9_]+$/, { message: "..." })
+    .transform((value) => value.toLowerCase());
   ```
 
 - **`as const` + `z.enum` による列挙型の一元管理**: 配列リテラルを `as const` で定義し、`z.enum()` に渡すことで、ランタイム値の一覧と型定義を一箇所で管理する。`Record<ProviderName, string>` のように派生利用も型安全になる。
   ```typescript
   // app/utils/connections.tsx:10-16
-  export const providerNames = [GITHUB_PROVIDER_NAME] as const
-  export const ProviderNameSchema = z.enum(providerNames)
-  export type ProviderName = z.infer<typeof ProviderNameSchema>
+  export const providerNames = [GITHUB_PROVIDER_NAME] as const;
+  export const ProviderNameSchema = z.enum(providerNames);
+  export type ProviderName = z.infer<typeof ProviderNameSchema>;
   export const providerLabels: Record<ProviderName, string> = {
-    [GITHUB_PROVIDER_NAME]: 'GitHub',
-  } as const
+    [GITHUB_PROVIDER_NAME]: "GitHub",
+  } as const;
   ```
 
 - **`satisfies` による Zod スキーマと外部型の整合性保証**: 外部ライブラリの型（`RegistrationResponseJSON` 等）に対して Zod スキーマが正しく対応していることをコンパイル時に検証する。スキーマと型がずれた場合にコンパイルエラーとして検出できる。
@@ -280,7 +285,7 @@ export const lruCache = {
 - **型アサーション (`as`) の使用箇所**: `app/utils/user.ts:36` で `permissionString.split(':') as [Action, Entity, Access | undefined]` のように `as` による型アサーションが使われている。split の結果が期待通りの構造であることはランタイムで保証されないため、Zod バリデーションに置き換えるとより安全になる。
   ```typescript
   // Bad: split 結果を as で型アサーション
-  const [action, entity, access] = permissionString.split(':') as [Action, Entity, Access | undefined]
+  const [action, entity, access] = permissionString.split(":") as [Action, Entity, Access | undefined];
   // Better: Zod で構造を検証する、またはテンプレートリテラル型で入力を制約した上で型ガードを使用
   ```
 

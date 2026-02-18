@@ -37,6 +37,7 @@ insertNewUser: async ({}, use) => {
 ```
 
 このパターンの特徴は:
+
 1. `use()` 呼び出しの**前**がセットアップフェーズ
 2. `use()` に渡した関数がテスト内でフィクスチャ値として使われる
 3. `use()` 呼び出しの**後**がティアダウンフェーズ（テスト成否に関わらず実行）
@@ -82,25 +83,25 @@ login: async ({ page }, use) => {
 ```typescript
 // tests/e2e/onboarding.test.ts:27-46
 const test = base.extend<{
-    getOnboardingData(): {
-        username: string
-        name: string
-        email: string
-        password: string
-    }
+  getOnboardingData(): {
+    username: string;
+    name: string;
+    email: string;
+    password: string;
+  };
 }>({
-    getOnboardingData: async ({}, use) => {
-        const userData = createUser()
-        await use(() => {
-            const onboardingData = {
-                ...userData,
-                password: faker.internet.password(),
-            }
-            return onboardingData
-        })
-        await prisma.user.deleteMany({ where: { username: userData.username } })
-    },
-})
+  getOnboardingData: async ({}, use) => {
+    const userData = createUser();
+    await use(() => {
+      const onboardingData = {
+        ...userData,
+        password: faker.internet.password(),
+      };
+      return onboardingData;
+    });
+    await prisma.user.deleteMany({ where: { username: userData.username } });
+  },
+});
 ```
 
 `base` を再エクスポートの `test` からインポートし、ローカルで `test` を再定義することで、このファイル内のテストだけが `getOnboardingData` を使えるようになる。
@@ -114,20 +115,20 @@ Vitest 側のセットアップは3つの層に分かれている:
 ```typescript
 // tests/setup/global-setup.ts:12-38
 export async function setup() {
-    const databaseExists = await fsExtra.pathExists(BASE_DATABASE_PATH)
-    if (databaseExists) {
-        const databaseLastModifiedAt = (await fsExtra.stat(BASE_DATABASE_PATH)).mtime
-        const prismaSchemaLastModifiedAt = (
-            await fsExtra.stat('./prisma/schema.prisma')
-        ).mtime
-        if (prismaSchemaLastModifiedAt < databaseLastModifiedAt) {
-            return
-        }
+  const databaseExists = await fsExtra.pathExists(BASE_DATABASE_PATH);
+  if (databaseExists) {
+    const databaseLastModifiedAt = (await fsExtra.stat(BASE_DATABASE_PATH)).mtime;
+    const prismaSchemaLastModifiedAt = (
+      await fsExtra.stat("./prisma/schema.prisma")
+    ).mtime;
+    if (prismaSchemaLastModifiedAt < databaseLastModifiedAt) {
+      return;
     }
-    await execaCommand(
-        'npx prisma migrate reset --force --skip-seed --skip-generate',
-        { stdio: 'inherit', env: { ...process.env, DATABASE_URL: `file:${BASE_DATABASE_PATH}` } },
-    )
+  }
+  await execaCommand(
+    "npx prisma migrate reset --force --skip-seed --skip-generate",
+    { stdio: "inherit", env: { ...process.env, DATABASE_URL: `file:${BASE_DATABASE_PATH}` } },
+  );
 }
 ```
 
@@ -137,20 +138,20 @@ base DB のタイムスタンプと Prisma スキーマのタイムスタンプ�
 
 ```typescript
 // tests/setup/db-setup.ts:1-31
-const poolId = process.env.VITEST_POOL_ID || '0'
-const databaseFile = `./tests/prisma/data.${poolId}.db`
-const databasePath = path.join(process.cwd(), databaseFile)
-process.env.DATABASE_URL = `file:${databasePath}`
+const poolId = process.env.VITEST_POOL_ID || "0";
+const databaseFile = `./tests/prisma/data.${poolId}.db`;
+const databasePath = path.join(process.cwd(), databaseFile);
+process.env.DATABASE_URL = `file:${databasePath}`;
 
 beforeEach(async () => {
-    await fsExtra.copyFile(BASE_DATABASE_PATH, databasePath)
-})
+  await fsExtra.copyFile(BASE_DATABASE_PATH, databasePath);
+});
 
 afterAll(async () => {
-    const { prisma } = await import('#app/utils/db.server.ts')
-    await prisma.$disconnect()
-    await fsExtra.remove(databasePath)
-})
+  const { prisma } = await import("#app/utils/db.server.ts");
+  await prisma.$disconnect();
+  await fsExtra.remove(databasePath);
+});
 ```
 
 `VITEST_POOL_ID` による DB 分離は、並列ワーカー間の DB 競合を防ぐ。`beforeEach` でベース DB をコピーすることで、各テストが clean state から始まる。
@@ -159,24 +160,24 @@ afterAll(async () => {
 
 ```typescript
 // tests/setup/setup-test-env.ts:1-37
-import './db-setup.ts'
+import "./db-setup.ts";
 // we need these to be imported first
 
-afterEach(() => server.resetHandlers())
-afterEach(() => cleanup())
+afterEach(() => server.resetHandlers());
+afterEach(() => cleanup());
 
 beforeEach(() => {
-    const originalConsoleError = console.error
-    consoleError = vi.spyOn(console, 'error')
-    consoleError.mockImplementation(
-        (...args: Parameters<typeof console.error>) => {
-            originalConsoleError(...args)
-            throw new Error(
-                'Console error was called. Call consoleError.mockImplementation(() => {}) if this is expected.',
-            )
-        },
-    )
-})
+  const originalConsoleError = console.error;
+  consoleError = vi.spyOn(console, "error");
+  consoleError.mockImplementation(
+    (...args: Parameters<typeof console.error>) => {
+      originalConsoleError(...args);
+      throw new Error(
+        "Console error was called. Call consoleError.mockImplementation(() => {}) if this is expected.",
+      );
+    },
+  );
+});
 ```
 
 ### Vitest: カスタムマッチャーによるドメイン固有アサーション
@@ -186,18 +187,18 @@ beforeEach(() => {
 ```typescript
 // tests/setup/custom-matchers.ts:15-78
 expect.extend({
-    toHaveRedirect(response: unknown, redirectTo?: string) {
-        if (!(response instanceof Response)) {
-            throw new Error('toHaveRedirect must be called with a Response')
-        }
-        const location = response.headers.get('location')
-        // ...URL比較ロジック
-    },
-    async toHaveSessionForUser(response: Response, userId: string) {
-        const setCookies = response.headers.getSetCookie()
-        // ...セッションCookie検証ロジック
-    },
-})
+  toHaveRedirect(response: unknown, redirectTo?: string) {
+    if (!(response instanceof Response)) {
+      throw new Error("toHaveRedirect must be called with a Response");
+    }
+    const location = response.headers.get("location");
+    // ...URL比較ロジック
+  },
+  async toHaveSessionForUser(response: Response, userId: string) {
+    const setCookies = response.headers.getSetCookie();
+    // ...セッションCookie検証ロジック
+  },
+});
 ```
 
 TypeScript の型拡張も同ファイルに記述されており、`vitest` モジュールの `Assertion` インターフェースを拡張することで型安全なカスタムマッチャーを実現している。
@@ -205,14 +206,14 @@ TypeScript の型拡張も同ファイルに記述されており、`vitest` モ
 ```typescript
 // tests/setup/custom-matchers.ts:160-169
 interface CustomMatchers<R = unknown> {
-    toHaveRedirect(redirectTo: string | null): R
-    toHaveSessionForUser(userId: string): Promise<R>
-    toSendToast(toast: ToastInput): Promise<R>
+  toHaveRedirect(redirectTo: string | null): R;
+  toHaveSessionForUser(userId: string): Promise<R>;
+  toSendToast(toast: ToastInput): Promise<R>;
 }
 
-declare module 'vitest' {
-    interface Assertion<T = any> extends CustomMatchers<T> {}
-    interface AsymmetricMatchersContaining extends CustomMatchers {}
+declare module "vitest" {
+  interface Assertion<T = any> extends CustomMatchers<T> {}
+  interface AsymmetricMatchersContaining extends CustomMatchers {}
 }
 ```
 
@@ -223,8 +224,8 @@ declare module 'vitest' {
 ```typescript
 // app/utils/misc.error-message.test.ts:17-18
 // 意図的なエラーテストでのオプトアウト
-consoleError.mockImplementation(() => {})
-expect(getErrorMessage(undefined)).toBe('Unknown Error')
+consoleError.mockImplementation(() => {});
+expect(getErrorMessage(undefined)).toBe("Unknown Error");
 ```
 
 ### Vite プラグインによるモジュール差し替え
@@ -234,16 +235,16 @@ expect(getErrorMessage(undefined)).toBe('Unknown Error')
 ```typescript
 // vite.config.ts:16-26
 const cacheServerStubPlugin = {
-    name: 'vitest-cache-server-stub',
-    enforce: 'pre' as const,
-    resolveId(source: string) {
-        if (!process.env.VITEST) return null
-        if (source.endsWith('cache.server.ts')) {
-            return path.resolve('tests/mocks/cache-server.ts')
-        }
-        return null
-    },
-}
+  name: "vitest-cache-server-stub",
+  enforce: "pre" as const,
+  resolveId(source: string) {
+    if (!process.env.VITEST) return null;
+    if (source.endsWith("cache.server.ts")) {
+      return path.resolve("tests/mocks/cache-server.ts");
+    }
+    return null;
+  },
+};
 ```
 
 ## パターンカタログ
@@ -281,9 +282,9 @@ insertNewUser: async ({}, use) => {
 
 ```typescript
 // tests/setup/db-setup.ts:6-8
-const poolId = process.env.VITEST_POOL_ID || '0'
-const databaseFile = `./tests/prisma/data.${poolId}.db`
-const databasePath = path.join(process.cwd(), databaseFile)
+const poolId = process.env.VITEST_POOL_ID || "0";
+const databaseFile = `./tests/prisma/data.${poolId}.db`;
+const databasePath = path.join(process.cwd(), databaseFile);
 ```
 
 - **console スパイのデフォルト拒否 + 明示的オプトイン**: `console.error` がテスト中に呼ばれたらデフォルトで例外をスローする設計。意図的にエラーを発生させるテストでは `consoleError.mockImplementation(() => {})` と1行書くだけでオプトアウトできる。予期しないエラーの見逃しを防ぎつつ、必要な場合の柔軟性も保つ。
@@ -291,17 +292,17 @@ const databasePath = path.join(process.cwd(), databaseFile)
 ```typescript
 // tests/setup/setup-test-env.ts:17-27
 beforeEach(() => {
-    const originalConsoleError = console.error
-    consoleError = vi.spyOn(console, 'error')
-    consoleError.mockImplementation(
-        (...args: Parameters<typeof console.error>) => {
-            originalConsoleError(...args)
-            throw new Error(
-                'Console error was called. Call consoleError.mockImplementation(() => {}) if this is expected.',
-            )
-        },
-    )
-})
+  const originalConsoleError = console.error;
+  consoleError = vi.spyOn(console, "error");
+  consoleError.mockImplementation(
+    (...args: Parameters<typeof console.error>) => {
+      originalConsoleError(...args);
+      throw new Error(
+        "Console error was called. Call consoleError.mockImplementation(() => {}) if this is expected.",
+      );
+    },
+  );
+});
 ```
 
 - **型安全なナビゲーションフィクスチャ**: `navigate` フィクスチャは react-router の `href()` 型を利用し、テスト内のページ遷移を型安全にしている。存在しないルートへの遷移がコンパイル時に検出される。
@@ -321,13 +322,13 @@ navigate: async ({ page }, use) => {
 
 ```typescript
 // Bad: import順序に暗黙の依存
-import './db-setup.ts'
-import '#app/utils/env.server.ts'
+import "./db-setup.ts";
+import "#app/utils/env.server.ts";
 // we need these to be imported first
 
 // Better: dynamic importで順序を明示的に制御
-await import('./db-setup.ts')
-const { prisma } = await import('#app/utils/db.server.ts')
+await import("./db-setup.ts");
+const { prisma } = await import("#app/utils/db.server.ts");
 ```
 
 実際に `db-setup.ts` の `afterAll` では dynamic import が使われており（`tests/setup/db-setup.ts:28`）、この問題を認識した上での設計判断であることがわかる。
@@ -336,12 +337,12 @@ const { prisma } = await import('#app/utils/db.server.ts')
 
 ```typescript
 // Bad: 全エラーを握りつぶす
-await prisma.user.delete({ where: { id: userId } }).catch(() => {})
+await prisma.user.delete({ where: { id: userId } }).catch(() => {});
 
 // Better: 期待するエラーのみ無視する
 await prisma.user.delete({ where: { id: userId } }).catch((e) => {
-    if (e.code !== 'P2025') throw e // P2025 = Record not found
-})
+  if (e.code !== "P2025") throw e; // P2025 = Record not found
+});
 ```
 
 ## 導出ルール

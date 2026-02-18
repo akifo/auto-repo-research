@@ -29,6 +29,7 @@ Epic Stack の開発規約は「共有設定パッケージによる一元管理
 - **型リセット** (`types/reset.d.ts`): `@total-typescript/ts-reset` を `@epic-web/config/reset.d.ts` 経由で適用
 
 `@epic-web/config` は内部で以下のプラグインを統合している:
+
 - `typescript-eslint`: TypeScript 固有のルール
 - `eslint-plugin-import-x`: import の順序・解決
 - `eslint-plugin-react` / `eslint-plugin-react-hooks`: React ルール
@@ -49,6 +50,7 @@ Epic Stack の開発規約は「共有設定パッケージによる一元管理
 ```
 
 この設計は3回の意思決定を経て到達している:
+
 1. **026**: TypeScript `paths` によるエイリアス → ツール間の設定同期が煩雑
 2. **031**: `package.json` `imports` + TypeScript `paths` の併用 → TypeScript が `imports` 未サポートだったため
 3. **046**: TypeScript `paths` を廃止し `imports` のみに → TypeScript が `imports` をネイティブサポート
@@ -57,13 +59,14 @@ Epic Stack の開発規約は「共有設定パッケージによる一元管理
 
 ```typescript
 // app/routes/_auth/login.tsx:9-21
-import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
-import { CheckboxField, ErrorList, Field } from '#app/components/forms.tsx'
-import { login, requireAnonymous } from '#app/utils/auth.server.ts'
-import { PasswordSchema, UsernameSchema } from '#app/utils/user-validation.ts'
+import { GeneralErrorBoundary } from "#app/components/error-boundary.tsx";
+import { CheckboxField, ErrorList, Field } from "#app/components/forms.tsx";
+import { login, requireAnonymous } from "#app/utils/auth.server.ts";
+import { PasswordSchema, UsernameSchema } from "#app/utils/user-validation.ts";
 ```
 
 import の使い分けルール:
+
 - **`#app/*`**: アプリケーションコード間の参照（305 箇所、74 ファイル）
 - **`#tests/*`**: テストユーティリティの参照（29 箇所、17 ファイル）
 - **相対パス**: 同一ディレクトリまたは近接ディレクトリ内（`.server.ts` と対応する `.tsx` の参照等）
@@ -95,6 +98,7 @@ app/utils/
 ```
 
 `npm-run-all` の `run-p` で4つのタスクを並列実行:
+
 1. `test -- --run`: Vitest のワンショット実行
 2. `lint`: ESLint
 3. `typecheck`: `react-router typegen && tsc`（型生成後に型チェック）
@@ -116,82 +120,82 @@ CI ではこれがさらに分割され、4 つの独立ジョブ（lint, typech
 
 ```typescript
 // eslint.config.js:1-14
-import { default as defaultConfig } from '@epic-web/config/eslint'
+import { default as defaultConfig } from "@epic-web/config/eslint";
 
 /** @type {import("eslint").Linter.Config} */
 export default [
-	...defaultConfig,
-	// add custom config objects here:
-	{
-		files: ['**/tests/**/*.ts'],
-		rules: { 'react-hooks/rules-of-hooks': 'off' },
-	},
-	{
-		ignores: ['.react-router/*'],
-	},
-]
+  ...defaultConfig,
+  // add custom config objects here:
+  {
+    files: ["**/tests/**/*.ts"],
+    rules: { "react-hooks/rules-of-hooks": "off" },
+  },
+  {
+    ignores: [".react-router/*"],
+  },
+];
 ```
 
 ```typescript
 // app/utils/env.server.ts:1-48
-import { z } from 'zod'
+import { z } from "zod";
 
 const schema = z.object({
-	NODE_ENV: z.enum(['production', 'development', 'test'] as const),
-	DATABASE_PATH: z.string(),
-	DATABASE_URL: z.string(),
-	SESSION_SECRET: z.string(),
-	// ...
-})
+  NODE_ENV: z.enum(["production", "development", "test"] as const),
+  DATABASE_PATH: z.string(),
+  DATABASE_URL: z.string(),
+  SESSION_SECRET: z.string(),
+  // ...
+});
 
 declare global {
-	namespace NodeJS {
-		interface ProcessEnv extends z.infer<typeof schema> {}
-	}
+  namespace NodeJS {
+    interface ProcessEnv extends z.infer<typeof schema> {}
+  }
 }
 
 export function init() {
-	const parsed = schema.safeParse(process.env)
-	if (parsed.success === false) {
-		console.error(
-			'❌ Invalid environment variables:',
-			parsed.error.flatten().fieldErrors,
-		)
-		throw new Error('Invalid environment variables')
-	}
+  const parsed = schema.safeParse(process.env);
+  if (parsed.success === false) {
+    console.error(
+      "❌ Invalid environment variables:",
+      parsed.error.flatten().fieldErrors,
+    );
+    throw new Error("Invalid environment variables");
+  }
 }
 ```
 
 ```typescript
 // tests/setup/setup-test-env.ts:1-37
-import 'dotenv/config'
-import './db-setup.ts'
-import '#app/utils/env.server.ts'
+import "dotenv/config";
+import "./db-setup.ts";
+import "#app/utils/env.server.ts";
 // we need these to be imported first 👆
 
-import { cleanup } from '@testing-library/react'
-import { afterEach, beforeEach, vi, type MockInstance } from 'vitest'
-import { server } from '#tests/mocks/index.ts'
-import './custom-matchers.ts'
+import { server } from "#tests/mocks/index.ts";
+import { cleanup } from "@testing-library/react";
+import { afterEach, beforeEach, type MockInstance, vi } from "vitest";
+import "./custom-matchers.ts";
 
-afterEach(() => server.resetHandlers())
-afterEach(() => cleanup())
+afterEach(() => server.resetHandlers());
+afterEach(() => cleanup());
 
-export let consoleError: MockInstance<(typeof console)['error']>
+export let consoleError: MockInstance<(typeof console)["error"]>;
 
 beforeEach(() => {
-	const originalConsoleError = console.error
-	consoleError = vi.spyOn(console, 'error')
-	consoleError.mockImplementation(
-		(...args: Parameters<typeof console.error>) => {
-			originalConsoleError(...args)
-			throw new Error(
-				'Console error was called. Call consoleError.mockImplementation(() => {}) if this is expected.',
-			)
-		},
-	)
-	// ...
-})
+  const originalConsoleError = console.error;
+  consoleError = vi.spyOn(console, "error");
+  consoleError.mockImplementation(
+    (...args: Parameters<typeof console.error>) => {
+      originalConsoleError(...args);
+      throw new Error(
+        "Console error was called. Call consoleError.mockImplementation(() => {}) if this is expected.",
+      );
+    },
+  );
+  // ...
+});
 ```
 
 ## Good Patterns
@@ -200,11 +204,11 @@ beforeEach(() => {
 
 ```javascript
 // eslint.config.js — プロジェクト固有のオーバーライドのみ
-import { default as defaultConfig } from '@epic-web/config/eslint'
+import { default as defaultConfig } from "@epic-web/config/eslint";
 export default [
-	...defaultConfig,
-	{ files: ['**/tests/**/*.ts'], rules: { 'react-hooks/rules-of-hooks': 'off' } },
-]
+  ...defaultConfig,
+  { files: ["**/tests/**/*.ts"], rules: { "react-hooks/rules-of-hooks": "off" } },
+];
 ```
 
 - **Zod による環境変数のバリデーションと型安全性**: `app/utils/env.server.ts` で環境変数を Zod スキーマでバリデーションし、`z.infer` で `ProcessEnv` の型を拡張する。起動時にバリデーションを実行し、不正な環境変数を即座に検出する。
@@ -212,9 +216,9 @@ export default [
 ```typescript
 // app/utils/env.server.ts:31-34
 declare global {
-	namespace NodeJS {
-		interface ProcessEnv extends z.infer<typeof schema> {}
-	}
+  namespace NodeJS {
+    interface ProcessEnv extends z.infer<typeof schema> {}
+  }
 }
 ```
 
@@ -222,15 +226,15 @@ declare global {
 
 ```typescript
 // tests/setup/setup-test-env.ts:18-27
-consoleError = vi.spyOn(console, 'error')
+consoleError = vi.spyOn(console, "error");
 consoleError.mockImplementation(
-	(...args: Parameters<typeof console.error>) => {
-		originalConsoleError(...args)
-		throw new Error(
-			'Console error was called. Call consoleError.mockImplementation(() => {}) if this is expected.',
-		)
-	},
-)
+  (...args: Parameters<typeof console.error>) => {
+    originalConsoleError(...args);
+    throw new Error(
+      "Console error was called. Call consoleError.mockImplementation(() => {}) if this is expected.",
+    );
+  },
+);
 ```
 
 - **ADR（Architecture Decision Records）による意思決定の記録**: `docs/decisions/` に 47 個の ADR を蓄積し、「なぜその選択をしたか」を追跡可能にしている。import エイリアスだけでも 3 つの ADR（026 → 031 → 046）が残されており、意思決定の変遷が明確。
@@ -242,19 +246,19 @@ consoleError.mockImplementation(
 ```javascript
 // Bad: 共有設定の内容を確認せずルールを追加
 export default [
-	...defaultConfig,
-	{ rules: { 'import/order': ['error', { /* custom config */ }] } }, // 共有設定と競合する可能性
-]
+  ...defaultConfig,
+  { rules: { "import/order": ["error", {/* custom config */}] } }, // 共有設定と競合する可能性
+];
 
 // Better: 共有設定の内容を確認し、上書きする理由をコメントで明示
 export default [
-	...defaultConfig,
-	{
-		// @epic-web/config の import/order は alphabetical だが、
-		// このプロジェクトではモジュール種別でグループ化したい
-		rules: { 'import-x/order': ['error', { groups: [/* ... */] }] },
-	},
-]
+  ...defaultConfig,
+  {
+    // @epic-web/config の import/order は alphabetical だが、
+    // このプロジェクトではモジュール種別でグループ化したい
+    rules: { "import-x/order": ["error", { groups: [/* ... */] }] },
+  },
+];
 ```
 
 - **ファイル命名規約の暗黙知**: `.server.ts` がクライアントバンドルから除外されることはフレームワーク（React Router）の知識を前提とする。新規参加者がサフィックスなしでサーバー専用コードを書くと、秘匿情報がクライアントに漏洩するリスクがある。
@@ -262,11 +266,11 @@ export default [
 ```typescript
 // Bad: サフィックスなしでサーバー専用コードを記述
 // app/utils/secrets.ts — クライアントバンドルに含まれる可能性
-export const API_KEY = process.env.SECRET_API_KEY
+export const API_KEY = process.env.SECRET_API_KEY;
 
 // Better: .server.ts サフィックスで明示
 // app/utils/secrets.server.ts — フレームワークが除外を保証
-export const API_KEY = process.env.SECRET_API_KEY
+export const API_KEY = process.env.SECRET_API_KEY;
 ```
 
 ## 導出ルール

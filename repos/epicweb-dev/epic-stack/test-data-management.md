@@ -65,59 +65,59 @@ MSW で Resend API をモックし、送信されたメールを JSON ファイ�
 ```typescript
 // tests/db-utils.ts:1-30
 // UniqueEnforcer でファクトリレベルの一意性を保証するパターン
-import { faker } from '@faker-js/faker'
-import { UniqueEnforcer } from 'enforce-unique'
+import { faker } from "@faker-js/faker";
+import { UniqueEnforcer } from "enforce-unique";
 
-const uniqueUsernameEnforcer = new UniqueEnforcer()
+const uniqueUsernameEnforcer = new UniqueEnforcer();
 
 export function createUser() {
-	const firstName = faker.person.firstName()
-	const lastName = faker.person.lastName()
+  const firstName = faker.person.firstName();
+  const lastName = faker.person.lastName();
 
-	const username = uniqueUsernameEnforcer
-		.enforce(() => {
-			return (
-				faker.string.alphanumeric({ length: 2 }) +
-				'_' +
-				faker.internet.username({
-					firstName: firstName.toLowerCase(),
-					lastName: lastName.toLowerCase(),
-				})
-			)
-		})
-		.slice(0, 20)
-		.toLowerCase()
-		.replace(/[^a-z0-9_]/g, '_')
-	return {
-		username,
-		name: `${firstName} ${lastName}`,
-		email: `${username}@example.com`,
-	}
+  const username = uniqueUsernameEnforcer
+    .enforce(() => {
+      return (
+        faker.string.alphanumeric({ length: 2 })
+        + "_"
+        + faker.internet.username({
+          firstName: firstName.toLowerCase(),
+          lastName: lastName.toLowerCase(),
+        })
+      );
+    })
+    .slice(0, 20)
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, "_");
+  return {
+    username,
+    name: `${firstName} ${lastName}`,
+    email: `${username}@example.com`,
+  };
 }
 ```
 
 ```typescript
 // tests/setup/db-setup.ts:1-31
 // プールID による DB 分離と beforeEach での base DB コピー
-import path from 'node:path'
-import fsExtra from 'fs-extra'
-import { afterAll, beforeEach } from 'vitest'
-import { BASE_DATABASE_PATH } from './global-setup.ts'
+import fsExtra from "fs-extra";
+import path from "node:path";
+import { afterAll, beforeEach } from "vitest";
+import { BASE_DATABASE_PATH } from "./global-setup.ts";
 
-const poolId = process.env.VITEST_POOL_ID || '0'
-const databaseFile = `./tests/prisma/data.${poolId}.db`
-const databasePath = path.join(process.cwd(), databaseFile)
-process.env.DATABASE_URL = `file:${databasePath}`
+const poolId = process.env.VITEST_POOL_ID || "0";
+const databaseFile = `./tests/prisma/data.${poolId}.db`;
+const databasePath = path.join(process.cwd(), databaseFile);
+process.env.DATABASE_URL = `file:${databasePath}`;
 
 beforeEach(async () => {
-	await fsExtra.copyFile(BASE_DATABASE_PATH, databasePath)
-})
+  await fsExtra.copyFile(BASE_DATABASE_PATH, databasePath);
+});
 
 afterAll(async () => {
-	const { prisma } = await import('#app/utils/db.server.ts')
-	await prisma.$disconnect()
-	await fsExtra.remove(databasePath)
-})
+  const { prisma } = await import("#app/utils/db.server.ts");
+  await prisma.$disconnect();
+  await fsExtra.remove(databasePath);
+});
 ```
 
 ```typescript
@@ -138,30 +138,30 @@ insertNewUser: async ({}, use) => {
 // tests/setup/global-setup.ts:12-39
 // mtime 比較による base DB の再生成制御
 export async function setup() {
-	const databaseExists = await fsExtra.pathExists(BASE_DATABASE_PATH)
+  const databaseExists = await fsExtra.pathExists(BASE_DATABASE_PATH);
 
-	if (databaseExists) {
-		const databaseLastModifiedAt = (await fsExtra.stat(BASE_DATABASE_PATH))
-			.mtime
-		const prismaSchemaLastModifiedAt = (
-			await fsExtra.stat('./prisma/schema.prisma')
-		).mtime
+  if (databaseExists) {
+    const databaseLastModifiedAt = (await fsExtra.stat(BASE_DATABASE_PATH))
+      .mtime;
+    const prismaSchemaLastModifiedAt = (
+      await fsExtra.stat("./prisma/schema.prisma")
+    ).mtime;
 
-		if (prismaSchemaLastModifiedAt < databaseLastModifiedAt) {
-			return
-		}
-	}
+    if (prismaSchemaLastModifiedAt < databaseLastModifiedAt) {
+      return;
+    }
+  }
 
-	await execaCommand(
-		'npx prisma migrate reset --force --skip-seed --skip-generate',
-		{
-			stdio: 'inherit',
-			env: {
-				...process.env,
-				DATABASE_URL: `file:${BASE_DATABASE_PATH}`,
-			},
-		},
-	)
+  await execaCommand(
+    "npx prisma migrate reset --force --skip-seed --skip-generate",
+    {
+      stdio: "inherit",
+      env: {
+        ...process.env,
+        DATABASE_URL: `file:${BASE_DATABASE_PATH}`,
+      },
+    },
+  );
 }
 ```
 
@@ -169,38 +169,38 @@ export async function setup() {
 // tests/mocks/github.ts:13-19
 // VITEST_POOL_ID によるフィクスチャファイルの分離
 const githubUserFixturePath = path.join(
-	here(
-		'..',
-		'fixtures',
-		'github',
-		`users.${process.env.VITEST_POOL_ID || 0}.local.json`,
-	),
-)
+  here(
+    "..",
+    "fixtures",
+    "github",
+    `users.${process.env.VITEST_POOL_ID || 0}.local.json`,
+  ),
+);
 ```
 
 ```typescript
 // tests/e2e/onboarding.test.ts:27-46
 // テスト固有フィクスチャの拡張（データ生成のみ、DB 挿入は行わない）
 const test = base.extend<{
-	getOnboardingData(): {
-		username: string
-		name: string
-		email: string
-		password: string
-	}
+  getOnboardingData(): {
+    username: string;
+    name: string;
+    email: string;
+    password: string;
+  };
 }>({
-	getOnboardingData: async ({}, use) => {
-		const userData = createUser()
-		await use(() => {
-			const onboardingData = {
-				...userData,
-				password: faker.internet.password(),
-			}
-			return onboardingData
-		})
-		await prisma.user.deleteMany({ where: { username: userData.username } })
-	},
-})
+  getOnboardingData: async ({}, use) => {
+    const userData = createUser();
+    await use(() => {
+      const onboardingData = {
+        ...userData,
+        password: faker.internet.password(),
+      };
+      return onboardingData;
+    });
+    await prisma.user.deleteMany({ where: { username: userData.username } });
+  },
+});
 ```
 
 ## パターンカタログ
@@ -245,7 +245,7 @@ const username = uniqueUsernameEnforcer
 ```typescript
 // tests/setup/global-setup.ts:16-24
 if (prismaSchemaLastModifiedAt < databaseLastModifiedAt) {
-    return // スキーマ未変更なら再生成不要
+  return; // スキーマ未変更なら再生成不要
 }
 ```
 
@@ -253,14 +253,14 @@ if (prismaSchemaLastModifiedAt < databaseLastModifiedAt) {
 
 ```typescript
 // tests/playwright-utils.ts:89
-await prisma.user.delete({ where: { id: userId } }).catch(() => {})
+await prisma.user.delete({ where: { id: userId } }).catch(() => {});
 ```
 
 - **Prisma の動的インポートによる DATABASE_URL の遅延バインド**: `db-setup.ts` で `process.env.DATABASE_URL` を書き換えた後に Prisma を動的インポートすることで、ワーカー固有の DB パスが確実に適用される。Prisma クライアントは初回インポート時に環境変数を読むため、この順序が重要である。
 
 ```typescript
 // tests/setup/db-setup.ts:28
-const { prisma } = await import('#app/utils/db.server.ts')
+const { prisma } = await import("#app/utils/db.server.ts");
 ```
 
 ## Anti-Patterns / 注意点
@@ -269,16 +269,16 @@ const { prisma } = await import('#app/utils/db.server.ts')
 
 ```typescript
 // Bad: シードデータの特定ユーザーに依存
-test('kody can edit notes', async () => {
-    const kody = await prisma.user.findUnique({ where: { username: 'kody' } })
-    // kody が存在する前提 → シード実行順序に依存
-})
+test("kody can edit notes", async () => {
+  const kody = await prisma.user.findUnique({ where: { username: "kody" } });
+  // kody が存在する前提 → シード実行順序に依存
+});
 
 // Better: テスト自身がデータを生成
-test('users can edit notes', async ({ login }) => {
-    const user = await login()  // ファクトリで新規ユーザー生成
-    // テストに必要なデータは自分で作る
-})
+test("users can edit notes", async ({ login }) => {
+  const user = await login(); // ファクトリで新規ユーザー生成
+  // テストに必要なデータは自分で作る
+});
 ```
 
 - **ファクトリ関数内での DB 書き込み混在**: データ生成と DB 操作を同一関数で行うと、「DB に書き込まずにデータだけ欲しい」ケースに対応できない。Epic Stack では `createUser()` は純粋なデータ生成のみを行い、DB 書き込みは呼び出し側の責務としている。

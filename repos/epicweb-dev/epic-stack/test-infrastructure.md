@@ -62,94 +62,94 @@ Vitest の設定により、テスト実行時に以下の順序でセットア�
 ```ts
 // tests/setup/global-setup.ts:12-38
 export async function setup() {
-	const databaseExists = await fsExtra.pathExists(BASE_DATABASE_PATH)
+  const databaseExists = await fsExtra.pathExists(BASE_DATABASE_PATH);
 
-	if (databaseExists) {
-		const databaseLastModifiedAt = (await fsExtra.stat(BASE_DATABASE_PATH))
-			.mtime
-		const prismaSchemaLastModifiedAt = (
-			await fsExtra.stat('./prisma/schema.prisma')
-		).mtime
+  if (databaseExists) {
+    const databaseLastModifiedAt = (await fsExtra.stat(BASE_DATABASE_PATH))
+      .mtime;
+    const prismaSchemaLastModifiedAt = (
+      await fsExtra.stat("./prisma/schema.prisma")
+    ).mtime;
 
-		if (prismaSchemaLastModifiedAt < databaseLastModifiedAt) {
-			return
-		}
-	}
+    if (prismaSchemaLastModifiedAt < databaseLastModifiedAt) {
+      return;
+    }
+  }
 
-	await execaCommand(
-		'npx prisma migrate reset --force --skip-seed --skip-generate',
-		{
-			stdio: 'inherit',
-			env: {
-				...process.env,
-				DATABASE_URL: `file:${BASE_DATABASE_PATH}`,
-			},
-		},
-	)
+  await execaCommand(
+    "npx prisma migrate reset --force --skip-seed --skip-generate",
+    {
+      stdio: "inherit",
+      env: {
+        ...process.env,
+        DATABASE_URL: `file:${BASE_DATABASE_PATH}`,
+      },
+    },
+  );
 }
 ```
 
 ```ts
 // tests/setup/db-setup.ts:6-9
-const poolId = process.env.VITEST_POOL_ID || '0'
-const databaseFile = `./tests/prisma/data.${poolId}.db`
-const databasePath = path.join(process.cwd(), databaseFile)
-process.env.DATABASE_URL = `file:${databasePath}`
+const poolId = process.env.VITEST_POOL_ID || "0";
+const databaseFile = `./tests/prisma/data.${poolId}.db`;
+const databasePath = path.join(process.cwd(), databaseFile);
+process.env.DATABASE_URL = `file:${databasePath}`;
 ```
 
 ```ts
 // tests/setup/db-setup.ts:25-31
 afterAll(async () => {
-	// we *must* use dynamic imports here so the process.env.DATABASE_URL is set
-	// before prisma is imported and initialized
-	const { prisma } = await import('#app/utils/db.server.ts')
-	await prisma.$disconnect()
-	await fsExtra.remove(databasePath)
-})
+  // we *must* use dynamic imports here so the process.env.DATABASE_URL is set
+  // before prisma is imported and initialized
+  const { prisma } = await import("#app/utils/db.server.ts");
+  await prisma.$disconnect();
+  await fsExtra.remove(databasePath);
+});
 ```
 
 ```ts
 // tests/setup/setup-test-env.ts:17-36
 beforeEach(() => {
-	const originalConsoleError = console.error
-	consoleError = vi.spyOn(console, 'error')
-	consoleError.mockImplementation(
-		(...args: Parameters<typeof console.error>) => {
-			originalConsoleError(...args)
-			throw new Error(
-				'Console error was called. Call consoleError.mockImplementation(() => {}) if this is expected.',
-			)
-		},
-	)
-	// ... consoleWarn も同様
-})
+  const originalConsoleError = console.error;
+  consoleError = vi.spyOn(console, "error");
+  consoleError.mockImplementation(
+    (...args: Parameters<typeof console.error>) => {
+      originalConsoleError(...args);
+      throw new Error(
+        "Console error was called. Call consoleError.mockImplementation(() => {}) if this is expected.",
+      );
+    },
+  );
+  // ... consoleWarn も同様
+});
 ```
 
 ```ts
 // tests/setup/custom-matchers.ts:160-169
 interface CustomMatchers<R = unknown> {
-	toHaveRedirect(redirectTo: string | null): R
-	toHaveSessionForUser(userId: string): Promise<R>
-	toSendToast(toast: ToastInput): Promise<R>
+  toHaveRedirect(redirectTo: string | null): R;
+  toHaveSessionForUser(userId: string): Promise<R>;
+  toSendToast(toast: ToastInput): Promise<R>;
 }
 
-declare module 'vitest' {
-	interface Assertion<T = any> extends CustomMatchers<T> {}
-	interface AsymmetricMatchersContaining extends CustomMatchers {}
+declare module "vitest" {
+  interface Assertion<T = any> extends CustomMatchers<T> {}
+  interface AsymmetricMatchersContaining extends CustomMatchers {}
 }
 ```
 
 ```ts
 // app/utils/misc.error-message.test.ts:16-24
-test('undefined falls back to Unknown', () => {
-	consoleError.mockImplementation(() => {})
-	expect(getErrorMessage(undefined)).toBe('Unknown Error')
-	expect(consoleError).toHaveBeenCalledWith(
-		'Unable to get error message for error',
-		undefined,
-	)
-	expect(consoleError).toHaveBeenCalledTimes(1)
-})
+test("undefined falls back to Unknown", () => {
+  consoleError.mockImplementation(() => {});
+  expect(getErrorMessage(undefined)).toBe("Unknown Error");
+  expect(consoleError).toHaveBeenCalledWith(
+    "Unable to get error message for error",
+    undefined,
+  );
+  expect(consoleError).toHaveBeenCalledTimes(1);
+});
 ```
 
 ## パターンカタログ
@@ -174,24 +174,24 @@ test('undefined falls back to Unknown', () => {
 // tests/setup/setup-test-env.ts:20-27
 consoleError.mockImplementation(
   (...args: Parameters<typeof console.error>) => {
-    originalConsoleError(...args)
+    originalConsoleError(...args);
     throw new Error(
-      'Console error was called. Call consoleError.mockImplementation(() => {}) if this is expected.',
-    )
+      "Console error was called. Call consoleError.mockImplementation(() => {}) if this is expected.",
+    );
   },
-)
+);
 ```
 
 テストコードでの使用例（明示的オプトアウト + 呼び出し検証）:
 
 ```ts
 // app/utils/misc.error-message.test.ts:17-18
-consoleError.mockImplementation(() => {})
+consoleError.mockImplementation(() => {});
 // ... テスト実行 ...
 expect(consoleError).toHaveBeenCalledWith(
-  'Unable to get error message for error',
+  "Unable to get error message for error",
   undefined,
-)
+);
 ```
 
 - **カスタムマッチャーの型拡張による IDE 統合**: `expect.extend()` でカスタムマッチャーを追加する際、`declare module 'vitest'` で `Assertion` と `AsymmetricMatchersContaining` の両インターフェースを拡張する。これにより、`expect(response).toHaveRedirect('/login')` が型チェックと補完の両方で機能する。
@@ -199,12 +199,12 @@ expect(consoleError).toHaveBeenCalledWith(
 ```ts
 // tests/setup/custom-matchers.ts:160-169
 interface CustomMatchers<R = unknown> {
-  toHaveRedirect(redirectTo: string | null): R
-  toHaveSessionForUser(userId: string): Promise<R>
-  toSendToast(toast: ToastInput): Promise<R>
+  toHaveRedirect(redirectTo: string | null): R;
+  toHaveSessionForUser(userId: string): Promise<R>;
+  toSendToast(toast: ToastInput): Promise<R>;
 }
 
-declare module 'vitest' {
+declare module "vitest" {
   interface Assertion<T = any> extends CustomMatchers<T> {}
   interface AsymmetricMatchersContaining extends CustomMatchers {}
 }
@@ -215,12 +215,12 @@ declare module 'vitest' {
 ```ts
 // tests/setup/global-setup.ts:15-25
 if (databaseExists) {
-  const databaseLastModifiedAt = (await fsExtra.stat(BASE_DATABASE_PATH)).mtime
+  const databaseLastModifiedAt = (await fsExtra.stat(BASE_DATABASE_PATH)).mtime;
   const prismaSchemaLastModifiedAt = (
-    await fsExtra.stat('./prisma/schema.prisma')
-  ).mtime
+    await fsExtra.stat("./prisma/schema.prisma")
+  ).mtime;
   if (prismaSchemaLastModifiedAt < databaseLastModifiedAt) {
-    return
+    return;
   }
 }
 ```
@@ -230,21 +230,23 @@ if (databaseExists) {
 - **セットアップの暗黙的な順序依存**: `setup-test-env.ts` では ES Module のインポート順に依存してセットアップの実行順序を制御している。コメントで `// we need these to be imported first` と明示されているが、リファクタリング時にインポート順が変わると環境変数未設定のまま後続処理が走るリスクがある。
 
 Bad:
+
 ```ts
 // インポート順に依存（暗黙的な順序制御）
-import 'dotenv/config'
-import './db-setup.ts'
-import '#app/utils/env.server.ts'
+import "dotenv/config";
+import "./db-setup.ts";
+import "#app/utils/env.server.ts";
 // we need these to be imported first
 ```
 
 Better:
+
 ```ts
 // 明示的な初期化関数で順序を制御
 async function initTestEnv() {
-  await loadDotenv()
-  await setupDatabase()
-  await validateEnv()
+  await loadDotenv();
+  await setupDatabase();
+  await validateEnv();
 }
 ```
 
@@ -253,20 +255,22 @@ async function initTestEnv() {
 - **ファイルベース状態管理によるテスト間干渉リスク**: GitHub モックの JSON ファイルに状態を永続化する設計は、`afterEach` でのクリーンアップが漏れた場合にテスト間でデータが残留するリスクがある。`callback.test.ts:28-30` の `afterEach(async () => { await deleteGitHubUsers() })` が必須だが、忘れやすい。
 
 Bad:
+
 ```ts
 // テストファイルごとに afterEach を書く必要がある
 afterEach(async () => {
-  await deleteGitHubUsers()
-})
+  await deleteGitHubUsers();
+});
 ```
 
 Better:
+
 ```ts
 // setupFiles で一括クリーンアップを登録する
 // tests/setup/setup-test-env.ts
 afterEach(async () => {
-  await deleteGitHubUsers()
-})
+  await deleteGitHubUsers();
+});
 ```
 
 ## 導出ルール
@@ -287,7 +291,7 @@ afterEach(async () => {
   - 根拠: `vite.config.ts:16-26` の `cacheServerStubPlugin` が `cache.server.ts` を Map ベースの実装に差し替えている。vi.mock() と異なり、インポート元のコード変更が不要で、アプリケーションコードにテストの関心事が漏れない
 
 - `[AVOID]` 環境変数に依存するモジュールのクリーンアップで静的インポートを使うこと。セットアップ中に環境変数を変更する場合、動的インポートを使ってモジュール初期化のタイミングを制御する
-  - 根拠: `tests/setup/db-setup.ts:28` のコメント「we *must* use dynamic imports here so the process.env.DATABASE_URL is set before prisma is imported and initialized」が設計意図を明示しており、静的インポートでは環境変数設定前にモジュールが初期化されてしまう
+  - 根拠: `tests/setup/db-setup.ts:28` のコメント「we _must_ use dynamic imports here so the process.env.DATABASE_URL is set before prisma is imported and initialized」が設計意図を明示しており、静的インポートでは環境変数設定前にモジュールが初期化されてしまう
 
 ## 適用チェックリスト
 

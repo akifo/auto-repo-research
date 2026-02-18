@@ -54,8 +54,8 @@ app/routes/
 
 ```typescript
 // app/routes/users/$username/notes/$noteId_.edit.tsx:5-8
-import { NoteEditor } from './+shared/note-editor.tsx'
-export { action } from './+shared/note-editor.server.tsx'
+import { NoteEditor } from "./+shared/note-editor.tsx";
+export { action } from "./+shared/note-editor.server.tsx";
 ```
 
 `+shared/note-editor.tsx` はルート間で共有されるコンポーネントとスキーマを、`+shared/note-editor.server.tsx` はサーバー側の action を保持する。`$noteId_.edit.tsx` と `new.tsx` の両方がこれを参照する。これにより、共有ロジックがルートに近い場所に維持される。
@@ -66,26 +66,26 @@ export { action } from './+shared/note-editor.server.tsx'
 
 `app/utils/` 内のファイルは意図的にサフィックスで分類されている:
 
-| サフィックス | 例 | 意味 |
-|---|---|---|
-| `.server.ts` | `auth.server.ts`, `db.server.ts` | サーバー専用。クライアントバンドルに含まれない |
-| `.client.tsx` | `monitoring.client.tsx` | クライアント専用。SSR 時に実行されない |
-| `.ts` / `.tsx` | `misc.tsx`, `user.ts` | ユニバーサル。サーバー・クライアント両方で使用可能 |
+| サフィックス   | 例                               | 意味                                               |
+| -------------- | -------------------------------- | -------------------------------------------------- |
+| `.server.ts`   | `auth.server.ts`, `db.server.ts` | サーバー専用。クライアントバンドルに含まれない     |
+| `.client.tsx`  | `monitoring.client.tsx`          | クライアント専用。SSR 時に実行されない             |
+| `.ts` / `.tsx` | `misc.tsx`, `user.ts`            | ユニバーサル。サーバー・クライアント両方で使用可能 |
 
 `app/routes.ts:15` で `**/*.server.*` がルートファイルの除外対象に設定されており、同一ディレクトリ内でサーバーロジックをルートの横に配置できる:
 
 ```typescript
 // app/routes.ts:4-18
 export default autoRoutes({
-	ignoredRouteFiles: [
-		'.*',
-		'**/*.css',
-		'**/*.test.{js,jsx,ts,tsx}',
-		'**/__*.*',
-		'**/*.server.*',
-		'**/*.client.*',
-	],
-}) satisfies RouteConfig
+  ignoredRouteFiles: [
+    ".*",
+    "**/*.css",
+    "**/*.test.{js,jsx,ts,tsx}",
+    "**/__*.*",
+    "**/*.server.*",
+    "**/*.client.*",
+  ],
+}) satisfies RouteConfig;
 ```
 
 ### Node.js subpath imports によるエイリアス
@@ -105,11 +105,11 @@ export default autoRoutes({
 
 ```typescript
 // app/routes/_auth/login.server.ts:5-9
-import { getUserId, sessionKey } from '#app/utils/auth.server.ts'
-import { prisma } from '#app/utils/db.server.ts'
-import { combineResponseInits } from '#app/utils/misc.tsx'
-import { authSessionStorage } from '#app/utils/session.server.ts'
-import { redirectWithToast } from '#app/utils/toast.server.ts'
+import { getUserId, sessionKey } from "#app/utils/auth.server.ts";
+import { prisma } from "#app/utils/db.server.ts";
+import { combineResponseInits } from "#app/utils/misc.tsx";
+import { authSessionStorage } from "#app/utils/session.server.ts";
+import { redirectWithToast } from "#app/utils/toast.server.ts";
 ```
 
 ### テストインフラの三層構造
@@ -124,10 +124,10 @@ import { redirectWithToast } from '#app/utils/toast.server.ts'
 
 ```typescript
 // tests/setup/db-setup.ts:6-9
-const poolId = process.env.VITEST_POOL_ID || '0'
-const databaseFile = `./tests/prisma/data.${poolId}.db`
-const databasePath = path.join(process.cwd(), databaseFile)
-process.env.DATABASE_URL = `file:${databasePath}`
+const poolId = process.env.VITEST_POOL_ID || "0";
+const databaseFile = `./tests/prisma/data.${poolId}.db`;
+const databasePath = path.join(process.cwd(), databaseFile);
+process.env.DATABASE_URL = `file:${databasePath}`;
 ```
 
 ### `other/` ディレクトリによるルート汚染の回避
@@ -166,11 +166,11 @@ process.env.DATABASE_URL = `file:${databasePath}`
 ```typescript
 // app/utils/env.server.ts:59-65
 export function getEnv() {
-	return {
-		MODE: process.env.NODE_ENV,
-		SENTRY_DSN: process.env.SENTRY_DSN,
-		ALLOW_INDEXING: process.env.ALLOW_INDEXING,
-	}
+  return {
+    MODE: process.env.NODE_ENV,
+    SENTRY_DSN: process.env.SENTRY_DSN,
+    ALLOW_INDEXING: process.env.ALLOW_INDEXING,
+  };
 }
 ```
 
@@ -179,16 +179,16 @@ export function getEnv() {
 ```typescript
 // app/utils/env.server.ts:3-29
 const schema = z.object({
-	NODE_ENV: z.enum(['production', 'development', 'test'] as const),
-	DATABASE_URL: z.string(),
-	SESSION_SECRET: z.string(),
-	// ...
-})
+  NODE_ENV: z.enum(["production", "development", "test"] as const),
+  DATABASE_URL: z.string(),
+  SESSION_SECRET: z.string(),
+  // ...
+});
 
 declare global {
-	namespace NodeJS {
-		interface ProcessEnv extends z.infer<typeof schema> {}
-	}
+  namespace NodeJS {
+    interface ProcessEnv extends z.infer<typeof schema> {}
+  }
 }
 ```
 
@@ -198,8 +198,8 @@ declare global {
 
 ```typescript
 // tests/setup/db-setup.ts:6-9
-const poolId = process.env.VITEST_POOL_ID || '0'
-const databaseFile = `./tests/prisma/data.${poolId}.db`
+const poolId = process.env.VITEST_POOL_ID || "0";
+const databaseFile = `./tests/prisma/data.${poolId}.db`;
 ```
 
 ## Anti-Patterns / 注意点
@@ -207,6 +207,7 @@ const databaseFile = `./tests/prisma/data.${poolId}.db`
 - **ルートディレクトリ肥大化**: 設定ファイルがルートに溢れると、アプリケーションの本質が見えにくくなる。Epic Stack は `other/` ディレクトリで緩和しているが、`tsconfig.json`, `vite.config.ts`, `playwright.config.ts` 等はツールの制約でルートに残らざるを得ない。
 
 Bad: 全設定ファイルをルートに放置
+
 ```
 /
 ├── Dockerfile
@@ -220,6 +221,7 @@ Bad: 全設定ファイルをルートに放置
 ```
 
 Better: ツール制約のないファイルを `other/` に移動
+
 ```
 /
 ├── other/

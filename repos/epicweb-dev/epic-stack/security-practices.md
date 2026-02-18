@@ -26,15 +26,15 @@ const strongestRateLimit = rateLimit({
   ...rateLimitDefault,
   windowMs: 60 * 1000,
   limit: 10 * maxMultiple,
-})
+});
 
 const strongRateLimit = rateLimit({
   ...rateLimitDefault,
   windowMs: 60 * 1000,
   limit: 100 * maxMultiple,
-})
+});
 
-const generalRateLimit = rateLimit(rateLimitDefault)
+const generalRateLimit = rateLimit(rateLimitDefault);
 ```
 
 適用ロジックでは、認証関連パス (`/login`, `/signup`, `/verify` 等) への非 GET リクエストに最も厳しい制限を、その他の非 GET に中程度の制限を、GET には一般的な制限を適用する。さらに `/verify` は GET でもトークンを含むため最も厳しい制限を適用している。
@@ -55,7 +55,7 @@ keyGenerator: (req: express.Request) => {
 
 ```ts
 // app/entry.server.tsx:46
-const nonce = crypto.randomBytes(16).toString('hex')
+const nonce = crypto.randomBytes(16).toString("hex");
 ```
 
 この nonce は `NonceProvider` で React ツリーに注入され、`root.tsx` の `Document` コンポーネントで全ての `<script>` タグに渡される。
@@ -90,9 +90,9 @@ CSP ディレクティブでは `'strict-dynamic'` と nonce を併用し、nonc
 ```ts
 // app/utils/honeypot.server.ts:3-6
 export const honeypot = new Honeypot({
-  validFromFieldName: process.env.NODE_ENV === 'test' ? null : undefined,
+  validFromFieldName: process.env.NODE_ENV === "test" ? null : undefined,
   encryptionSeed: process.env.HONEYPOT_SECRET,
-})
+});
 ```
 
 テスト環境では `validFromFieldName: null` にすることで時間ベースの検証を無効化し、テストが高速で通るようにしている。各フォームの action では `checkHoneypot(formData)` を先頭で呼び出す統一パターンを採用。
@@ -104,11 +104,11 @@ export const honeypot = new Honeypot({
 ```ts
 // app/routes/_auth/verify.server.ts:90-95
 const { otp, ...verificationConfig } = await generateTOTP({
-  algorithm: 'SHA-256',
+  algorithm: "SHA-256",
   // Leaving off 0, O, and I on purpose to avoid confusing users.
-  charSet: 'ABCDEFGHJKLMNPQRSTUVWXYZ123456789',
+  charSet: "ABCDEFGHJKLMNPQRSTUVWXYZ123456789",
   period,
-})
+});
 ```
 
 文字セットから `0`, `O`, `I` を除外している点は UX とセキュリティの交差点として優れた判断。検証成功後は `deleteVerification()` でワンタイム性を担保している（2FA の場合は永続的に保持）。
@@ -120,9 +120,9 @@ const { otp, ...verificationConfig } = await generateTOTP({
 ```ts
 // app/routes/_auth/login.server.ts:39-60
 if (userHasTwoFactor) {
-  const verifySession = await verifySessionStorage.getSession()
-  verifySession.set(unverifiedSessionIdKey, session.id)
-  verifySession.set(rememberKey, remember)
+  const verifySession = await verifySessionStorage.getSession();
+  verifySession.set(unverifiedSessionIdKey, session.id);
+  verifySession.set(rememberKey, remember);
   // ... redirect to 2FA verification
 }
 ```
@@ -131,8 +131,8 @@ if (userHasTwoFactor) {
 
 ```ts
 // app/routes/_auth/login.server.ts:155-157
-const twoHours = 1000 * 60 * 2
-return Date.now() - verifiedTime > twoHours
+const twoHours = 1000 * 60 * 2;
+return Date.now() - verifiedTime > twoHours;
 ```
 
 ### 6. パスワードセキュリティ
@@ -143,11 +143,11 @@ bcrypt のハッシュ化に加え、HIBP (Have I Been Pwned) API による漏�
 // app/utils/auth.server.ts:260-267
 export function getPasswordHashParts(password: string) {
   const hash = crypto
-    .createHash('sha1')
-    .update(password, 'utf8')
-    .digest('hex')
-    .toUpperCase()
-  return [hash.slice(0, 5), hash.slice(5)] as const
+    .createHash("sha1")
+    .update(password, "utf8")
+    .digest("hex")
+    .toUpperCase();
+  return [hash.slice(0, 5), hash.slice(5)] as const;
 }
 ```
 
@@ -156,11 +156,11 @@ Zod バリデーションでは bcrypt の 72 バイト制限を考慮した上�
 ```ts
 // app/utils/user-validation.ts:17-23
 export const PasswordSchema = z
-  .string({ required_error: 'Password is required' })
-  .min(6, { message: 'Password is too short' })
+  .string({ required_error: "Password is required" })
+  .min(6, { message: "Password is too short" })
   .refine((val) => new TextEncoder().encode(val).length <= 72, {
-    message: 'Password is too long',
-  })
+    message: "Password is too long",
+  });
 ```
 
 ### 7. WebAuthn / パスキー
@@ -169,7 +169,7 @@ export const PasswordSchema = z
 
 ```ts
 // app/routes/_auth/webauthn/authentication.ts:32
-const deletePasskeyCookie = await passkeyCookie.serialize('', { maxAge: 0 })
+const deletePasskeyCookie = await passkeyCookie.serialize("", { maxAge: 0 });
 ```
 
 登録時には `requireUserVerification: true` を設定し、生体認証または PIN の入力を必須にしている。認証後はカウンターを更新してリプレイ攻撃を防止する。
@@ -179,7 +179,7 @@ const deletePasskeyCookie = await passkeyCookie.serialize('', { maxAge: 0 })
 await prisma.passkey.update({
   where: { id: passkey.id },
   data: { counter: BigInt(verification.authenticationInfo.newCounter) },
-})
+});
 ```
 
 ### 8. Cookie セキュリティ
@@ -230,8 +230,7 @@ cookie: {
 - **環境に応じたセキュリティ調整**: テスト環境ではレート制限の倍率を `10_000` にし、ハニーポットの時間検証を無効化。本番のセキュリティを損なわずに開発・テスト効率を確保している。
   ```ts
   // server/index.ts:92-93
-  const maxMultiple =
-    !IS_PROD || process.env.PLAYWRIGHT_TEST_BASE_URL ? 10_000 : 1
+  const maxMultiple = !IS_PROD || process.env.PLAYWRIGHT_TEST_BASE_URL ? 10_000 : 1;
   ```
 
 - **CDN/PaaS ヘッダーによる IP 識別**: `req.ip` ではなく `fly-client-ip` を優先することで、IP スプーフィング耐性を持つレート制限を実現。コメントで CDN 変更時の対応方法（`cf-connecting-ip` への差し替え等）も記載している。
@@ -265,7 +264,7 @@ cookie: {
 
   ```ts
   // Bad: SameSite=Lax 前提なのに GET で mutation
-  app.get('/api/delete-account', (req, res) => { /* ... */ })
+  app.get("/api/delete-account", (req, res) => {/* ... */});
 
   // Better: mutation は常に POST/PUT/DELETE で行い、
   // Cookie 設定コメントを必ず確認する

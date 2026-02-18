@@ -30,25 +30,25 @@ Epic Stack のテストは Playwright の `test.extend` を二段階で活用し
 ```typescript
 // tests/e2e/onboarding.test.ts:27-46
 const test = base.extend<{
-	getOnboardingData(): {
-		username: string
-		name: string
-		email: string
-		password: string
-	}
+  getOnboardingData(): {
+    username: string;
+    name: string;
+    email: string;
+    password: string;
+  };
 }>({
-	getOnboardingData: async ({}, use) => {
-		const userData = createUser()
-		await use(() => {
-			const onboardingData = {
-				...userData,
-				password: faker.internet.password(),
-			}
-			return onboardingData
-		})
-		await prisma.user.deleteMany({ where: { username: userData.username } })
-	},
-})
+  getOnboardingData: async ({}, use) => {
+    const userData = createUser();
+    await use(() => {
+      const onboardingData = {
+        ...userData,
+        password: faker.internet.password(),
+      };
+      return onboardingData;
+    });
+    await prisma.user.deleteMany({ where: { username: userData.username } });
+  },
+});
 ```
 
 この階層構造により、共通の認証・ナビゲーション機能はグローバルに共有しつつ、特定テスト群にのみ必要なセットアップを局所的に追加できる。
@@ -147,10 +147,10 @@ prepareGitHubUser: async ({ page }, use, testInfo) => {
 
 ```typescript
 // tests/db-utils.ts:1-6
-import { faker } from '@faker-js/faker'
-import { UniqueEnforcer } from 'enforce-unique'
+import { faker } from "@faker-js/faker";
+import { UniqueEnforcer } from "enforce-unique";
 
-const uniqueUsernameEnforcer = new UniqueEnforcer()
+const uniqueUsernameEnforcer = new UniqueEnforcer();
 ```
 
 faker の `internet.username()` はデフォルトで衝突する可能性があるため、`enforce-unique` ライブラリがコールバックを再試行してユニーク値を保証する。さらにランダムな2文字のプレフィックスを付与することで衝突確率を下げている。
@@ -162,19 +162,19 @@ faker の `internet.username()` はデフォルトで衝突する可能性があ
 ```typescript
 // tests/e2e/passkey.test.ts:5-20
 async function setupWebAuthn(page: Page) {
-    const client = await page.context().newCDPSession(page)
-    await client.send('WebAuthn.enable', { enableUI: true })
-    const result = await client.send('WebAuthn.addVirtualAuthenticator', {
-        options: {
-            protocol: 'ctap2',
-            transport: 'usb',
-            hasResidentKey: true,
-            hasUserVerification: true,
-            isUserVerified: true,
-            automaticPresenceSimulation: true,
-        },
-    })
-    return { client, authenticatorId: result.authenticatorId }
+  const client = await page.context().newCDPSession(page);
+  await client.send("WebAuthn.enable", { enableUI: true });
+  const result = await client.send("WebAuthn.addVirtualAuthenticator", {
+    options: {
+      protocol: "ctap2",
+      transport: "usb",
+      hasResidentKey: true,
+      hasUserVerification: true,
+      isUserVerified: true,
+      automaticPresenceSimulation: true,
+    },
+  });
+  return { client, authenticatorId: result.authenticatorId };
 }
 ```
 
@@ -187,24 +187,24 @@ CDP セッションを通じて資格情報の登録・認証イベントを Pro
 ```typescript
 // tests/playwright-utils.ts:156-175
 export async function waitFor<ReturnValue>(
-    cb: () => ReturnValue | Promise<ReturnValue>,
-    {
-        errorMessage,
-        timeout = 5000,
-    }: { errorMessage?: string; timeout?: number } = {},
+  cb: () => ReturnValue | Promise<ReturnValue>,
+  {
+    errorMessage,
+    timeout = 5000,
+  }: { errorMessage?: string; timeout?: number; } = {},
 ) {
-    const endTime = Date.now() + timeout
-    let lastError: unknown = new Error(errorMessage)
-    while (Date.now() < endTime) {
-        try {
-            const response = await cb()
-            if (response) return response
-        } catch (e: unknown) {
-            lastError = e
-        }
-        await new Promise((r) => setTimeout(r, 100))
+  const endTime = Date.now() + timeout;
+  let lastError: unknown = new Error(errorMessage);
+  while (Date.now() < endTime) {
+    try {
+      const response = await cb();
+      if (response) return response;
+    } catch (e: unknown) {
+      lastError = e;
     }
-    throw lastError
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  throw lastError;
 }
 ```
 
@@ -214,19 +214,19 @@ export async function waitFor<ReturnValue>(
 
 ```typescript
 // tests/e2e/notes.test.ts:5-17 — login フィクスチャと型安全ナビゲーションの典型的な利用
-test('Users can create notes', async ({ page, navigate, login }) => {
-    const user = await login()
-    await navigate('/users/:username/notes', { username: user.username })
+test("Users can create notes", async ({ page, navigate, login }) => {
+  const user = await login();
+  await navigate("/users/:username/notes", { username: user.username });
 
-    const newNote = createNote()
-    await page.getByRole('link', { name: /New Note/i }).click()
+  const newNote = createNote();
+  await page.getByRole("link", { name: /New Note/i }).click();
 
-    await page.getByRole('textbox', { name: /title/i }).fill(newNote.title)
-    await page.getByRole('textbox', { name: /content/i }).fill(newNote.content)
+  await page.getByRole("textbox", { name: /title/i }).fill(newNote.title);
+  await page.getByRole("textbox", { name: /content/i }).fill(newNote.content);
 
-    await page.getByRole('button', { name: /submit/i }).click()
-    await expect(page).toHaveURL(new RegExp(`/users/${user.username}/notes/.*`))
-})
+  await page.getByRole("button", { name: /submit/i }).click();
+  await expect(page).toHaveURL(new RegExp(`/users/${user.username}/notes/.*`));
+});
 ```
 
 ```typescript
@@ -245,10 +245,10 @@ insertNewUser: async ({}, use) => {
 ```typescript
 // tests/e2e/passkey.test.ts:41-45 — CDP イベント駆動のタイミング制御
 const passkeyRegisteredPromise = new Promise<void>((resolve) => {
-    client.once('WebAuthn.credentialAdded', () => resolve())
-})
-await page.getByRole('button', { name: /register new passkey/i }).click()
-await passkeyRegisteredPromise
+  client.once("WebAuthn.credentialAdded", () => resolve());
+});
+await page.getByRole("button", { name: /register new passkey/i }).click();
+await passkeyRegisteredPromise;
 ```
 
 ## パターンカタログ
@@ -277,11 +277,11 @@ await passkeyRegisteredPromise
 
 ```typescript
 // tests/playwright-utils.ts:104-108
-const authSession = await authSessionStorage.getSession()
-authSession.set(sessionKey, session.id)
+const authSession = await authSessionStorage.getSession();
+authSession.set(sessionKey, session.id);
 const cookieConfig = setCookieParser.parseString(
-    await authSessionStorage.commitSession(authSession),
-)
+  await authSessionStorage.commitSession(authSession),
+);
 ```
 
 - **`testInfo.testId` を使った OAuth モックのテスト分離**: 各テストが固有の GitHub ユーザーを持ち、並列実行時にモックデータが競合しない。`testInfo.testId` は Playwright が自動的にユニーク値を付与するため、テスト作者が ID 管理を意識する必要がない。
@@ -302,12 +302,12 @@ prepareGitHubUser: async ({ page }, use, testInfo) => {
 
 ```typescript
 // tests/e2e/onboarding.test.ts:53-59
-await page.getByRole('link', { name: /log in/i }).click()
-await expect(page).toHaveURL(`/login`)
-const createAccountLink = page.getByRole('link', {
-    name: /create an account/i,
-})
-await createAccountLink.click()
+await page.getByRole("link", { name: /log in/i }).click();
+await expect(page).toHaveURL(`/login`);
+const createAccountLink = page.getByRole("link", {
+  name: /create an account/i,
+});
+await createAccountLink.click();
 ```
 
 ## Anti-Patterns / 注意点
@@ -332,12 +332,12 @@ const user = await insertNewUser({
 
 ```typescript
 // Bad: networkidle は SPA で不安定
-await page.waitForLoadState('networkidle')
-await page.getByLabel(/terms/i).check()
+await page.waitForLoadState("networkidle");
+await page.getByLabel(/terms/i).check();
 
 // Better: 特定の要素の可視性を待機する
-await expect(page.getByLabel(/terms/i)).toBeEnabled()
-await page.getByLabel(/terms/i).check()
+await expect(page.getByLabel(/terms/i)).toBeEnabled();
+await page.getByLabel(/terms/i).check();
 ```
 
 ## 導出ルール

@@ -73,37 +73,36 @@ OAuth テストは2層で異なるモック戦略を使い分けている:
 ```ts
 // app/routes/_auth/auth.$provider/callback.test.ts:240-272
 async function setupRequest({
-    sessionId,
-    code = faker.string.uuid(),
-}: { sessionId?: string; code?: string } = {}) {
-    const url = new URL(ROUTE_PATH, BASE_URL)
-    const state = faker.string.uuid()
-    url.searchParams.set('state', state)
-    url.searchParams.set('code', code)
-    const authSession = await authSessionStorage.getSession()
-    if (sessionId) authSession.set(sessionKey, sessionId)
-    const setSessionCookieHeader =
-        await authSessionStorage.commitSession(authSession)
-    const searchParams = new URLSearchParams({ code, state })
-    let authCookie = new SetCookie({
-        name: 'github',
-        value: searchParams.toString(),
-        path: '/',
-        sameSite: 'Lax',
-        httpOnly: true,
-        maxAge: 60 * 10,
-        secure: process.env.NODE_ENV === 'production' || undefined,
-    })
-    const request = new Request(url.toString(), {
-        method: 'GET',
-        headers: {
-            cookie: [
-                authCookie.toString(),
-                convertSetCookieToCookie(setSessionCookieHeader),
-            ].join('; '),
-        },
-    })
-    return request
+  sessionId,
+  code = faker.string.uuid(),
+}: { sessionId?: string; code?: string; } = {}) {
+  const url = new URL(ROUTE_PATH, BASE_URL);
+  const state = faker.string.uuid();
+  url.searchParams.set("state", state);
+  url.searchParams.set("code", code);
+  const authSession = await authSessionStorage.getSession();
+  if (sessionId) authSession.set(sessionKey, sessionId);
+  const setSessionCookieHeader = await authSessionStorage.commitSession(authSession);
+  const searchParams = new URLSearchParams({ code, state });
+  let authCookie = new SetCookie({
+    name: "github",
+    value: searchParams.toString(),
+    path: "/",
+    sameSite: "Lax",
+    httpOnly: true,
+    maxAge: 60 * 10,
+    secure: process.env.NODE_ENV === "production" || undefined,
+  });
+  const request = new Request(url.toString(), {
+    method: "GET",
+    headers: {
+      cookie: [
+        authCookie.toString(),
+        convertSetCookieToCookie(setSessionCookieHeader),
+      ].join("; "),
+    },
+  });
+  return request;
 }
 ```
 
@@ -137,13 +136,13 @@ GitHub ユーザーモックデータは JSON ファイルに永続化し、プ�
 ```ts
 // tests/mocks/github.ts:13-19
 const githubUserFixturePath = path.join(
-    here(
-        '..',
-        'fixtures',
-        'github',
-        `users.${process.env.VITEST_POOL_ID || 0}.local.json`,
-    ),
-)
+  here(
+    "..",
+    "fixtures",
+    "github",
+    `users.${process.env.VITEST_POOL_ID || 0}.local.json`,
+  ),
+);
 ```
 
 ### カスタムマッチャーによる認証アサーション
@@ -180,23 +179,23 @@ async toHaveSessionForUser(response: Response, userId: string) {
 
 ```ts
 // app/utils/auth.server.test.ts:83-109
-describe('timeout handling', () => {
-    // normally we'd use fake timers for a test like this, but there's an issue
-    // with AbortSignal.timeout() and fake timers: https://github.com/sinonjs/fake-timers/issues/418
-    test('checkIsCommonPassword times out after 1 second', async () => {
-        consoleWarn.mockImplementation(() => {})
-        server.use(
-            http.get('https://api.pwnedpasswords.com/range/:prefix', async () => {
-                const twoSecondDelay = 2000
-                await new Promise((resolve) => setTimeout(resolve, twoSecondDelay))
-                return new HttpResponse(/* ... */)
-            }),
-        )
-        const result = await checkIsCommonPassword('testpassword')
-        expect(result).toBe(false)
-        expect(consoleWarn).toHaveBeenCalledWith('Password check timed out')
-    })
-})
+describe("timeout handling", () => {
+  // normally we'd use fake timers for a test like this, but there's an issue
+  // with AbortSignal.timeout() and fake timers: https://github.com/sinonjs/fake-timers/issues/418
+  test("checkIsCommonPassword times out after 1 second", async () => {
+    consoleWarn.mockImplementation(() => {});
+    server.use(
+      http.get("https://api.pwnedpasswords.com/range/:prefix", async () => {
+        const twoSecondDelay = 2000;
+        await new Promise((resolve) => setTimeout(resolve, twoSecondDelay));
+        return new HttpResponse(); /* ... */
+      }),
+    );
+    const result = await checkIsCommonPassword("testpassword");
+    expect(result).toBe(false);
+    expect(consoleWarn).toHaveBeenCalledWith("Password check timed out");
+  });
+});
 ```
 
 ### WebAuthn テストの CDP 連携
@@ -206,19 +205,19 @@ describe('timeout handling', () => {
 ```ts
 // tests/e2e/passkey.test.ts:5-20
 async function setupWebAuthn(page: Page) {
-    const client = await page.context().newCDPSession(page)
-    await client.send('WebAuthn.enable', { enableUI: true })
-    const result = await client.send('WebAuthn.addVirtualAuthenticator', {
-        options: {
-            protocol: 'ctap2',
-            transport: 'usb',
-            hasResidentKey: true,
-            hasUserVerification: true,
-            isUserVerified: true,
-            automaticPresenceSimulation: true,
-        },
-    })
-    return { client, authenticatorId: result.authenticatorId }
+  const client = await page.context().newCDPSession(page);
+  await client.send("WebAuthn.enable", { enableUI: true });
+  const result = await client.send("WebAuthn.addVirtualAuthenticator", {
+    options: {
+      protocol: "ctap2",
+      transport: "usb",
+      hasResidentKey: true,
+      hasUserVerification: true,
+      isUserVerified: true,
+      automaticPresenceSimulation: true,
+    },
+  });
+  return { client, authenticatorId: result.authenticatorId };
 }
 ```
 
@@ -242,34 +241,34 @@ async function setupWebAuthn(page: Page) {
   ```ts
   // tests/playwright-utils.ts:96-115
   const session = await prisma.session.create({
-      data: { expirationDate: getSessionExpirationDate(), userId: user.id },
-      select: { id: true },
-  })
-  const authSession = await authSessionStorage.getSession()
-  authSession.set(sessionKey, session.id)
+    data: { expirationDate: getSessionExpirationDate(), userId: user.id },
+    select: { id: true },
+  });
+  const authSession = await authSessionStorage.getSession();
+  authSession.set(sessionKey, session.id);
   const cookieConfig = setCookieParser.parseString(
-      await authSessionStorage.commitSession(authSession),
-  )
-  await page.context().addCookies([{ ...cookieConfig, domain: 'localhost' }])
+    await authSessionStorage.commitSession(authSession),
+  );
+  await page.context().addCookies([{ ...cookieConfig, domain: "localhost" }]);
   ```
 
 - **テストIDベースの OAuth モック分離**: Playwright の `testInfo.testId` をリクエストヘッダに注入し、各テストの OAuth フローを分離する。並列実行時のデータ衝突を防ぎつつ、ファイルベースフィクスチャでプロセス間共有を実現する。
   ```ts
   // tests/playwright-utils.ts:121-125
   await page.route(/\/auth\/github(?!\/callback)/, async (route, request) => {
-      const headers = { ...request.headers(), [MOCK_CODE_GITHUB_HEADER]: testInfo.testId }
-      await route.continue({ headers })
-  })
+    const headers = { ...request.headers(), [MOCK_CODE_GITHUB_HEADER]: testInfo.testId };
+    await route.continue({ headers });
+  });
   ```
 
 - **console.warn/error のデフォルト例外化**: テストセットアップで `console.warn` / `console.error` をスパイし、呼ばれたらテスト失敗にする。意図的に発生させる場合のみ `mockImplementation(() => {})` でオプトアウトする。予期しない警告・エラーの見落としを防止する。
   ```ts
   // tests/setup/setup-test-env.ts:17-37
-  consoleError = vi.spyOn(console, 'error')
+  consoleError = vi.spyOn(console, "error");
   consoleError.mockImplementation((...args) => {
-      originalConsoleError(...args)
-      throw new Error('Console error was called. Call consoleError.mockImplementation(() => {}) if this is expected.')
-  })
+    originalConsoleError(...args);
+    throw new Error("Console error was called. Call consoleError.mockImplementation(() => {}) if this is expected.");
+  });
   ```
 
 ## Anti-Patterns / 注意点
@@ -277,28 +276,28 @@ async function setupWebAuthn(page: Page) {
 - **E2E テストでの毎回 UI ログイン**: 認証テスト以外のテストで毎回 UI ログインフォームを操作すると、テスト時間が数倍になり、ログイン UI の変更で無関係なテストが壊れる。
   ```ts
   // Bad: E2E テストで毎回 UI 操作でログイン
-  test('ノートを作成できる', async ({ page }) => {
-      await page.goto('/login')
-      await page.fill('[name=username]', 'user')
-      await page.fill('[name=password]', 'pass')
-      await page.click('button[type=submit]')
-      // ここからが本来のテスト...
-  })
+  test("ノートを作成できる", async ({ page }) => {
+    await page.goto("/login");
+    await page.fill("[name=username]", "user");
+    await page.fill("[name=password]", "pass");
+    await page.click("button[type=submit]");
+    // ここからが本来のテスト...
+  });
 
   // Better: Cookie 直接注入フィクスチャでバイパス
-  test('ノートを作成できる', async ({ page, login }) => {
-      await login()
-      // すぐに本来のテスト開始
-  })
+  test("ノートを作成できる", async ({ page, login }) => {
+    await login();
+    // すぐに本来のテスト開始
+  });
   ```
 
 - **OAuth モックでのハードコードされたコード値**: テストごとに固有の OAuth コードを使わないと、並列実行時にテスト間でデータが混在する。
   ```ts
   // Bad: 全テストで同じ OAuth コードを使う
-  const request = await setupRequest({ code: 'fixed-code' })
+  const request = await setupRequest({ code: "fixed-code" });
 
   // Better: テスト固有のIDをコードとして使う
-  const request = await setupRequest({ code: testInfo.testId })
+  const request = await setupRequest({ code: testInfo.testId });
   ```
 
 - **セキュリティ API テストでの正常系のみの検証**: パスワード漏洩チェックのような外部 API は障害時にユーザーをブロックしてはならない。異常系（タイムアウト、500、不正レスポンス）で安全側にフォールバックすることを必ずテストすべき。

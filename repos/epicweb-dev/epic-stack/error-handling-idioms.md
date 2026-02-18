@@ -32,12 +32,15 @@ Epic Stack におけるエラーハンドリングの使い分けパターンを
 
 ```typescript
 // app/routes/users/$username/notes/$noteId.tsx:43
-invariantResponse(note, 'Not found', { status: 404 })
+invariantResponse(note, "Not found", { status: 404 });
 
 // app/routes/settings/profile/connections.tsx:93-102
-invariantResponse(formData.get('intent') === 'delete-connection', 'Invalid intent')
-invariantResponse(await userCanDeleteConnections(userId), 'You cannot delete your last connection unless you have a password.')
-invariantResponse(typeof connectionId === 'string', 'Invalid connectionId')
+invariantResponse(formData.get("intent") === "delete-connection", "Invalid intent");
+invariantResponse(
+  await userCanDeleteConnections(userId),
+  "You cannot delete your last connection unless you have a password.",
+);
+invariantResponse(typeof connectionId === "string", "Invalid connectionId");
 ```
 
 **`invariant` — サーバーサイドの内部ロジックでのアサーション**（6 箇所）:
@@ -45,19 +48,19 @@ invariantResponse(typeof connectionId === 'string', 'Invalid connectionId')
 ```typescript
 // app/routes/_auth/login.server.ts:87-90
 invariant(
-  submission.status === 'success',
-  'Submission should be successful by now',
-)
+  submission.status === "success",
+  "Submission should be successful by now",
+);
 
 // app/utils/request-info.ts:10
-invariant(maybeRequestInfo, 'No requestInfo found in root loader')
+invariant(maybeRequestInfo, "No requestInfo found in root loader");
 ```
 
 `invariant` はテストコードでも型の絞り込みとして使われている:
 
 ```typescript
 // app/routes/_auth/auth.$provider/callback.test.ts:53
-invariant(response instanceof Response, 'response should be a Response')
+invariant(response instanceof Response, "response should be a Response");
 ```
 
 ### Zod + Conform によるフォームバリデーション
@@ -66,12 +69,12 @@ invariant(response instanceof Response, 'response should be a Response')
 
 ```typescript
 // app/routes/users/$username/notes/$noteId.tsx:59-67
-const submission = parseWithZod(formData, { schema: DeleteFormSchema })
-if (submission.status !== 'success') {
+const submission = parseWithZod(formData, { schema: DeleteFormSchema });
+if (submission.status !== "success") {
   return data(
     { result: submission.reply() },
-    { status: submission.status === 'error' ? 400 : 200 },
-  )
+    { status: submission.status === "error" ? 400 : 200 },
+  );
 }
 ```
 
@@ -88,12 +91,10 @@ export function ErrorBoundary() {
     <GeneralErrorBoundary
       statusHandlers={{
         403: () => <p>You are not allowed to do that</p>,
-        404: ({ params }) => (
-          <p>No note with the id "{params.noteId}" exists</p>
-        ),
+        404: ({ params }) => <p>No note with the id "{params.noteId}" exists</p>,
       }}
     />
-  )
+  );
 }
 ```
 
@@ -106,9 +107,9 @@ root.tsx では最後の砦として `GeneralErrorBoundary` をそのまま使�
 ```typescript
 // app/components/error-boundary.tsx:37-41
 useEffect(() => {
-  if (isResponse) return
-  captureException(error)
-}, [error, isResponse])
+  if (isResponse) return;
+  captureException(error);
+}, [error, isResponse]);
 ```
 
 404 や 403 のような意図的なエラーレスポンスは Sentry に送らない。
@@ -120,13 +121,13 @@ Zod スキーマでサーバー環境変数を起動時にバリデーション�
 ```typescript
 // app/utils/env.server.ts:37-48
 export function init() {
-  const parsed = schema.safeParse(process.env)
+  const parsed = schema.safeParse(process.env);
   if (parsed.success === false) {
     console.error(
-      'Invalid environment variables:',
+      "Invalid environment variables:",
       parsed.error.flatten().fieldErrors,
-    )
-    throw new Error('Invalid environment variables')
+    );
+    throw new Error("Invalid environment variables");
   }
 }
 ```
@@ -141,10 +142,10 @@ export function init() {
 
 ```typescript
 // app/utils/misc.error-message.test.ts:16-18
-test('undefined falls back to Unknown', () => {
-  consoleError.mockImplementation(() => {})
-  expect(getErrorMessage(undefined)).toBe('Unknown Error')
-})
+test("undefined falls back to Unknown", () => {
+  consoleError.mockImplementation(() => {});
+  expect(getErrorMessage(undefined)).toBe("Unknown Error");
+});
 ```
 
 ### throw redirect パターン — 認証・認可のフロー制御
@@ -170,12 +171,12 @@ export async function requireUserId(request: Request, ...) {
 if (!user) {
   throw data(
     {
-      error: 'Unauthorized',
+      error: "Unauthorized",
       requiredPermission: permissionData,
       message: `Unauthorized: required permissions: ${permission}`,
     },
     { status: 403 },
-  )
+  );
 }
 ```
 
@@ -200,19 +201,17 @@ if (!user) {
 ```typescript
 // app/routes/users/$username/notes/_layout.tsx:23, 92-102
 // loader 側
-invariantResponse(owner, 'Owner not found', { status: 404 })
+invariantResponse(owner, "Owner not found", { status: 404 });
 
 // 同じファイルの ErrorBoundary
 export function ErrorBoundary() {
   return (
     <GeneralErrorBoundary
       statusHandlers={{
-        404: ({ params }) => (
-          <p>No user with the username "{params.username}" exists</p>
-        ),
+        404: ({ params }) => <p>No user with the username "{params.username}" exists</p>,
       }}
     />
-  )
+  );
 }
 ```
 
@@ -224,7 +223,7 @@ const LoginFormSchema = z.object({
   username: UsernameSchema,
   password: PasswordSchema,
   // ...
-})
+});
 ```
 
 - **console.error スパイの全テスト強制**: テストセットアップで `console.error` を「呼ばれたら例外を投げる」スパイに差し替える。エラーを期待するテストだけ `consoleError.mockImplementation(() => {})` で明示的に許可する。暗黙のエラーログが見過ごされるのを防ぐ。
@@ -250,14 +249,14 @@ catch (error) {
 ```typescript
 // Bad — loader 内で invariant を使う
 export async function loader({ params }) {
-  const user = await findUser(params.id)
-  invariant(user, 'User not found') // Error が throw される → 500 扱い
+  const user = await findUser(params.id);
+  invariant(user, "User not found"); // Error が throw される → 500 扱い
 }
 
 // Better — invariantResponse で 404 を明示
 export async function loader({ params }) {
-  const user = await findUser(params.id)
-  invariantResponse(user, 'User not found', { status: 404 })
+  const user = await findUser(params.id);
+  invariantResponse(user, "User not found", { status: 404 });
 }
 ```
 
@@ -266,15 +265,15 @@ export async function loader({ params }) {
 ```typescript
 // Bad
 if (!submission.success) {
-  throw new Response('Validation failed', { status: 400 })
+  throw new Response("Validation failed", { status: 400 });
 }
 
 // Better — submission.reply() でフォームにエラーを返す
-if (submission.status !== 'success') {
+if (submission.status !== "success") {
   return data(
     { result: submission.reply() },
-    { status: submission.status === 'error' ? 400 : 200 },
-  )
+    { status: submission.status === "error" ? 400 : 200 },
+  );
 }
 ```
 

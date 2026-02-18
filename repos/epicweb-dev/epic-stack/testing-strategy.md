@@ -24,16 +24,19 @@ Epic Stack は Kent C. Dodds の Testing Trophy 哲学を体現したテスト�
 Vitest テスト（6 ファイル, 643 行）と E2E テスト（8 ファイル, 1058 行）の構成から、テスト種別ごとの使い分け基準が明確に見える。
 
 **純粋ユニットテスト**（Vitest, Node 環境）: 外部依存のない純粋関数のみ。
+
 - `misc.error-message.test.ts`: `getErrorMessage` のパターン網羅（24 行, 3 テスト）
 - `headers.server.test.ts`: `getConservativeCacheControl` の値テスト（39 行, 3 テスト）
 
 **統合テスト**（Vitest, Node/jsdom 環境）: 実 DB + MSW + セッション管理を含むテスト。
+
 - `callback.test.ts`: OAuth コールバックローダーの 8 シナリオ（291 行）。実際の Prisma でユーザー/セッション/コネクションを作成し、loader を直接呼び出す
 - `auth.server.test.ts`: パスワードチェック関数の 5 ケース（109 行）。MSW で Pwned Passwords API の応答を切り替え
 - `misc.use-double-check.test.tsx`: React フックのコンポーネントテスト（83 行）。Testing Library で DOM 操作を検証
 - `index.test.tsx`: ルートコンポーネントのレンダリングテスト（97 行）。`createRoutesStub` で React Router をスタブ化
 
 **E2E テスト**（Playwright）: ユーザージャーニー全体をブラウザで検証。
+
 - `onboarding.test.ts`: 登録フロー全体の 8 シナリオ（438 行）
 - `settings-profile.test.ts`: プロフィール設定変更の 4 シナリオ（127 行）
 - `passkey.test.ts`: WebAuthn パスキー登録・使用の 2 シナリオ（162 行）
@@ -70,64 +73,63 @@ DB スナップショットコピーによるテスト分離:
 
 ```ts
 // tests/setup/db-setup.ts:6-23
-const poolId = process.env.VITEST_POOL_ID || '0'
-const databaseFile = `./tests/prisma/data.${poolId}.db`
-const databasePath = path.join(process.cwd(), databaseFile)
-process.env.DATABASE_URL = `file:${databasePath}`
+const poolId = process.env.VITEST_POOL_ID || "0";
+const databaseFile = `./tests/prisma/data.${poolId}.db`;
+const databasePath = path.join(process.cwd(), databaseFile);
+process.env.DATABASE_URL = `file:${databasePath}`;
 
 beforeEach(async () => {
-	await fsExtra.copyFile(BASE_DATABASE_PATH, databasePath)
-})
+  await fsExtra.copyFile(BASE_DATABASE_PATH, databasePath);
+});
 ```
 
 統合テストでのローダー直接呼び出し（DB + MSW + セッション統合）:
 
 ```ts
 // app/routes/_auth/auth.$provider/callback.test.ts:64-94
-test('when a user is logged in, it creates the connection', async () => {
-	const githubUser = await insertGitHubUser()
-	const session = await setupUser()
-	const request = await setupRequest({
-		sessionId: session.id,
-		code: githubUser.code,
-	})
-	const response = await loader({
-		request,
-		...LOADER_ARGS_BASE,
-	})
-	expect(response).toHaveRedirect('/settings/profile/connections')
-	await expect(response).toSendToast(
-		expect.objectContaining({
-			title: 'Connected',
-			type: 'success',
-			description: expect.stringContaining(githubUser.profile.login),
-		}),
-	)
-	const connection = await prisma.connection.findFirst({
-		select: { id: true },
-		where: {
-			userId: session.userId,
-			providerId: githubUser.profile.id.toString(),
-		},
-	})
-	expect(connection, 'the connection was not created in the database').toBeTruthy()
-})
+test("when a user is logged in, it creates the connection", async () => {
+  const githubUser = await insertGitHubUser();
+  const session = await setupUser();
+  const request = await setupRequest({
+    sessionId: session.id,
+    code: githubUser.code,
+  });
+  const response = await loader({
+    request,
+    ...LOADER_ARGS_BASE,
+  });
+  expect(response).toHaveRedirect("/settings/profile/connections");
+  await expect(response).toSendToast(
+    expect.objectContaining({
+      title: "Connected",
+      type: "success",
+      description: expect.stringContaining(githubUser.profile.login),
+    }),
+  );
+  const connection = await prisma.connection.findFirst({
+    select: { id: true },
+    where: {
+      userId: session.userId,
+      providerId: githubUser.profile.id.toString(),
+    },
+  });
+  expect(connection, "the connection was not created in the database").toBeTruthy();
+});
 ```
 
 MSW ハンドラの環境別切り替え:
 
 ```ts
 // tests/mocks/github.ts:131-139
-const passthroughGitHub =
-	!process.env.GITHUB_CLIENT_ID?.startsWith('MOCK_') &&
-	process.env.NODE_ENV !== 'test'
+const passthroughGitHub = !process.env.GITHUB_CLIENT_ID?.startsWith("MOCK_")
+  && process.env.NODE_ENV !== "test";
 
 export const handlers: Array<HttpHandler> = [
-	http.post('https://github.com/login/oauth/access_token', async ({ request }) => {
-		if (passthroughGitHub) return passthrough()
-		// ... mock implementation
-	}),
-]
+  http.post("https://github.com/login/oauth/access_token", async ({ request }) => {
+    if (passthroughGitHub) return passthrough();
+    // ... mock implementation
+  }),
+];
 ```
 
 Playwright カスタムフィクスチャの自動クリーンアップ:
@@ -163,17 +165,17 @@ console.error ガード:
 ```ts
 // tests/setup/setup-test-env.ts:17-27
 beforeEach(() => {
-	const originalConsoleError = console.error
-	consoleError = vi.spyOn(console, 'error')
-	consoleError.mockImplementation(
-		(...args: Parameters<typeof console.error>) => {
-			originalConsoleError(...args)
-			throw new Error(
-				'Console error was called. Call consoleError.mockImplementation(() => {}) if this is expected.',
-			)
-		},
-	)
-})
+  const originalConsoleError = console.error;
+  consoleError = vi.spyOn(console, "error");
+  consoleError.mockImplementation(
+    (...args: Parameters<typeof console.error>) => {
+      originalConsoleError(...args);
+      throw new Error(
+        "Console error was called. Call consoleError.mockImplementation(() => {}) if this is expected.",
+      );
+    },
+  );
+});
 ```
 
 カスタムマッチャーによるドメイン固有アサーション:
@@ -181,16 +183,16 @@ beforeEach(() => {
 ```ts
 // tests/setup/custom-matchers.ts:15-78
 expect.extend({
-	toHaveRedirect(response: unknown, redirectTo?: string) {
-		// Response オブジェクトの location ヘッダとステータスコードを検証
-	},
-	async toHaveSessionForUser(response: Response, userId: string) {
-		// Set-Cookie からセッションを復元し、DB のセッションと照合
-	},
-	async toSendToast(response: Response, toast: ToastInput) {
-		// Set-Cookie からトーストセッションを復元し、内容を検証
-	},
-})
+  toHaveRedirect(response: unknown, redirectTo?: string) {
+    // Response オブジェクトの location ヘッダとステータスコードを検証
+  },
+  async toHaveSessionForUser(response: Response, userId: string) {
+    // Set-Cookie からセッションを復元し、DB のセッションと照合
+  },
+  async toSendToast(response: Response, toast: ToastInput) {
+    // Set-Cookie からトーストセッションを復元し、内容を検証
+  },
+});
 ```
 
 ## Good Patterns
@@ -199,19 +201,19 @@ expect.extend({
 
 ```ts
 // tests/setup/db-setup.ts:6-8
-const poolId = process.env.VITEST_POOL_ID || '0'
-const databaseFile = `./tests/prisma/data.${poolId}.db`
-const databasePath = path.join(process.cwd(), databaseFile)
+const poolId = process.env.VITEST_POOL_ID || "0";
+const databaseFile = `./tests/prisma/data.${poolId}.db`;
+const databasePath = path.join(process.cwd(), databaseFile);
 ```
 
 - **カスタムマッチャーでドメイン固有のアサーション言語を構築**: `toHaveRedirect`, `toHaveSessionForUser`, `toSendToast` のようなカスタムマッチャーにより、HTTP レスポンスの Cookie パース・セッション復元・DB 照合といった複雑な検証を一行で表現できる。テストコードの可読性と保守性が大幅に向上する。
 
 ```ts
 // app/routes/_auth/auth.$provider/callback.test.ts:75-81
-expect(response).toHaveRedirect('/settings/profile/connections')
+expect(response).toHaveRedirect("/settings/profile/connections");
 await expect(response).toSendToast(
-    expect.objectContaining({ title: 'Connected', type: 'success' }),
-)
+  expect.objectContaining({ title: "Connected", type: "success" }),
+);
 ```
 
 - **MSW ハンドラの開発・テスト共用**: 同一のモックハンドラを `MOCKS=true` の開発環境、Vitest のセットアップ、Playwright の E2E テストで共用することで、モックの重複を排除し一貫性を維持する。開発中に動作確認したモックがそのままテストでも使われるため、モックのずれが発生しにくい。
@@ -227,13 +229,13 @@ await expect(response).toSendToast(
 ```ts
 // Bad: ファイルベースの状態管理（レースコンディションの余地あり）
 const githubUserFixturePath = path.join(
-    here('..', 'fixtures', 'github', `users.${process.env.VITEST_POOL_ID || 0}.local.json`)
-)
+  here("..", "fixtures", "github", `users.${process.env.VITEST_POOL_ID || 0}.local.json`),
+);
 ```
 
 ```ts
 // Better: テスト単位でインメモリマップを使い、フィクスチャごとにスコープする
-const githubUsers = new Map<string, GitHubUser>()
+const githubUsers = new Map<string, GitHubUser>();
 ```
 
 ただし、この方式は E2E テストとの共用という制約があるため完全な解消は難しい。E2E テストではプロセス間通信が必要でファイルが妥当な選択となるケースもある。
@@ -243,20 +245,20 @@ const githubUsers = new Map<string, GitHubUser>()
 ```ts
 // Bad: 暗黙のモジュール差し替え
 const cacheServerStubPlugin = {
-    name: 'vitest-cache-server-stub',
-    resolveId(source: string) {
-        if (!process.env.VITEST) return null
-        if (source.endsWith('cache.server.ts')) {
-            return path.resolve('tests/mocks/cache-server.ts')
-        }
-        return null
-    },
-}
+  name: "vitest-cache-server-stub",
+  resolveId(source: string) {
+    if (!process.env.VITEST) return null;
+    if (source.endsWith("cache.server.ts")) {
+      return path.resolve("tests/mocks/cache-server.ts");
+    }
+    return null;
+  },
+};
 ```
 
 ```ts
 // Better: vi.mock で明示的にモック対象を宣言する（ただしバンドル制約がある場合はプラグイン方式が必要）
-vi.mock('#app/utils/cache.server.ts', () => import('#tests/mocks/cache-server.ts'))
+vi.mock("#app/utils/cache.server.ts", () => import("#tests/mocks/cache-server.ts"));
 ```
 
 実際にはこのケースは `node:sqlite` の Vite バンドル問題という技術的制約があるため、プラグイン方式が必要だった（ADR 047 参照）。

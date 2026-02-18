@@ -33,12 +33,14 @@ on:
 `concurrency` 設定で同一ブランチの重複実行を自動キャンセルする。短時間に連続プッシュされた場合、先行ジョブが自動的に中断され、最新のコミットだけがパイプラインを完走する。
 
 ::: v-pre
+
 ```yaml
 # .github/workflows/deploy.yml:9-11
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 ```
+
 :::
 
 ### DB キャッシュ戦略（Playwright ジョブ）
@@ -46,6 +48,7 @@ concurrency:
 Playwright ジョブでは、SQLite の DB ファイルをキャッシュする。キーの設計が秀逸で、`schema.prisma` と全 `migration.sql` のハッシュの組み合わせをキーとしている。
 
 ::: v-pre
+
 ```yaml
 # .github/workflows/deploy.yml:118-131
 - name: 🏦 Cache Database
@@ -62,6 +65,7 @@ Playwright ジョブでは、SQLite の DB ファイルをキャッシュする�
   if: steps.db-cache.outputs.cache-hit != 'true'
   run: npx prisma migrate reset --force
 ```
+
 :::
 
 このキー設計により、以下が保証される:
@@ -76,10 +80,10 @@ Vitest のテストでは `VITEST_POOL_ID` を使ってワーカーごとに独�
 
 ```typescript
 // tests/setup/db-setup.ts:6-9
-const poolId = process.env.VITEST_POOL_ID || '0'
-const databaseFile = `./tests/prisma/data.${poolId}.db`
-const databasePath = path.join(process.cwd(), databaseFile)
-process.env.DATABASE_URL = `file:${databasePath}`
+const poolId = process.env.VITEST_POOL_ID || "0";
+const databaseFile = `./tests/prisma/data.${poolId}.db`;
+const databasePath = path.join(process.cwd(), databaseFile);
+process.env.DATABASE_URL = `file:${databasePath}`;
 ```
 
 ```typescript
@@ -124,6 +128,7 @@ CI では `workers: 1`（直列実行）と `retries: 2` を組み合わせる�
 コンテナのビルドとデプロイを2段階に分離し、SHA ベースのイメージタグで紐付ける。
 
 ::: v-pre
+
 ```yaml
 # .github/workflows/deploy.yml:167-175 (container ジョブ)
 flyctl deploy \
@@ -133,15 +138,18 @@ flyctl deploy \
   --build-arg COMMIT_SHA=${{ github.sha }} \
   --app ${{ steps.app_name.outputs.value }}-staging
 ```
+
 :::
 
 ::: v-pre
+
 ```yaml
 # .github/workflows/deploy.yml:214-219 (deploy ジョブ)
 flyctl deploy \
   --image "registry.fly.io/${{ steps.app_name.outputs.value }}-staging:${{ github.sha }}" \
   --app ${{ steps.app_name.outputs.value }}-staging
 ```
+
 :::
 
 `deploy` ジョブは `needs: [lint, typecheck, vitest, playwright, container]` で全ジョブの成功を要求する。ビルド済みイメージを SHA で参照するため、デプロイ時に再ビルドが走らず、テスト時と完全に同一のイメージがデプロイされる。
@@ -149,11 +157,13 @@ flyctl deploy \
 ### ブランチベースのデプロイ戦略
 
 ::: v-pre
+
 ```yaml
 # .github/workflows/deploy.yml:168,179
 if: ${{ github.ref == 'refs/heads/dev' }}     # → staging
 if: ${{ github.ref == 'refs/heads/main' }}     # → production
 ```
+
 :::
 
 staging（dev ブランチ）と production（main ブランチ）の2環境をブランチで自動選択する。`app_name` を `fly.toml` から動的に読み取り、staging は `-staging` サフィックスで区別する。production ビルドでは Sentry の `--build-secret` を追加し、ソースマップのアップロードを行う。
@@ -178,12 +188,12 @@ FROM base                   # 最終イメージ（最小構成）
 await Promise.all([
   prisma.user.count(),
   fetch(`${new URL(request.url).protocol}${host}`, {
-    method: 'HEAD',
-    headers: { 'X-Healthcheck': 'true' },
+    method: "HEAD",
+    headers: { "X-Healthcheck": "true" },
   }).then((r) => {
-    if (!r.ok) return Promise.reject(r)
+    if (!r.ok) return Promise.reject(r);
   }),
-])
+]);
 ```
 
 ヘルスチェックは DB 接続とアプリケーション自身への HTTP リクエストの両方を検証する。`fly.toml` で 10 秒間隔のヘルスチェックが設定されており、デプロイ後にアプリケーションが正常に起動しない場合は `auto_rollback: true` により自動ロールバックされる。
@@ -201,6 +211,7 @@ await Promise.all([
 - **コンテンツベースのキャッシュキー**: ブランチ名やタイムスタンプではなく、実際のファイル内容のハッシュをキャッシュキーにする。キャッシュの有効性がコンテンツの同一性で保証され、不要な再計算を防ぐ。
 
 ::: v-pre
+
 ```yaml
 # .github/workflows/deploy.yml:123-126
 key:
@@ -208,26 +219,29 @@ key:
   }}-migrations_${{ hashFiles('./prisma/migrations/*/migration.sql')
   }}
 ```
+
 :::
 
 - **Pool ID によるテスト分離**: Vitest のワーカー ID (`VITEST_POOL_ID`) を使い、ワーカーごとに独立した DB ファイルを作成する。テストの並列実行時にデータ競合が発生しない。
 
 ```typescript
 // tests/setup/db-setup.ts:6-8
-const poolId = process.env.VITEST_POOL_ID || '0'
-const databaseFile = `./tests/prisma/data.${poolId}.db`
-const databasePath = path.join(process.cwd(), databaseFile)
+const poolId = process.env.VITEST_POOL_ID || "0";
+const databaseFile = `./tests/prisma/data.${poolId}.db`;
+const databasePath = path.join(process.cwd(), databaseFile);
 ```
 
 - **SHA ベースのイメージタグ**: コンテナイメージに Git の SHA をタグとして付与し、ビルドとデプロイで同一イメージを参照する。ビルド時とデプロイ時のイメージの同一性が保証される。
 
 ::: v-pre
+
 ```yaml
 # .github/workflows/deploy.yml:173-174,218
 --image-label ${{ github.sha }}
 # ...
 --image "registry.fly.io/...:${{ github.sha }}"
 ```
+
 :::
 
 - **Conditional Seed**: DB キャッシュがヒットした場合はシード処理をスキップし、ミスした場合のみ実行する。CI の実行時間を短縮しつつ、スキーマ変更時のデータ整合性を保つ。
