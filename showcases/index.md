@@ -24,6 +24,7 @@
 | [ast-interpreter](./pattern_ast-interpreter)                           | AST tagged union+Match型でコンパイル時網羅性チェック付き拡張可能インタプリタ                   |
 | [composition-root](./pattern_composition-root)                         | 単一クラス→関数+パイプライン→ビルド関数+コンテキスト→オーケストレーターの4形態Composition Root |
 | [scoped-resource-di](./pattern_scoped-resource-di)                     | Layer.scoped→using/Disposable→WeakMap→Observer連動→AbortControllerの5段階リソースDI            |
+| [e2e-fixture-composition](./pattern_e2e-fixture-composition)           | Playwright test.extendによる宣言的フィクスチャ設計と認証バイパス・自動クリーンアップ           |
 
 ## Practice
 
@@ -48,6 +49,9 @@
 | [tagged-error-hierarchy](./practice_tagged-error-hierarchy)           | _tag+reason二層分類とcatchTagによる型安全エラーディスパッチ                      |
 | [test-di-strategies](./practice_test-di-strategies)                   | 境界モック→環境変数スタブ→引数注入→コンテキスト注入→Layer差し替えの5段階テストDI |
 | [context-propagation](./practice_context-propagation)                 | 明示的引数渡し・暗黙的コンテキスト・型パラメータ静的追跡の3分類コンテキスト伝播  |
+| [test-db-isolation](./practice_test-db-isolation)                     | SQLiteファイルコピー+VITEST_POOL_IDによる並列テストDB分離パターン                |
+| [msw-multi-env-mock](./practice_msw-multi-env-mock)                   | MSWハンドラの開発・テスト・E2E三環境共用と環境変数によるMock/Real切り替え        |
+| [test-guardrails](./practice_test-guardrails)                         | console.error throw化+カスタムマッチャーによるテスト品質ガードレール             |
 
 ## Claude
 
