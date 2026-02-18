@@ -9,8 +9,16 @@ Thumbs.db
 .idea/
 .vscode/
 
+# Environment & Secrets
+.env
+.env.*
+*.pem
+*.key
+*.p12
+
 # Node
 node_modules/
+dist/
 
 # VitePress
 .vitepress/cache/
