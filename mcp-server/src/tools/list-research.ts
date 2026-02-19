@@ -20,7 +20,10 @@ export function registerListResearch(
       );
 
       const showcaseLines = showcases.map(
-        (s) => `- **${s.name}** [${s.theme}] ${s.label}`,
+        (s) => {
+          const firstLine = s.summary ? s.summary.split("\n")[0] : s.label;
+          return `- **${s.name}** [${s.theme}] — ${firstLine}`;
+        },
       );
 
       const text = [

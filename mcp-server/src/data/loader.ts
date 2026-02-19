@@ -84,6 +84,45 @@ function loadRepos(baseDir: string): RepoIndex[] {
   return repos;
 }
 
+function extractSummary(content: string): string {
+  const lines = content.split("\n");
+  let inSummary = false;
+  const summaryLines: string[] = [];
+
+  for (const line of lines) {
+    if (/^## 概要/.test(line.trim())) {
+      inSummary = true;
+      continue;
+    }
+    if (inSummary && /^## /.test(line.trim())) {
+      break;
+    }
+    if (inSummary) {
+      summaryLines.push(line);
+    }
+  }
+
+  return summaryLines.join("\n").trim();
+}
+
+function extractSourceRepos(content: string): string[] {
+  const repos: string[] = [];
+  for (const line of content.split("\n")) {
+    if (!line.startsWith("> 出典:")) continue;
+    // Match repo paths like repos/org/repo or repos/org/repo/file.md
+    const matches = line.matchAll(/repos\/([^/]+\/[^/)>\s,]+)/g);
+    for (const m of matches) {
+      // Strip trailing file path (e.g. /ai-settings.md)
+      const parts = m[1].split("/");
+      const repo = `${parts[0]}/${parts[1]}`;
+      if (!repos.includes(repo)) {
+        repos.push(repo);
+      }
+    }
+  }
+  return repos;
+}
+
 function loadShowcases(baseDir: string): ShowcaseEntry[] {
   const showcasesDir = path.join(baseDir, "showcases");
   if (!fs.existsSync(showcasesDir)) return [];
@@ -103,7 +142,10 @@ function loadShowcases(baseDir: string): ShowcaseEntry[] {
       "utf-8",
     );
 
-    showcases.push({ name, theme, label, content });
+    const summary = extractSummary(content);
+    const sourceRepos = extractSourceRepos(content);
+
+    showcases.push({ name, theme, label, content, summary, sourceRepos });
   }
 
   return showcases;

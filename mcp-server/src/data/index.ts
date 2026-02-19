@@ -23,11 +23,12 @@ export class ResearchIndex {
     }));
   }
 
-  listShowcases(): Array<{ name: string; theme: string; label: string; }> {
+  listShowcases(): Array<{ name: string; theme: string; label: string; summary: string; }> {
     return this.data.showcases.map((s) => ({
       name: s.name,
       theme: s.theme,
       label: s.label,
+      summary: s.summary,
     }));
   }
 
@@ -82,6 +83,88 @@ export class ResearchIndex {
         .toLowerCase();
       return terms.every((term) => searchText.includes(term));
     });
+  }
+
+  searchShowcases(
+    query: string,
+    theme?: string,
+  ): Array<{ name: string; theme: string; summary: string; }> {
+    const terms = query
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((t) => t.length > 0);
+
+    let showcases = this.data.showcases;
+
+    if (theme) {
+      const lower = theme.toLowerCase();
+      showcases = showcases.filter((s) => s.theme.toLowerCase() === lower);
+    }
+
+    return showcases
+      .filter((s) => {
+        const searchText = [s.content, s.summary, s.name].join(" ").toLowerCase();
+        return terms.every((term) => searchText.includes(term));
+      })
+      .map((s) => ({
+        name: s.name,
+        theme: s.theme,
+        summary: s.summary,
+      }));
+  }
+
+  suggestShowcases(opts: {
+    language?: string;
+    framework?: string;
+    keywords?: string[];
+  }): Array<ShowcaseEntry & { score: number; }> {
+    const scored: Array<ShowcaseEntry & { score: number; }> = [];
+
+    for (const showcase of this.data.showcases) {
+      let score = 0;
+
+      // Framework match against sourceRepos
+      if (opts.framework) {
+        const fw = opts.framework.toLowerCase();
+        if (showcase.sourceRepos.some((r) => r.toLowerCase().includes(fw))) {
+          score += 10;
+        }
+      }
+
+      // Language match against sourceRepos (check corresponding repo meta)
+      if (opts.language) {
+        const lang = opts.language.toLowerCase();
+        for (const srcRepo of showcase.sourceRepos) {
+          const repo = this.findRepo(srcRepo);
+          if (repo && repo.meta.language.toLowerCase() === lang) {
+            score += 2;
+            break;
+          }
+        }
+      }
+
+      // Keyword matches against summary + content
+      if (opts.keywords) {
+        for (const kw of opts.keywords) {
+          const lower = kw.toLowerCase();
+          if (showcase.summary.toLowerCase().includes(lower)) score += 3;
+          else if (showcase.content.toLowerCase().includes(lower)) score += 1;
+          if (showcase.name.toLowerCase().includes(lower)) score += 2;
+        }
+      }
+
+      // Theme-based bonus: underrepresented themes get a small boost
+      if (showcase.theme === "claude" || showcase.theme === "tool" || showcase.theme === "workflow") {
+        score += 1;
+      }
+
+      if (score > 0) {
+        scored.push({ ...showcase, score });
+      }
+    }
+
+    scored.sort((a, b) => b.score - a.score);
+    return scored;
   }
 
   suggestRules(opts: {

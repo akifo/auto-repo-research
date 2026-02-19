@@ -21,13 +21,17 @@ allowed-tools: Bash, Read, Write, Glob, Grep
 2. 各リポの `rules.md` を Read し、高価値なルール・カテゴリを把握する
 3. 各リポの `overview.md` の「特に注目すべき知見」セクションを Read する
 4. 既存の `showcases/` 配下のファイルを Glob で確認し、すでに作成済みのテーマと重複しないようにする
-5. 収集した情報から showcase 候補を **5個** 提案する
-   - 各候補に `theme`, `name`, 1行の説明を付与する
-   - 複数リポがある場合は横断的なテーマも含める
+5. **カバレッジ分析**: 各リポの rules.md のカテゴリと既存 showcase を照合し、カバーされていないカテゴリを特定する
+6. **横断パターン検出**: 複数リポの rules.md で出現するルール・カテゴリを Grep で検索し、2つ以上のリポで共通するパターンを優先候補にする
+7. **テーマバランス考慮**: 既存 showcase のテーマ分布を集計し、不足テーマ（特に `tool`, `workflow`, `claude`）の候補を意識的に含める
+8. 収集した情報から showcase 候補を **5個** 提案する
+   - 各候補に `theme`, `name`, 1行の説明、出典リポを付与する
+   - 複数リポで出現するパターンを優先する
+   - カバー済みカテゴリの候補は除外する
    - theme の候補: `pattern`, `practice`, `tool`, `workflow`, `claude`（候補外も許容）
-6. AskUserQuestion で候補を提示し、ユーザーに選択させる
+9. AskUserQuestion で候補を提示し、ユーザーに選択させる
    - 「Other」で自由入力も可能
-7. 選択された候補の theme と name で Step 1 以降を実行する
+10. 選択された候補の theme と name で Step 1 以降を実行する
 
 ### Step 1: 引数の解析
 

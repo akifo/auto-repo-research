@@ -38,6 +38,8 @@ export interface ShowcaseEntry {
   theme: string;
   label: string;
   content: string;
+  summary: string;
+  sourceRepos: string[];
 }
 
 export interface ResearchData {

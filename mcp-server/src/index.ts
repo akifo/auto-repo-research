@@ -10,7 +10,9 @@ import { registerGetRules } from "./tools/get-rules.js";
 import { registerGetShowcase } from "./tools/get-showcase.js";
 import { registerListResearch } from "./tools/list-research.js";
 import { registerSearchRules } from "./tools/search-rules.js";
+import { registerSearchShowcases } from "./tools/search-showcases.js";
 import { registerSuggestRules } from "./tools/suggest-rules.js";
+import { registerSuggestShowcases } from "./tools/suggest-showcases.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const baseDir = path.resolve(__dirname, "..", "..");
@@ -27,7 +29,9 @@ registerListResearch(server, index);
 registerGetRules(server, index);
 registerGetShowcase(server, index);
 registerSearchRules(server, index);
+registerSearchShowcases(server, index);
 registerSuggestRules(server, index);
+registerSuggestShowcases(server, index);
 
 const transport = new StdioServerTransport();
 await server.connect(transport);
