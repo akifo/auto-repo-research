@@ -35,27 +35,28 @@ zustand の `create` と `createStore` は、2つのシグネチャをオーバ�
 type Create = {
   <T, Mos extends [StoreMutatorIdentifier, unknown][] = []>(
     initializer: StateCreator<T, [], Mos>,
-  ): UseBoundStore<Mutate<StoreApi<T>, Mos>>
+  ): UseBoundStore<Mutate<StoreApi<T>, Mos>>;
   <T>(): <Mos extends [StoreMutatorIdentifier, unknown][] = []>(
     initializer: StateCreator<T, [], Mos>,
-  ) => UseBoundStore<Mutate<StoreApi<T>, Mos>>
-}
+  ) => UseBoundStore<Mutate<StoreApi<T>, Mos>>;
+};
 ```
 
 実装は三項演算子1行で両パスを処理する。
 
 ```ts
 // src/react.ts:63-64
-export const create = (<T>(createState: StateCreator<T, [], []> | undefined) =>
-  createState ? createImpl(createState) : createImpl) as Create
+export const create =
+  (<T>(createState: StateCreator<T, [], []> | undefined) =>
+    createState ? createImpl(createState) : createImpl) as Create;
 ```
 
 `createStore`（vanilla 版）もまったく同じパターンを踏襲している。
 
 ```ts
 // src/vanilla.ts:99-100
-export const createStore = ((createState) =>
-  createState ? createStoreImpl(createState) : createStoreImpl) as CreateStore
+export const createStore =
+  ((createState) => createState ? createStoreImpl(createState) : createStoreImpl) as CreateStore;
 ```
 
 ### UseBoundStore: callable + store API の統合型
@@ -65,9 +66,9 @@ export const createStore = ((createState) =>
 ```ts
 // src/react.ts:39-42
 export type UseBoundStore<S extends ReadonlyStoreApi<unknown>> = {
-  (): ExtractState<S>
-  <U>(selector: (state: ExtractState<S>) => U): U
-} & S
+  (): ExtractState<S>;
+  <U>(selector: (state: ExtractState<S>) => U): U;
+} & S;
 ```
 
 これにより `useBoundStore()` でフックとして呼び出しつつ、`useBoundStore.getState()` で直接 API アクセスもできる。実装は `Object.assign(useBoundStore, api)` で関数オブジェクトに store API をマージしている（`src/react.ts:58`）。
@@ -88,7 +89,7 @@ zustand は selector の使い方を4段階で提供し、ユーザーが必要�
 
 ```ts
 // src/react.ts:16
-const identity = <T>(arg: T): T => arg
+const identity = <T>(arg: T): T => arg;
 ```
 
 ### equality 関数設計の3層
@@ -105,9 +106,9 @@ const identity = <T>(arg: T): T => arg
 
 ```ts
 // src/middleware/subscribeWithSelector.ts:21-26
-declare module '../vanilla' {
+declare module "../vanilla" {
   interface StoreMutators<S, A> {
-    ['zustand/subscribeWithSelector']: WithSelectorSubscribe<S>
+    ["zustand/subscribeWithSelector"]: WithSelectorSubscribe<S>;
   }
 }
 ```
@@ -116,13 +117,10 @@ declare module '../vanilla' {
 
 ```ts
 // src/vanilla.ts:20-26
-export type Mutate<S, Ms> = number extends Ms['length' & keyof Ms]
-  ? S
-  : Ms extends []
-    ? S
-    : Ms extends [[infer Mi, infer Ma], ...infer Mrs]
-      ? Mutate<StoreMutators<S, Ma>[Mi & StoreMutatorIdentifier], Mrs>
-      : never
+export type Mutate<S, Ms> = number extends Ms["length" & keyof Ms] ? S
+  : Ms extends [] ? S
+  : Ms extends [[infer Mi, infer Ma], ...infer Mrs] ? Mutate<StoreMutators<S, Ma>[Mi & StoreMutatorIdentifier], Mrs>
+  : never;
 ```
 
 実装面では、各ミドルウェアが「公開型」と「実装型」を分離するパターンを一貫して使用する。
@@ -132,9 +130,9 @@ export type Mutate<S, Ms> = number extends Ms['length' & keyof Ms]
 type ReduxImpl = <T, A extends Action>(
   reducer: (state: T, action: A) => T,
   initialState: T,
-) => StateCreator<T & ReduxState<A>, [], []>
+) => StateCreator<T & ReduxState<A>, [], []>;
 // ...
-export const redux = reduxImpl as unknown as Redux
+export const redux = reduxImpl as unknown as Redux;
 ```
 
 `as unknown as` のキャストは TypeScript の型システムの限界を補うためのもので、全ミドルウェアで統一的に使われている。
@@ -145,20 +143,18 @@ setState の shallow merge と replace のスマートデフォルト。
 
 ```ts
 // src/vanilla.ts:66-81
-const setState: StoreApi<TState>['setState'] = (partial, replace) => {
-  const nextState =
-    typeof partial === 'function'
-      ? (partial as (state: TState) => TState)(state)
-      : partial
+const setState: StoreApi<TState>["setState"] = (partial, replace) => {
+  const nextState = typeof partial === "function"
+    ? (partial as (state: TState) => TState)(state)
+    : partial;
   if (!Object.is(nextState, state)) {
-    const previousState = state
-    state =
-      (replace ?? (typeof nextState !== 'object' || nextState === null))
-        ? (nextState as TState)
-        : Object.assign({}, state, nextState)
-    listeners.forEach((listener) => listener(state, previousState))
+    const previousState = state;
+    state = (replace ?? (typeof nextState !== "object" || nextState === null))
+      ? (nextState as TState)
+      : Object.assign({}, state, nextState);
+    listeners.forEach((listener) => listener(state, previousState));
   }
-}
+};
 ```
 
 useShallow の参照安定化。
@@ -166,13 +162,13 @@ useShallow の参照安定化。
 ```ts
 // src/react/shallow.ts:4-12
 export function useShallow<S, U>(selector: (state: S) => U): (state: S) => U {
-  const prev = React.useRef<U>(undefined)
+  const prev = React.useRef<U>(undefined);
   return (state) => {
-    const next = selector(state)
+    const next = selector(state);
     return shallow(prev.current, next)
       ? (prev.current as U)
-      : (prev.current = next)
-  }
+      : (prev.current = next);
+  };
 }
 ```
 
@@ -180,10 +176,10 @@ subscribe が unsubscribe 関数を返すパターン。
 
 ```ts
 // src/vanilla.ts:88-92
-const subscribe: StoreApi<TState>['subscribe'] = (listener) => {
-  listeners.add(listener)
-  return () => listeners.delete(listener)
-}
+const subscribe: StoreApi<TState>["subscribe"] = (listener) => {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+};
 ```
 
 ## パターンカタログ
@@ -218,10 +214,9 @@ const subscribe: StoreApi<TState>['subscribe'] = (listener) => {
 
 ```ts
 // src/vanilla.ts:75-78
-state =
-  (replace ?? (typeof nextState !== 'object' || nextState === null))
-    ? (nextState as TState)
-    : Object.assign({}, state, nextState)
+state = (replace ?? (typeof nextState !== "object" || nextState === null))
+  ? (nextState as TState)
+  : Object.assign({}, state, nextState);
 ```
 
 - **ReadonlyStoreApi で消費者向け API を制限**: `useStore` の引数は `ReadonlyStoreApi<T>`（`getState`, `getInitialState`, `subscribe` のみ）に制限されており、消費側から `setState` を呼べない。store 生成側と消費側で異なるインターフェースを提供する設計。
@@ -230,18 +225,18 @@ state =
 // src/react.ts:11-14
 type ReadonlyStoreApi<T> = Pick<
   StoreApi<T>,
-  'getState' | 'getInitialState' | 'subscribe'
->
+  "getState" | "getInitialState" | "subscribe"
+>;
 ```
 
 - **unsubscribe 関数を返す subscribe**: `subscribe` が cleanup 関数を返すパターンは React の `useEffect` と相性が良く、`useSyncExternalStore` の第1引数としてもそのまま渡せる。Set ベースのリスナー管理で O(1) の追加/削除を実現。
 
 ```ts
 // src/vanilla.ts:88-92
-const subscribe: StoreApi<TState>['subscribe'] = (listener) => {
-  listeners.add(listener)
-  return () => listeners.delete(listener)
-}
+const subscribe: StoreApi<TState>["subscribe"] = (listener) => {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+};
 ```
 
 ## Anti-Patterns / 注意点
@@ -250,14 +245,14 @@ const subscribe: StoreApi<TState>['subscribe'] = (listener) => {
 
 ```tsx
 // Bad: 全プロパティの変更で再レンダリング
-const { count, name } = useBoundStore()
+const { count, name } = useBoundStore();
 
 // Better: 必要なスライスのみ購読
-const count = useBoundStore((s) => s.count)
-const name = useBoundStore((s) => s.name)
+const count = useBoundStore((s) => s.count);
+const name = useBoundStore((s) => s.name);
 
 // Better (複数プロパティ): useShallow でオブジェクト比較
-const { count, name } = useBoundStore(useShallow((s) => ({ count: s.count, name: s.name })))
+const { count, name } = useBoundStore(useShallow((s) => ({ count: s.count, name: s.name })));
 ```
 
 - **ミドルウェアの順序を無視した合成**: devtools は `setState` に追加パラメータ（action name）を注入するため、後から適用される immer 等がその型情報を消す可能性がある。ドキュメントで明示的に「devtools は最後に」と指定されている（`docs/guides/advanced-typescript.md:226`）。
@@ -276,13 +271,13 @@ create(devtools(immer((set) => ({ ... }))))
 // Bad: 初期化時に get() は undefined を返す
 const store = create<State>()((_, get) => ({
   foo: get().foo, // TypeError: Cannot read properties of undefined
-}))
+}));
 
 // Better: get() は非同期コールバック内でのみ使用
 const store = create<State>()((set, get) => ({
   foo: 0,
   doSomething: () => set({ foo: get().foo + 1 }),
-}))
+}));
 ```
 
 ## 導出ルール

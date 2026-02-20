@@ -32,6 +32,7 @@ persist ミドルウェアは `api.setState` をラップしてストレージ�
 `StateCreator<T, Mis, Mos, U>` の 4 つの型パラメータが合成の鍵となる。`Mis`（input mutators）は「内側で適用済みのミドルウェアが api に加えた変更」を表し、`Mos`（output mutators）は「自分自身が api に加える変更」を表す。
 
 例えば `devtools(persist(immer(fn)))` の場合:
+
 - `immer` は `Mos = [['zustand/immer', never]]` を宣言
 - `persist` は `Mis` に `['zustand/immer', never]` を含む config を受け取り、`Mos = [['zustand/persist', U]]` を追加
 - `devtools` は `Mis` に persist + immer の両方を含む config を受け取り、`Mos = [['zustand/devtools', never]]` を追加
@@ -57,13 +58,10 @@ Mutate<S, [[Mi, Ma], ...Mrs]>
 
 ```typescript
 // src/vanilla.ts:20-26 — 再帰的 Mutate 型（型レベル fold）
-export type Mutate<S, Ms> = number extends Ms['length' & keyof Ms]
-  ? S
-  : Ms extends []
-    ? S
-    : Ms extends [[infer Mi, infer Ma], ...infer Mrs]
-      ? Mutate<StoreMutators<S, Ma>[Mi & StoreMutatorIdentifier], Mrs>
-      : never
+export type Mutate<S, Ms> = number extends Ms["length" & keyof Ms] ? S
+  : Ms extends [] ? S
+  : Ms extends [[infer Mi, infer Ma], ...infer Mrs] ? Mutate<StoreMutators<S, Ma>[Mi & StoreMutatorIdentifier], Mrs>
+  : never;
 ```
 
 ```typescript
@@ -73,38 +71,40 @@ export type StateCreator<
   Mis extends [StoreMutatorIdentifier, unknown][] = [],
   Mos extends [StoreMutatorIdentifier, unknown][] = [],
   U = T,
-> = ((
-  setState: Get<Mutate<StoreApi<T>, Mis>, 'setState', never>,
-  getState: Get<Mutate<StoreApi<T>, Mis>, 'getState', never>,
-  store: Mutate<StoreApi<T>, Mis>,
-) => U) & { $$storeMutators?: Mos }
+> =
+  & ((
+    setState: Get<Mutate<StoreApi<T>, Mis>, "setState", never>,
+    getState: Get<Mutate<StoreApi<T>, Mis>, "getState", never>,
+    store: Mutate<StoreApi<T>, Mis>,
+  ) => U)
+  & { $$storeMutators?: Mos; };
 ```
 
 ```typescript
 // src/middleware/persist.ts:229-234 — api.setState のラップによる永続化注入
-const savedSetState = api.setState
+const savedSetState = api.setState;
 
 api.setState = (state, replace) => {
-  savedSetState(state, replace as any)
-  return setItem()
-}
+  savedSetState(state, replace as any);
+  return setItem();
+};
 ```
 
 ```typescript
 // src/middleware/immer.ts:74-86 — Immer ミドルウェアの実装（api.setState をラップ）
 const immerImpl: ImmerImpl = (initializer) => (set, get, store) => {
-  type T = ReturnType<typeof initializer>
+  type T = ReturnType<typeof initializer>;
 
   store.setState = (updater, replace, ...args) => {
     const nextState = (
-      typeof updater === 'function' ? produce(updater as any) : updater
-    ) as ((s: T) => T) | T | Partial<T>
+      typeof updater === "function" ? produce(updater as any) : updater
+    ) as ((s: T) => T) | T | Partial<T>;
 
-    return set(nextState, replace as any, ...args)
-  }
+    return set(nextState, replace as any, ...args);
+  };
 
-  return initializer(store.setState, get, store)
-}
+  return initializer(store.setState, get, store);
+};
 ```
 
 ```typescript
@@ -131,32 +131,31 @@ const devtoolsImpl: DevtoolsImpl =
 
 ```typescript
 // src/middleware/subscribeWithSelector.ts:46-71 — api.subscribe のラップ
-const subscribeWithSelectorImpl: SubscribeWithSelectorImpl =
-  (fn) => (set, get, api) => {
-    type S = ReturnType<typeof fn>
-    type Listener = (state: S, previousState: S) => void
-    const origSubscribe = api.subscribe as (listener: Listener) => () => void
-    api.subscribe = ((selector: any, optListener: any, options: any) => {
-      let listener: Listener = selector
-      if (optListener) {
-        const equalityFn = options?.equalityFn || Object.is
-        let currentSlice = selector(api.getState())
-        listener = (state) => {
-          const nextSlice = selector(state)
-          if (!equalityFn(currentSlice, nextSlice)) {
-            const previousSlice = currentSlice
-            optListener((currentSlice = nextSlice), previousSlice)
-          }
+const subscribeWithSelectorImpl: SubscribeWithSelectorImpl = (fn) => (set, get, api) => {
+  type S = ReturnType<typeof fn>;
+  type Listener = (state: S, previousState: S) => void;
+  const origSubscribe = api.subscribe as (listener: Listener) => () => void;
+  api.subscribe = ((selector: any, optListener: any, options: any) => {
+    let listener: Listener = selector;
+    if (optListener) {
+      const equalityFn = options?.equalityFn || Object.is;
+      let currentSlice = selector(api.getState());
+      listener = (state) => {
+        const nextSlice = selector(state);
+        if (!equalityFn(currentSlice, nextSlice)) {
+          const previousSlice = currentSlice;
+          optListener(currentSlice = nextSlice, previousSlice);
         }
-        if (options?.fireImmediately) {
-          optListener(currentSlice, currentSlice)
-        }
+      };
+      if (options?.fireImmediately) {
+        optListener(currentSlice, currentSlice);
       }
-      return origSubscribe(listener)
-    }) as any
-    const initialState = fn(set, get, api)
-    return initialState
-  }
+    }
+    return origSubscribe(listener);
+  }) as any;
+  const initialState = fn(set, get, api);
+  return initialState;
+};
 ```
 
 ```typescript
@@ -167,16 +166,16 @@ type Persist = <
   Mcs extends [StoreMutatorIdentifier, unknown][] = [],
   U = T,
 >(
-  initializer: StateCreator<T, [...Mps, ['zustand/persist', unknown]], Mcs>,
+  initializer: StateCreator<T, [...Mps, ["zustand/persist", unknown]], Mcs>,
   options: PersistOptions<T, U>,
-) => StateCreator<T, Mps, [['zustand/persist', U], ...Mcs]>
+) => StateCreator<T, Mps, [["zustand/persist", U], ...Mcs]>;
 
 type PersistImpl = <T>(
   storeInitializer: StateCreator<T, [], []>,
   options: PersistOptions<T, T>,
-) => StateCreator<T, [], []>
+) => StateCreator<T, [], []>;
 
-export const persist = persistImpl as unknown as Persist
+export const persist = persistImpl as unknown as Persist;
 ```
 
 ## パターンカタログ
@@ -202,12 +201,12 @@ export const persist = persistImpl as unknown as Persist
 const immerImpl: ImmerImpl = (initializer) => (set, get, store) => {
   store.setState = (updater, replace, ...args) => {
     const nextState = (
-      typeof updater === 'function' ? produce(updater as any) : updater
-    ) as ((s: T) => T) | T | Partial<T>
-    return set(nextState, replace as any, ...args)
-  }
-  return initializer(store.setState, get, store)
-}
+      typeof updater === "function" ? produce(updater as any) : updater
+    ) as ((s: T) => T) | T | Partial<T>;
+    return set(nextState, replace as any, ...args);
+  };
+  return initializer(store.setState, get, store);
+};
 ```
 
 - **Declaration Merging による型拡張ポイント**: 空の `interface StoreMutators<S, A> {}` を宣言し、各ミドルウェアが `declare module` で自身の変換ルールを追加する。コア側のコード変更なしにサードパーティ拡張が型安全に動作する。
@@ -217,9 +216,9 @@ const immerImpl: ImmerImpl = (initializer) => (set, get, store) => {
 export interface StoreMutators<S, A> {}
 
 // src/middleware/persist.ts:392-396 — 拡張
-declare module '../vanilla' {
+declare module "../vanilla" {
   interface StoreMutators<S, A> {
-    'zustand/persist': WithPersist<S, A>
+    "zustand/persist": WithPersist<S, A>;
   }
 }
 ```
@@ -228,12 +227,12 @@ declare module '../vanilla' {
 
 ```typescript
 // src/middleware/persist.ts:201-203, 297-299
-let hydrationVersion = 0
+let hydrationVersion = 0;
 // ...
-const currentVersion = ++hydrationVersion
+const currentVersion = ++hydrationVersion;
 // ...
 if (currentVersion !== hydrationVersion) {
-  return  // 古い hydration を破棄
+  return; // 古い hydration を破棄
 }
 ```
 
@@ -243,11 +242,11 @@ if (currentVersion !== hydrationVersion) {
 
 ```typescript
 // Bad: 順序を誤ると persist が devtools のラッパーを上書きする
-create(persist(devtools(fn), opts))
+create(persist(devtools(fn), opts));
 // devtools の setState ラップが persist に上書きされ、DevTools に送信されない
 
 // Better: 外側に置くべきミドルウェアを正しく外側にする
-create(devtools(persist(fn), opts))
+create(devtools(persist(fn), opts));
 // devtools が最外でラップするため、persist 経由の setState も DevTools に送信される
 ```
 
@@ -257,8 +256,8 @@ create(devtools(persist(fn), opts))
 // Bad: 実装を変更しても型エラーが出ない
 const persistImpl: PersistImpl = (config, baseOptions) => (set, get, api) => {
   // 実装が公開型と合わなくても通る
-}
-export const persist = persistImpl as unknown as Persist
+};
+export const persist = persistImpl as unknown as Persist;
 
 // Better: テストで型レベルの整合性を検証する（zustand は middlewareTypes.test.tsx でこれを実施）
 ```

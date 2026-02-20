@@ -27,30 +27,30 @@ zustand の型システムは、ミドルウェアの合成を型安全に表現
 // src/vanilla.ts:39-41
 // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-empty-object-type
 export interface StoreMutators<S, A> {}
-export type StoreMutatorIdentifier = keyof StoreMutators<unknown, unknown>
+export type StoreMutatorIdentifier = keyof StoreMutators<unknown, unknown>;
 ```
 
 各ミドルウェアが自身の型変換を登録する:
 
 ```typescript
 // src/middleware/persist.ts:392-396
-declare module '../vanilla' {
+declare module "../vanilla" {
   interface StoreMutators<S, A> {
-    'zustand/persist': WithPersist<S, A>
+    "zustand/persist": WithPersist<S, A>;
   }
 }
 
 // src/middleware/immer.ts:14-19
-declare module '../vanilla' {
+declare module "../vanilla" {
   interface StoreMutators<S, A> {
-    ['zustand/immer']: WithImmer<S>
+    ["zustand/immer"]: WithImmer<S>;
   }
 }
 
 // src/middleware/devtools.ts:15-19
-declare module '../vanilla' {
+declare module "../vanilla" {
   interface StoreMutators<S, A> {
-    'zustand/devtools': WithDevtools<S>
+    "zustand/devtools": WithDevtools<S>;
   }
 }
 ```
@@ -59,9 +59,9 @@ declare module '../vanilla' {
 
 ```typescript
 // tests/middlewareTypes.test.tsx:34-38
-declare module 'zustand/vanilla' {
+declare module "zustand/vanilla" {
   interface StoreMutators<S, A> {
-    'org/example': Write<S, StoreModifyAllButSetState<S, A>>
+    "org/example": Write<S, StoreModifyAllButSetState<S, A>>;
   }
 }
 ```
@@ -72,13 +72,10 @@ declare module 'zustand/vanilla' {
 
 ```typescript
 // src/vanilla.ts:20-26
-export type Mutate<S, Ms> = number extends Ms['length' & keyof Ms]
-  ? S
-  : Ms extends []
-    ? S
-    : Ms extends [[infer Mi, infer Ma], ...infer Mrs]
-      ? Mutate<StoreMutators<S, Ma>[Mi & StoreMutatorIdentifier], Mrs>
-      : never
+export type Mutate<S, Ms> = number extends Ms["length" & keyof Ms] ? S
+  : Ms extends [] ? S
+  : Ms extends [[infer Mi, infer Ma], ...infer Mrs] ? Mutate<StoreMutators<S, Ma>[Mi & StoreMutatorIdentifier], Mrs>
+  : never;
 ```
 
 最初のガード `number extends Ms['length' & keyof Ms]` は、`Ms` が具体的なタプルではなく `unknown[]` のような非固定長配列の場合に再帰を打ち切る安全弁である。これにより、ジェネリックパラメータが未解決の段階でも型エラーにならない。
@@ -90,9 +87,9 @@ export type Mutate<S, Ms> = number extends Ms['length' & keyof Ms]
 type CreateStore = {
   <T, Mos extends [StoreMutatorIdentifier, unknown][] = []>(
     initializer: StateCreator<T, [], Mos>,
-  ): Mutate<StoreApi<T>, Mos>
+  ): Mutate<StoreApi<T>, Mos>;
   // ...
-}
+};
 ```
 
 ### 3. StateCreator の4つのジェネリクス引数
@@ -104,11 +101,13 @@ export type StateCreator<
   Mis extends [StoreMutatorIdentifier, unknown][] = [],
   Mos extends [StoreMutatorIdentifier, unknown][] = [],
   U = T,
-> = ((
-  setState: Get<Mutate<StoreApi<T>, Mis>, 'setState', never>,
-  getState: Get<Mutate<StoreApi<T>, Mis>, 'getState', never>,
-  store: Mutate<StoreApi<T>, Mis>,
-) => U) & { $$storeMutators?: Mos }
+> =
+  & ((
+    setState: Get<Mutate<StoreApi<T>, Mis>, "setState", never>,
+    getState: Get<Mutate<StoreApi<T>, Mis>, "getState", never>,
+    store: Mutate<StoreApi<T>, Mis>,
+  ) => U)
+  & { $$storeMutators?: Mos; };
 ```
 
 - `T`: ストア全体の状態型
@@ -124,11 +123,11 @@ export type StateCreator<
 // src/vanilla.ts:1-7
 type SetStateInternal<T> = {
   _(
-    partial: T | Partial<T> | { _(state: T): T | Partial<T> }['_'],
+    partial: T | Partial<T> | { _(state: T): T | Partial<T>; }["_"],
     replace?: false,
-  ): void
-  _(state: T | { _(state: T): T }['_'], replace: true): void
-}['_']
+  ): void;
+  _(state: T | { _(state: T): T; }["_"], replace: true): void;
+}["_"];
 ```
 
 TypeScript ではインターフェースのメソッドとして複数のオーバーロードを定義し、`['_']` でメソッドを抽出することで、オーバーロードされた関数型を得る。直接 `type Fn = ((a: X) => R1) & ((a: Y) => R2)` と書く方式と比べ、TypeScript コンパイラがオーバーロードの推論に関して一貫した挙動を示す利点がある。
@@ -139,7 +138,7 @@ TypeScript ではインターフェースのメソッドとして複数のオー
 
 ```typescript
 // src/middleware/persist.ts:398 (全ミドルウェアで同一定義)
-type Write<T, U> = Omit<T, keyof U> & U
+type Write<T, U> = Omit<T, keyof U> & U;
 ```
 
 各ミドルウェアが独立してこの型を定義しており、モジュール間の依存を最小化している。`Write` は TypeScript の交差型 `T & U` で発生する「同名プロパティの型が intersection になる」問題を回避する。ミドルウェアが `setState` のシグネチャを変更する場合、`T & U` では新旧両方のシグネチャが要求されるが、`Omit<T, keyof U> & U` なら新しいシグネチャで完全に上書きされる。
@@ -152,15 +151,14 @@ type Write<T, U> = Omit<T, keyof U> & U
 // src/middleware/devtools.ts:68-82
 type StoreDevtools<S> = S extends {
   setState: {
-    (...args: infer Sa1): infer Sr1
-    (...args: infer Sa2): infer Sr2
+    (...args: infer Sa1): infer Sr1;
+    (...args: infer Sa2): infer Sr2;
+  };
+} ? {
+    setState(...args: [...args: TakeTwo<Sa1>, action?: Action]): Sr1;
+    setState(...args: [...args: TakeTwo<Sa2>, action?: Action]): Sr2;
   }
-}
-  ? {
-      setState(...args: [...args: TakeTwo<Sa1>, action?: Action]): Sr1
-      setState(...args: [...args: TakeTwo<Sa2>, action?: Action]): Sr2
-    }
-  : never
+  : never;
 ```
 
 これにより、前段のミドルウェアが `setState` に付加したパラメータ（例: persist の戻り値型）を失わずに、devtools 固有の `action` パラメータを追加できる。
@@ -173,10 +171,10 @@ type StoreDevtools<S> = S extends {
 // src/middleware/immer.ts:70-72 (実装型: ジェネリクスが簡素)
 type ImmerImpl = <T>(
   storeInitializer: StateCreator<T, [], []>,
-) => StateCreator<T, [], []>
+) => StateCreator<T, [], []>;
 
 // src/middleware/immer.ts:88 (公開型へキャスト)
-export const immer = immerImpl as unknown as Immer
+export const immer = immerImpl as unknown as Immer;
 ```
 
 `ImmerImpl` では `Mis`/`Mos` を `[]` に固定し、実装コード内で型推論が確実に成功するようにする。ユーザーに公開する `Immer` 型ではフルジェネリクスの `Mps`/`Mcs` を使い、ミドルウェア合成時の型伝播を正確に表現する。
@@ -191,7 +189,7 @@ export const immer = immerImpl as unknown as Immer
 }
 ```
 
-TS 4.5 未満では空の `.d.ts` にリダイレクトすることで、型エラーではなく明確なエラーメッセージを返す。CI では TS 4.5 から 5.9 まで 15 バージョンでの型チェックが回っている (``.github/workflows/test-old-typescript.yml``)。
+TS 4.5 未満では空の `.d.ts` にリダイレクトすることで、型エラーではなく明確なエラーメッセージを返す。CI では TS 4.5 から 5.9 まで 15 バージョンでの型チェックが回っている (`.github/workflows/test-old-typescript.yml`)。
 
 ## パターンカタログ
 
@@ -222,9 +220,9 @@ TS 4.5 未満では空の `.d.ts` にリダイレクトすることで、型エ�
 export interface StoreMutators<S, A> {}
 
 // src/middleware/persist.ts:392-396 — プラグイン側
-declare module '../vanilla' {
+declare module "../vanilla" {
   interface StoreMutators<S, A> {
-    'zustand/persist': WithPersist<S, A>
+    "zustand/persist": WithPersist<S, A>;
   }
 }
 ```
@@ -242,9 +240,9 @@ export type Mutate<S, Ms> = number extends Ms['length' & keyof Ms]
 
 ```typescript
 // src/middleware/persist.ts:398
-type Write<T, U> = Omit<T, keyof U> & U
+type Write<T, U> = Omit<T, keyof U> & U;
 // src/middleware/immer.ts:21 (同一定義)
-type Write<T, U> = Omit<T, keyof U> & U
+type Write<T, U> = Omit<T, keyof U> & U;
 ```
 
 - **メソッド抽出によるオーバーロード型の安定した定義**: インターフェースメソッドとして複数シグネチャを書き、`['_']` で抽出する。
@@ -252,9 +250,9 @@ type Write<T, U> = Omit<T, keyof U> & U
 ```typescript
 // src/vanilla.ts:1-7
 type SetStateInternal<T> = {
-  _(partial: T | Partial<T> | { _(state: T): T | Partial<T> }['_'], replace?: false): void
-  _(state: T | { _(state: T): T }['_'], replace: true): void
-}['_']
+  _(partial: T | Partial<T> | { _(state: T): T | Partial<T>; }["_"], replace?: false): void;
+  _(state: T | { _(state: T): T; }["_"], replace: true): void;
+}["_"];
 ```
 
 ## Anti-Patterns / 注意点
@@ -263,49 +261,49 @@ type SetStateInternal<T> = {
 
 ```typescript
 // Bad: 交差型では setState が両方のシグネチャを要求する
-type Bad = StoreApi<T> & { setState: NewSetState }
+type Bad = StoreApi<T> & { setState: NewSetState; };
 // setState: OriginalSetState & NewSetState (呼び出し不能になりうる)
 
 // Better: Omit で既存プロパティを除去してから上書き
-type Write<T, U> = Omit<T, keyof U> & U
-type Good = Write<StoreApi<T>, { setState: NewSetState }>
+type Write<T, U> = Omit<T, keyof U> & U;
+type Good = Write<StoreApi<T>, { setState: NewSetState; }>;
 ```
 
 - **実装コードにフルジェネリクスを持ち込む**: ミドルウェアの `Mps`/`Mcs` のような複雑なジェネリクスを実装コードに直接使うと、TypeScript の型推論が破綻して `any` に落ちたり、エラーメッセージが巨大になる。
 
 ```typescript
 // Bad: 実装に複雑なジェネリクスを直接使用
-const immerImpl = <T, Mps extends [StoreMutatorIdentifier, unknown][] = [],
-  Mcs extends [StoreMutatorIdentifier, unknown][] = []>(
-  initializer: StateCreator<T, [...Mps, ['zustand/immer', never]], Mcs>,
-): StateCreator<T, Mps, [['zustand/immer', never], ...Mcs]> => {
+const immerImpl = <
+  T,
+  Mps extends [StoreMutatorIdentifier, unknown][] = [],
+  Mcs extends [StoreMutatorIdentifier, unknown][] = [],
+>(
+  initializer: StateCreator<T, [...Mps, ["zustand/immer", never]], Mcs>,
+): StateCreator<T, Mps, [["zustand/immer", never], ...Mcs]> => {
   // 型推論が破綻する
-}
+};
 
 // Better: 実装型は簡素にし、公開型にキャスト
 type ImmerImpl = <T>(
   storeInitializer: StateCreator<T, [], []>,
-) => StateCreator<T, [], []>
-const immerImpl: ImmerImpl = (initializer) => (set, get, store) => { /* ... */ }
-export const immer = immerImpl as unknown as Immer
+) => StateCreator<T, [], []>;
+const immerImpl: ImmerImpl = (initializer) => (set, get, store) => {/* ... */};
+export const immer = immerImpl as unknown as Immer;
 ```
 
 - **再帰型に安全弁を設けない**: タプル型を期待する再帰型に非タプル型（`unknown[]` など）が入ると無限再帰や `never` に陥る。
 
 ```typescript
 // Bad: 安全弁なし
-type Apply<S, Ms> = Ms extends [[infer Mi, infer Ma], ...infer Mrs]
-  ? Apply<Transform<S, Mi, Ma>, Mrs>
-  : S
+type Apply<S, Ms> = Ms extends [[infer Mi, infer Ma], ...infer Mrs] ? Apply<Transform<S, Mi, Ma>, Mrs>
+  : S;
 // Ms が unknown[] のとき never になる
 
 // Better: 非タプル検出ガードを先頭に置く
-type Apply<S, Ms> = number extends Ms['length' & keyof Ms]
-  ? S  // 非タプルなら再帰しない
+type Apply<S, Ms> = number extends Ms["length" & keyof Ms] ? S // 非タプルなら再帰しない
   : Ms extends [] ? S
-  : Ms extends [[infer Mi, infer Ma], ...infer Mrs]
-    ? Apply<Transform<S, Mi, Ma>, Mrs>
-    : never
+  : Ms extends [[infer Mi, infer Ma], ...infer Mrs] ? Apply<Transform<S, Mi, Ma>, Mrs>
+  : never;
 ```
 
 ## 導出ルール

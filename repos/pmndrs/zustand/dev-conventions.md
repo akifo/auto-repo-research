@@ -42,16 +42,16 @@ globalIgnores → eslint.recommended → import.recommended → tseslint.recomme
 
 zustand の CI は 8 つのワークフローで構成され、それぞれ異なる品質側面をカバーする。
 
-| ワークフロー | トリガー | 検証内容 |
-|---|---|---|
-| `test.yml` | push/PR | format → types → lint → spec → build（直列） |
-| `test-old-typescript.yml` | push/PR | TS 4.5--5.9 の 15 バージョンで型チェック |
-| `test-multiple-versions.yml` | push/PR | React 18.0--19.x の 9 バージョンでテスト実行 |
-| `test-multiple-builds.yml` | push/PR | CJS/ESM × dev/prod 環境での動作検証 |
-| `compressed-size.yml` | PR | バンドルサイズ差分の可視化 |
-| `preview-release.yml` | push/PR | `pkg-pr-new` で PR ごとのプレビューリリース |
-| `publish.yml` | release | dist ディレクトリから npm publish |
-| `docs.yml` | push(main) | ドキュメントの GitHub Pages デプロイ |
+| ワークフロー                 | トリガー   | 検証内容                                     |
+| ---------------------------- | ---------- | -------------------------------------------- |
+| `test.yml`                   | push/PR    | format → types → lint → spec → build（直列） |
+| `test-old-typescript.yml`    | push/PR    | TS 4.5--5.9 の 15 バージョンで型チェック     |
+| `test-multiple-versions.yml` | push/PR    | React 18.0--19.x の 9 バージョンでテスト実行 |
+| `test-multiple-builds.yml`   | push/PR    | CJS/ESM × dev/prod 環境での動作検証          |
+| `compressed-size.yml`        | PR         | バンドルサイズ差分の可視化                   |
+| `preview-release.yml`        | push/PR    | `pkg-pr-new` で PR ごとのプレビューリリース  |
+| `publish.yml`                | release    | dist ディレクトリから npm publish            |
+| `docs.yml`                   | push(main) | ドキュメントの GitHub Pages デプロイ         |
 
 ### tsconfig パッチによるバージョン互換テスト
 
@@ -126,24 +126,18 @@ rules: {
 
 ```typescript
 // src/react.ts:1-9
-import React from 'react'
-import { createStore } from './vanilla.ts'
-import type {
-  ExtractState,
-  Mutate,
-  StateCreator,
-  StoreApi,
-  StoreMutatorIdentifier,
-} from './vanilla.ts'
+import React from "react";
+import { createStore } from "./vanilla.ts";
+import type { ExtractState, Mutate, StateCreator, StoreApi, StoreMutatorIdentifier } from "./vanilla.ts";
 ```
 
 ### テストでのパッケージ名 import（拡張子なし）
 
 ```typescript
 // tests/basic.test.tsx:12-14
-import { create } from 'zustand'
-import type { StoreApi } from 'zustand'
-import { createWithEqualityFn } from 'zustand/traditional'
+import { create } from "zustand";
+import type { StoreApi } from "zustand";
+import { createWithEqualityFn } from "zustand/traditional";
 ```
 
 ### CI: 品質ゲートの直列実行
@@ -160,6 +154,7 @@ import { createWithEqualityFn } from 'zustand/traditional'
 ### CI: TypeScript バージョンマトリクスと段階的 tsconfig パッチ
 
 ::: v-pre
+
 ```yaml
 # .github/workflows/test-old-typescript.yml:40-53
 - name: Patch for all TS
@@ -176,6 +171,7 @@ import { createWithEqualityFn } from 'zustand/traditional'
     sed -i~ 's/"allowImportingTsExtensions": true,//' tsconfig.json
     ...
 ```
+
 :::
 
 ### pnpm minimumReleaseAge
@@ -191,16 +187,16 @@ minimumReleaseAge: 1440
 
 ```typescript
 // tests/devtools.test.tsx:648
-it('[DEV-ONLY] warns about misusage', () => {
-  const originalConsoleWarn = console.warn
-  console.warn = vi.fn()
-  ;(api as any).dispatch({ type: '__setState' as any })
+it("[DEV-ONLY] warns about misusage", () => {
+  const originalConsoleWarn = console.warn;
+  console.warn = vi.fn();
+  (api as any).dispatch({ type: "__setState" as any });
   expect(console.warn).toHaveBeenLastCalledWith(
-    '[zustand devtools middleware] "__setState" action type is reserved ' +
-      'to set state from the devtools. Avoid using it.',
-  )
-  console.warn = originalConsoleWarn
-})
+    '[zustand devtools middleware] "__setState" action type is reserved '
+      + "to set state from the devtools. Avoid using it.",
+  );
+  console.warn = originalConsoleWarn;
+});
 ```
 
 ## Good Patterns
@@ -210,16 +206,16 @@ it('[DEV-ONLY] warns about misusage', () => {
 ```javascript
 // eslint.config.mjs:11-101
 export default defineConfig(
-  globalIgnores(['dist/', 'examples/', 'website/', 'coverage/']),
+  globalIgnores(["dist/", "examples/", "website/", "coverage/"]),
   eslint.configs.recommended,
   importPlugin.flatConfigs.recommended,
   tseslint.configs.recommended,
   // ... プロジェクト固有ルール ...
   {
-    files: ['tests/**/*.{ts,tsx}'],
+    files: ["tests/**/*.{ts,tsx}"],
     // テスト専用設定
   },
-)
+);
 ```
 
 - **Actions コミットハッシュピン留め + バージョンコメント**: サプライチェーン攻撃を防ぎつつ、コメントで人間が読めるバージョンを維持する。

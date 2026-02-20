@@ -25,18 +25,18 @@ zustand は単一の `rollup.config.mjs` で全モジュールのビルドを管
 
 ```javascript
 // rollup.config.mjs:93-105
-export default function (args) {
-  let c = Object.keys(args).find((key) => key.startsWith('config-'))
+export default function(args) {
+  let c = Object.keys(args).find((key) => key.startsWith("config-"));
   if (c) {
-    c = c.slice('config-'.length).replace(/_/g, '/')
+    c = c.slice("config-".length).replace(/_/g, "/");
   } else {
-    c = 'index'
+    c = "index";
   }
   return [
-    ...(c === 'index' ? [createDeclarationConfig(`src/${c}.ts`, 'dist')] : []),
+    ...(c === "index" ? [createDeclarationConfig(`src/${c}.ts`, "dist")] : []),
     createCommonJSConfig(`src/${c}.ts`, `dist/${c}.js`),
     createESMConfig(`src/${c}.ts`, `dist/esm/${c}.mjs`),
-  ]
+  ];
 }
 ```
 
@@ -64,24 +64,23 @@ ESM ビルドと CJS ビルドで環境変数の参照方法を変える:
 ```javascript
 // rollup.config.mjs:47-72 (createESMConfig)
 replace({
-  ...(output.endsWith('.js')
+  ...(output.endsWith(".js")
     ? {
-        'import.meta.env?.MODE': 'process.env.NODE_ENV',
-      }
+      "import.meta.env?.MODE": "process.env.NODE_ENV",
+    }
     : {
-        'import.meta.env?.MODE':
-          '(import.meta.env ? import.meta.env.MODE : undefined)',
-      }),
+      "import.meta.env?.MODE": "(import.meta.env ? import.meta.env.MODE : undefined)",
+    }),
   // ...
-})
+});
 ```
 
 ```javascript
 // rollup.config.mjs:75-91 (createCommonJSConfig)
 replace({
-  'import.meta.env?.MODE': 'process.env.NODE_ENV',
+  "import.meta.env?.MODE": "process.env.NODE_ENV",
   // ...
-})
+});
 ```
 
 ソースコードでは `import.meta.env?.MODE` を統一的に使い（`src/middleware/devtools.ts:202`, `src/middleware/devtools.ts:287`）、ビルド時にターゲットに応じた形式に置換する。ソースコードが特定のモジュールシステムに依存しない。
@@ -91,11 +90,11 @@ replace({
 ```javascript
 // rollup.config.mjs:11-16
 export const entries = [
-  { find: /.*\/vanilla\/shallow\.ts$/, replacement: 'zustand/vanilla/shallow' },
-  { find: /.*\/react\/shallow\.ts$/, replacement: 'zustand/react/shallow' },
-  { find: /.*\/vanilla\.ts$/, replacement: 'zustand/vanilla' },
-  { find: /.*\/react\.ts$/, replacement: 'zustand/react' },
-]
+  { find: /.*\/vanilla\/shallow\.ts$/, replacement: "zustand/vanilla/shallow" },
+  { find: /.*\/react\/shallow\.ts$/, replacement: "zustand/react/shallow" },
+  { find: /.*\/vanilla\.ts$/, replacement: "zustand/vanilla" },
+  { find: /.*\/react\.ts$/, replacement: "zustand/react" },
+];
 ```
 
 ソースでは相対パス（`./vanilla.ts`）でインポートするが、ビルド成果物では `zustand/vanilla` のようなパッケージパスに変換される。これにより、ソースコードの可読性とビルド成果物の正確性を両立する。
@@ -163,6 +162,7 @@ PR ごとに CJS/ESM 双方のバンドルサイズを計測し、コメント�
 ### ビルド成果物に対するテスト
 
 ::: v-pre
+
 ```yaml
 # .github/workflows/test-multiple-builds.yml:36-44
 - name: Patch for CJS
@@ -174,6 +174,7 @@ PR ごとに CJS/ESM 双方のバンドルサイズを計測し、コメント�
   run: |
     sed -i~ "s/resolve('\.\/src\(.*\)\.ts')/resolve('\.\/dist\/esm\1.mjs')/" vitest.config.mts
 ```
+
 :::
 
 vitest のエイリアス設定を `sed` で書き換え、テストの対象をソースからビルド成果物に切り替える。ソースでは通過するがビルド成果物では失敗するケース（import パスの誤り、tree-shaking による副作用除去等）を検出できる。
@@ -215,7 +216,7 @@ TypeScript 4.5 未満のユーザーには空の d.ts を返し、型エラー�
 ```javascript
 // rollup.config.mjs:18-21 — external 関数: 全外部依存をバンドルから除外
 function external(id) {
-  return !id.startsWith('.') && !id.startsWith(root)
+  return !id.startsWith(".") && !id.startsWith(root);
 }
 ```
 
@@ -223,10 +224,10 @@ function external(id) {
 // rollup.config.mjs:22-28 — esbuild トランスパイル設定
 function getEsbuild() {
   return esbuild({
-    target: 'es2018',
-    supported: { 'import-meta': true },
-    tsconfig: path.resolve('./tsconfig.json'),
-  })
+    target: "es2018",
+    supported: { "import-meta": true },
+    tsconfig: path.resolve("./tsconfig.json"),
+  });
 }
 ```
 
@@ -237,9 +238,8 @@ alias({ entries: entries.filter((entry) => !entry.find.test(input)) }),
 
 ```javascript
 // src/middleware/devtools.ts:201-203 — ソースコードでの統一的な環境変数参照
-extensionConnector =
-  (enabled ?? import.meta.env?.MODE !== 'production') &&
-  window.__REDUX_DEVTOOLS_EXTENSION__
+extensionConnector = (enabled ?? import.meta.env?.MODE !== "production")
+  && window.__REDUX_DEVTOOLS_EXTENSION__;
 ```
 
 ```yaml
@@ -268,7 +268,7 @@ extensionConnector =
 ```javascript
 // rollup.config.mjs:18-21 — 全ビルドバリアントで共有される external 判定
 function external(id) {
-  return !id.startsWith('.') && !id.startsWith(root)
+  return !id.startsWith(".") && !id.startsWith(root);
 }
 ```
 
@@ -289,15 +289,15 @@ function external(id) {
 
 ```javascript
 // Better: scripts/patch-d-ts.mjs として外部ファイルに分離
-import { entries } from '../rollup.config.mjs'
-import { find, sed } from 'shelljs'
+import { find, sed } from "shelljs";
+import { entries } from "../rollup.config.mjs";
 
-find('dist/**/*.d.ts').forEach(f => {
+find("dist/**/*.d.ts").forEach(f => {
   entries.forEach(({ find: pattern, replacement }) => {
-    sed('-i', new RegExp(pattern.source.slice(0, -1)), `'${replacement}';`, f)
-  })
-  sed('-i', / from '(\.[^']+)\.ts';$/, " from '$1';", f)
-})
+    sed("-i", new RegExp(pattern.source.slice(0, -1)), `'${replacement}';`, f);
+  });
+  sed("-i", / from '(\.[^']+)\.ts';$/, " from '$1';", f);
+});
 ```
 
 - **shelljs への依存**: Node.js のビルドスクリプトで `shelljs` を使ってファイル操作を行っている。Node.js 標準の `fs` API や `glob` パッケージに置き換えることで、依存を削減できる可能性がある。ただし zustand の場合、`shelljs` の `sed` がストリーム処理的なパターンマッチ置換に便利なため、トレードオフとして許容されている。

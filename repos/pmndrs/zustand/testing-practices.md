@@ -25,26 +25,26 @@ zustand のテストでは、各テストケースの中でストアを `create(
 
 ```typescript
 // tests/basic.test.tsx:50-68
-it('uses the store with no args', () => {
+it("uses the store with no args", () => {
   const useBoundStore = create<CounterState>((set) => ({
     count: 0,
     inc: () => set((state) => ({ count: state.count + 1 })),
-  }))
+  }));
 
   function Counter() {
-    const { count, inc } = useBoundStore()
-    useEffect(inc, [inc])
-    return <div>count: {count}</div>
+    const { count, inc } = useBoundStore();
+    useEffect(inc, [inc]);
+    return <div>count: {count}</div>;
   }
 
   render(
     <>
       <Counter />
     </>,
-  )
+  );
 
-  expect(screen.getByText('count: 1')).toBeInTheDocument()
-})
+  expect(screen.getByText("count: 1")).toBeInTheDocument();
+});
 ```
 
 例外として SSR テスト（`tests/ssr.test.tsx`）ではファイルスコープでストアを定義している。これは SSR のライフサイクル（`renderToString` → `hydrateRoot`）を複数テストで再利用する必要があるため。
@@ -55,32 +55,32 @@ it('uses the store with no args', () => {
 
 ```typescript
 // tests/basic.test.tsx:131-164
-it('only re-renders if selected state has changed', () => {
+it("only re-renders if selected state has changed", () => {
   const useBoundStore = create<CounterState>((set) => ({
     count: 0,
     inc: () => set((state) => ({ count: state.count + 1 })),
-  }))
-  let counterRenderCount = 0
-  let controlRenderCount = 0
+  }));
+  let counterRenderCount = 0;
+  let controlRenderCount = 0;
 
   function Counter() {
-    const count = useBoundStore((state) => state.count)
-    counterRenderCount++
-    return <div>count: {count}</div>
+    const count = useBoundStore((state) => state.count);
+    counterRenderCount++;
+    return <div>count: {count}</div>;
   }
 
   function Control() {
-    const inc = useBoundStore((state) => state.inc)
-    controlRenderCount++
-    return <button onClick={inc}>button</button>
+    const inc = useBoundStore((state) => state.inc);
+    controlRenderCount++;
+    return <button onClick={inc}>button</button>;
   }
 
-  render(/* ... */)
-  fireEvent.click(screen.getByText('button'))
+  render(); /* ... */
+  fireEvent.click(screen.getByText("button"));
 
-  expect(counterRenderCount).toBe(2)
-  expect(controlRenderCount).toBe(1)
-})
+  expect(counterRenderCount).toBe(2);
+  expect(controlRenderCount).toBe(1);
+});
 ```
 
 `Counter` は `count` を購読しているため再レンダリングされるが、`Control` は `inc` 関数（参照安定）のみを購読しているため再レンダリングされない。この手法は React のレンダリング最適化の正しさを検証するのに有効。
@@ -91,27 +91,29 @@ it('only re-renders if selected state has changed', () => {
 
 ```typescript
 // tests/devtools.test.tsx:29-119
-const namedConnections = new Map<string | undefined, Connection>()
+const namedConnections = new Map<string | undefined, Connection>();
 
 const extensionConnector = {
   connect: vi.fn((options: any) => {
-    const key = getKeyFromOptions(options)
-    const subscribers: Connection['subscribers'] = []
-    const api: Connection['api'] = {
+    const key = getKeyFromOptions(options);
+    const subscribers: Connection["subscribers"] = [];
+    const api: Connection["api"] = {
       subscribe: vi.fn((f: (m: unknown) => void) => {
-        subscribers.push(f)
-        return () => {}
+        subscribers.push(f);
+        return () => {};
       }),
-      unsubscribe: vi.fn(() => { connectionMap.delete(key) }),
+      unsubscribe: vi.fn(() => {
+        connectionMap.delete(key);
+      }),
       send: vi.fn(),
       init: vi.fn(),
       error: vi.fn(),
-    }
-    connectionMap.set(key, { subscribers, api })
-    return api
+    };
+    connectionMap.set(key, { subscribers, api });
+    return api;
   }),
-}
-;(window as any).__REDUX_DEVTOOLS_EXTENSION__ = extensionConnector
+};
+(window as any).__REDUX_DEVTOOLS_EXTENSION__ = extensionConnector;
 ```
 
 ヘルパー関数 `getNamedConnectionApis` / `getNamedConnectionSubscribers` で型安全にモックオブジェクトを取得する設計。`beforeEach` で `vi.resetModules()` と接続 Map のクリアを行い、テスト間の分離を保証する。
@@ -123,25 +125,25 @@ const extensionConnector = {
 ```typescript
 // tests/persistAsync.test.tsx:10-40
 const createPersistantStore = (initialValue: string | null) => {
-  let state = initialValue
+  let state = initialValue;
 
   const getItem = async (): Promise<string | null> => {
-    getItemSpy()
-    await sleep(10)
-    return state
-  }
+    getItemSpy();
+    await sleep(10);
+    return state;
+  };
   const setItem = async (name: string, newState: string) => {
-    setItemSpy(name, newState)
-    await sleep(10)
-    state = newState
-  }
+    setItemSpy(name, newState);
+    await sleep(10);
+    state = newState;
+  };
 
-  const getItemSpy = vi.fn()
-  const setItemSpy = vi.fn()
-  const removeItemSpy = vi.fn()
+  const getItemSpy = vi.fn();
+  const setItemSpy = vi.fn();
+  const removeItemSpy = vi.fn();
 
-  return { storage: { getItem, setItem, removeItem }, getItemSpy, setItemSpy, removeItemSpy }
-}
+  return { storage: { getItem, setItem, removeItem }, getItemSpy, setItemSpy, removeItemSpy };
+};
 ```
 
 非同期操作を `sleep(10)` で遅延させ、`vi.advanceTimersByTimeAsync(10)` でテスト側から時間を進める。これにより「ハイドレーション中のユーザー操作」「複数回の concurrent rehydrate」のような競合状態をテストできる。
@@ -154,18 +156,18 @@ const createPersistantStore = (initialValue: string | null) => {
 
 ```typescript
 // tests/middlewareTypes.test.tsx:42-56
-it('no middleware', () => {
+it("no middleware", () => {
   const useBoundStore = create<CounterState>((set, get) => ({
     count: 0,
     inc: () => set({ count: get().count + 1 }, false),
-  }))
+  }));
   const TestComponent = () => {
-    expectTypeOf(useBoundStore((s) => s.count) * 2).toEqualTypeOf<number>()
-    expectTypeOf(useBoundStore((s) => s.inc)()).toEqualTypeOf<void>()
-    return <></>
-  }
-  expect(TestComponent).toBeDefined()
-})
+    expectTypeOf(useBoundStore((s) => s.count) * 2).toEqualTypeOf<number>();
+    expectTypeOf(useBoundStore((s) => s.inc)()).toEqualTypeOf<void>();
+    return <></>;
+  };
+  expect(TestComponent).toBeDefined();
+});
 ```
 
 2. **`@ts-expect-error` による不正な型の拒否テスト**（`tests/types.test.tsx`）: 型システムが不正な操作を正しくエラーにするか確認する。
@@ -195,7 +197,7 @@ CI は 3 つのワークフローに分離されている。
 
 ```typescript
 // tests/vanilla/basic.test.ts:6
-vi.mock('react', () => ({}))
+vi.mock("react", () => ({}));
 ```
 
 ### console.error の退避パターン
@@ -204,10 +206,10 @@ vi.mock('react', () => ({}))
 
 ```typescript
 // tests/basic.test.tsx:16-20
-const consoleError = console.error
+const consoleError = console.error;
 afterEach(() => {
-  console.error = consoleError
-})
+  console.error = consoleError;
+});
 ```
 
 テスト内で `console.error = vi.fn()` に差し替え、エラーメッセージの内容を検証する（`tests/devtools.test.tsx:311`）。`afterEach` での復元を忘れないのが重要。
@@ -232,23 +234,27 @@ afterEach(() => {
 
 ```typescript
 // tests/basic.test.tsx:22-43
-it('creates a store hook and api object', () => {
+it("creates a store hook and api object", () => {
   const result = create((...args) => {
-    params = args
-    return { value: null }
-  })
-  expect({ params, result }).toMatchInlineSnapshot(`...`)
-})
+    params = args;
+    return { value: null };
+  });
+  expect({ params, result }).toMatchInlineSnapshot(`...`);
+});
 ```
 
 - **fake timer + sleep による非同期タイミング制御**: `vi.useFakeTimers()` + 固定遅延 `sleep(10)` + `vi.advanceTimersByTimeAsync(10)` の三点セットで、非同期処理のタイミングをテストが完全に制御する。
 
 ```typescript
 // tests/persistAsync.test.tsx:46-52 + 98
-beforeEach(() => { vi.useFakeTimers() })
-afterEach(() => { vi.useRealTimers() })
+beforeEach(() => {
+  vi.useFakeTimers();
+});
+afterEach(() => {
+  vi.useRealTimers();
+});
 // テスト内:
-await act(() => vi.advanceTimersByTimeAsync(10))
+await act(() => vi.advanceTimersByTimeAsync(10));
 ```
 
 - **`[DEV-ONLY]`/`[PRD-ONLY]` タグによる環境別テスト**: テスト名にタグを付け、CI の `sed` で `it` / `it.skip` を切り替える。テストフレームワークの機能に依存せず、ビルド環境ごとのテスト選択を実現する。
@@ -266,22 +272,22 @@ sed -i~ "s/it[.a-zA-Z]*('\[DEV-ONLY\]/it('/" tests/*.tsx
 
 ```typescript
 // Bad: StrictMode を考慮しないカウント
-let renderCount = 0
+let renderCount = 0;
 function Component() {
-  renderCount++  // StrictMode で2回呼ばれる
-  return <div>renderCount: {renderCount}</div>
+  renderCount++; // StrictMode で2回呼ばれる
+  return <div>renderCount: {renderCount}</div>;
 }
 ```
 
 ```typescript
 // Better: ref で StrictMode に対応するか、DOM 表示値で検証
 function Component() {
-  const countRef = useRef(0)
-  countRef.current++
-  return <div>renderCount: {countRef.current}</div>
+  const countRef = useRef(0);
+  countRef.current++;
+  return <div>renderCount: {countRef.current}</div>;
 }
 // または DOM アサーションのみで検証:
-expect(screen.getByText('count: 1')).toBeInTheDocument()
+expect(screen.getByText("count: 1")).toBeInTheDocument();
 ```
 
 - **console メソッドの手動退避/復元**: `console.error` を変数に保存して `afterEach` で復元するパターンは動作するが、復元忘れのリスクがある。`vi.spyOn(console, 'error')` を使う方がより安全（自動復元される）。zustand は一部のテスト（`tests/ssr.test.tsx:92`）で `vi.spyOn` を使っている一方、他のテスト（`tests/basic.test.tsx:16`）では手動退避を使っており、スタイルが混在している。

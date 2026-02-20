@@ -27,23 +27,22 @@ zustand のコアである `createStoreImpl`（`src/vanilla.ts:60-97`）は38行
 
 ```ts
 // src/vanilla.ts:66-80
-const setState: StoreApi<TState>['setState'] = (partial, replace) => {
-  const nextState =
-    typeof partial === 'function'
-      ? (partial as (state: TState) => TState)(state)
-      : partial
+const setState: StoreApi<TState>["setState"] = (partial, replace) => {
+  const nextState = typeof partial === "function"
+    ? (partial as (state: TState) => TState)(state)
+    : partial;
   if (!Object.is(nextState, state)) {
-    const previousState = state
-    state =
-      (replace ?? (typeof nextState !== 'object' || nextState === null))
-        ? (nextState as TState)
-        : Object.assign({}, state, nextState)
-    listeners.forEach((listener) => listener(state, previousState))
+    const previousState = state;
+    state = (replace ?? (typeof nextState !== "object" || nextState === null))
+      ? (nextState as TState)
+      : Object.assign({}, state, nextState);
+    listeners.forEach((listener) => listener(state, previousState));
   }
-}
+};
 ```
 
 この `setState` には3つの設計判断が凝縮されている:
+
 1. **関数更新とオブジェクト更新の両対応** ── `typeof partial === 'function'` で分岐し、ボイラープレートなしで両方サポート
 2. **shallow merge がデフォルト** ── `Object.assign({}, state, nextState)` で1階層のマージを自動実行。Redux のように spread operator を毎回書く必要がない
 3. **replace フラグによるオプトアウト** ── マージ動作が不要な場合は `replace: true` で全置換可能
@@ -62,9 +61,9 @@ export function useStore<TState, StateSlice>(
     api.subscribe,
     React.useCallback(() => selector(api.getState()), [api, selector]),
     React.useCallback(() => selector(api.getInitialState()), [api, selector]),
-  )
-  React.useDebugValue(slice)
-  return slice
+  );
+  React.useDebugValue(slice);
+  return slice;
 }
 ```
 
@@ -76,9 +75,9 @@ vanilla store の API（`subscribe`, `getState`, `getInitialState`）が `useSyn
 
 ```ts
 // src/middleware/redux.ts:28-32
-declare module '../vanilla' {
+declare module "../vanilla" {
   interface StoreMutators<S, A> {
-    'zustand/redux': WithRedux<S, A>
+    "zustand/redux": WithRedux<S, A>;
   }
 }
 ```
@@ -91,8 +90,8 @@ declare module '../vanilla' {
 
 ```ts
 // src/vanilla.ts:99-100
-export const createStore = ((createState) =>
-  createState ? createStoreImpl(createState) : createStoreImpl) as CreateStore
+export const createStore =
+  ((createState) => createState ? createStoreImpl(createState) : createStoreImpl) as CreateStore;
 ```
 
 `create<BearState>()(fn)` のように呼ぶと、状態型 `T` をユーザーが明示的に指定しつつ、ミドルウェアの型パラメータは自動推論される。これは TypeScript の "partial type argument inference" が未サポート（microsoft/TypeScript#10571）であることへのワークアラウンドで、実行時にはただの関数呼び出しの連鎖にすぎない。
@@ -101,15 +100,15 @@ export const createStore = ((createState) =>
 
 zustand は機能を段階的に追加できる設計になっている。最小構成は `create(() => ({ count: 0 }))` の1行で、selector、middleware、shallow comparison、persistence、devtools をそれぞれ独立に追加できる:
 
-| 段階 | 必要なもの | import 元 |
-|------|-----------|----------|
-| 基本 | `create` | `zustand` |
-| vanilla only | `createStore` | `zustand/vanilla` |
-| shallow 比較 | `useShallow` | `zustand/react/shallow` |
-| 永続化 | `persist` | `zustand/middleware` |
-| DevTools | `devtools` | `zustand/middleware` |
-| Immer 統合 | `immer` | `zustand/middleware/immer` |
-| カスタム等価関数 | `createWithEqualityFn` | `zustand/traditional` |
+| 段階             | 必要なもの             | import 元                  |
+| ---------------- | ---------------------- | -------------------------- |
+| 基本             | `create`               | `zustand`                  |
+| vanilla only     | `createStore`          | `zustand/vanilla`          |
+| shallow 比較     | `useShallow`           | `zustand/react/shallow`    |
+| 永続化           | `persist`              | `zustand/middleware`       |
+| DevTools         | `devtools`             | `zustand/middleware`       |
+| Immer 統合       | `immer`                | `zustand/middleware/immer` |
+| カスタム等価関数 | `createWithEqualityFn` | `zustand/traditional`      |
 
 各段階は前の段階の知識だけで使え、不要な機能は tree-shake される（`sideEffects: false`）。
 
@@ -140,11 +139,11 @@ zustand は機能を段階的に追加できる設計になっている。最小
 ```ts
 // src/react.ts:53-61
 const createImpl = <T>(createState: StateCreator<T, [], []>) => {
-  const api = createStore(createState)
-  const useBoundStore: any = (selector?: any) => useStore(api, selector)
-  Object.assign(useBoundStore, api)
-  return useBoundStore
-}
+  const api = createStore(createState);
+  const useBoundStore: any = (selector?: any) => useStore(api, selector);
+  Object.assign(useBoundStore, api);
+  return useBoundStore;
+};
 ```
 
 `Object.assign(useBoundStore, api)` により、hook 関数自体に `getState`, `setState`, `subscribe` が生えている。関数でありながらオブジェクトでもあるという JavaScript の特性を活かし、React 内外の両方から同じ store にアクセスできる。
@@ -153,10 +152,10 @@ const createImpl = <T>(createState: StateCreator<T, [], []>) => {
 
 ```ts
 // src/vanilla.ts:88-92
-const subscribe: StoreApi<TState>['subscribe'] = (listener) => {
-  listeners.add(listener)
-  return () => listeners.delete(listener)
-}
+const subscribe: StoreApi<TState>["subscribe"] = (listener) => {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+};
 ```
 
 - **Shallow Merge Default パターン**: `setState` がデフォルトで shallow merge する。Redux の `{ ...state, ...changes }` を毎回書く必要がなく、1階層のオブジェクトなら `set({ count: 1 })` で済む。深いネストが必要な場合のみ spread operator や immer を使う。
@@ -167,13 +166,13 @@ const subscribe: StoreApi<TState>['subscribe'] = (listener) => {
 
 ```ts
 // Bad: 毎回新しい配列を生成 → 無限ループの可能性
-const [value, setValue] = useStore((state) => [state.value, state.setValue])
+const [value, setValue] = useStore((state) => [state.value, state.setValue]);
 
 // Better: useShallow でラップし shallow 比較を適用
-import { useShallow } from 'zustand/react/shallow'
+import { useShallow } from "zustand/react/shallow";
 const [value, setValue] = useStore(
   useShallow((state) => [state.value, state.setValue]),
-)
+);
 ```
 
 - **ミドルウェアの順序違反**: `devtools` は `setState` を mutate するため、他のミドルウェアより外側（最後）に配置する必要がある。内側に配置すると、後のミドルウェアが `devtools` の変更を上書きし、DevTools に状態変更が反映されない。

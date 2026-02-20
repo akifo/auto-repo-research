@@ -25,44 +25,44 @@ persist ミドルウェアの最も独創的な設計は `toThenable` 関数に�
 type Thenable<Value> = {
   then<V>(
     onFulfilled: (value: Value) => V | Promise<V> | Thenable<V>,
-  ): Thenable<V>
+  ): Thenable<V>;
   catch<V>(
     onRejected: (reason: Error) => V | Promise<V> | Thenable<V>,
-  ): Thenable<V>
-}
+  ): Thenable<V>;
+};
 
-const toThenable =
-  <Result, Input>(
-    fn: (input: Input) => Result | Promise<Result> | Thenable<Result>,
-  ) =>
-  (input: Input): Thenable<Result> => {
-    try {
-      const result = fn(input)
-      if (result instanceof Promise) {
-        return result as Thenable<Result>
-      }
-      return {
-        then(onFulfilled) {
-          return toThenable(onFulfilled)(result as Result)
-        },
-        catch(_onRejected) {
-          return this as Thenable<any>
-        },
-      }
-    } catch (e: any) {
-      return {
-        then(_onFulfilled) {
-          return this as Thenable<any>
-        },
-        catch(onRejected) {
-          return toThenable(onRejected)(e)
-        },
-      }
+const toThenable = <Result, Input>(
+  fn: (input: Input) => Result | Promise<Result> | Thenable<Result>,
+) =>
+(input: Input): Thenable<Result> => {
+  try {
+    const result = fn(input);
+    if (result instanceof Promise) {
+      return result as Thenable<Result>;
     }
+    return {
+      then(onFulfilled) {
+        return toThenable(onFulfilled)(result as Result);
+      },
+      catch(_onRejected) {
+        return this as Thenable<any>;
+      },
+    };
+  } catch (e: any) {
+    return {
+      then(_onFulfilled) {
+        return this as Thenable<any>;
+      },
+      catch(onRejected) {
+        return toThenable(onRejected)(e);
+      },
+    };
   }
+};
 ```
 
 重要なポイント:
+
 - 同期値は `Promise.resolve()` にラップせず、即座に `then` チェーンを同期実行する
 - `instanceof Promise` で分岐し、本物の Promise はそのまま返す
 - `try-catch` で同期例外もキャッチし、`catch` チェーン経由でエラーハンドリングを統一する
@@ -72,39 +72,39 @@ const toThenable =
 
 ```typescript
 // tests/persistSync.test.tsx:41-75
-it('can rehydrate state', () => {
+it("can rehydrate state", () => {
   // 同期ストレージの場合、create() 直後に hydration 完了
   const useBoundStore = create(
     persist(
-      () => ({ count: 0, name: 'empty' }),
+      () => ({ count: 0, name: "empty" }),
       {
-        name: 'test-storage',
+        name: "test-storage",
         storage: createJSONStorage(() => storage),
         onRehydrateStorage: () => onRehydrateStorageSpy,
       },
     ),
-  )
+  );
   // await 不要 — 同期的に hydration 済み
   expect(useBoundStore.getState()).toEqual({
     count: 42,
-    name: 'test-storage',
-  })
-})
+    name: "test-storage",
+  });
+});
 ```
 
 対照的に非同期テストでは時間の経過が必要:
 
 ```typescript
 // tests/persistAsync.test.tsx:54-106
-it('can rehydrate state', async () => {
+it("can rehydrate state", async () => {
   // 非同期ストレージでは初期状態がまず表示される
-  expect(screen.getByText('count: 0, name: empty')).toBeInTheDocument()
+  expect(screen.getByText("count: 0, name: empty")).toBeInTheDocument();
   // 時間経過後に hydration 完了
-  await act(() => vi.advanceTimersByTimeAsync(10))
+  await act(() => vi.advanceTimersByTimeAsync(10));
   expect(
-    screen.getByText('count: 42, name: test-storage'),
-  ).toBeInTheDocument()
-})
+    screen.getByText("count: 42, name: test-storage"),
+  ).toBeInTheDocument();
+});
 ```
 
 ### hydrationVersion: カウンタによるレース条件防止
@@ -113,18 +113,18 @@ it('can rehydrate state', async () => {
 
 ```typescript
 // src/middleware/persist.ts:200-203
-let hasHydrated = false
+let hasHydrated = false;
 // Counter to track hydration versions and prevent race conditions
 // when multiple rehydrate() calls happen concurrently
-let hydrationVersion = 0
+let hydrationVersion = 0;
 ```
 
 hydrate 関数の冒頭でカウンタをインクリメントし、各 `then` チェーン内で現在の値と比較する:
 
 ```typescript
 // src/middleware/persist.ts:261-262
-const currentVersion = ++hydrationVersion
-hasHydrated = false
+const currentVersion = ++hydrationVersion;
+hasHydrated = false;
 ```
 
 ```typescript
@@ -140,20 +140,20 @@ hasHydrated = false
 
 ```typescript
 // tests/persistAsync.test.tsx:880-924
-it('should handle multiple concurrent rehydrate calls (only last one wins)', async () => {
+it("should handle multiple concurrent rehydrate calls (only last one wins)", async () => {
   // 3 回連続で rehydrate を呼び出す
-  const promise1 = useBoundStore.persist.rehydrate()
-  const promise2 = useBoundStore.persist.rehydrate()
-  const promise3 = useBoundStore.persist.rehydrate()
+  const promise1 = useBoundStore.persist.rehydrate();
+  const promise2 = useBoundStore.persist.rehydrate();
+  const promise3 = useBoundStore.persist.rehydrate();
 
-  await act(() => vi.advanceTimersByTimeAsync(30))
-  await Promise.all([promise1, promise2, promise3])
+  await act(() => vi.advanceTimersByTimeAsync(30));
+  await Promise.all([promise1, promise2, promise3]);
 
   // 最後の rehydrate のみが状態に反映される
-  expect(useBoundStore.getState().count).toBe(30)
+  expect(useBoundStore.getState().count).toBe(30);
   // onFinishHydration も 1 回のみ呼ばれる
-  expect(onFinishHydrationSpy).toHaveBeenCalledTimes(1)
-})
+  expect(onFinishHydrationSpy).toHaveBeenCalledTimes(1);
+});
 ```
 
 ### setState ラップ: 副作用の透過的注入
@@ -162,12 +162,12 @@ persist ミドルウェアは `api.setState` を保存してラップし、永�
 
 ```typescript
 // src/middleware/persist.ts:229-234
-const savedSetState = api.setState
+const savedSetState = api.setState;
 
 api.setState = (state, replace) => {
-  savedSetState(state, replace as any)
-  return setItem()
-}
+  savedSetState(state, replace as any);
+  return setItem();
+};
 ```
 
 devtools ミドルウェアの同等コード:
@@ -175,22 +175,22 @@ devtools ミドルウェアの同等コード:
 ```typescript
 // src/middleware/devtools.ts:216-245
 api.setState = ((state, replace, nameOrAction: Action) => {
-  const r = set(state, replace as any)
-  if (!isRecording) return r
+  const r = set(state, replace as any);
+  if (!isRecording) return r;
   // ... DevTools への送信ロジック
-  return r
-}) as NamedSet<S>
+  return r;
+}) as NamedSet<S>;
 ```
 
 subscribeWithSelector ミドルウェアは `api.subscribe` を同様にラップしている:
 
 ```typescript
 // src/middleware/subscribeWithSelector.ts:50-68
-const origSubscribe = api.subscribe as (listener: Listener) => () => void
+const origSubscribe = api.subscribe as (listener: Listener) => () => void;
 api.subscribe = ((selector: any, optListener: any, options: any) => {
   // ... セレクタベースのフィルタリングロジック
-  return origSubscribe(listener)
-}) as any
+  return origSubscribe(listener);
+}) as any;
 ```
 
 ### createJSONStorage: 2 層ストレージ抽象化
@@ -200,18 +200,18 @@ api.subscribe = ((selector: any, optListener: any, options: any) => {
 ```typescript
 // src/middleware/persist.ts:7-11
 export interface StateStorage<R = unknown> {
-  getItem: (name: string) => string | null | Promise<string | null>
-  setItem: (name: string, value: string) => R
-  removeItem: (name: string) => R
+  getItem: (name: string) => string | null | Promise<string | null>;
+  setItem: (name: string, value: string) => R;
+  removeItem: (name: string) => R;
 }
 
 // src/middleware/persist.ts:18-24
 export interface PersistStorage<S, R = unknown> {
   getItem: (
     name: string,
-  ) => StorageValue<S> | null | Promise<StorageValue<S> | null>
-  setItem: (name: string, value: StorageValue<S>) => R
-  removeItem: (name: string) => R
+  ) => StorageValue<S> | null | Promise<StorageValue<S> | null>;
+  setItem: (name: string, value: StorageValue<S>) => R;
+  removeItem: (name: string) => R;
 }
 ```
 
@@ -258,7 +258,7 @@ SSR アプリケーションでは、サーバー側でクライアントスト�
 ```typescript
 // src/middleware/persist.ts:375-377
 if (!options.skipHydration) {
-  hydrate()
+  hydrate();
 }
 ```
 
@@ -271,12 +271,12 @@ if (!storage) {
     (...args) => {
       console.warn(
         `[zustand persist middleware] Unable to update item '${options.name}', the given storage is currently unavailable.`,
-      )
-      set(...(args as Parameters<typeof set>))
+      );
+      set(...(args as Parameters<typeof set>));
     },
     get,
     api,
-  )
+  );
 }
 ```
 
@@ -305,32 +305,35 @@ if (!storage) {
 
 ```typescript
 // src/middleware/persist.ts:157-185
-const toThenable =
-  <Result, Input>(
-    fn: (input: Input) => Result | Promise<Result> | Thenable<Result>,
-  ) =>
-  (input: Input): Thenable<Result> => {
-    try {
-      const result = fn(input)
-      if (result instanceof Promise) {
-        return result as Thenable<Result>
-      }
-      return {
-        then(onFulfilled) {
-          return toThenable(onFulfilled)(result as Result)
-        },
-        catch(_onRejected) {
-          return this as Thenable<any>
-        },
-      }
-    } catch (e: any) {
-      // エラー時は catch チェーンのみ実行可能なオブジェクトを返す
-      return {
-        then(_onFulfilled) { return this as Thenable<any> },
-        catch(onRejected) { return toThenable(onRejected)(e) },
-      }
+const toThenable = <Result, Input>(
+  fn: (input: Input) => Result | Promise<Result> | Thenable<Result>,
+) =>
+(input: Input): Thenable<Result> => {
+  try {
+    const result = fn(input);
+    if (result instanceof Promise) {
+      return result as Thenable<Result>;
     }
+    return {
+      then(onFulfilled) {
+        return toThenable(onFulfilled)(result as Result);
+      },
+      catch(_onRejected) {
+        return this as Thenable<any>;
+      },
+    };
+  } catch (e: any) {
+    // エラー時は catch チェーンのみ実行可能なオブジェクトを返す
+    return {
+      then(_onFulfilled) {
+        return this as Thenable<any>;
+      },
+      catch(onRejected) {
+        return toThenable(onRejected)(e);
+      },
+    };
   }
+};
 ```
 
 - **インクリメンタルカウンタによる Last-Write-Wins**: 並行呼び出しの制御に `AbortController` や複雑なキャンセルトークンではなく、単一の数値カウンタを使用。各 `then` チェーンの冒頭でバージョン比較し、古いリクエストを無視する。
@@ -338,13 +341,13 @@ const toThenable =
 ```typescript
 // src/middleware/persist.ts:261-262, 296-299
 const currentVersion = ++hydrationVersion
-// ...
-.then((migrationResult) => {
-  if (currentVersion !== hydrationVersion) {
-    return  // 古い hydration は無視
-  }
   // ...
-})
+  .then((migrationResult) => {
+    if (currentVersion !== hydrationVersion) {
+      return; // 古い hydration は無視
+    }
+    // ...
+  });
 ```
 
 - **ファクトリ関数によるストレージ遅延評価**: `createJSONStorage(() => window.localStorage)` のようにストレージをファクトリ関数で渡すことで、SSR 環境での `window is not defined` エラーを安全に処理する。
@@ -367,60 +370,64 @@ export function createJSONStorage<S, R = unknown>(
 - **デフォルト shallow merge による nested object の欠落**: persist ミドルウェアのデフォルト `merge` は shallow merge であるため、ネストされたオブジェクトのフィールドが欠落する。
 
 Bad:
+
 ```typescript
 // ストレージに { foo: { bar: 0 } } が保存されている状態で
 persist(
   () => ({ foo: { bar: 0, baz: 1 } }),
-  { name: 'my-store' }
+  { name: "my-store" },
   // merge 未指定 — shallow merge により foo.baz が消失
-)
+);
 ```
 
 Better:
+
 ```typescript
 // docs/middlewares/persist.md の推奨パターン
-import createDeepMerge from '@fastify/deepmerge'
-const deepMerge = createDeepMerge({ all: true })
+import createDeepMerge from "@fastify/deepmerge";
+const deepMerge = createDeepMerge({ all: true });
 
 persist(
   () => ({ foo: { bar: 0, baz: 1 } }),
   {
-    name: 'my-store',
+    name: "my-store",
     merge: (persisted, current) => deepMerge(current, persisted) as never,
-  }
-)
+  },
+);
 ```
 
 - **version 変更時に migrate 関数を忘れる**: `version` を上げたが `migrate` を提供しないと、保存済みデータが無視され `console.error` のみ出力される。テストでこの振る舞いが確認されている（`tests/persistSync.test.tsx:173-198`）。
 
 Bad:
+
 ```typescript
 persist(
   () => ({ count: 0 }),
   {
-    name: 'my-store',
-    version: 2,  // version を上げたが migrate がない
-  }
-)
+    name: "my-store",
+    version: 2, // version を上げたが migrate がない
+  },
+);
 // 結果: 保存済みデータは無視され、初期値 { count: 0 } に戻る
 ```
 
 Better:
+
 ```typescript
 persist(
   () => ({ count: 0 }),
   {
-    name: 'my-store',
+    name: "my-store",
     version: 2,
     migrate: (persisted, version) => {
       if (version === 1) {
         // v1 -> v2 のマイグレーション
-        return { count: (persisted as any).value ?? 0 }
+        return { count: (persisted as any).value ?? 0 };
       }
-      return persisted as { count: number }
+      return persisted as { count: number; };
     },
-  }
-)
+  },
+);
 ```
 
 ## 導出ルール

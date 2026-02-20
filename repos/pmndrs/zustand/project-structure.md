@@ -42,13 +42,13 @@ src/
 
 `package.json` の `exports` フィールドで定義された各サブパスが、`build:*` スクリプトのそれぞれに対応する。
 
-| サブパス | ビルドスクリプト | ソース | CJS 出力 | ESM 出力 |
-|---------|----------------|--------|---------|---------|
-| `.` | `build:base` | `src/index.ts` | `dist/index.js` | `dist/esm/index.mjs` |
-| `./vanilla` | `build:vanilla` | `src/vanilla.ts` | `dist/vanilla.js` | `dist/esm/vanilla.mjs` |
-| `./react` | `build:react` | `src/react.ts` | `dist/react.js` | `dist/esm/react.mjs` |
+| サブパス       | ビルドスクリプト   | ソース              | CJS 出力             | ESM 出力                  |
+| -------------- | ------------------ | ------------------- | -------------------- | ------------------------- |
+| `.`            | `build:base`       | `src/index.ts`      | `dist/index.js`      | `dist/esm/index.mjs`      |
+| `./vanilla`    | `build:vanilla`    | `src/vanilla.ts`    | `dist/vanilla.js`    | `dist/esm/vanilla.mjs`    |
+| `./react`      | `build:react`      | `src/react.ts`      | `dist/react.js`      | `dist/esm/react.mjs`      |
 | `./middleware` | `build:middleware` | `src/middleware.ts` | `dist/middleware.js` | `dist/esm/middleware.mjs` |
-| `./shallow` | `build:shallow` | `src/shallow.ts` | `dist/shallow.js` | `dist/esm/shallow.mjs` |
+| `./shallow`    | `build:shallow`    | `src/shallow.ts`    | `dist/shallow.js`    | `dist/esm/shallow.mjs`    |
 
 各ビルドは Rollup の `--config-*` フラグで制御される。`rollup.config.mjs:93-104` で `args` からフラグ名を抽出し、対応する `src/*.ts` をエントリとする。
 
@@ -110,11 +110,11 @@ CI で以下の多段階検証を実施している:
 ```typescript
 // rollup.config.mjs:11-16 — ソース相対パスからパッケージ名エイリアスへの変換テーブル
 export const entries = [
-  { find: /.*\/vanilla\/shallow\.ts$/, replacement: 'zustand/vanilla/shallow' },
-  { find: /.*\/react\/shallow\.ts$/, replacement: 'zustand/react/shallow' },
-  { find: /.*\/vanilla\.ts$/, replacement: 'zustand/vanilla' },
-  { find: /.*\/react\.ts$/, replacement: 'zustand/react' },
-]
+  { find: /.*\/vanilla\/shallow\.ts$/, replacement: "zustand/vanilla/shallow" },
+  { find: /.*\/react\/shallow\.ts$/, replacement: "zustand/react/shallow" },
+  { find: /.*\/vanilla\.ts$/, replacement: "zustand/vanilla" },
+  { find: /.*\/react\.ts$/, replacement: "zustand/react" },
+];
 ```
 
 ```typescript
@@ -122,53 +122,48 @@ export const entries = [
 function createESMConfig(input, output) {
   return {
     input,
-    output: { file: output, format: 'esm' },
+    output: { file: output, format: "esm" },
     external,
     plugins: [
       alias({ entries: entries.filter((entry) => !entry.find.test(input)) }),
       resolve({ extensions }),
       replace({
-        ...(output.endsWith('.js')
+        ...(output.endsWith(".js")
           ? {
-              'import.meta.env?.MODE': 'process.env.NODE_ENV',
-            }
+            "import.meta.env?.MODE": "process.env.NODE_ENV",
+          }
           : {
-              'import.meta.env?.MODE':
-                '(import.meta.env ? import.meta.env.MODE : undefined)',
-            }),
+            "import.meta.env?.MODE": "(import.meta.env ? import.meta.env.MODE : undefined)",
+          }),
         // ...
       }),
       getEsbuild(),
     ],
-  }
+  };
 }
 ```
 
 ```typescript
 // src/index.ts:1-2 — Facade パターン: vanilla + react を統合 re-export
-export * from './vanilla.ts'
-export * from './react.ts'
+export * from "./react.ts";
+export * from "./vanilla.ts";
 ```
 
 ```typescript
 // src/middleware.ts:1-17 — Barrel エクスポート: 個別ミドルウェアの集約
-export { redux } from './middleware/redux.ts'
+export { combine } from "./middleware/combine.ts";
+export { devtools, type DevtoolsOptions, type NamedSet } from "./middleware/devtools.ts";
 export {
-  devtools,
-  type DevtoolsOptions,
-  type NamedSet,
-} from './middleware/devtools.ts'
-export { subscribeWithSelector } from './middleware/subscribeWithSelector.ts'
-export { combine } from './middleware/combine.ts'
-export {
-  persist,
   createJSONStorage,
+  persist,
+  type PersistOptions,
+  type PersistStorage,
   type StateStorage,
   type StorageValue,
-  type PersistStorage,
-  type PersistOptions,
-} from './middleware/persist.ts'
-export { ssrSafe as unstable_ssrSafe } from './middleware/ssrSafe.ts'
+} from "./middleware/persist.ts";
+export { redux } from "./middleware/redux.ts";
+export { ssrSafe as unstable_ssrSafe } from "./middleware/ssrSafe.ts";
+export { subscribeWithSelector } from "./middleware/subscribeWithSelector.ts";
 ```
 
 ```json
@@ -217,6 +212,7 @@ export { ssrSafe as unstable_ssrSafe } from './middleware/ssrSafe.ts'
 - **ビルド成果物に対するテスト実行**: ソースだけでなく、CJS/ESM のビルド成果物に対してもテストを実行している（`.github/workflows/test-multiple-builds.yml`）。vitest.config.mts のエイリアスを `sed` で差し替えることで、同一テストスイートを異なるビルド出力に適用する。
 
 ::: v-pre
+
 ```yaml
 # .github/workflows/test-multiple-builds.yml:37-43
 - name: Patch for CJS
@@ -228,6 +224,7 @@ export { ssrSafe as unstable_ssrSafe } from './middleware/ssrSafe.ts'
   run: |
     sed -i~ "s/resolve('\.\/src\(.*\)\.ts')/resolve('\.\/dist\/esm\1.mjs')/" vitest.config.mts
 ```
+
 :::
 
 - **全 peerDependencies を optional 化**: `react`、`immer`、`use-sync-external-store` をすべて optional peerDependencies として宣言（`package.json:166-179`）。コアの `vanilla.ts` は外部依存ゼロで動作し、React バインディングは `react` がある場合のみ機能する。
@@ -245,14 +242,14 @@ export { ssrSafe as unstable_ssrSafe } from './middleware/ssrSafe.ts'
 
 ```javascript
 // Better: 独立したスクリプトファイル scripts/patch-d-ts.mjs
-import { entries } from '../rollup.config.mjs'
-import { find, sed } from 'shelljs'
+import { find, sed } from "shelljs";
+import { entries } from "../rollup.config.mjs";
 
-find('dist/**/*.d.ts').forEach(f => {
+find("dist/**/*.d.ts").forEach(f => {
   entries.forEach(({ find: pattern, replacement }) => {
-    sed('-i', new RegExp(/* ... */), ` from '${replacement}';`, f)
-  })
-})
+    sed("-i", new RegExp(/* ... */), ` from '${replacement}';`, f);
+  });
+});
 ```
 
 - **CI での `sed` による設定書き換え**: `test-old-typescript.yml` と `test-multiple-builds.yml` で tsconfig.json や vitest.config.mts を `sed` で動的に書き換えている。正規表現が壊れやすく、設定変更時に CI が意図せず壊れるリスクがある。

@@ -19,18 +19,18 @@ zustand は「状態管理に本当に必要なものは何か」を問い直し
 
 ## 分析した視点
 
-| # | 視点 | ファイル | 概要 |
-| - | ---- | -------- | ---- |
-| 1 | プロジェクト構造 | project-structure.md | サブパスエクスポートごとの独立ビルド、dist publish、CJS/ESM デュアルパッケージの多層パッケージング戦略 |
-| 2 | アーキテクチャ | architecture.md | vanilla コア→React アダプタ→ミドルウェアの3層分離と、declare module + Mutate 再帰型による型安全な合成 |
-| 3 | 設計哲学 | design-philosophy.md | Set+Object.is+クロージャによる極限ミニマリズムと、opt-in 段階的複雑化の設計哲学 |
-| 4 | 型システムパターン | type-system-patterns.md | 空インターフェース+declaration merging による型レジストリと、再帰型・ファントム型を駆使したプラグイン型合成 |
-| 5 | ミドルウェア合成 | middleware-composition.md | 統一シグネチャの高階関数による api メソッドラップと、グレースフルデグラデーション付きミドルウェア合成 |
-| 6 | テスト戦略 | testing-practices.md | テスト内ストア生成による完全分離、型テスト二刀流、TS15版×React9版×CJS/ESM の CI マトリクス戦略 |
-| 7 | API 設計 | api-design-practices.md | カリー化オーバーロードで型推論限界を迂回し、selector + equality fn の3段階で変更検知を最適化する API 設計 |
-| 8 | ビルドとツーリング | build-and-tooling.md | Rollup モジュール別ビルド、postbuild d.ts パッチチェーン、compressed-size CI、dist からの publish 戦略 |
-| 9 | 永続化パターン | persistence-patterns.md | toThenable による同期/非同期透過統一、hydrationVersion カウンタのレース条件防止、SSR 対応の永続化設計 |
-| 10 | 開発規約 | dev-conventions.md | ESLint flat config レイヤー設計、品質ゲート直列 CI、Actions ハッシュピン留め、minimumReleaseAge による安全策 |
+| #  | 視点               | ファイル                  | 概要                                                                                                         |
+| -- | ------------------ | ------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| 1  | プロジェクト構造   | project-structure.md      | サブパスエクスポートごとの独立ビルド、dist publish、CJS/ESM デュアルパッケージの多層パッケージング戦略       |
+| 2  | アーキテクチャ     | architecture.md           | vanilla コア→React アダプタ→ミドルウェアの3層分離と、declare module + Mutate 再帰型による型安全な合成        |
+| 3  | 設計哲学           | design-philosophy.md      | Set+Object.is+クロージャによる極限ミニマリズムと、opt-in 段階的複雑化の設計哲学                              |
+| 4  | 型システムパターン | type-system-patterns.md   | 空インターフェース+declaration merging による型レジストリと、再帰型・ファントム型を駆使したプラグイン型合成  |
+| 5  | ミドルウェア合成   | middleware-composition.md | 統一シグネチャの高階関数による api メソッドラップと、グレースフルデグラデーション付きミドルウェア合成        |
+| 6  | テスト戦略         | testing-practices.md      | テスト内ストア生成による完全分離、型テスト二刀流、TS15版×React9版×CJS/ESM の CI マトリクス戦略               |
+| 7  | API 設計           | api-design-practices.md   | カリー化オーバーロードで型推論限界を迂回し、selector + equality fn の3段階で変更検知を最適化する API 設計    |
+| 8  | ビルドとツーリング | build-and-tooling.md      | Rollup モジュール別ビルド、postbuild d.ts パッチチェーン、compressed-size CI、dist からの publish 戦略       |
+| 9  | 永続化パターン     | persistence-patterns.md   | toThenable による同期/非同期透過統一、hydrationVersion カウンタのレース条件防止、SSR 対応の永続化設計        |
+| 10 | 開発規約           | dev-conventions.md        | ESLint flat config レイヤー設計、品質ゲート直列 CI、Actions ハッシュピン留め、minimumReleaseAge による安全策 |
 
 ## 特に注目すべき知見
 

@@ -38,6 +38,7 @@ create<T>()(devtools(persist(immer(initializer))))
 ```
 
 実行順序:
+
 1. `createStoreImpl` が `api = { setState, getState, getInitialState, subscribe }` を生成
 2. `immer` の `StateCreator` が実行され、`store.setState` を immer の `produce` でラップ
 3. `persist` の `StateCreator` が実行され、`api.setState` をストレージ書き込み付きでラップ
@@ -74,37 +75,35 @@ const useStore = create<MyState>((set) => ({ ... }))
 ```typescript
 // src/vanilla.ts:60-97 — コアストア実装（クロージャベース、Reactに依存しない）
 const createStoreImpl: CreateStoreImpl = (createState) => {
-  type TState = ReturnType<typeof createState>
-  type Listener = (state: TState, prevState: TState) => void
-  let state: TState
-  const listeners: Set<Listener> = new Set()
+  type TState = ReturnType<typeof createState>;
+  type Listener = (state: TState, prevState: TState) => void;
+  let state: TState;
+  const listeners: Set<Listener> = new Set();
 
-  const setState: StoreApi<TState>['setState'] = (partial, replace) => {
-    const nextState =
-      typeof partial === 'function'
-        ? (partial as (state: TState) => TState)(state)
-        : partial
+  const setState: StoreApi<TState>["setState"] = (partial, replace) => {
+    const nextState = typeof partial === "function"
+      ? (partial as (state: TState) => TState)(state)
+      : partial;
     if (!Object.is(nextState, state)) {
-      const previousState = state
-      state =
-        (replace ?? (typeof nextState !== 'object' || nextState === null))
-          ? (nextState as TState)
-          : Object.assign({}, state, nextState)
-      listeners.forEach((listener) => listener(state, previousState))
+      const previousState = state;
+      state = (replace ?? (typeof nextState !== "object" || nextState === null))
+        ? (nextState as TState)
+        : Object.assign({}, state, nextState);
+      listeners.forEach((listener) => listener(state, previousState));
     }
-  }
+  };
 
-  const getState: StoreApi<TState>['getState'] = () => state
-  const getInitialState: StoreApi<TState>['getInitialState'] = () => initialState
-  const subscribe: StoreApi<TState>['subscribe'] = (listener) => {
-    listeners.add(listener)
-    return () => listeners.delete(listener)
-  }
+  const getState: StoreApi<TState>["getState"] = () => state;
+  const getInitialState: StoreApi<TState>["getInitialState"] = () => initialState;
+  const subscribe: StoreApi<TState>["subscribe"] = (listener) => {
+    listeners.add(listener);
+    return () => listeners.delete(listener);
+  };
 
-  const api = { setState, getState, getInitialState, subscribe }
-  const initialState = (state = createState(setState, getState, api))
-  return api as any
-}
+  const api = { setState, getState, getInitialState, subscribe };
+  const initialState = (state = createState(setState, getState, api));
+  return api as any;
+};
 ```
 
 ```typescript
@@ -117,45 +116,42 @@ export function useStore<TState, StateSlice>(
     api.subscribe,
     React.useCallback(() => selector(api.getState()), [api, selector]),
     React.useCallback(() => selector(api.getInitialState()), [api, selector]),
-  )
-  React.useDebugValue(slice)
-  return slice
+  );
+  React.useDebugValue(slice);
+  return slice;
 }
 ```
 
 ```typescript
 // src/vanilla.ts:20-26 — 再帰型によるミドルウェア型積層
-export type Mutate<S, Ms> = number extends Ms['length' & keyof Ms]
-  ? S
-  : Ms extends []
-    ? S
-    : Ms extends [[infer Mi, infer Ma], ...infer Mrs]
-      ? Mutate<StoreMutators<S, Ma>[Mi & StoreMutatorIdentifier], Mrs>
-      : never
+export type Mutate<S, Ms> = number extends Ms["length" & keyof Ms] ? S
+  : Ms extends [] ? S
+  : Ms extends [[infer Mi, infer Ma], ...infer Mrs] ? Mutate<StoreMutators<S, Ma>[Mi & StoreMutatorIdentifier], Mrs>
+  : never;
 ```
 
 ```typescript
 // src/middleware/immer.ts:74-86 — monkey-patch パターンによるミドルウェア実装
 const immerImpl: ImmerImpl = (initializer) => (set, get, store) => {
-  type T = ReturnType<typeof initializer>
+  type T = ReturnType<typeof initializer>;
 
   store.setState = (updater, replace, ...args) => {
     const nextState = (
-      typeof updater === 'function' ? produce(updater as any) : updater
-    ) as ((s: T) => T) | T | Partial<T>
+      typeof updater === "function" ? produce(updater as any) : updater
+    ) as ((s: T) => T) | T | Partial<T>;
 
-    return set(nextState, replace as any, ...args)
-  }
+    return set(nextState, replace as any, ...args);
+  };
 
-  return initializer(store.setState, get, store)
-}
+  return initializer(store.setState, get, store);
+};
 ```
 
 ```typescript
 // src/middleware/redux.ts:28-31 — declare module による型レジストリ拡張
-declare module '../vanilla' {
+declare module "../vanilla" {
   interface StoreMutators<S, A> {
-    'zustand/redux': WithRedux<S, A>
+    "zustand/redux": WithRedux<S, A>;
   }
 }
 ```
@@ -188,18 +184,18 @@ declare module '../vanilla' {
 // src/react.ts:12-14 — React 側が要求する最小インターフェース
 type ReadonlyStoreApi<T> = Pick<
   StoreApi<T>,
-  'getState' | 'getInitialState' | 'subscribe'
->
+  "getState" | "getInitialState" | "subscribe"
+>;
 ```
 
 - **`Set<Listener>` による軽量 pub/sub**: `Map` や配列ではなく `Set` を使うことで、リスナーの追加 O(1)・削除 O(1)・重複防止を組み込み関数だけで実現。unsubscribe は `Set.delete` を返すだけのワンライナー。
 
 ```typescript
 // src/vanilla.ts:88-92
-const subscribe: StoreApi<TState>['subscribe'] = (listener) => {
-  listeners.add(listener)
-  return () => listeners.delete(listener)
-}
+const subscribe: StoreApi<TState>["subscribe"] = (listener) => {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+};
 ```
 
 - **`Object.is` によるスキップ付き setState**: 状態が変わらなければリスナーを呼ばない。`NaN === NaN` 問題も `Object.is` で正しく処理される（テスト: `tests/vanilla/basic.test.ts:99-107`）。
@@ -213,9 +209,9 @@ if (!Object.is(nextState, state)) {
 
 ```typescript
 // src/middleware/redux.ts:28-31
-declare module '../vanilla' {
+declare module "../vanilla" {
   interface StoreMutators<S, A> {
-    'zustand/redux': WithRedux<S, A>
+    "zustand/redux": WithRedux<S, A>;
   }
 }
 ```
@@ -228,20 +224,20 @@ declare module '../vanilla' {
 // Bad: ミドルウェア内で api.setState を直接呼び、自身の patch をバイパス
 const badMiddleware = (fn) => (set, get, api) => {
   api.setState = (state) => {
-    api.setState(state) // 無限再帰
-  }
-  return fn(set, get, api)
-}
+    api.setState(state); // 無限再帰
+  };
+  return fn(set, get, api);
+};
 
 // Better: 保存した元の関数を呼ぶ
 const goodMiddleware = (fn) => (set, get, api) => {
-  const originalSetState = api.setState
+  const originalSetState = api.setState;
   api.setState = (state, replace) => {
     // 追加処理
-    originalSetState(state, replace)
-  }
-  return fn(api.setState, get, api)
-}
+    originalSetState(state, replace);
+  };
+  return fn(api.setState, get, api);
+};
 ```
 
 - **useSyncExternalStore に渡す selector をインラインで書き毎 render 新規生成する**: `useStore` の `useCallback` は `selector` 参照が変わると再生成される。毎 render でインライン関数を渡すと `useSyncExternalStoreWithSelector` なしでは不要な再計算が走る。zustand v5 のデフォルト `useStore` は `useCallback` で `getSnapshot` をメモ化しているが、selector 自体が毎 render 新規だとメモ化が無効になる。
@@ -249,15 +245,15 @@ const goodMiddleware = (fn) => (set, get, api) => {
 ```typescript
 // Bad: 毎 render で新しい selector 参照
 function Component() {
-  const count = useStore(store, (s) => s.count) // 毎回新しい関数
-  return <div>{count}</div>
+  const count = useStore(store, (s) => s.count); // 毎回新しい関数
+  return <div>{count}</div>;
 }
 
 // Better: selector をコンポーネント外またはメモ化して定義
-const selectCount = (s: State) => s.count
+const selectCount = (s: State) => s.count;
 function Component() {
-  const count = useStore(store, selectCount)
-  return <div>{count}</div>
+  const count = useStore(store, selectCount);
+  return <div>{count}</div>;
 }
 ```
 
@@ -265,10 +261,10 @@ function Component() {
 
 ```typescript
 // Bad: devtools が最内側 — persist の状態変更が DevTools に送信されない
-create()(persist(devtools(immer(initializer)), { name: 'store' }))
+create()(persist(devtools(immer(initializer)), { name: "store" }));
 
 // Better: devtools を最外側に配置
-create()(devtools(persist(immer(initializer), { name: 'store' })))
+create()(devtools(persist(immer(initializer), { name: "store" })));
 ```
 
 ## 導出ルール
