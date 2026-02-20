@@ -1,0 +1,60 @@
+url: https://github.com/pmndrs/zustand
+stars: 57058
+language: TypeScript
+license: MIT
+description: "🐻 Bear necessities for state management in React"
+analyzed_at: "2026-02-20"
+local_path: /Users/akiho/github/github.com/pmndrs/zustand
+scale: small
+
+perspectives:
+  - name: project-structure
+    file: project-structure.md
+    wave: 1
+    intent: "ソースとビルド成果物の分離、サブパスエクスポート設計、CJS/ESM デュアルパッケージ戦略を分析する"
+    summary: "サブパスエクスポートごとの独立ビルド、dist publish、CJS/ESM デュアルパッケージの多層パッケージング戦略"
+  - name: architecture
+    file: architecture.md
+    wave: 1
+    intent: "vanilla/react の分離、ミドルウェア合成、useSyncExternalStore 統合のレイヤー設計を明らかにする"
+    summary: "vanilla コア→React アダプタ→ミドルウェアの3層分離と、declare module + Mutate 再帰型による型安全な合成"
+  - name: design-philosophy
+    file: design-philosophy.md
+    wave: 1
+    intent: "最小限 API・フレームワーク非依存コア・ゼロボイラープレートの設計判断の根拠を抽出する"
+    summary: "Set+Object.is+クロージャによる極限ミニマリズムと、opt-in 段階的複雑化の設計哲学"
+  - name: type-system-patterns
+    file: type-system-patterns.md
+    wave: 1
+    intent: "StoreMutators declaration merging・Mutate 再帰型・StateCreator ジェネリクスの型設計パターンを体系化する"
+    summary: "空インターフェース+declaration merging による型レジストリと、再帰型・ファントム型を駆使したプラグイン型合成"
+  - name: middleware-composition
+    file: middleware-composition.md
+    wave: 1
+    intent: "ミドルウェアの関数合成パターン・型安全な積み重ね・StateCreator の高階関数設計を分析する"
+    summary: "統一シグネチャの高階関数による api メソッドラップと、グレースフルデグラデーション付きミドルウェア合成"
+  - name: testing-practices
+    file: testing-practices.md
+    wave: 2
+    intent: "React Testing Library + Vitest でのストアテスト手法、TS/React 複数バージョン CI マトリクスを分析する"
+    summary: "テスト内ストア生成による完全分離、型テスト二刀流、TS15版×React9版×CJS/ESM の CI マトリクス戦略"
+  - name: api-design-practices
+    file: api-design-practices.md
+    wave: 2
+    intent: "create/createStore のカリー化オーバーロード、selector パターン、equality fn 設計を抽出する"
+    summary: "カリー化オーバーロードで型推論限界を迂回し、selector + equality fn の3段階で変更検知を最適化する API 設計"
+  - name: build-and-tooling
+    file: build-and-tooling.md
+    wave: 2
+    intent: "Rollup によるモジュール別ビルド、d.ts パッチ、compressed-size CI、dist パブリッシュ戦略を分析する"
+    summary: "Rollup モジュール別ビルド、postbuild d.ts パッチチェーン、compressed-size CI、dist からの publish 戦略"
+  - name: persistence-patterns
+    file: persistence-patterns.md
+    wave: 2
+    intent: "persist ミドルウェアの同期/非同期統一、バージョンマイグレーション、hydration 制御のパターンを分析する"
+    summary: "toThenable による同期/非同期透過統一、hydrationVersion カウンタのレース条件防止、SSR 対応の永続化設計"
+  - name: dev-conventions
+    file: dev-conventions.md
+    wave: 2
+    intent: "ESLint flat config、Conventional Commits、compressed-size action、minimumReleaseAge のコード品質管理を分析する"
+    summary: "ESLint flat config レイヤー設計、品質ゲート直列 CI、Actions ハッシュピン留め、minimumReleaseAge による安全策"

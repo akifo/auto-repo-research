@@ -31,7 +31,7 @@
 | 13 | [facebook/react](https://github.com/facebook/react)           | Fiber アーキテクチャ、協調スケジューリング、大規模コードベースの段階的移行 |        |
 | 14 | [TanStack/query](https://github.com/TanStack/query)           | フレームワーク非依存コア設計、キャッシュ無効化戦略、楽観的更新パターン     |        |
 | 15 | [TanStack/router](https://github.com/TanStack/router)         | 型安全ルーティング、サーチパラメータバリデーション、コード分割戦略         |        |
-| 16 | [pmndrs/zustand](https://github.com/pmndrs/zustand)           | 最小 API 設計、ミドルウェアパターン、React 外からのストア操作              |        |
+| 16 | [pmndrs/zustand](https://github.com/pmndrs/zustand)           | 最小 API 設計、ミドルウェアパターン、React 外からのストア操作              | 済     |
 | 17 | [pmndrs/jotai](https://github.com/pmndrs/jotai)               | アトミック状態管理、ボトムアップ設計、Suspense 統合                        |        |
 | 18 | [dai-shi/waku](https://github.com/dai-shi/waku)               | React Server Components の最小実装、ストリーミング SSR                     |        |
 | 19 | [radix-ui/primitives](https://github.com/radix-ui/primitives) | アクセシブルコンポーネント設計、コンポジション API、headless パターン      |        |
@@ -62,7 +62,7 @@
 
 | #  | リポジトリ                                                | 抽出できそうなプラクティス                                                         | Status |
 | -- | --------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------ |
-| 32 | [vitejs/vite](https://github.com/vitejs/vite)             | プラグインアーキテクチャ、ESM ベース開発サーバー、Rollup 統合                      |        |
+| 32 | [vitejs/vite](https://github.com/vitejs/vite)             | プラグインアーキテクチャ、ESM ベース開発サーバー、Rollup 統合                      | 済     |
 | 33 | [biomejs/biome](https://github.com/biomejs/biome)         | Rust で JS ツール構築、Linter/Formatter 統合設計、パフォーマンス重視アーキテクチャ |        |
 | 34 | [oxc-project/oxc](https://github.com/oxc-project/oxc)     | Rust 製 JS パーサー、AST 設計、アリーナアロケーション                              |        |
 | 35 | [evanw/esbuild](https://github.com/evanw/esbuild)         | Go で JS バンドラ構築、並列処理設計、ゼロ依存ポリシー                              |        |
