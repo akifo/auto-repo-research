@@ -41,7 +41,7 @@
 
 | #  | リポジトリ                                                      | 抽出できそうなプラクティス                                       | Status |
 | -- | --------------------------------------------------------------- | ---------------------------------------------------------------- | ------ |
-| 21 | [colinhacks/zod](https://github.com/colinhacks/zod)             | ビルダーパターン、型推論チェーン、エラーメッセージ設計           |        |
+| 21 | [colinhacks/zod](https://github.com/colinhacks/zod)             | ビルダーパターン、型推論チェーン、エラーメッセージ設計           | 済     |
 | 22 | [sinclairzx81/typebox](https://github.com/sinclairzx81/typebox) | JSON Schema と TypeScript 型の双方向マッピング、コンパイラ設計   |        |
 | 23 | [Effect-TS/effect](https://github.com/Effect-TS/effect)         | 関数型エフェクトシステム、依存性注入、構造的並行処理             | 済     |
 | 24 | [trpc/trpc](https://github.com/trpc/trpc)                       | エンドツーエンド型安全、プロシージャビルダー、アダプターパターン |        |

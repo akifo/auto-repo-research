@@ -1,0 +1,117 @@
+url: https://github.com/colinhacks/zod
+stars: 41887
+language: TypeScript
+license: MIT
+description: "TypeScript-first schema validation with static type inference"
+analyzed_at: "2026-02-19"
+local_path: /Users/akiho/github/github.com/colinhacks/zod
+scale: large
+
+perspectives:
+  - name: project-structure
+    file: project-structure.md
+    wave: 1
+    intent: "モノレポ構成とパッケージ分割戦略、エクスポート条件設計を明らかにする"
+    summary: "共有カーネル(core)+複数シェル(classic/mini)構成、10サブパスエクスポート、@zod/sourceカスタム条件による開発/本番切替"
+
+  - name: architecture
+    file: architecture.md
+    wave: 1
+    intent: "v3/v4/mini のレイヤー構成と依存関係、コアエンジンの設計を明らかにする"
+    summary: "トレイトベース$constructorによるクラス継承排除、core/classic/mini三層ファサード、JITコード生成とdefineLazy遅延評価"
+
+  - name: design-philosophy
+    file: design-philosophy.md
+    wave: 1
+    intent: "TypeScript ファーストの設計思想、API の設計判断の根拠を明らかにする"
+    summary: "型を値から駆動するSSoT思想、不変API+可変内部の分離、パフォーマンスのためのプラグマティックなルール逸脱"
+
+  - name: type-system-patterns
+    file: type-system-patterns.md
+    wave: 1
+    intent: "型推論チェーン、条件型、ブランド型の活用パターンを体系化する"
+    summary: "Phantom Propertyによるinput/output分離、インクリメンタル型合成、方向付きブランド型、(string & {})パターン"
+
+  - name: builder-pattern-and-fluent-api
+    file: builder-pattern-and-fluent-api.md
+    wave: 1
+    intent: "スキーマビルダーのメソッドチェーン設計と型安全な API 合成を分析する"
+    summary: "不変クローンによるfluentチェーン、self-caching getter、mergeDefs記述子レベル合成、Check分離パターン"
+
+  - name: abstraction-patterns
+    file: abstraction-patterns.md
+    wave: 1
+    intent: "コアの抽象化層（基底型、パース戦略、ジェネリクス活用）の設計原則を明らかにする"
+    summary: "トレイト合成で継承を排除しtree-shaking対応、_zod名前空間への内部状態集約、run/parse二段パイプライン"
+
+  - name: performance-techniques
+    file: performance-techniques.md
+    wave: 1
+    intent: "パフォーマンス最適化手法（パラメータ再代入、遅延評価、ゼロアロケーション）を体系化する"
+    summary: "payload in-place変更によるアロケーション最小化、JITオブジェクトパース、判別共用体O(1)ルックアップ、ベンチマーク駆動判断"
+
+  - name: error-handling-idioms
+    file: error-handling-idioms.md
+    wave: 2
+    intent: "バリデーションエラーの構造化、エラーマップ、i18n 対応の設計パターンを分析する"
+    summary: "構造化issueのフラットリスト+パス、4段優先度エラーマップチェーン、Result型デュアルAPI、4種の変換パイプライン"
+
+  - name: testing-practices
+    file: testing-practices.md
+    wave: 2
+    intent: "Vitest での型テスト統合、スナップショット戦略、テスト構成を体系化する"
+    summary: "ランタイムと型テストの同一ファイル統合、インラインスナップショット限定、console禁止setupFile、TS複数バージョンCI"
+
+  - name: api-design-practices
+    file: api-design-practices.md
+    wave: 2
+    intent: "パブリック API の一貫性、命名規則、オーバーロード設計を分析する"
+    summary: "string|ParamsObjectパラメータ正規化、parse/safeParseデュアルAPI、Class注入ファクトリ、@deprecated移行パターン"
+
+  - name: extensibility-mechanisms
+    file: extensibility-mechanisms.md
+    wave: 2
+    intent: "カスタムバリデーション、transform、refine 等の拡張ポイント設計を分析する"
+    summary: "refine→superRefine→check→$constructorの段階的開示、Checkファーストクラスオブジェクト化、codecによる双方向パース"
+
+  - name: dependency-management
+    file: dependency-management.md
+    wave: 2
+    intent: "循環依存回避（defineLazy）、ゼロ外部依存、モジュール境界の管理手法を分析する"
+    summary: "defineLazy/cached/self-caching getterの3層遅延評価、import type徹底、madge --circular CI防御、barrel回避"
+
+  - name: build-and-tooling
+    file: build-and-tooling.md
+    wave: 2
+    intent: "zshy ビルドシステム、CJS/ESM デュアルパッケージ、条件付きエクスポートの設計を分析する"
+    summary: "zshy(tsc API)によるデュアルビルド、attw型解決検証、stub package.json自動生成、多層パッケージ品質ゲート"
+
+  - name: versioning-strategy
+    file: versioning-strategy.md
+    wave: 2
+    intent: "v3→v4 メジャーバージョン移行戦略、後方互換性の維持手法を分析する"
+    summary: "サブパスエクスポートによるv3/v4共存、compat.tsの@deprecated移行レイヤー、三重バージョン整合性チェック"
+
+  - name: tree-shaking-optimization
+    file: tree-shaking-optimization.md
+    wave: 2
+    intent: "sideEffects:false、バンドルサイズ最適化、mini バリアント設計を分析する"
+    summary: "sideEffects:false+@__PURE__/@__NO_SIDE_EFFECTS__の体系的適用、classic/miniバリアント分離、treeshakeテストパッケージ"
+
+  - name: dev-conventions
+    file: dev-conventions.md
+    wave: 2
+    intent: "コーディング規約、Biome 設定の意図、Git フック戦略を体系化する"
+    summary: "Biome off設定に理由コメント義務化、pre-commit高速チェック/pre-pushテストの2段フック、fail-on-console機構"
+
+  - name: ai-settings
+    file: ai-settings.md
+    wave: 2
+    intent: "CLAUDE.md/AGENTS.md の設計、Claude Code CI 統合、llms.txt の活用を分析する"
+    summary: "CLAUDE.md→AGENTS.mdシンボリックリンク統一、llms.txt/llms-full.txt段階的コンテキスト、CI最小権限レビュー"
+
+  - name: internationalization-patterns
+    file: internationalization-patterns.md
+    wave: 2
+    intent: "ロケールシステム設計、エラーメッセージの i18n アーキテクチャを分析する"
+    summary: "ファクトリ関数ロケール遅延生成、4段優先度メッセージ解決チェーン、言語固有辞書構造の柔軟設計、個別サブパスエクスポート"
