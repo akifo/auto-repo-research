@@ -193,12 +193,14 @@ exclude: ["**/*.int.test.ts", ...configDefaults.exclude],
 - **concurrency + cancel-in-progress による CI 効率化**: 全ワークフローに `concurrency` グループと `cancel-in-progress: true` を設定し、同一ブランチへの連続 push で古い実行を自動キャンセルする。
 
 ::: v-pre
+
 ```yaml
 # .github/workflows/ci.yml:22-24
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 ```
+
 :::
 
 - **lint:dpdm による循環依存検出**: ESLint とは別に `dpdm` (dependency path detector) を lint パイプラインに組み込み、循環依存をビルド前に検出する。

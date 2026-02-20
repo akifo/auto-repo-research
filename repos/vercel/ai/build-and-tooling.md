@@ -175,11 +175,13 @@ const LIMIT = 560 * 1024;
 ```
 
 ::: v-pre
+
 ```yaml
 # .github/workflows/ci.yml:231-234
 # ロード時間ベンチマーク: 別プロセスで50回計測し平均を閾値と比較
 pnpm tsx src/benchmark/load-time.ts "${{ matrix.module }}" | tee load-time-output.txt
 ```
+
 :::
 
 ```bash
@@ -229,6 +231,7 @@ export const VERSION: string = typeof __PACKAGE_VERSION__ !== "undefined"
 - **CI マトリクスの集約ジョブパターン**: Node.js バージョンのマトリクスビルド結果を別の `test` ジョブで集約し、ブランチ保護ルールの `required check` として設定する。マトリクスのバリエーション（Node 20, 22）が変わってもブランチ保護の設定変更が不要になる。
 
 ::: v-pre
+
 ```yaml
 # .github/workflows/ci.yml:179-189
 test:
@@ -240,6 +243,7 @@ test:
       if: ${{ !(contains(needs.*.result, 'failure')) }}
       run: exit 0
 ```
+
 :::
 
 ## Anti-Patterns / 注意点

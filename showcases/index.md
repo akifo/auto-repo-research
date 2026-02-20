@@ -31,35 +31,39 @@
 
 ## Practice
 
-| Showcase                                                                | 概要                                                                             |
-| ----------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| [type-safe-pipeline](./practice_type-safe-pipeline)                     | any フィルター付き型合成でチェーン全体の型崩壊を防ぐ防御的型設計                 |
-| [zero-dep-security](./practice_zero-dep-security)                       | Web Crypto API のみによるゼロ依存・マルチランタイム対応セキュリティ              |
-| [test-suite-factory](./practice_test-suite-factory)                     | createTestSuite() + Capability フラグで20超実装に統一契約テストを適用            |
-| [defensive-validation](./practice_defensive-validation)                 | LLM出力の5段階フォールバック検証と制約ダウングレードによる防御的バリデーション   |
-| [declarative-config-layering](./practice_declarative-config-layering)   | defu/ディープマージの引数順序で優先順位を表現する宣言的設定マージ                |
-| [define-helper-pattern](./practice_define-helper-pattern)               | defineXxxConfig ヘルパーによるゼロコスト型補完パターン（横断的）                 |
-| [tree-shaking-library](./practice_tree-shaking-library)                 | ファクトリ関数+@\_\_NO_SIDE_EFFECTS\_\_+sideEffects:falseによる完全tree-shaking  |
-| [dual-layer-testing](./practice_dual-layer-testing)                     | ランタイムテスト+型テストの1:1対応とドメイン固有ヘルパーによる統一テスト戦略     |
-| [branded-domain-primitives](./practice_branded-domain-primitives)       | Valibot brand()+ファクトリ関数+InferOutputでドメインプリミティブを型安全に構築   |
-| [result-error-pipeline](./practice_result-error-pipeline)               | byethrow Result.try/pipe/unwrapの3イディオムで関数型エラーハンドリングを統一     |
-| [in-source-testing](./practice_in-source-testing)                       | import.meta.vitest+await using+createFixtureによるin-source testingパターン      |
-| [supply-chain-defense](./practice_supply-chain-defense)                 | pnpmの4層設定によるサプライチェーン多層防御（strictDepBuilds等）                 |
-| [structural-sharing](./practice_structural-sharing)                     | 構造的共有+Proxy追跡+バッチ通知の三重レンダリング最適化                          |
-| [monorepo-quality-gates](./practice_monorepo-quality-gates)             | publint/attw/size-limit/sherif/knipの5ツールによる多層CI品質検証                 |
-| [devdeps-bundling](./practice_devdeps-bundling)                         | devDepsバンドルでランタイムdependenciesを6個に極小化する配布軽量化戦略           |
-| [api-lifecycle](./practice_api-lifecycle)                               | experimental/future/legacy三層+getter trap非推奨警告によるAPI進化管理            |
-| [tagged-error-hierarchy](./practice_tagged-error-hierarchy)             | _tag+reason二層分類とcatchTagによる型安全エラーディスパッチ                      |
-| [test-di-strategies](./practice_test-di-strategies)                     | 境界モック→環境変数スタブ→引数注入→コンテキスト注入→Layer差し替えの5段階テストDI |
-| [context-propagation](./practice_context-propagation)                   | 明示的引数渡し・暗黙的コンテキスト・型パラメータ静的追跡の3分類コンテキスト伝播  |
-| [test-db-isolation](./practice_test-db-isolation)                       | SQLiteファイルコピー+VITEST_POOL_IDによる並列テストDB分離パターン                |
-| [msw-multi-env-mock](./practice_msw-multi-env-mock)                     | MSWハンドラの開発・テスト・E2E三環境共用と環境変数によるMock/Real切り替え        |
-| [test-guardrails](./practice_test-guardrails)                           | console.error throw化+カスタムマッチャーによるテスト品質ガードレール             |
-| [error-normalization-pipeline](./practice_error-normalization-pipeline) | 4リポが独立実装したcatch→構造チェック→wrap→内部型変換のエラー正規化パイプライン  |
-| [exhaustive-switch-guard](./practice_exhaustive-switch-guard)           | satisfies never/unreachable(never)によるswitch文の網羅性コンパイル時検査         |
-| [subpath-exports-boundary](./practice_subpath-exports-boundary)         | package.json exportsによるAPI境界制御と内部モジュール隠蔽                        |
-| [atomic-file-write](./practice_atomic-file-write)                       | 一時ファイル+fsync+renameによるアトミックファイル書き込みでデータ破損防止        |
-| [explicit-resource-management](./practice_explicit-resource-management) | using/await using+Symbol.disposeによるスコープ束縛型リソース管理                 |
+| Showcase                                                                | 概要                                                                                 |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| [type-safe-pipeline](./practice_type-safe-pipeline)                     | any フィルター付き型合成でチェーン全体の型崩壊を防ぐ防御的型設計                     |
+| [zero-dep-security](./practice_zero-dep-security)                       | Web Crypto API のみによるゼロ依存・マルチランタイム対応セキュリティ                  |
+| [test-suite-factory](./practice_test-suite-factory)                     | createTestSuite() + Capability フラグで20超実装に統一契約テストを適用                |
+| [defensive-validation](./practice_defensive-validation)                 | LLM出力の5段階フォールバック検証と制約ダウングレードによる防御的バリデーション       |
+| [declarative-config-layering](./practice_declarative-config-layering)   | defu/ディープマージの引数順序で優先順位を表現する宣言的設定マージ                    |
+| [define-helper-pattern](./practice_define-helper-pattern)               | defineXxxConfig ヘルパーによるゼロコスト型補完パターン（横断的）                     |
+| [tree-shaking-library](./practice_tree-shaking-library)                 | ファクトリ関数+@\_\_NO_SIDE_EFFECTS\_\_+sideEffects:falseによる完全tree-shaking      |
+| [dual-layer-testing](./practice_dual-layer-testing)                     | ランタイムテスト+型テストの1:1対応とドメイン固有ヘルパーによる統一テスト戦略         |
+| [branded-domain-primitives](./practice_branded-domain-primitives)       | Valibot brand()+ファクトリ関数+InferOutputでドメインプリミティブを型安全に構築       |
+| [result-error-pipeline](./practice_result-error-pipeline)               | byethrow Result.try/pipe/unwrapの3イディオムで関数型エラーハンドリングを統一         |
+| [in-source-testing](./practice_in-source-testing)                       | import.meta.vitest+await using+createFixtureによるin-source testingパターン          |
+| [supply-chain-defense](./practice_supply-chain-defense)                 | pnpmの4層設定によるサプライチェーン多層防御（strictDepBuilds等）                     |
+| [structural-sharing](./practice_structural-sharing)                     | 構造的共有+Proxy追跡+バッチ通知の三重レンダリング最適化                              |
+| [monorepo-quality-gates](./practice_monorepo-quality-gates)             | publint/attw/size-limit/sherif/knipの5ツールによる多層CI品質検証                     |
+| [devdeps-bundling](./practice_devdeps-bundling)                         | devDepsバンドルでランタイムdependenciesを6個に極小化する配布軽量化戦略               |
+| [api-lifecycle](./practice_api-lifecycle)                               | experimental/future/legacy三層+getter trap非推奨警告によるAPI進化管理                |
+| [tagged-error-hierarchy](./practice_tagged-error-hierarchy)             | _tag+reason二層分類とcatchTagによる型安全エラーディスパッチ                          |
+| [test-di-strategies](./practice_test-di-strategies)                     | 境界モック→環境変数スタブ→引数注入→コンテキスト注入→Layer差し替えの5段階テストDI     |
+| [context-propagation](./practice_context-propagation)                   | 明示的引数渡し・暗黙的コンテキスト・型パラメータ静的追跡の3分類コンテキスト伝播      |
+| [test-db-isolation](./practice_test-db-isolation)                       | SQLiteファイルコピー+VITEST_POOL_IDによる並列テストDB分離パターン                    |
+| [msw-multi-env-mock](./practice_msw-multi-env-mock)                     | MSWハンドラの開発・テスト・E2E三環境共用と環境変数によるMock/Real切り替え            |
+| [test-guardrails](./practice_test-guardrails)                           | console.error throw化+カスタムマッチャーによるテスト品質ガードレール                 |
+| [error-normalization-pipeline](./practice_error-normalization-pipeline) | 4リポが独立実装したcatch→構造チェック→wrap→内部型変換のエラー正規化パイプライン      |
+| [exhaustive-switch-guard](./practice_exhaustive-switch-guard)           | satisfies never/unreachable(never)によるswitch文の網羅性コンパイル時検査             |
+| [subpath-exports-boundary](./practice_subpath-exports-boundary)         | package.json exportsによるAPI境界制御と内部モジュール隠蔽                            |
+| [atomic-file-write](./practice_atomic-file-write)                       | 一時ファイル+fsync+renameによるアトミックファイル書き込みでデータ破損防止            |
+| [explicit-resource-management](./practice_explicit-resource-management) | using/await using+Symbol.disposeによるスコープ束縛型リソース管理                     |
+| [llm-mock-design](./practice_llm-mock-design)                           | 3モード入力MockLanguageModel+忠実度別FakeChatModel+呼び出し記録によるLLMテスト設計   |
+| [ai-fixture-management](./practice_ai-fixture-management)               | 実APIレスポンスキャプチャ+SSEチャンクフィクスチャ+型安全テストサーバーによるAIテスト |
+| [provider-conformance-testing](./practice_provider-conformance-testing) | ファクトリ関数vsクラス継承の2アプローチによるAIプロバイダー横断適合テスト            |
+| [llm-test-optimization](./practice_llm-test-optimization)               | AIエージェント向けテスト出力最適化+バージョン横断テスト+統合テストキャッシュ戦略     |
 
 ## Claude
 

@@ -28,6 +28,7 @@ CI ワークフローは 7 つの独立ジョブを並列実行する: `build-ex
 ### ファサードジョブパターン
 
 ::: v-pre
+
 ```yaml
 # ci.yml:177-189
 test:
@@ -42,6 +43,7 @@ test:
       if: ${{ contains(needs.*.result, 'failure') }}
       run: exit 1
 ```
+
 :::
 
 マトリクスビルドの各バリアントは `Test (20)`, `Test (22)` のように動的な名前を持つため、branch protection の required check として直接指定すると、Node バージョン変更のたびに設定変更が必要になる。ファサードジョブ `test` は常に同じ名前で、マトリクス全体の成否を集約する。<code v-pre>if: ${{ !cancelled() }}</code> により、一部のマトリクスがキャンセルされても必ず実行される。
@@ -224,6 +226,7 @@ test("happy path", async () => {
 - **GitHub App トークンの複雑な取得パターンの重複**: `release.yml`, `backport.yml`, `triage.yml`, `update-model-settings.yml`, `prettier-on-automerge.yml` の 5 ワークフローで App トークン取得の 3 ステップ（create token -> get user ID -> configure git）が重複している。Composite Action への切り出しが検討されるべき:
 
 ::: v-pre
+
 ```yaml
 # Bad: 5 つのワークフローで同じ 3 ステップが重複
 - name: Create access token for GitHub App
@@ -247,6 +250,7 @@ test("happy path", async () => {
     app-id: ${{ vars.VERCEL_AI_SDK_GITHUB_APP_CLIENT_ID }}
     private-key: ${{ secrets.VERCEL_AI_SDK_GITHUB_APP_PRIVATE_KEY_PKCS8 }}
 ```
+
 :::
 
 - **pnpm バージョンのハードコード分散**: `pnpm/action-setup` の `version: 10.11.0` が CI ワークフロー内に散在している。`package.json` の `packageManager` フィールドと二重管理になっている。`pnpm/action-setup@v4` は `packageManager` フィールドを自動検出するため、ワークフロー側の version 指定は不要にできる:
