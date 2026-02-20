@@ -1,0 +1,100 @@
+url: https://github.com/langchain-ai/langchainjs
+stars: 17010
+language: TypeScript
+license: MIT
+description: "Build context-aware reasoning applications"
+analyzed_at: "2026-02-20"
+local_path: /Users/akiho/github/github.com/langchain-ai/langchainjs
+scale: large
+
+perspectives:
+  - name: project-structure
+    file: project-structure.md
+    wave: 1
+    intent: "モノレポのパッケージ分割戦略と依存関係管理の仕組みを明らかにする"
+    summary: "pnpm + Turborepo による 40+ パッケージ管理、3 層アーキテクチャと共有ビルドインフラで品質を統一"
+  - name: architecture
+    file: architecture.md
+    wave: 1
+    intent: "Runnable を基盤としたレイヤー構成と抽象化階層を明らかにする"
+    summary: "Runnable 基底クラスの invoke/stream/batch 統一プロトコルと pipe() による宣言的パイプライン合成"
+  - name: design-philosophy
+    file: design-philosophy.md
+    wave: 1
+    intent: "フレームワークの設計思想と技術選定の根拠を明らかにする"
+    summary: "統一インターフェース原則・ランタイム中立・Symbol ブランディングによる instanceof 排除の設計思想"
+  - name: abstraction-patterns
+    file: abstraction-patterns.md
+    wave: 1
+    intent: "基底クラス・インターフェースの抽象化パターンと拡張メカニズムを明らかにする"
+    summary: "Template Method + アンダースコア接頭辞による拡張ポイント分離と合成ベースの機能追加パターン"
+  - name: type-system-patterns
+    file: type-system-patterns.md
+    wave: 1
+    intent: "TypeScript の型システムを活用したジェネリクス・条件型・型推論パターンを明らかにする"
+    summary: "Zod v3/v4 Interop 型、declare + this['T'] パターン、12+ オーバーロードによる精密な型推論"
+  - name: code-organization
+    file: code-organization.md
+    wave: 1
+    intent: "モジュール分割・エクスポート戦略・名前付き規約の体系を明らかにする"
+    summary: "空ルートエクスポート + 50+ サブパス分割、types.ts 分離と dpdm による循環依存検出"
+  - name: streaming-patterns
+    file: streaming-patterns.md
+    wave: 1
+    intent: "ストリーミング処理の実装パターンと AsyncGenerator 活用を明らかにする"
+    summary: "AsyncGenerator 3 層構造と concat チャンクプロトコルによる統一ストリーミングパイプライン"
+  - name: error-handling-idioms
+    file: error-handling-idioms.md
+    wave: 2
+    intent: "エラー分類・伝播・リカバリーの体系的なパターンを明らかにする"
+    summary: "Symbol ブランディング階層エラー型、プロバイダ境界での正規化、二重チャネル復旧設計"
+  - name: testing-practices
+    file: testing-practices.md
+    wave: 2
+    intent: "単体・統合・型テスト・標準テストスイートの戦略を明らかにする"
+    summary: "ファイル拡張子ベースの 4 層テスト分類と Standard Tests によるプロバイダー横断品質保証"
+  - name: api-design-practices
+    file: api-design-practices.md
+    wave: 2
+    intent: "公開 API の設計原則・下位互換性・バージョニング戦略を明らかにする"
+    summary: "public/_/internal の三層 API 分離、Interop 型による依存メジャー移行、changesets 協調リリース"
+  - name: extensibility-mechanisms
+    file: extensibility-mechanisms.md
+    wave: 2
+    intent: "プロバイダーパターン・プラグイン拡張・インテグレーション追加の仕組みを明らかにする"
+    summary: "Thin Core / Fat Periphery 原則、二段階抽象と Standard Tests による品質均一化"
+  - name: build-and-tooling
+    file: build-and-tooling.md
+    wave: 2
+    intent: "ビルドパイプライン・tsdown/Turborepo の構成・マルチ環境対応を明らかにする"
+    summary: "getBuildConfig() ファクトリ + ATTW/publint 自動検証、Docker 9 環境テストによる互換性保証"
+  - name: dependency-management
+    file: dependency-management.md
+    wave: 2
+    intent: "pnpm workspace・peerDependencies・バージョン管理戦略を明らかにする"
+    summary: "workspace:^/workspace:* 使い分け、pnpm overrides シングルトン強制、fixed グループ同期リリース"
+  - name: callback-and-observability
+    file: callback-and-observability.md
+    wave: 2
+    intent: "コールバックマネージャー・トレーシング・実行監視の仕組みを明らかにする"
+    summary: "バックグラウンド/フォアグラウンド切替、Start/End/Error 三つ組ハンドラ、階層的 Run 伝播"
+  - name: serialization-patterns
+    file: serialization-patterns.md
+    wave: 2
+    intent: "クラスのシリアライズ/デシリアライズ・永続化パターンを明らかにする"
+    summary: "宣言的ゲッター 5 種によるシリアライズプロトコル、シークレット分離とインポートマップ許可リスト"
+  - name: concurrency-patterns
+    file: concurrency-patterns.md
+    wave: 2
+    intent: "バッチ処理・並列実行・レートリミットの制御パターンを明らかにする"
+    summary: "AsyncCaller によるキュー + リトライ一元管理、チャンク分割バッチと AbortSignal 協調キャンセル"
+  - name: dev-conventions
+    file: dev-conventions.md
+    wave: 2
+    intent: "コーディング規約・ESLint ルール・CI ワークフローの体系を明らかにする"
+    summary: "共有 ESLint/tsconfig/build パッケージによる 40+ パッケージ統一と動的マトリクス CI"
+  - name: ai-settings
+    file: ai-settings.md
+    wave: 2
+    intent: "AI 設定ファイル（AGENTS.md）の構造と活用パターンを明らかにする"
+    summary: "450 行の AGENTS.md による AI エージェント専用ガイド、禁止ルール + 代替手段のペア提示"
