@@ -29,7 +29,7 @@
 | #  | リポジトリ                                                    | 抽出できそうなプラクティス                                                 | Status |
 | -- | ------------------------------------------------------------- | -------------------------------------------------------------------------- | ------ |
 | 13 | [facebook/react](https://github.com/facebook/react)           | Fiber アーキテクチャ、協調スケジューリング、大規模コードベースの段階的移行 |        |
-| 14 | [TanStack/query](https://github.com/TanStack/query)           | フレームワーク非依存コア設計、キャッシュ無効化戦略、楽観的更新パターン     |        |
+| 14 | [TanStack/query](https://github.com/TanStack/query)           | フレームワーク非依存コア設計、キャッシュ無効化戦略、楽観的更新パターン     | 済     |
 | 15 | [TanStack/router](https://github.com/TanStack/router)         | 型安全ルーティング、サーチパラメータバリデーション、コード分割戦略         |        |
 | 16 | [pmndrs/zustand](https://github.com/pmndrs/zustand)           | 最小 API 設計、ミドルウェアパターン、React 外からのストア操作              | 済     |
 | 17 | [pmndrs/jotai](https://github.com/pmndrs/jotai)               | アトミック状態管理、ボトムアップ設計、Suspense 統合                        |        |
@@ -107,8 +107,8 @@
 
 | #  | リポジトリ                                                                                    | 抽出できそうなプラクティス                                           | Status |
 | -- | --------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ------ |
-| 57 | [vercel/ai](https://github.com/vercel/ai)                                                     | ストリーミング AI レスポンス設計、プロバイダ抽象化、React フック統合 |        |
-| 58 | [langchain-ai/langchainjs](https://github.com/langchain-ai/langchainjs)                       | LLM チェーン設計、ドキュメントローダー抽象化、メモリ管理パターン     |        |
+| 57 | [vercel/ai](https://github.com/vercel/ai)                                                     | ストリーミング AI レスポンス設計、プロバイダ抽象化、React フック統合 | 済     |
+| 58 | [langchain-ai/langchainjs](https://github.com/langchain-ai/langchainjs)                       | LLM チェーン設計、ドキュメントローダー抽象化、メモリ管理パターン     | 済     |
 | 59 | [huggingface/transformers.js](https://github.com/huggingface/transformers.js)                 | ONNX ランタイム統合、モデルキャッシュ設計、Web ML パイプライン       |        |
 | 60 | [mlc-ai/web-llm](https://github.com/mlc-ai/web-llm)                                           | WebGPU 推論設計、モデルコンパイル、ブラウザ内 LLM アーキテクチャ     |        |
 | 61 | [anthropics/anthropic-sdk-typescript](https://github.com/anthropics/anthropic-sdk-typescript) | SDK 設計パターン、ストリーミング API、自動リトライ設計               |        |

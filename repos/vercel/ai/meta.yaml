@@ -1,0 +1,100 @@
+url: https://github.com/vercel/ai
+stars: 21895
+language: TypeScript
+license: Apache-2.0
+description: "The AI Toolkit for TypeScript. From the creators of Next.js, the AI SDK is a free open-source library for building AI-powered applications and agents."
+analyzed_at: "2026-02-20"
+local_path: /Users/akiho/github/github.com/vercel/ai
+scale: large
+
+perspectives:
+  - name: project-structure
+    file: project-structure.md
+    wave: 1
+    intent: "53パッケージモノレポの分割戦略・依存グラフ・共有設定の仕組みを分析する"
+    summary: "4層依存グラフ・OpenAI Compatible中間抽象層・共有設定パッケージ・サブパスexportsによるAPI境界制御"
+  - name: architecture
+    file: architecture.md
+    wave: 1
+    intent: "4層プロバイダーアーキテクチャ（Spec→Utils→Provider→Core）の設計とレイヤー間の結合を分析する"
+    summary: "Spec/Utils/Provider/Coreの一方向依存・Proxyベースv2→v3アダプタ・warnings配列によるグレースフルデグラデーション"
+  - name: design-philosophy
+    file: design-philosophy.md
+    wave: 1
+    intent: "統一インターフェース設計・プロバイダー非依存コアの哲学・技術選定の根拠を明らかにする"
+    summary: "最小表面積で最大拡張性・Symbol.forベースのエラー判定・providerOptionsによるOpen-Closed拡張"
+  - name: type-system-patterns
+    file: type-system-patterns.md
+    wave: 1
+    intent: "LanguageModelV3型設計・ジェネリクス活用・マルチプロバイダー型安全性の手法を分析する"
+    summary: "判別共用体によるストリーム型安全・テンプレートリテラル型レジストリ・FlexibleSchemaで多スキーマ統一"
+  - name: abstraction-patterns
+    file: abstraction-patterns.md
+    wave: 1
+    intent: "プロバイダー抽象化レイヤー・共通ユーティリティ・インターフェース契約の設計を分析する"
+    summary: "4層関心分離・ファクトリ関数の標準化・ミドルウェアによる横断的関心事合成・doプレフィックス境界"
+  - name: streaming-and-async-patterns
+    file: streaming-and-async-patterns.md
+    wave: 1
+    intent: "ストリーミングレスポンス設計・AsyncIterable・非同期データフローの手法を分析する"
+    summary: "AsyncIterableStreamデュアルIF・StitchableStreamマルチステップ結合・DelayedPromise遅延解決"
+  - name: error-handling-idioms
+    file: error-handling-idioms.md
+    wave: 2
+    intent: "Symbol-based marker pattern・エラー階層・instanceof代替の手法を分析する"
+    summary: "Symbol.forマーカーで35+エラークラス統一・safe/unsafeペアAPI・冪等ラップ・isRetryableリトライ制御"
+  - name: testing-practices
+    file: testing-practices.md
+    wave: 2
+    intent: "Edge/Nodeテスト分離・型テスト・フィクスチャ管理・マルチプロバイダーテスト戦略を分析する"
+    summary: "Edge/Nodeデュアルランタイムテスト・test-d.ts型テスト・MSWベーステストサーバーパッケージ"
+  - name: api-design-practices
+    file: api-design-practices.md
+    wave: 2
+    intent: "generateText/streamText等の高レベルAPI設計・オプション設計・後方互換性戦略を分析する"
+    summary: "experimental_段階的プロモーション・intersection型オプション合成・never型排他パラメータ"
+  - name: performance-techniques
+    file: performance-techniques.md
+    wave: 2
+    intent: "ストリーム最適化・メモリ効率・バンドルサイズ管理・Edge Runtime対応を分析する"
+    summary: "Web標準ストリームファースト・DelayedPromise遅延生成・バンドルサイズCIゲート・OOM防止サイズ制限"
+  - name: extensibility-mechanisms
+    file: extensibility-mechanisms.md
+    wave: 2
+    intent: "プロバイダー登録・ミドルウェア設計・DevTools統合・MCP統合の拡張性を分析する"
+    summary: "プロバイダーレジストリ・透過的ミドルウェアパイプライン・MCP統合・experimental_安定化パイプライン"
+  - name: build-and-tooling
+    file: build-and-tooling.md
+    wave: 2
+    intent: "Turborepo活用・マルチパッケージビルド・publint品質ゲートの仕組みを分析する"
+    summary: "tsup Dual CJS/ESM・共有tsconfig3プリセット・CI バンドルサイズ+ロード時間自動検証"
+  - name: dependency-management
+    file: dependency-management.md
+    wave: 2
+    intent: "pnpm workspaces 53パッケージ管理・peerDeps戦略・バージョン整合性を分析する"
+    summary: "workspace:*統一管理・Zod3/4 peerDepsデュアルサポート・examples pinned版消費者シミュレーション"
+  - name: dev-conventions
+    file: dev-conventions.md
+    wave: 2
+    intent: "Prettier/ESLint設定・lint-staged・changeset運用・コーディング規約を分析する"
+    summary: "Prettier+ESLint責務分離・patch-onlyバージョニング・ARTISANAL_MODEバイパス・多層品質ゲート"
+  - name: ci-cd
+    file: ci-cd.md
+    wave: 2
+    intent: "GitHub Actionsワークフロー・リリースプロセス・品質ゲートの設計を分析する"
+    summary: "ファサードジョブパターン・Changesets自動リリースチェーン・パフォーマンス閾値CI組み込み"
+  - name: ai-settings
+    file: ai-settings.md
+    wave: 2
+    intent: "CLAUDE.md/AGENTS.md・.claude/skills/・.cursor/skills/のAIアシスタント設定パターンを分析する"
+    summary: "AGENTS.md→CLAUDE.mdシンボリックリンク・内部知識不信任パターン・段階的コンテキスト注入"
+  - name: adapter-implementation-patterns
+    file: adapter-implementation-patterns.md
+    wave: 2
+    intent: "具体プロバイダー実装の共通パターン・ボイラープレート削減・新プロバイダー追加の手法を分析する"
+    summary: "三層アダプター構造(Type A/B/C)・.nullish()防御的スキーマ・(string&{})モデルID型"
+  - name: schema-validation-patterns
+    file: schema-validation-patterns.md
+    wave: 2
+    intent: "Zod 3/4デュアルサポート・JSONスキーマ変換・安全なJSON解析パターンを分析する"
+    summary: "FlexibleSchema多ライブラリ統一・secureJsonParseプロトタイプ汚染防止・多段階バリデーションパイプライン"
