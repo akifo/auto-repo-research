@@ -28,7 +28,7 @@ Zod のすべてのスキーマ型は `$constructor` 関数で生成される。
 export function $constructor<T extends ZodTrait, D = T["_zod"]["def"]>(
   name: string,
   initializer: (inst: T, def: D) => void,
-  params?: { Parent?: typeof Class }
+  params?: { Parent?: typeof Class; },
 ): $constructor<T, D> {
   function init(inst: T, def: D) {
     if (!inst._zod) {
@@ -52,7 +52,7 @@ export function $constructor<T extends ZodTrait, D = T["_zod"]["def"]>(
 // $ZodStringFormat は $ZodCheckStringFormat と $ZodString の両方を合成
 export const $ZodStringFormat = core.$constructor("$ZodStringFormat", (inst, def) => {
   checks.$ZodCheckStringFormat.init(inst, def); // チェック機能を注入
-  $ZodString.init(inst, def);                    // 文字列パース機能を注入
+  $ZodString.init(inst, def); // 文字列パース機能を注入
 });
 ```
 
@@ -62,7 +62,7 @@ classic レイヤーではさらにメソッドを追加する:
 // packages/zod/src/v4/classic/schemas.ts:289-318
 export const _ZodString = core.$constructor("_ZodString", (inst, def) => {
   core.$ZodString.init(inst, def); // core のパースロジック
-  ZodType.init(inst, def);         // classic の共通メソッド群
+  ZodType.init(inst, def); // classic の共通メソッド群
   // ユーザー向け便利メソッドの追加
   inst.regex = (...args) => inst.check(checks.regex(...args));
   inst.min = (...args) => inst.check(checks.minLength(...args));
@@ -162,7 +162,7 @@ core の API ファクトリ関数は第一引数にクラス（`$constructor`�
 // packages/zod/src/v4/core/api.ts:63-71
 export function _string<T extends schemas.$ZodString>(
   Class: util.SchemaClass<T>,
-  params?: string | $ZodStringParams
+  params?: string | $ZodStringParams,
 ): T {
   return new Class({ type: "string", ...util.normalizeParams(params) });
 }

@@ -74,7 +74,7 @@ ZodMiniType.init(inst, def);  // mini の API バインディング
 export /*@__NO_SIDE_EFFECTS__*/ function $constructor<T extends ZodTrait, D = T["_zod"]["def"]>(
   name: string,
   initializer: (inst: T, def: D) => void,
-  params?: { Parent?: typeof Class }
+  params?: { Parent?: typeof Class; },
 ): $constructor<T, D> {
   function init(inst: T, def: D) {
     if (!inst._zod) {
@@ -151,8 +151,7 @@ interface GlobalThisWithRegistry {
   __zod_globalRegistry?: $ZodRegistry<GlobalMeta>;
 }
 (globalThis as GlobalThisWithRegistry).__zod_globalRegistry ??= registry<GlobalMeta>();
-export const globalRegistry: $ZodRegistry<GlobalMeta> =
-  (globalThis as GlobalThisWithRegistry).__zod_globalRegistry!;
+export const globalRegistry: $ZodRegistry<GlobalMeta> = (globalThis as GlobalThisWithRegistry).__zod_globalRegistry!;
 ```
 
 ## パターンカタログ
@@ -236,7 +235,7 @@ export function $constructor(name, initializer, params?) {
 ```typescript
 // Bad: 直接参照で循環依存に陥る
 import { OtherSchema } from "./other.js"; // 循環時に undefined
-const result = OtherSchema._zod.pattern;   // runtime error
+const result = OtherSchema._zod.pattern; // runtime error
 
 // Better: defineLazy で遅延評価
 util.defineLazy(inst._zod, "pattern", () => def.innerType._zod.pattern);

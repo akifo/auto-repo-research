@@ -46,7 +46,7 @@ export type $ZodIssue =
 ```ts
 // packages/zod/src/v4/core/util.ts:179-184
 export type SafeParseResult<T> = SafeParseSuccess<T> | SafeParseError<T>;
-export type SafeParseSuccess<T> = { success: true; data: T; error?: never };
+export type SafeParseSuccess<T> = { success: true; data: T; error?: never; };
 export type SafeParseError<T> = {
   success: false;
   data?: never;
@@ -65,16 +65,15 @@ export type SafeParseError<T> = {
 export function finalizeIssue(
   iss: errors.$ZodRawIssue,
   ctx: schemas.ParseContextInternal | undefined,
-  config: $ZodConfig
+  config: $ZodConfig,
 ): errors.$ZodIssue {
   const full = { ...iss, path: iss.path ?? [] } as errors.$ZodIssue;
   if (!iss.message) {
-    const message =
-      unwrapMessage(iss.inst?._zod.def?.error?.(iss as never)) ??  // 1. スキーマ個別
-      unwrapMessage(ctx?.error?.(iss as never)) ??                  // 2. パースコンテキスト
-      unwrapMessage(config.customError?.(iss)) ??                   // 3. グローバルカスタム
-      unwrapMessage(config.localeError?.(iss)) ??                   // 4. ロケール
-      "Invalid input";                                              // 5. フォールバック
+    const message = unwrapMessage(iss.inst?._zod.def?.error?.(iss as never)) // 1. スキーマ個別
+      ?? unwrapMessage(ctx?.error?.(iss as never)) // 2. パースコンテキスト
+      ?? unwrapMessage(config.customError?.(iss)) // 3. グローバルカスタム
+      ?? unwrapMessage(config.localeError?.(iss)) // 4. ロケール
+      ?? "Invalid input"; // 5. フォールバック
     (full as any).message = message;
   }
   // ...
@@ -97,7 +96,7 @@ return (issue) => {
       const received = TypeDictionary[receivedType] ?? receivedType;
       return `無効な入力: ${expected}が期待されましたが、${received}が入力されました`;
     }
-    // ...
+      // ...
   }
 };
 ```
@@ -130,12 +129,12 @@ export function normalizeParams<T>(_params: T): Normalize<T> {
 
 `$ZodError` から4つの異なるビューを構築できる。
 
-| 変換関数 | 出力形態 | 主な用途 |
-|---------|---------|---------|
-| `flattenError` | `{ formErrors, fieldErrors }` | フォームライブラリ連携 |
-| `formatError` | ネストした `{ _errors }` ツリー | React Hook Form 等 |
-| `treeifyError` | `{ errors, properties, items }` ツリー | 構造化エラー表示 |
-| `prettifyError` | 人間可読な文字列 | CLI / ログ出力 |
+| 変換関数        | 出力形態                               | 主な用途               |
+| --------------- | -------------------------------------- | ---------------------- |
+| `flattenError`  | `{ formErrors, fieldErrors }`          | フォームライブラリ連携 |
+| `formatError`   | ネストした `{ _errors }` ツリー        | React Hook Form 等     |
+| `treeifyError`  | `{ errors, properties, items }` ツリー | 構造化エラー表示       |
+| `prettifyError` | 人間可読な文字列                       | CLI / ログ出力         |
 
 ## コード例
 

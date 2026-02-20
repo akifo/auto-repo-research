@@ -61,6 +61,7 @@ zshy の設計は「package.json と tsconfig.json だけで設定が完結す�
 Node.js の [conditional exports](https://nodejs.org/api/packages.html#conditional-exports) に `@zod/source` というカスタム条件を追加し、ツールチェーン全体で一貫して使用している。
 
 **vitest** — テスト実行時にソースを直接参照:
+
 ```ts
 // vitest.config.ts:8-11
 resolve: {
@@ -70,6 +71,7 @@ resolve: {
 ```
 
 **tsx** — 開発用スクリプト実行:
+
 ```jsonc
 // package.json:77-80
 "dev": "tsx --conditions @zod/source",
@@ -78,18 +80,21 @@ resolve: {
 ```
 
 **tsconfig** — TypeScript の型解決:
+
 ```jsonc
 // tsconfig.json:5
 "customConditions": ["@zod/source"],
 ```
 
 **VSCode** — デバッグ設定:
+
 ```jsonc
 // .vscode/launch.json:26
 "runtimeArgs": ["--conditions=@zod/source"],
 ```
 
 **esbuild** — treeshake テスト:
+
 ```jsonc
 // packages/treeshake/package.json:9
 "bundle:esbuild": "esbuild --bundle ./in.ts --conditions=@zod/source ..."
@@ -118,6 +123,7 @@ const STUB_PACKAGE_JSON_CONTENT = `{
 ### 多層的なパッケージ品質検証
 
 **レイヤー 1: attw（Are The Types Wrong）**
+
 ```ts
 // packages/resolution/attw.test.ts:31-33
 const result = await execa("pnpm", ["attw", "--pack", zodPackagePath, "--format", "ascii"], {
@@ -125,11 +131,13 @@ const result = await execa("pnpm", ["attw", "--pack", zodPackagePath, "--format"
   reject: false,
 });
 ```
+
 inline snapshot で出力を固定し、型解決の退行を検出する。
 
 **レイヤー 2: 複数 moduleResolution でのコンパイルテスト**
 
 `packages/integration/fixtures/internal-types/` に3つの tsconfig を用意:
+
 - `tsconfig.bundler.json` — `moduleResolution: "bundler"` (`packages/integration/fixtures/internal-types/tsconfig.bundler.json:6`)
 - `tsconfig.nodenext.json` — `moduleResolution: "NodeNext"` (`packages/integration/fixtures/internal-types/tsconfig.nodenext.json:4`)
 - `tsconfig.node16-cjs.json` — `module: "Node16"`, CJS コンテキスト (`packages/integration/fixtures/internal-types/tsconfig.node16-cjs.json:4`)

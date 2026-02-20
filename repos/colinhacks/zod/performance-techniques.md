@@ -23,10 +23,11 @@ Zod は `biome.jsonc` で `noParameterAssign: off` を明示的に設定し、�
 ```typescript
 // packages/zod/src/v4/core/schemas.ts:355-361
 inst._zod.parse = (payload, _) => {
-  if (def.coerce)
+  if (def.coerce) {
     try {
       payload.value = String(payload.value);
     } catch (_) {}
+  }
 
   if (typeof payload.value === "string") return payload;
   // ...
@@ -70,7 +71,7 @@ export function defineLazy<T, K extends keyof T>(object: T, key: K, getter: () =
 
 ```typescript
 // packages/zod/src/v4/core/util.ts:223-235
-export function cached<T>(getter: () => T): { value: T } {
+export function cached<T>(getter: () => T): { value: T; } {
   const set = false;
   return {
     get value() {

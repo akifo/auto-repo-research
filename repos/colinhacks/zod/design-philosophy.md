@@ -25,7 +25,7 @@ Zod v4 は従来のクラス継承を使わず、独自の `$constructor` 関数
 export function $constructor<T extends ZodTrait, D = T["_zod"]["def"]>(
   name: string,
   initializer: (inst: T, def: D) => void,
-  params?: { Parent?: typeof Class }
+  params?: { Parent?: typeof Class; },
 ): $constructor<T, D> {
   function init(inst: T, def: D) {
     if (!inst._zod) {
@@ -47,8 +47,8 @@ export function $constructor<T extends ZodTrait, D = T["_zod"]["def"]>(
 ```ts
 // packages/zod/src/v4/classic/schemas.ts:289 — classic の ZodString
 export const _ZodString = core.$constructor("_ZodString", (inst, def) => {
-  core.$ZodString.init(inst, def);  // core の型チェック trait
-  ZodType.init(inst, def);          // classic のメソッド群 trait
+  core.$ZodString.init(inst, def); // core の型チェック trait
+  ZodType.init(inst, def); // classic のメソッド群 trait
   // ... regex, includes, trim 等の便利メソッドを追加
 });
 ```
@@ -56,8 +56,8 @@ export const _ZodString = core.$constructor("_ZodString", (inst, def) => {
 ```ts
 // packages/zod/src/v4/mini/schemas.ts:91-97 — mini の ZodMiniString
 export const ZodMiniString = core.$constructor("ZodMiniString", (inst, def) => {
-  core.$ZodString.init(inst, def);  // 同じ core trait
-  ZodMiniType.init(inst, def);      // mini のメソッド群 trait（便利メソッドなし）
+  core.$ZodString.init(inst, def); // 同じ core trait
+  ZodMiniType.init(inst, def); // mini のメソッド群 trait（便利メソッドなし）
 });
 ```
 
@@ -78,10 +78,11 @@ AGENTS.md と biome.jsonc のコメントが設計判断の「なぜ」を明示
 ```ts
 // packages/zod/src/v4/core/schemas.ts:352-372 — $ZodString のパース
 inst._zod.parse = (payload, _) => {
-  if (def.coerce)
+  if (def.coerce) {
     try {
       payload.value = String(payload.value); // パラメータ再代入
     } catch (_) {}
+  }
   if (typeof payload.value === "string") return payload;
   // ...エラー処理
 };
@@ -113,11 +114,11 @@ export const $ZodObjectJIT = core.$constructor("$ZodObjectJIT", (inst, def) => {
 ```ts
 // packages/zod/src/v4/classic/schemas.ts:171-185
 inst.check = (...checks) => {
-  return inst.clone(         // 新しいインスタンスを返す
+  return inst.clone( // 新しいインスタンスを返す
     util.mergeDefs(def, {
       checks: [...(def.checks ?? []), ...checks.map(/* ... */)],
     }),
-    { parent: true }         // parent チェーンで metadata 継承
+    { parent: true }, // parent チェーンで metadata 継承
   );
 };
 ```
@@ -214,7 +215,7 @@ export const globalRegistry = (globalThis as GlobalThisWithRegistry).__zod_globa
 // @__NO_SIDE_EFFECTS__
 export function _string<T extends schemas.$ZodString>(
   Class: util.SchemaClass<T>,
-  params?: string | $ZodStringParams
+  params?: string | $ZodStringParams,
 ): T {
   return new Class({ type: "string", ...util.normalizeParams(params) });
 }

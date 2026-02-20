@@ -69,10 +69,12 @@ pre-commit の最初のチェックは未追跡ファイルの検出。これは
 
 ```typescript
 // scripts/check-versions.ts:44-47
-const isPackageJsonValid =
-  tag === "latest" ? packageJsonVersion === versionsVersion : packageJsonVersion.startsWith(versionsVersion);
-const isJsrJsonValid =
-  tag === "latest" ? jsrJsonVersion === versionsVersion : jsrJsonVersion.startsWith(versionsVersion);
+const isPackageJsonValid = tag === "latest"
+  ? packageJsonVersion === versionsVersion
+  : packageJsonVersion.startsWith(versionsVersion);
+const isJsrJsonValid = tag === "latest"
+  ? jsrJsonVersion === versionsVersion
+  : jsrJsonVersion.startsWith(versionsVersion);
 ```
 
 これは「バージョンの情報源が複数ある場合に整合性を自動検証すべき」という原則の具現化。`versions.ts` にソースコード内バージョンを持つのは、ランタイムでバージョン情報を参照するため。

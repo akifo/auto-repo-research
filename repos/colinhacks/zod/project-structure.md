@@ -39,16 +39,16 @@ core レイヤーの型名・定数名には `$` プレフィックスが付与�
 
 `package.json` の `exports` で 10 のサブパスを定義し、3 つのフォーマット（ESM, CJS, 型定義）と `@zod/source` 条件を組み合わせる。
 
-| サブパス | 用途 |
-|---------|------|
-| `.` | デフォルト（v4 classic + 英語ロケール） |
-| `./mini` | 軽量バリアント（ロケール自動設定なし） |
-| `./v3` | v3 互換レイヤー |
-| `./v4` | v4 classic の明示的インポート |
-| `./v4-mini` | v4 mini の明示的インポート |
-| `./v4/core` | 内部カーネル（上級者・ライブラリ作者向け） |
-| `./v4/locales` | 全ロケールバンドル |
-| `./v4/locales/*` | 個別ロケール（ワイルドカード） |
+| サブパス         | 用途                                       |
+| ---------------- | ------------------------------------------ |
+| `.`              | デフォルト（v4 classic + 英語ロケール）    |
+| `./mini`         | 軽量バリアント（ロケール自動設定なし）     |
+| `./v3`           | v3 互換レイヤー                            |
+| `./v4`           | v4 classic の明示的インポート              |
+| `./v4-mini`      | v4 mini の明示的インポート                 |
+| `./v4/core`      | 内部カーネル（上級者・ライブラリ作者向け） |
+| `./v4/locales`   | 全ロケールバンドル                         |
+| `./v4/locales/*` | 個別ロケール（ワイルドカード）             |
 
 ### ビルドツールチェーン: zshy による統一
 
@@ -56,13 +56,13 @@ core レイヤーの型名・定数名には `$` プレフィックスが付与�
 
 ### 検証ワークスペースの役割分担
 
-| パッケージ | 検証対象 |
-|-----------|---------|
-| `@zod/resolution` | CJS/ESM/MJS のモジュール解決 + attw による全サブパス型チェック |
-| `@zod/integration` | drizzle-zod, AI SDK 等サードパーティとの型互換 + `skipLibCheck: false` での型健全性 |
-| `@zod/treeshaking` | rollup によるスキーマ単位のバンドルサイズ計測 |
-| `@zod/tsc-perftest` | TypeScript コンパイラのパフォーマンス計測・回帰テスト |
-| `@zod/benchmarks` | ランタイムパフォーマンスベンチマーク |
+| パッケージ          | 検証対象                                                                            |
+| ------------------- | ----------------------------------------------------------------------------------- |
+| `@zod/resolution`   | CJS/ESM/MJS のモジュール解決 + attw による全サブパス型チェック                      |
+| `@zod/integration`  | drizzle-zod, AI SDK 等サードパーティとの型互換 + `skipLibCheck: false` での型健全性 |
+| `@zod/treeshaking`  | rollup によるスキーマ単位のバンドルサイズ計測                                       |
+| `@zod/tsc-perftest` | TypeScript コンパイラのパフォーマンス計測・回帰テスト                               |
+| `@zod/benchmarks`   | ランタイムパフォーマンスベンチマーク                                                |
 
 ### バージョン整合性の自動チェック
 
@@ -178,8 +178,8 @@ export const ZodMiniType: core.$constructor<ZodMiniType> = ... // mini/schemas.t
 
 ```typescript
 // Bad: サブパスによって暗黙の副作用が異なる
-import { z } from "zod";       // 英語ロケールが自動設定される
-import { z } from "zod/mini";  // ロケールが未設定（エラーメッセージがフォールバック）
+import { z } from "zod"; // 英語ロケールが自動設定される
+import { z } from "zod/mini"; // ロケールが未設定（エラーメッセージがフォールバック）
 
 // Better: 明示的にロケールを設定する（mini ではこちらが必須）
 import { z } from "zod/mini";

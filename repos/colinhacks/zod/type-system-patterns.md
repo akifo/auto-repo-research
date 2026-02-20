@@ -25,8 +25,8 @@ Zod の型推論の核心は `core.output<T>` と `core.input<T>` という2つ�
 
 ```typescript
 // packages/zod/src/v4/core/core.ts:117-120
-export type input<T> = T extends { _zod: { input: any } } ? T["_zod"]["input"] : unknown;
-export type output<T> = T extends { _zod: { output: any } } ? T["_zod"]["output"] : unknown;
+export type input<T> = T extends { _zod: { input: any; }; } ? T["_zod"]["input"] : unknown;
+export type output<T> = T extends { _zod: { output: any; }; } ? T["_zod"]["output"] : unknown;
 export type { output as infer };
 ```
 
@@ -35,7 +35,8 @@ export type { output as infer };
 ```typescript
 // packages/zod/src/v4/core/schemas.ts:3322-3330
 export interface $ZodOptionalInternals<T extends SomeType = $ZodType>
-  extends $ZodTypeInternals<core.output<T> | undefined, core.input<T> | undefined> {
+  extends $ZodTypeInternals<core.output<T> | undefined, core.input<T> | undefined>
+{
   def: $ZodOptionalDef<T>;
   optin: "optional";
   optout: "optional";
@@ -50,7 +51,8 @@ export interface $ZodOptionalInternals<T extends SomeType = $ZodType>
 ```typescript
 // packages/zod/src/v4/core/schemas.ts:3855-3858
 export interface $ZodPipeInternals<A extends SomeType = $ZodType, B extends SomeType = $ZodType>
-  extends $ZodTypeInternals<core.output<B>, core.input<A>> {
+  extends $ZodTypeInternals<core.output<B>, core.input<A>>
+{
   def: $ZodPipeDef<A, B>;
   // ...
 }
@@ -64,16 +66,18 @@ export interface $ZodPipeInternals<A extends SomeType = $ZodType, B extends Some
 
 ```typescript
 // packages/zod/src/v4/core/schemas.ts:1664-1679
-type OptionalOutSchema = { _zod: { optout: "optional" } };
+type OptionalOutSchema = { _zod: { optout: "optional"; }; };
 
 export type $InferObjectOutput<T extends $ZodLooseShape, Extra extends Record<string, unknown>> =
   // ... (index signature check)
   util.Prettify<
-    {
+    & {
       -readonly [k in keyof T as T[k] extends OptionalOutSchema ? never : k]: T[k]["_zod"]["output"];
-    } & {
+    }
+    & {
       -readonly [k in keyof T as T[k] extends OptionalOutSchema ? k : never]?: T[k]["_zod"]["output"];
-    } & Extra
+    }
+    & Extra
   >;
 ```
 
@@ -87,19 +91,18 @@ export type $InferObjectOutput<T extends $ZodLooseShape, Extra extends Record<st
 // packages/zod/src/v4/core/core.ts:80-94
 export const $brand: unique symbol = Symbol("zod_brand");
 export type $brand<T extends string | number | symbol = string | number | symbol> = {
-  [$brand]: { [k in T]: true };
+  [$brand]: { [k in T]: true; };
 };
 
 export type $ZodBranded<
   T extends schemas.SomeType,
   Brand extends string | number | symbol,
   Dir extends "in" | "out" | "inout" = "out",
-> = T &
-  (Dir extends "inout"
-    ? { _zod: { input: input<T> & $brand<Brand>; output: output<T> & $brand<Brand> } }
-    : Dir extends "in"
-      ? { _zod: { input: input<T> & $brand<Brand> } }
-      : { _zod: { output: output<T> & $brand<Brand> } });
+> =
+  & T
+  & (Dir extends "inout" ? { _zod: { input: input<T> & $brand<Brand>; output: output<T> & $brand<Brand>; }; }
+    : Dir extends "in" ? { _zod: { input: input<T> & $brand<Brand>; }; }
+    : { _zod: { output: output<T> & $brand<Brand>; }; });
 ```
 
 デフォルトは `"out"`（出力のみブランド付き）で、`parse()` の戻り値だけがブランド型になる。入力側にはブランドが付かないため、ユーザーは生の値を渡せる。
@@ -134,10 +137,12 @@ getter は TypeScript の型推論を破壊しないため、`z.infer` が再帰
 export type $InferEnumOutput<T extends util.EnumLike> = T[keyof T] & {};
 
 // packages/zod/src/v4/core/util.ts:129-132
-export type Prettify<T> = {
-  // @ts-ignore
-  [K in keyof T]: T[K];
-} & {};
+export type Prettify<T> =
+  & {
+    // @ts-ignore
+    [K in keyof T]: T[K];
+  }
+  & {};
 ```
 
 ### `_$ZodTypeInternals` と `$ZodTypeInternals` の二重インターフェース
@@ -154,8 +159,8 @@ export interface _$ZodTypeInternals {
 }
 
 export interface $ZodTypeInternals<out O = unknown, out I = unknown> extends _$ZodTypeInternals {
-  output: O;  // phantom 型
-  input: I;   // phantom 型
+  output: O; // phantom 型
+  input: I; // phantom 型
 }
 ```
 
@@ -180,10 +185,8 @@ export interface $ZodArrayInternals<T extends SomeType = $ZodType> extends _$Zod
 type TupleInputTypeWithOptionals<T extends util.TupleItems> = T extends readonly [
   ...infer Prefix extends SomeType[],
   infer Tail extends SomeType,
-]
-  ? Tail["_zod"]["optin"] extends "optional"
-    ? [...TupleInputTypeWithOptionals<Prefix>, core.input<Tail>?]
-    : TupleInputTypeNoOptionals<T>
+] ? Tail["_zod"]["optin"] extends "optional" ? [...TupleInputTypeWithOptionals<Prefix>, core.input<Tail>?]
+  : TupleInputTypeNoOptionals<T>
   : [];
 ```
 
@@ -193,11 +196,10 @@ type TupleInputTypeWithOptionals<T extends util.TupleItems> = T extends readonly
 type AppendToTemplateLiteral<
   Template extends string,
   Suffix extends LiteralPart | $ZodType,
-> = Suffix extends LiteralPart
-  ? `${Template}${UndefinedToEmptyString<Suffix>}`
+> = Suffix extends LiteralPart ? `${Template}${UndefinedToEmptyString<Suffix>}`
   : Suffix extends $ZodType
     ? `${Template}${core.output<Suffix> extends infer T extends LiteralPart ? UndefinedToEmptyString<T> : never}`
-    : never;
+  : never;
 ```
 
 ```typescript
@@ -241,10 +243,7 @@ transform<NewOut>(
 
 ```typescript
 // packages/zod/src/v4/core/util.ts:20-22
-export type JWTAlgorithm =
-  | "HS256" | "HS384" | "HS512"
-  | "RS256" | "RS384" | "RS512"
-  | (string & {});
+export type JWTAlgorithm = "HS256" | "HS384" | "HS512" | "RS256" | "RS384" | "RS512" | (string & {});
 ```
 
 - **`out` variance annotation による共変性の明示**: TypeScript 4.7+ の variance annotation を使い、ジェネリクスの共変性を明示する。型チェッカーの不必要な反変性チェックを抑制し、コンパイル速度を改善する。
@@ -275,10 +274,10 @@ out Shape extends $ZodShape = $ZodShape,
 
 ```typescript
 // Bad: phantom property をランタイムで参照
-const type = schema._zod.output;  // undefined at runtime
+const type = schema._zod.output; // undefined at runtime
 
 // Better: 型レベルでのみ使用
-type Output = typeof schema["_zod"]["output"];  // compile-time only
+type Output = typeof schema["_zod"]["output"]; // compile-time only
 ```
 
 ## 導出ルール

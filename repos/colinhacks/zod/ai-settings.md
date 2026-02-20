@@ -24,6 +24,7 @@ AGENTS.md は 2 セクション構成で 38 行と非常に簡潔。
 2. **Rules** — コーディングルールと行動規範。Node.js/pnpm のバージョン要件、テストポリシー、パフォーマンス方針、ツール使用方針を箇条書きで列挙。
 
 特筆すべき設計判断:
+
 - **プロジェクト固有のユーティリティの説明**: `util.defineLazy()` という内部ユーティリティの使用を指示し、その目的（循環依存の回避）まで記載。AI がコードベース固有のパターンを理解できるようにしている。
 - **パフォーマンス方針の明示**: 「パフォーマンスは重要 — 最適化のためのパラメータ再代入は許可」という、通常のリンターの推奨に反するルールを明示。AI が lint ルールに従って不要なリファクタリングを行うことを防ぐ。
 - **実験用ファイルの案内**: `play.ts` を実験用として位置づけ、「恒久的なテストケースには proper tests を使え」と指示。AI が使い捨てコードと本番コードを混同しないようにしている。
@@ -33,6 +34,7 @@ AGENTS.md は 2 セクション構成で 38 行と非常に簡潔。
 Zod は 2 つの独立した Claude Code CI ワークフローを運用している。
 
 **1. 自動 PR レビュー（claude-code-review.yml）**
+
 - トリガー: `pull_request` の `opened` / `synchronize`
 - すべての PR に対して自動でコードレビューを実行
 - プロンプトでレビュー観点を明示: コード品質、バグ、パフォーマンス、セキュリティ、テストカバレッジ
@@ -40,6 +42,7 @@ Zod は 2 つの独立した Claude Code CI ワークフローを運用してい
 - `contents: read` のみで書き込み権限なし
 
 **2. @claude メンション対応（claude.yml）**
+
 - トリガー: issue/PR コメントに `@claude` を含む場合、issue の新規作成/アサイン時
 - ユーザーが明示的に Claude を呼び出した場合にのみ起動
 - `additional_permissions: actions: read` で CI 結果の読み取りを追加許可
@@ -74,6 +77,7 @@ Zod は独自の MCP サーバーを構築せず、Inkeep の SaaS MCP サーバ
 ## コード例
 
 CLAUDE.md → AGENTS.md のシンボリックリンク:
+
 ```
 # シェル確認結果
 $ ls -la CLAUDE.md
@@ -81,20 +85,24 @@ lrwxr-xr-x  CLAUDE.md -> AGENTS.md
 ```
 
 AGENTS.md のプロジェクト固有ルール:
+
 ```markdown
 <!-- AGENTS.md:35-37 -->
+
 - Use `util.defineLazy()` for computed properties to avoid circular dependencies
 - Performance is critical - parameter reassignment is allowed for optimization
 - ALWAYS use the `gh` CLI to fetch GitHub information (issues, PRs, etc.) instead of relying on web search or assumptions
 ```
 
 Claude Code Review CI の最小権限ツール設定:
+
 ```yaml
 <!-- .github/workflows/claude-code-review.yml:56 -->
 claude_args: '--allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'
 ```
 
 llms.txt Route Handler の動的生成:
+
 ```typescript
 // packages/docs/app/llms.txt/route.ts:40-98
 export async function GET() {
@@ -132,6 +140,7 @@ export async function GET() {
 ```
 
 llms-full.txt の MDX → Markdown 変換パイプライン:
+
 ```typescript
 // packages/docs/loaders/get-llm-text.ts:12-43
 const processor = remark().use(remarkMdx).use(remarkInclude).use(remarkGfm).use(remarkStringify);
@@ -158,6 +167,7 @@ export async function getLLMText(page: InferPageType<typeof source>): Promise<st
 ```
 
 package.json の AI メタデータフィールド:
+
 ```json
 // packages/zod/package.json:9-11
 {
@@ -193,6 +203,7 @@ package.json の AI メタデータフィールド:
 
 ```markdown
 <!-- AGENTS.md:33-34 -->
+
 - Don't skip tests due to type issues - fix the types instead
 - Ask before generating new files
 ```

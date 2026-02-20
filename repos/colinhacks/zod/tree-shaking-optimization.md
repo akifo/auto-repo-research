@@ -90,7 +90,7 @@ export function string(params?: string | core.$ZodStringParams): ZodMiniString<s
 // @__NO_SIDE_EFFECTS__
 export function _string<T extends schemas.$ZodString>(
   Class: util.SchemaClass<T>,
-  params?: string | $ZodStringParams
+  params?: string | $ZodStringParams,
 ): T {
   return new Class({
     type: "string",
@@ -111,9 +111,9 @@ config(en());
 // src/v4/mini/external.ts:1-6
 // mini は locale 自動設定なし（副作用なし）
 export * as core from "../core/index.js";
+export * from "./checks.js";
 export * from "./parse.js";
 export * from "./schemas.js";
-export * from "./checks.js";
 ```
 
 ```typescript
@@ -205,16 +205,16 @@ treeshake: {
 
 ```typescript
 // Bad: classic のインスタンス初期化（サイズ重視の場面で）
-inst.optional = () => optional(inst);   // → ZodOptional を参照
-inst.nullable = () => nullable(inst);   // → ZodNullable を参照
-inst.array = () => array(inst);         // → ZodArray を参照
+inst.optional = () => optional(inst); // → ZodOptional を参照
+inst.nullable = () => nullable(inst); // → ZodNullable を参照
+inst.array = () => array(inst); // → ZodArray を参照
 inst.transform = (tx) => pipe(inst, transform(tx)); // → ZodPipe, ZodTransform を参照
 ```
 
 ```typescript
 // Better: mini のスタンドアロン関数（使わなければバンドルされない）
-import { string, optional } from "zod/mini";
-const schema = optional(string());  // optional を使う場合のみ import
+import { optional, string } from "zod/mini";
+const schema = optional(string()); // optional を使う場合のみ import
 ```
 
 - **モジュールトップレベルの副作用**: ロケール設定のようなグローバル状態変更をモジュールトップレベルで行うと、そのモジュールを import するだけで副作用が発生し、bundler が安全に除去できなくなる。
@@ -222,11 +222,11 @@ const schema = optional(string());  // optional を使う場合のみ import
 ```typescript
 // Bad: モジュールトップレベルでの副作用
 import en from "../locales/en.js";
-config(en());  // import 時に自動実行 → tree-shake 不可
+config(en()); // import 時に自動実行 → tree-shake 不可
 
 // Better: ユーザーによる明示的な設定
 import * as z from "zod/mini";
-z.config(z.locales.en());  // ユーザーが必要な時に呼ぶ
+z.config(z.locales.en()); // ユーザーが必要な時に呼ぶ
 ```
 
 ## 導出ルール

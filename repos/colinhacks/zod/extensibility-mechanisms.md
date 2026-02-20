@@ -58,7 +58,7 @@ export const $ZodCheck: core.$constructor<$ZodCheck<any>> = /*@__PURE__*/ core.$
     inst._zod ??= {} as any;
     inst._zod.def = def;
     inst._zod.onattach ??= [];
-  }
+  },
 );
 ```
 
@@ -75,7 +75,7 @@ inst.check = (...checks) => {
         ),
       ],
     }),
-    { parent: true }
+    { parent: true },
   );
 };
 ```
@@ -129,7 +129,7 @@ export const $ZodCodec: core.$constructor<$ZodCodec> = /*@__PURE__*/ core.$const
 ```typescript
 // packages/zod/src/v4/core/util.ts:485-489
 // clone: イミュータブルチェーンの基盤
-export function clone<T extends schemas.$ZodType>(inst: T, def?: T["_zod"]["def"], params?: { parent: boolean }): T {
+export function clone<T extends schemas.$ZodType>(inst: T, def?: T["_zod"]["def"], params?: { parent: boolean; }): T {
   const cl = new inst._zod.constr(def ?? inst._zod.def);
   if (!def || params?.parent) cl._zod.parent = inst;
   return cl as any;
@@ -172,7 +172,7 @@ z.array(z.string()).superRefine((val, ctx) => {
 
 // 再利用可能: check オブジェクト
 const positiveCheck = z.gt(0);
-z.number().check(positiveCheck);  // 同じチェックを複数箇所で再利用
+z.number().check(positiveCheck); // 同じチェックを複数箇所で再利用
 z.bigint().check(positiveCheck);
 ```
 

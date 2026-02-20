@@ -37,7 +37,7 @@ inst.check = (...checks) => {
     }),
     {
       parent: true,
-    }
+    },
   );
 };
 ```
@@ -59,7 +59,9 @@ inst.length = (...args) => inst.check(checks.length(...args));
 ```typescript
 // core/util.ts:485-489
 export function clone<T extends schemas.$ZodType>(
-  inst: T, def?: T["_zod"]["def"], params?: { parent: boolean }
+  inst: T,
+  def?: T["_zod"]["def"],
+  params?: { parent: boolean; },
 ): T {
   const cl = new inst._zod.constr(def ?? inst._zod.def);
   if (!def || params?.parent) cl._zod.parent = inst;
@@ -135,8 +137,8 @@ inst.transform = (tx) => pipe(inst, transform(tx as any)) as never;
 
 ```typescript
 // classic/schemas.ts:289-290
-core.$ZodString.init(inst, def);  // core 層の解析ロジック
-ZodType.init(inst, def);           // classic 層の fluent メソッド
+core.$ZodString.init(inst, def); // core 層の解析ロジック
+ZodType.init(inst, def); // classic 層の fluent メソッド
 ```
 
 `_zod.traits` セット（`core.ts:34`）で重複初期化を防止し、同じトレイトが二度適用されないことを保証する。これにより、`ZodNumberFormat` は `ZodNumber.init` -> `ZodType.init` と初期化でき、`ZodNumber` のメソッドを継承しつつ追加のフォーマットチェックを持てる。
@@ -277,7 +279,9 @@ const newDef = { ...oldDef, shape: computeExpensiveShape() };
 
 // Better: mergeDefs でプロパティ記述子ごとコピーする
 const newDef = mergeDefs(oldDef, {
-  get shape() { return computeExpensiveShape(); }
+  get shape() {
+    return computeExpensiveShape();
+  },
 });
 ```
 

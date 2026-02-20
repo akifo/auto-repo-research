@@ -61,7 +61,7 @@ getter 評価中に同じプロパティが再度アクセスされた場合、`
 
 ```typescript
 // packages/zod/src/v4/core/util.ts:223-235
-export function cached<T>(getter: () => T): { value: T } {
+export function cached<T>(getter: () => T): { value: T; } {
   const set = false;
   return {
     get value() {
@@ -106,15 +106,15 @@ const def = mergeDefs(schema._zod.def, {
 
 `v4/core` ディレクトリの import パターンを分析すると、明確なルールが見える。
 
-| ファイル | `import type` | ランタイム `import` |
-|---|---|---|
-| `util.ts` | checks, core, errors, schemas | なし |
-| `errors.ts` | checks, schemas, standard-schema | core, util |
-| `config.ts` | errors | なし |
-| `core.ts` | errors, schemas | util (Class のみ) |
-| `checks.ts` | errors, schemas | core, regexes, util |
-| `schemas.ts` | api, errors, json-schema, standard-schema, to-json-schema | checks, core, doc, parse, regexes, util, versions |
-| `registries.ts` | core, schemas | なし |
+| ファイル        | `import type`                                             | ランタイム `import`                               |
+| --------------- | --------------------------------------------------------- | ------------------------------------------------- |
+| `util.ts`       | checks, core, errors, schemas                             | なし                                              |
+| `errors.ts`     | checks, schemas, standard-schema                          | core, util                                        |
+| `config.ts`     | errors                                                    | なし                                              |
+| `core.ts`       | errors, schemas                                           | util (Class のみ)                                 |
+| `checks.ts`     | errors, schemas                                           | core, regexes, util                               |
+| `schemas.ts`    | api, errors, json-schema, standard-schema, to-json-schema | checks, core, doc, parse, regexes, util, versions |
+| `registries.ts` | core, schemas                                             | なし                                              |
 
 `util.ts` はランタイム import がゼロであり、他のすべてのモジュールから安全に import できるリーフモジュールとして設計されている。`schemas.ts` は最も多くのランタイム import を持つが、`errors`, `api`, `json-schema` などは `import type` に限定されている。
 
@@ -244,8 +244,8 @@ export /*@__NO_SIDE_EFFECTS__*/ function $constructor<T extends ZodTrait, D = T[
   Better:
   ```typescript
   // 必要なモジュールのみ直接 import
-  import * as _schemas from "./schemas.js";
   import * as _checks from "./checks.js";
+  import * as _schemas from "./schemas.js";
   const z = { ..._schemas, ..._checks };
   ```
 

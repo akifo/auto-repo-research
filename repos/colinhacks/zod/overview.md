@@ -19,26 +19,26 @@ Zod v4 は「TypeScript の型推論とバンドルサイズ最適化を両立�
 
 ## 分析した視点
 
-| # | 視点 | ファイル | 概要 |
-| - | ---- | -------- | ---- |
-| 1 | project-structure | project-structure.md | 共有カーネル(core)+複数シェル(classic/mini)構成、10サブパスエクスポート、@zod/sourceカスタム条件による開発/本番切替 |
-| 2 | architecture | architecture.md | トレイトベース$constructorによるクラス継承排除、core/classic/mini三層ファサード、JITコード生成とdefineLazy遅延評価 |
-| 3 | design-philosophy | design-philosophy.md | 型を値から駆動するSSoT思想、不変API+可変内部の分離、パフォーマンスのためのプラグマティックなルール逸脱 |
-| 4 | type-system-patterns | type-system-patterns.md | Phantom Propertyによるinput/output分離、インクリメンタル型合成、方向付きブランド型、(string & {})パターン |
-| 5 | builder-pattern-and-fluent-api | builder-pattern-and-fluent-api.md | 不変クローンによるfluentチェーン、self-caching getter、mergeDefs記述子レベル合成、Check分離パターン |
-| 6 | abstraction-patterns | abstraction-patterns.md | トレイト合成で継承を排除しtree-shaking対応、_zod名前空間への内部状態集約、run/parse二段パイプライン |
-| 7 | performance-techniques | performance-techniques.md | payload in-place変更によるアロケーション最小化、JITオブジェクトパース、判別共用体O(1)ルックアップ、ベンチマーク駆動判断 |
-| 8 | error-handling-idioms | error-handling-idioms.md | 構造化issueのフラットリスト+パス、4段優先度エラーマップチェーン、Result型デュアルAPI、4種の変換パイプライン |
-| 9 | testing-practices | testing-practices.md | ランタイムと型テストの同一ファイル統合、インラインスナップショット限定、console禁止setupFile、TS複数バージョンCI |
-| 10 | api-design-practices | api-design-practices.md | string&#x7C;ParamsObjectパラメータ正規化、parse/safeParseデュアルAPI、Class注入ファクトリ、@deprecated移行パターン |
-| 11 | extensibility-mechanisms | extensibility-mechanisms.md | refine→superRefine→check→$constructorの段階的開示、Checkファーストクラスオブジェクト化、codecによる双方向パース |
-| 12 | dependency-management | dependency-management.md | defineLazy/cached/self-caching getterの3層遅延評価、import type徹底、madge --circular CI防御、barrel回避 |
-| 13 | build-and-tooling | build-and-tooling.md | zshy(tsc API)によるデュアルビルド、attw型解決検証、stub package.json自動生成、多層パッケージ品質ゲート |
-| 14 | versioning-strategy | versioning-strategy.md | サブパスエクスポートによるv3/v4共存、compat.tsの@deprecated移行レイヤー、三重バージョン整合性チェック |
-| 15 | tree-shaking-optimization | tree-shaking-optimization.md | sideEffects:false+@\_\_PURE\_\_/@\_\_NO\_SIDE\_EFFECTS\_\_の体系的適用、classic/miniバリアント分離、treeshakeテストパッケージ |
-| 16 | dev-conventions | dev-conventions.md | Biome off設定に理由コメント義務化、pre-commit高速チェック/pre-pushテストの2段フック、fail-on-console機構 |
-| 17 | ai-settings | ai-settings.md | CLAUDE.md→AGENTS.mdシンボリックリンク統一、llms.txt/llms-full.txt段階的コンテキスト、CI最小権限レビュー |
-| 18 | internationalization-patterns | internationalization-patterns.md | ファクトリ関数ロケール遅延生成、4段優先度メッセージ解決チェーン、言語固有辞書構造の柔軟設計、個別サブパスエクスポート |
+| #  | 視点                           | ファイル                          | 概要                                                                                                                          |
+| -- | ------------------------------ | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| 1  | project-structure              | project-structure.md              | 共有カーネル(core)+複数シェル(classic/mini)構成、10サブパスエクスポート、@zod/sourceカスタム条件による開発/本番切替           |
+| 2  | architecture                   | architecture.md                   | トレイトベース$constructorによるクラス継承排除、core/classic/mini三層ファサード、JITコード生成とdefineLazy遅延評価            |
+| 3  | design-philosophy              | design-philosophy.md              | 型を値から駆動するSSoT思想、不変API+可変内部の分離、パフォーマンスのためのプラグマティックなルール逸脱                        |
+| 4  | type-system-patterns           | type-system-patterns.md           | Phantom Propertyによるinput/output分離、インクリメンタル型合成、方向付きブランド型、(string & {})パターン                     |
+| 5  | builder-pattern-and-fluent-api | builder-pattern-and-fluent-api.md | 不変クローンによるfluentチェーン、self-caching getter、mergeDefs記述子レベル合成、Check分離パターン                           |
+| 6  | abstraction-patterns           | abstraction-patterns.md           | トレイト合成で継承を排除しtree-shaking対応、_zod名前空間への内部状態集約、run/parse二段パイプライン                           |
+| 7  | performance-techniques         | performance-techniques.md         | payload in-place変更によるアロケーション最小化、JITオブジェクトパース、判別共用体O(1)ルックアップ、ベンチマーク駆動判断       |
+| 8  | error-handling-idioms          | error-handling-idioms.md          | 構造化issueのフラットリスト+パス、4段優先度エラーマップチェーン、Result型デュアルAPI、4種の変換パイプライン                   |
+| 9  | testing-practices              | testing-practices.md              | ランタイムと型テストの同一ファイル統合、インラインスナップショット限定、console禁止setupFile、TS複数バージョンCI              |
+| 10 | api-design-practices           | api-design-practices.md           | string&#x7C;ParamsObjectパラメータ正規化、parse/safeParseデュアルAPI、Class注入ファクトリ、@deprecated移行パターン            |
+| 11 | extensibility-mechanisms       | extensibility-mechanisms.md       | refine→superRefine→check→$constructorの段階的開示、Checkファーストクラスオブジェクト化、codecによる双方向パース               |
+| 12 | dependency-management          | dependency-management.md          | defineLazy/cached/self-caching getterの3層遅延評価、import type徹底、madge --circular CI防御、barrel回避                      |
+| 13 | build-and-tooling              | build-and-tooling.md              | zshy(tsc API)によるデュアルビルド、attw型解決検証、stub package.json自動生成、多層パッケージ品質ゲート                        |
+| 14 | versioning-strategy            | versioning-strategy.md            | サブパスエクスポートによるv3/v4共存、compat.tsの@deprecated移行レイヤー、三重バージョン整合性チェック                         |
+| 15 | tree-shaking-optimization      | tree-shaking-optimization.md      | sideEffects:false+@\_\_PURE\_\_/@\_\_NO\_SIDE\_EFFECTS\_\_の体系的適用、classic/miniバリアント分離、treeshakeテストパッケージ |
+| 16 | dev-conventions                | dev-conventions.md                | Biome off設定に理由コメント義務化、pre-commit高速チェック/pre-pushテストの2段フック、fail-on-console機構                      |
+| 17 | ai-settings                    | ai-settings.md                    | CLAUDE.md→AGENTS.mdシンボリックリンク統一、llms.txt/llms-full.txt段階的コンテキスト、CI最小権限レビュー                       |
+| 18 | internationalization-patterns  | internationalization-patterns.md  | ファクトリ関数ロケール遅延生成、4段優先度メッセージ解決チェーン、言語固有辞書構造の柔軟設計、個別サブパスエクスポート         |
 
 ## 特に注目すべき知見
 

@@ -24,6 +24,7 @@ Zod の v3 から v4 へのメジャーバージョン移行は、内部を完�
 Zod はメジャーバージョンを跨いで同一 npm パッケージ内に複数のエントリポイントを並存させている。デフォルトの `zod` は v4 API を返すが、`zod/v3` で完全な v3 API にアクセスできる。
 
 エントリポイントの構造:
+
 - `zod` (デフォルト) → `src/index.ts` → `v4/classic/external.ts`
 - `zod/v3` → `src/v3/index.ts` (独立した v3 実装)
 - `zod/v4` → `src/v4/index.ts` → `v4/classic/index.ts`
@@ -41,6 +42,7 @@ v4 のメインエントリ (`v4/classic/`) には `compat.ts` というファ�
 ### 三重バージョン整合性チェック
 
 バージョン番号は以下の 3 箇所に存在する:
+
 1. `packages/zod/package.json` の `version` フィールド
 2. `packages/zod/jsr.json` の `version` フィールド
 3. `packages/zod/src/v4/core/versions.ts` の `version` オブジェクト
@@ -101,12 +103,12 @@ import * as core from "../core/index.js";
 import type { ZodType } from "./schemas.js";
 
 export type {
-  /** @deprecated Use `z.output<T>` instead. */
-  output as TypeOf,
-  /** @deprecated Use `z.output<T>` instead. */
-  output as Infer,
   /** @deprecated Use `z.core.$$ZodFirstPartyTypes` instead */
   $ZodTypes as ZodFirstPartySchemaTypes,
+  /** @deprecated Use `z.output<T>` instead. */
+  output as Infer,
+  /** @deprecated Use `z.output<T>` instead. */
+  output as TypeOf,
 } from "../core/index.js";
 
 /** @deprecated Use the raw string literal codes instead, e.g. "invalid_type". */
@@ -127,10 +129,12 @@ import { version } from "../packages/zod/src/v4/core/versions.js";
 
 const versionsVersion = `${version.major}.${version.minor}.${version.patch}`;
 
-const isPackageJsonValid =
-  tag === "latest" ? packageJsonVersion === versionsVersion : packageJsonVersion.startsWith(versionsVersion);
-const isJsrJsonValid =
-  tag === "latest" ? jsrJsonVersion === versionsVersion : jsrJsonVersion.startsWith(versionsVersion);
+const isPackageJsonValid = tag === "latest"
+  ? packageJsonVersion === versionsVersion
+  : packageJsonVersion.startsWith(versionsVersion);
+const isJsrJsonValid = tag === "latest"
+  ? jsrJsonVersion === versionsVersion
+  : jsrJsonVersion.startsWith(versionsVersion);
 if (!isPackageJsonValid || !isJsrJsonValid) {
   console.error(`Version mismatch:`);
   process.exit(1);

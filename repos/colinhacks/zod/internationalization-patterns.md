@@ -26,7 +26,7 @@ Zod v4 のロケールシステムは、バリデーションエラーメッセ�
 ```typescript
 // packages/zod/src/v4/locales/en.ts:5-119
 const error: () => errors.$ZodErrorMap = () => {
-  const Sizable: Record<string, { unit: string; verb: string }> = {
+  const Sizable: Record<string, { unit: string; verb: string; }> = {
     string: { unit: "characters", verb: "to have" },
     file: { unit: "bytes", verb: "to have" },
     array: { unit: "items", verb: "to have" },
@@ -35,14 +35,14 @@ const error: () => errors.$ZodErrorMap = () => {
   // ...辞書定義...
   return (issue) => {
     switch (issue.code) {
-      case "invalid_type": { /* ... */ }
-      case "too_big": { /* ... */ }
-      // ...
+      case "invalid_type": {/* ... */}
+      case "too_big": {/* ... */}
+        // ...
     }
   };
 };
 
-export default function (): { localeError: errors.$ZodErrorMap } {
+export default function(): { localeError: errors.$ZodErrorMap; } {
   return { localeError: error() };
 }
 ```
@@ -72,7 +72,7 @@ function getRussianPlural(count: number, one: string, few: string, many: string)
 **ヘブライ語: 文法性（ジェンダー）処理**（`packages/zod/src/v4/locales/he.ts:7-53`）
 
 ```typescript
-const TypeNames: Record<string, { label: string; gender: "m" | "f" }> = {
+const TypeNames: Record<string, { label: string; gender: "m" | "f"; }> = {
   string: { label: "מחרוזת", gender: "f" },
   number: { label: "מספר", gender: "m" },
   // ...
@@ -92,12 +92,11 @@ const verbFor = (t?: string | null): string => {
 
 ```typescript
 // packages/zod/src/v4/core/util.ts:847-852
-const message =
-  unwrapMessage(iss.inst?._zod.def?.error?.(iss as never)) ??    // 1. スキーマレベル
-  unwrapMessage(ctx?.error?.(iss as never)) ??                    // 2. パースレベル
-  unwrapMessage(config.customError?.(iss)) ??                     // 3. グローバルカスタム
-  unwrapMessage(config.localeError?.(iss)) ??                     // 4. ロケール
-  "Invalid input";                                                 // 5. ハードコードフォールバック
+const message = unwrapMessage(iss.inst?._zod.def?.error?.(iss as never)) // 1. スキーマレベル
+  ?? unwrapMessage(ctx?.error?.(iss as never)) // 2. パースレベル
+  ?? unwrapMessage(config.customError?.(iss)) // 3. グローバルカスタム
+  ?? unwrapMessage(config.localeError?.(iss)) // 4. ロケール
+  ?? "Invalid input"; // 5. ハードコードフォールバック
 ```
 
 各エラーマップは `string | { message: string } | undefined | null` を返せる。`undefined` を返すと次の階層にフォールバックする。この null 合体チェーンにより、優先度制御が宣言的に表現されている。
@@ -109,8 +108,12 @@ v3 のアプローチ（`packages/zod/src/v3/errors.ts:1-13`）:
 ```typescript
 import defaultErrorMap from "./locales/en.js";
 let overrideErrorMap = defaultErrorMap;
-export function setErrorMap(map: ZodErrorMap) { overrideErrorMap = map; }
-export function getErrorMap() { return overrideErrorMap; }
+export function setErrorMap(map: ZodErrorMap) {
+  overrideErrorMap = map;
+}
+export function getErrorMap() {
+  return overrideErrorMap;
+}
 ```
 
 v3 では英語ロケールがモジュールスコープで即座に読み込まれ、`let` 変数で上書きする設計。問題点: (1) 英語ロケールが常にバンドルに含まれる、(2) `setErrorMap` は前のマップを完全に置き換えるため、ロケールとカスタムマップの共存が難しい。
@@ -153,7 +156,7 @@ Zod Mini（`packages/zod/src/v4/mini/external.ts`）は `config(en())` を呼ば
 
 ```typescript
 // packages/zod/src/v4/locales/en.ts:115-119
-export default function (): { localeError: errors.$ZodErrorMap } {
+export default function(): { localeError: errors.$ZodErrorMap; } {
   return {
     localeError: error(),
   };
@@ -181,7 +184,7 @@ z.int64({
 
 ```typescript
 // 英語 (packages/zod/src/v4/locales/en.ts:6-11)
-const Sizable: Record<string, { unit: string; verb: string }> = {
+const Sizable: Record<string, { unit: string; verb: string; }> = {
   string: { unit: "characters", verb: "to have" },
 };
 
@@ -215,8 +218,11 @@ test("Spanish errors", () => {
 // Better: テストごとにロケールをリセット
 test("Spanish errors", () => {
   z.config(es());
-  try { /* ... */ }
-  finally { z.config(en()); }
+  try {
+    /* ... */
+  } finally {
+    z.config(en());
+  }
 });
 ```
 

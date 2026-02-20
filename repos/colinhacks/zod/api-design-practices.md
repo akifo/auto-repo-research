@@ -58,7 +58,7 @@ core レイヤーの `_string` は `Class` パラメータを受け取り、具�
 // packages/zod/src/v4/core/api.ts:63-71
 export function _string<T extends schemas.$ZodString>(
   Class: util.SchemaClass<T>,
-  params?: string | $ZodStringParams
+  params?: string | $ZodStringParams,
 ): T {
   return new Class({
     type: "string",
@@ -125,8 +125,8 @@ safeEncode(data: core.output<this>, params?: core.ParseContext): parse.ZodSafePa
 ```typescript
 // packages/zod/src/v4/classic/parse.ts:4-6
 export type ZodSafeParseResult<T> = ZodSafeParseSuccess<T> | ZodSafeParseError<T>;
-export type ZodSafeParseSuccess<T> = { success: true; data: T; error?: never };
-export type ZodSafeParseError<T> = { success: false; data?: never; error: ZodError<T> };
+export type ZodSafeParseSuccess<T> = { success: true; data: T; error?: never; };
+export type ZodSafeParseError<T> = { success: false; data?: never; error: ZodError<T>; };
 ```
 
 `error?: never` / `data?: never` により、`success` チェック後に補完候補が正しく絞り込まれる。
@@ -164,12 +164,12 @@ email(params?: string | core.$ZodCheckEmailParams): this;
 ```typescript
 // packages/zod/src/v4/classic/compat.ts:58-63
 export type {
-  /** @deprecated Use z.ZodType (without generics) instead. */
-  ZodType as ZodTypeAny,
-  /** @deprecated Use `z.ZodType` */
-  ZodType as ZodSchema,
   /** @deprecated Use `z.ZodType` */
   ZodType as Schema,
+  /** @deprecated Use `z.ZodType` */
+  ZodType as ZodSchema,
+  /** @deprecated Use z.ZodType (without generics) instead. */
+  ZodType as ZodTypeAny,
 };
 ```
 
@@ -179,9 +179,9 @@ export type {
 
 ```typescript
 // packages/zod/src/v4/classic/external.ts:41-51
-export * as iso from "./iso.js";
-export * as coerce from "./coerce.js";
 export * as locales from "../locales/index.js";
+export * as coerce from "./coerce.js";
+export * as iso from "./iso.js";
 ```
 
 これにより `z.coerce.string()`, `z.iso.datetime()` のように使える。
@@ -193,7 +193,7 @@ export * as locales from "../locales/index.js";
 // TypeScript の予約語 enum を関数名として使うための _enum + export { _enum as enum } パターン
 function _enum<const T extends readonly string[]>(
   values: T,
-  params?: string | core.$ZodEnumParams
+  params?: string | core.$ZodEnumParams,
 ): ZodEnum<util.ToEnum<T[number]>>;
 function _enum<const T extends util.EnumLike>(entries: T, params?: string | core.$ZodEnumParams): ZodEnum<T>;
 function _enum(values: any, params?: string | core.$ZodEnumParams) {
@@ -212,18 +212,18 @@ export { _enum as enum };
 // tuple のオーバーロード: rest パラメータの有無で呼び出しシグネチャを分離
 export function tuple<T extends readonly [core.SomeType, ...core.SomeType[]]>(
   items: T,
-  params?: string | core.$ZodTupleParams
+  params?: string | core.$ZodTupleParams,
 ): ZodTuple<T, null>;
 export function tuple<T extends readonly [core.SomeType, ...core.SomeType[]], Rest extends core.SomeType>(
   items: T,
   rest: Rest,
-  params?: string | core.$ZodTupleParams
+  params?: string | core.$ZodTupleParams,
 ): ZodTuple<T, Rest>;
 export function tuple(items: [], params?: string | core.$ZodTupleParams): ZodTuple<[], null>;
 export function tuple(
   items: core.SomeType[],
   _paramsOrRest?: string | core.$ZodTupleParams | core.SomeType,
-  _params?: string | core.$ZodTupleParams
+  _params?: string | core.$ZodTupleParams,
 ) {
   const hasRest = _paramsOrRest instanceof core.$ZodType;
   const params = hasRest ? _params : _paramsOrRest;
@@ -282,8 +282,8 @@ export function normalizeParams<T>(_params: T): Normalize<T> {
 
 ```typescript
 // packages/zod/src/v4/classic/parse.ts:5-6
-export type ZodSafeParseSuccess<T> = { success: true; data: T; error?: never };
-export type ZodSafeParseError<T> = { success: false; data?: never; error: ZodError<T> };
+export type ZodSafeParseSuccess<T> = { success: true; data: T; error?: never; };
+export type ZodSafeParseError<T> = { success: false; data?: never; error: ZodError<T>; };
 ```
 
 - **エイリアスメソッドによる API の発見性向上**: `min` は `gte` のエイリアス、`max` は `lte` のエイリアス、`spa` は `safeParseAsync` のエイリアス。ドメインに馴染みのある名前と技術的に正確な名前の両方を提供する。
@@ -300,9 +300,9 @@ inst.max = (value, params) => inst.check(checks.lte(value, params));
 
 ```typescript
 // packages/zod/src/v4/classic/schemas.ts:1286-1324
-export function object<T>(shape?: T, params?): ZodObject<T, core.$strip> { /* strip */ }
-export function strictObject<T>(shape: T, params?): ZodObject<T, core.$strict> { /* catchall: never() */ }
-export function looseObject<T>(shape: T, params?): ZodObject<T, core.$loose> { /* catchall: unknown() */ }
+export function object<T>(shape?: T, params?): ZodObject<T, core.$strip> {/* strip */}
+export function strictObject<T>(shape: T, params?): ZodObject<T, core.$strict> {/* catchall: never() */}
+export function looseObject<T>(shape: T, params?): ZodObject<T, core.$loose> {/* catchall: unknown() */}
 ```
 
 ## Anti-Patterns / 注意点
@@ -324,8 +324,8 @@ function tuple(items: core.SomeType[], _paramsOrRest?: string | core.$ZodTuplePa
 
 ```typescript
 // Bad: 同じ機能に 2 つのパスが存在
-z.string().datetime()    // deprecated
-z.iso.datetime()         // 推奨
+z.string().datetime(); // deprecated
+z.iso.datetime(); // 推奨
 
 // Better: 非推奨期間を設定し、将来のメジャーバージョンで旧 API を削除する計画を明示
 ```
