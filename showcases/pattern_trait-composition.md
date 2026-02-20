@@ -1,6 +1,6 @@
 # Pattern: Trait Composition
 
-> 出典: [repos/colinhacks/zod](../repos/colinhacks/zod) — architecture, abstraction-patterns, tree-shaking-optimization
+> 出典: [repos/colinhacks/zod](../repos/colinhacks/zod/) — architecture, abstraction-patterns, tree-shaking-optimization
 > カテゴリ: pattern
 
 ## 概要

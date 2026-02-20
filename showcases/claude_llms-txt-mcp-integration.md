@@ -1,6 +1,6 @@
 # Claude: llms.txt + MCP Integration
 
-> 出典: [repos/colinhacks/zod](../repos/colinhacks/zod) — ai-settings
+> 出典: [repos/colinhacks/zod](../repos/colinhacks/zod/) — ai-settings
 > カテゴリ: claude
 
 ## 概要
