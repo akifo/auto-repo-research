@@ -25,7 +25,7 @@ Zod v4 ではこれらを解決するため、クラスを完全に廃止し `$c
 export /*@__NO_SIDE_EFFECTS__*/ function $constructor<T extends ZodTrait, D = T["_zod"]["def"]>(
   name: string,
   initializer: (inst: T, def: D) => void,
-  params?: { Parent?: typeof Class }
+  params?: { Parent?: typeof Class; },
 ): $constructor<T, D> {
   function init(inst: T, def: D) {
     if (!inst._zod) {
@@ -62,8 +62,8 @@ export const $ZodStringFormat = /*@__PURE__*/ core.$constructor(
   "$ZodStringFormat",
   (inst, def) => {
     checks.$ZodCheckStringFormat.init(inst, def); // チェック機能を注入
-    $ZodString.init(inst, def);                    // 文字列パース機能を注入
-  }
+    $ZodString.init(inst, def); // 文字列パース機能を注入
+  },
 );
 ```
 
@@ -74,7 +74,7 @@ export const $ZodStringFormat = /*@__PURE__*/ core.$constructor(
 // classic レイヤーはメソッドチェーン API を追加
 export const _ZodString = core.$constructor("_ZodString", (inst, def) => {
   core.$ZodString.init(inst, def); // core のパースロジック
-  ZodType.init(inst, def);         // classic の共通メソッド群（.optional(), .transform() 等）
+  ZodType.init(inst, def); // classic の共通メソッド群（.optional(), .transform() 等）
   inst.regex = (...args) => inst.check(checks.regex(...args));
   inst.min = (...args) => inst.check(checks.minLength(...args));
   // ...
@@ -84,7 +84,7 @@ export const _ZodString = core.$constructor("_ZodString", (inst, def) => {
 // mini レイヤーは最小限のメソッドのみ
 export const ZodMiniString = core.$constructor("ZodMiniString", (inst, def) => {
   core.$ZodString.init(inst, def); // 同一の core パースロジック
-  ZodMiniType.init(inst, def);     // parse, safeParse, check, clone のみ
+  ZodMiniType.init(inst, def); // parse, safeParse, check, clone のみ
 });
 ```
 
@@ -93,9 +93,9 @@ export const ZodMiniString = core.$constructor("ZodMiniString", (inst, def) => {
 ```typescript
 // トレイト合成パターン: 複数の直交する振る舞いを合成
 const MyValidator = $constructor("MyValidator", (inst, def) => {
-  BaseParser.init(inst, def);       // パースロジック
-  Serializable.init(inst, def);     // シリアライズ機能
-  Cacheable.init(inst, def);        // キャッシュ機能
+  BaseParser.init(inst, def); // パースロジック
+  Serializable.init(inst, def); // シリアライズ機能
+  Cacheable.init(inst, def); // キャッシュ機能
 });
 
 // 各トレイトは独立して tree-shake 可能
@@ -103,9 +103,9 @@ const MyValidator = $constructor("MyValidator", (inst, def) => {
 
 // instanceof はトレイト名ベースで動作
 const v = new MyValidator(def);
-v instanceof BaseParser;     // true（_zod.traits に "BaseParser" があるため）
-v instanceof Serializable;   // true
-v instanceof Cacheable;      // true
+v instanceof BaseParser; // true（_zod.traits に "BaseParser" があるため）
+v instanceof Serializable; // true
+v instanceof Cacheable; // true
 ```
 
 ## Bad Example
@@ -114,17 +114,17 @@ v instanceof Cacheable;      // true
 // Bad: 深いクラス継承チェーン
 abstract class BaseType {
   abstract _parse(input: unknown): Result;
-  parse(data: unknown): Output { /* ... */ }
-  safeParse(data: unknown): SafeResult { /* ... */ }
-  optional(): OptionalType { /* ... */ }
-  nullable(): NullableType { /* ... */ }
-  transform<T>(fn: (v: Output) => T): TransformType { /* ... */ }
+  parse(data: unknown): Output {/* ... */}
+  safeParse(data: unknown): SafeResult {/* ... */}
+  optional(): OptionalType {/* ... */}
+  nullable(): NullableType {/* ... */}
+  transform<T>(fn: (v: Output) => T): TransformType {/* ... */}
   // ... 20+ メソッド — 使わなくても全てバンドルに含まれる
 }
 
 class StringType extends BaseType {
-  _parse(input: unknown) { /* ... */ }
-  min(n: number) { /* ... */ }
+  _parse(input: unknown) {/* ... */}
+  min(n: number) {/* ... */}
   // StringType を使うだけで BaseType の全メソッドが含まれる
 }
 

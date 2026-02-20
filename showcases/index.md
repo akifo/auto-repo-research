@@ -27,7 +27,7 @@
 | [e2e-fixture-composition](./pattern_e2e-fixture-composition)           | Playwright test.extendによる宣言的フィクスチャ設計と認証バイパス・自動クリーンアップ           |
 | [capabilities-flag](./pattern_capabilities-flag)                       | booleanフラグでバリアント機能を宣言するインターフェース設計パターン                            |
 | [circuit-breaker](./pattern_circuit-breaker)                           | 外部サービスの連続失敗検知+自動遮断+復旧によるCircuit Breakerパターン                          |
-| [trait-composition](./pattern_trait-composition)                       | $constructor+init()チェーンでクラス継承を排除しtree-shake可能なトレイト合成                     |
+| [trait-composition](./pattern_trait-composition)                       | $constructor+init()チェーンでクラス継承を排除しtree-shake可能なトレイト合成                    |
 
 ## Practice
 
@@ -69,7 +69,7 @@
 | [progressive-context-loading](./claude_progressive-context-loading) | CLAUDE.md/AGENTS.md/.claude/の階層設計によるAIへの段階的コンテキストロード       |
 | [agent-command-guardrails](./claude_agent-command-guardrails)       | 禁止コマンド列挙+scratchpadサンドボックス+ホワイトリスト権限によるAIガードレール |
 | [prompt-injection-defense](./claude_prompt-injection-defense)       | 外部データ処理時のプロンプトインジェクション防御の多層設計                       |
-| [llms-txt-mcp-integration](./claude_llms-txt-mcp-integration)     | llms.txt/llms-full.txt/MCPサーバー3段階のAI向けドキュメント提供パターン         |
+| [llms-txt-mcp-integration](./claude_llms-txt-mcp-integration)       | llms.txt/llms-full.txt/MCPサーバー3段階のAI向けドキュメント提供パターン          |
 
 ## Tool
 

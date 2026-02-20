@@ -75,9 +75,9 @@ export const revalidate = false; // 永続キャッシュ（ビルド時1回生�
 ```typescript
 // packages/docs/loaders/get-llm-text.ts:12-43
 const processor = remark()
-  .use(remarkMdx)       // MDX 構文をパース
-  .use(remarkInclude)    // fumadocs の include ディレクティブを展開
-  .use(remarkGfm)        // GFM テーブル等を処理
+  .use(remarkMdx) // MDX 構文をパース
+  .use(remarkInclude) // fumadocs の include ディレクティブを展開
+  .use(remarkGfm) // GFM テーブル等を処理
   .use(remarkStringify); // Markdown に変換
 
 export async function getLLMText(page: InferPageType<typeof source>): Promise<string> {
@@ -130,9 +130,12 @@ export const revalidate = false; // ビルド時に1回生成
 ```markdown
 <!-- Bad: llms.txt を手動で管理 -->
 <!-- docs/llms.txt (静的ファイル) -->
+
 # My Library
+
 - [Getting Started](https://my-lib.dev/getting-started)
 - [API Reference](https://my-lib.dev/api)
+
 <!-- ドキュメント更新時に手動で同期が必要 → 乖離が頻発 -->
 ```
 
