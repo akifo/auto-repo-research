@@ -1,0 +1,100 @@
+url: https://github.com/promptfoo/promptfoo
+stars: 10555
+language: TypeScript
+license: MIT
+description: "Test your prompts, agents, and RAGs. AI Red teaming, pentesting, and vulnerability scanning for LLMs. Compare performance of GPT, Claude, Gemini, Llama, and more. Simple declarative configs with command line and CI/CD integration."
+analyzed_at: "2026-02-21"
+local_path: /Users/akiho/github/github.com/promptfoo/promptfoo
+scale: large
+
+perspectives:
+  - name: project-structure
+    file: project-structure.md
+    wave: 1
+    intent: "ワークスペース構成・モジュール分割・src/test/site/examples の責務境界を明らかにする"
+    summary: "npm workspaces で依存方向を制御し、tsdown 4構成ビルドと3層テストを単一設定で管理するモノレポ構成"
+  - name: architecture
+    file: architecture.md
+    wave: 1
+    intent: "プロバイダ抽象化・eval パイプライン・CLI/サーバー/ライブラリの三面構成のレイヤー設計を明らかにする"
+    summary: "最小インターフェース ApiProvider と eval パイプラインを共有コアに集約し CLI/Server/Library の三面を提供する設計"
+  - name: design-philosophy
+    file: design-philosophy.md
+    wave: 1
+    intent: "宣言的テスト定義・プロバイダ中立性・拡張性重視の設計思想と技術選定の根拠を明らかにする"
+    summary: "宣言的 YAML 設定と file:// エスケープハッチの組み合わせで柔軟性と簡潔さを両立する設計思想"
+  - name: plugin-composition
+    file: plugin-composition.md
+    wave: 1
+    intent: "プラグイン・プロバイダ・アサーションの合成パターンと動的登録メカニズムを明らかにする"
+    summary: "Plugin+Grader ペアの Template Method とコレクション定数による宣言的プラグイン合成パターン"
+  - name: assertion-patterns
+    file: assertion-patterns.md
+    wave: 1
+    intent: "30種以上のアサーション型の型安全な定義・評価パイプライン・LLM-as-judge 統合を明らかにする"
+    summary: "Zod enum + Record 型ハンドラマップで50種以上のアサーションの網羅性をコンパイル時に保証する設計"
+  - name: provider-abstraction
+    file: provider-abstraction.md
+    wave: 1
+    intent: "100以上のLLMプロバイダを統一インターフェースで扱う抽象化・レジストリ・設定変換の戦略を明らかにする"
+    summary: "文字列駆動のファクトリ配列と OpenAI 互換継承で100以上のプロバイダを統一的に管理する抽象化戦略"
+  - name: config-driven-architecture
+    file: config-driven-architecture.md
+    wave: 1
+    intent: "YAML/JSON設定からランタイム構造への変換・バリデーション・スキーマ生成パターンを明らかにする"
+    summary: "Zod スキーマを型・バリデーション・JSON Schema の Single Source of Truth とする多段設定パイプライン"
+  - name: testing-practices
+    file: testing-practices.md
+    wave: 2
+    intent: "3層テスト戦略(unit/integration/smoke)・ランダム順序実行・fork分離・モック戦略を明らかにする"
+    summary: "forks プール・ランダム順序・Echo プロバイダで625以上のテストファイルの信頼性と分離性を担保する戦略"
+  - name: error-handling-idioms
+    file: error-handling-idioms.md
+    wave: 2
+    intent: "プロバイダエラー・レートリミット・タイムアウト・グレースフルデグレデーションの統一パターンを明らかにする"
+    summary: "Return-based Error・3層リトライ・一時的/永続的エラー分類で部分的失敗を許容するエラー戦略"
+  - name: type-system-patterns
+    file: type-system-patterns.md
+    wave: 2
+    intent: "厳密な型チェック・discriminated union・configTypes・ジェネリクス活用の型設計を明らかにする"
+    summary: "enum 禁止・Zod スキーマ型導出・AssertEqual 静的検証で型とスキーマの整合性を構造的に保証する設計"
+  - name: security-practices
+    file: security-practices.md
+    wave: 2
+    intent: "Red Team機能・入力サニタイズ・DBセキュリティ・サプライチェーン防御・依存関係管理の戦略を明らかにする"
+    summary: "Lint による fetch 一元化・3層ログサニタイズ・リスク別依存更新遅延の多層セキュリティプラクティス"
+  - name: extensibility-mechanisms
+    file: extensibility-mechanisms.md
+    wave: 2
+    intent: "カスタムプロバイダ・カスタムアサーション・スクリプトベース拡張・多言語対応の拡張設計を明らかにする"
+    summary: "URI プレフィックス統一ディスパッチと JSON 契約で多言語拡張を宣言的設定から接続する拡張機構"
+  - name: build-and-tooling
+    file: build-and-tooling.md
+    wave: 2
+    intent: "ESM/CJSデュアルビルド・tsdown・Biome/Prettierハイブリッド・knipによるデッドコード検出の戦略を明らかにする"
+    summary: "tsdown 4構成デュアルビルドと Biome/Prettier 責務分離で大規模 TS プロジェクトの品質を自動担保"
+  - name: ai-settings
+    file: ai-settings.md
+    wave: 2
+    intent: "13個のAGENTS.md・階層的AI設定・ディレクトリ別ガイダンス・agent向けドキュメント戦略を明らかにする"
+    summary: "CLAUDE.md 委任パターンと階層的 AGENTS.md で AI エージェントにコンテキストの局所性を提供する戦略"
+  - name: ci-cd
+    file: ci-cd.md
+    wave: 2
+    intent: "GitHub Actions・release-please・Renovate・Claude Code Review・自動PR検証の自動化パイプラインを明らかにする"
+    summary: "release-please 自動化・動的テストマトリクス・AI レビュー増分戦略を統合した段階的品質ゲート"
+  - name: concurrency-patterns
+    file: concurrency-patterns.md
+    wave: 2
+    intent: "評価スケジューラ・レートリミット状態管理・SlotQueue・並列実行制御のパターンを明らかにする"
+    summary: "同期スロット割当・AIMD 風適応的並列度・Symbol 二重ラップ防止で API レートリミットに自動適応する設計"
+  - name: dev-conventions
+    file: dev-conventions.md
+    wave: 2
+    intent: "Conventional Commits・PRルール・fetchWithProxy制約・pre-commitフック・コードスタイルの規約体系を明らかにする"
+    summary: "Lint ルールで fetch 一元化と enum 禁止を強制し差分ベースの品質チェックで開発体験を維持する規約体系"
+  - name: database-patterns
+    file: database-patterns.md
+    wave: 2
+    intent: "Drizzle ORM・SQLiteローカルストレージ・マイグレーション管理・キャッシュ戦略のデータ永続化パターンを明らかにする"
+    summary: "SQLite WAL + Drizzle ORM + コンテンツアドレス Blob でローカルファースト CLI のゼロ設定永続化を実現"
