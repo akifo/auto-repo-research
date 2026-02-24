@@ -54,12 +54,12 @@ resolve: {
 
 `tsdown.config.ts` は 4 つの構成を配列で定義している。
 
-| 構成 | entry | format | 用途 |
-|------|-------|--------|------|
-| サーバー | `src/server/index.ts` | ESM | Docker / スタンドアロンサーバー |
-| CLI | `src/entrypoint.ts`, `src/main.ts` | ESM | CLI バイナリ |
-| ライブラリ ESM | `src/index.ts` | ESM | ライブラリ利用（ESM） |
-| ライブラリ CJS | `src/index.ts` | CJS | ライブラリ利用（CJS 互換） |
+| 構成           | entry                              | format | 用途                            |
+| -------------- | ---------------------------------- | ------ | ------------------------------- |
+| サーバー       | `src/server/index.ts`              | ESM    | Docker / スタンドアロンサーバー |
+| CLI            | `src/entrypoint.ts`, `src/main.ts` | ESM    | CLI バイナリ                    |
+| ライブラリ ESM | `src/index.ts`                     | ESM    | ライブラリ利用（ESM）           |
+| ライブラリ CJS | `src/index.ts`                     | CJS    | ライブラリ利用（CJS 互換）      |
 
 全構成で `clean: false` を指定し、競合を避けている。代わりに明示的な `npm run build:clean` コマンドを用意する設計。
 
@@ -74,11 +74,11 @@ resolve: {
 ```typescript
 // scripts/postbuild.ts:50-57
 const REQUIRED_BUILD_OUTPUTS = [
-  'dist/src/entrypoint.js', // CLI entry (Node version check wrapper)
-  'dist/src/main.js',       // CLI main module
-  'dist/src/index.js',      // ESM library entry
-  'dist/src/index.cjs',     // CJS library entry
-  'dist/src/server/index.js', // Server entry
+  "dist/src/entrypoint.js", // CLI entry (Node version check wrapper)
+  "dist/src/main.js", // CLI main module
+  "dist/src/index.js", // ESM library entry
+  "dist/src/index.cjs", // CJS library entry
+  "dist/src/server/index.js", // Server entry
 ];
 ```
 
@@ -86,11 +86,11 @@ const REQUIRED_BUILD_OUTPUTS = [
 
 テストは 3 つの Vitest 設定で層別管理される。
 
-| 層 | 設定ファイル | include パターン | タイムアウト | シャッフル |
-|---|---|---|---|---|
-| Unit | `vitest.config.ts` | `test/**/*.test.ts` (`*.integration.test.ts` 除外) | 30s | Yes |
-| Integration | `vitest.integration.config.ts` | `**/*.integration.test.ts` | 60s | Yes |
-| Smoke | `vitest.smoke.config.ts` | `test/smoke/**/*.test.ts` | 30s | No |
+| 層          | 設定ファイル                   | include パターン                                   | タイムアウト | シャッフル |
+| ----------- | ------------------------------ | -------------------------------------------------- | ------------ | ---------- |
+| Unit        | `vitest.config.ts`             | `test/**/*.test.ts` (`*.integration.test.ts` 除外) | 30s          | Yes        |
+| Integration | `vitest.integration.config.ts` | `**/*.integration.test.ts`                         | 60s          | Yes        |
+| Smoke       | `vitest.smoke.config.ts`       | `test/smoke/**/*.test.ts`                          | 30s          | No         |
 
 全層で `pool: 'forks'` を使用し、メモリ分離を確保している。理由は明示的にコメントされている。
 
@@ -122,16 +122,16 @@ pool: 'forks',
 
 ```typescript
 // src/app/vite.config.ts:20-33
-const replacements: Array<{ nodePath: string; browserPath: string; patterns: string[] }> = [
+const replacements: Array<{ nodePath: string; browserPath: string; patterns: string[]; }> = [
   {
-    nodePath: path.resolve(__dirname, '../logger.ts'),
-    browserPath: path.resolve(__dirname, '../logger.browser.ts'),
-    patterns: ['./logger', '../logger', '/logger'],
+    nodePath: path.resolve(__dirname, "../logger.ts"),
+    browserPath: path.resolve(__dirname, "../logger.browser.ts"),
+    patterns: ["./logger", "../logger", "/logger"],
   },
   {
-    nodePath: path.resolve(__dirname, '../util/createHash.ts'),
-    browserPath: path.resolve(__dirname, '../util/createHash.browser.ts'),
-    patterns: ['./createHash', '../createHash', '/createHash'],
+    nodePath: path.resolve(__dirname, "../util/createHash.ts"),
+    browserPath: path.resolve(__dirname, "../util/createHash.browser.ts"),
+    patterns: ["./createHash", "../createHash", "/createHash"],
   },
 ];
 ```
@@ -156,6 +156,7 @@ CLI のエントリポイントは `entrypoint.ts` -> `main.ts` の 2 段階に�
 
 ```markdown
 <!-- AGENTS.md:24 -->
+
 **Read the relevant AGENTS.md when working in that directory.**
 ```
 
@@ -213,7 +214,7 @@ afterEach(() => {
 // tsdown.config.ts:23-27
 const versionDefines = {
   __PROMPTFOO_VERSION__: JSON.stringify(packageJson.version),
-  __PROMPTFOO_POSTHOG_KEY__: JSON.stringify(process.env.PROMPTFOO_POSTHOG_KEY || ''),
+  __PROMPTFOO_POSTHOG_KEY__: JSON.stringify(process.env.PROMPTFOO_POSTHOG_KEY || ""),
   __PROMPTFOO_MIN_NODE_VERSION__: String(minNodeVersion),
 };
 ```
@@ -224,8 +225,8 @@ const versionDefines = {
 
 ```typescript
 // Bad: 1ファイルに100+のimportとファクトリ定義が集中
-import { AI21ChatCompletionProvider } from './ai21';
-import { AlibabaChatCompletionProvider } from './alibaba';
+import { AI21ChatCompletionProvider } from "./ai21";
+import { AlibabaChatCompletionProvider } from "./alibaba";
 // ... 100+ lines of imports
 export const providerMap: ProviderFactory[] = [
   // ... 1500+ lines of factory definitions
@@ -236,7 +237,7 @@ export const providerMap: ProviderFactory[] = [
 // Better: プロバイダごとにファクトリを自己登録する分散レジストリ
 // src/providers/ai21.ts
 export const factory: ProviderFactory = {
-  test: (path) => path.startsWith('ai21:'),
+  test: (path) => path.startsWith("ai21:"),
   create: async (path, options) => new AI21ChatCompletionProvider(path, options),
 };
 registerProvider(factory);

@@ -51,8 +51,8 @@ class DeepSeekProvider extends OpenAiChatCompletionProvider {
       config: {
         ...providerOptions.config,
         ...deepseekConfig,
-        apiKeyEnvar: 'DEEPSEEK_API_KEY',
-        apiBaseUrl: 'https://api.deepseek.com/v1',
+        apiKeyEnvar: "DEEPSEEK_API_KEY",
+        apiBaseUrl: "https://api.deepseek.com/v1",
       },
     });
   }
@@ -102,7 +102,7 @@ export class AnthropicGenericProvider implements ApiProvider {
   }
 
   async callApi(): Promise<ProviderResponse> {
-    throw new Error('Not implemented: callApi must be implemented by subclasses');
+    throw new Error("Not implemented: callApi must be implemented by subclasses");
   }
 }
 ```
@@ -118,11 +118,16 @@ export function transformTools(tools: unknown, format: ToolFormat): unknown {
     return tools; // 非 OpenAI 形式はパススルー
   }
   switch (format) {
-    case 'openai':    return tools;
-    case 'anthropic': return openaiToolsToAnthropic(tools);
-    case 'bedrock':   return openaiToolsToBedrock(tools);
-    case 'google':    return openaiToolsToGoogle(tools);
-    default:          return tools;
+    case "openai":
+      return tools;
+    case "anthropic":
+      return openaiToolsToAnthropic(tools);
+    case "bedrock":
+      return openaiToolsToBedrock(tools);
+    case "google":
+      return openaiToolsToGoogle(tools);
+    default:
+      return tools;
   }
 }
 ```
@@ -135,14 +140,14 @@ Google/Gemini 向けにはスキーマのサニタイズ（`additionalProperties
 
 ```typescript
 // src/providers/registry.ts:287-316
-const splits = providerPath.split(':');
-const modelType = splits[1];  // 'chat', 'embedding', 'completion', etc.
+const splits = providerPath.split(":");
+const modelType = splits[1]; // 'chat', 'embedding', 'completion', etc.
 const deploymentName = splits[2];
 
-if (modelType === 'chat') {
+if (modelType === "chat") {
   return new AzureChatCompletionProvider(deploymentName, providerOptions);
 }
-if (modelType === 'embedding' || modelType === 'embeddings') {
+if (modelType === "embedding" || modelType === "embeddings") {
   return new AzureEmbeddingProvider(deploymentName, providerOptions);
 }
 ```
@@ -156,20 +161,20 @@ Python, Go, Ruby, exec の各スクリプトプロバイダは `createScriptBase
 export function createScriptBasedProviderFactory(
   prefix: string,
   fileExtension: string | null,
-  providerConstructor: new (scriptPath: string, options: ProviderOptions) => ApiProvider,
+  providerConstructor: new(scriptPath: string, options: ProviderOptions) => ApiProvider,
 ) {
   return {
     test: (providerPath: string) => {
       if (providerPath.startsWith(`${prefix}:`)) return true;
-      if (fileExtension && providerPath.startsWith('file://')) {
+      if (fileExtension && providerPath.startsWith("file://")) {
         return providerPath.endsWith(`.${fileExtension}`);
       }
       return false;
     },
     create: async (providerPath, providerOptions, _context) => {
-      let scriptPath = providerPath.startsWith('file://')
-        ? providerPath.slice('file://'.length)
-        : providerPath.split(':').slice(1).join(':');
+      let scriptPath = providerPath.startsWith("file://")
+        ? providerPath.slice("file://".length)
+        : providerPath.split(":").slice(1).join(":");
       const resolvedPath = getResolvedRelativePath(scriptPath);
       return new providerConstructor(resolvedPath, providerOptions);
     },
@@ -211,7 +216,7 @@ class ProviderRegistry {
 
   async shutdownAll(): Promise<void> {
     const results = await Promise.allSettled(
-      Array.from(this.providers).map((p) => p.shutdown())
+      Array.from(this.providers).map((p) => p.shutdown()),
     );
     this.providers.clear();
   }
@@ -238,7 +243,7 @@ for (const factory of providerMap) {
     ret.delay = options.delay;
     ret.inputs = options.inputs;
     ret.label ||= getNunjucksEngine().renderString(
-      String(options.label || ''),
+      String(options.label || ""),
       mergedEnv ? { env: mergedEnv } : {},
     );
     return ret;
@@ -264,16 +269,16 @@ export interface ApiProvider {
 ```typescript
 // src/providers/shared.ts:162-166 - ツール選択の正規形（OpenAI 形式）
 export type OpenAIToolChoice =
-  | 'auto'
-  | 'none'
-  | 'required'
-  | { type: 'function'; function: { name: string } };
+  | "auto"
+  | "none"
+  | "required"
+  | { type: "function"; function: { name: string; }; };
 ```
 
 ```typescript
 // src/providers/cerebras.ts:14-56 - OpenAI 互換プロバイダの最薄ラッパー
 export function createCerebrasProvider(providerPath, options = {}): ApiProvider {
-  const modelName = providerPath.split(':').slice(1).join(':');
+  const modelName = providerPath.split(":").slice(1).join(":");
 
   class CerebrasProvider extends OpenAiChatCompletionProvider {
     async getOpenAiBody(prompt, context, callApiOptions) {
@@ -287,8 +292,8 @@ export function createCerebrasProvider(providerPath, options = {}): ApiProvider 
 
   return new CerebrasProvider(modelName, {
     config: {
-      apiBaseUrl: 'https://api.cerebras.ai/v1',
-      apiKeyEnvar: 'CEREBRAS_API_KEY',
+      apiBaseUrl: "https://api.cerebras.ai/v1",
+      apiKeyEnvar: "CEREBRAS_API_KEY",
     },
   });
 }
@@ -335,8 +340,8 @@ export function createCerebrasProvider(providerPath, options = {}): ApiProvider 
 // Fireworks: OpenAiChatCompletionProvider の直接利用
 return new OpenAiChatCompletionProvider(modelName, {
   config: {
-    apiBaseUrl: 'https://api.fireworks.ai/inference/v1',
-    apiKeyEnvar: 'FIREWORKS_API_KEY',
+    apiBaseUrl: "https://api.fireworks.ai/inference/v1",
+    apiKeyEnvar: "FIREWORKS_API_KEY",
   },
 });
 ```
@@ -356,7 +361,9 @@ export function transformTools(tools: unknown, format: ToolFormat): unknown {
 ```typescript
 // src/providers/echo.ts:5-55
 export class EchoProvider implements ApiProvider {
-  id(): string { return 'echo'; }
+  id(): string {
+    return "echo";
+  }
   async callApi(input: string): Promise<ProviderResponse> {
     return { output: input, raw: input, cost: 0, cached: false };
   }

@@ -29,6 +29,7 @@ StdioServerTransport（`packages/server/src/server/stdio.ts`）は `ReadBuffer` 
 `Protocol<ContextT extends BaseContext>` 抽象クラス（`packages/core/src/shared/protocol.ts:392`）は、すべてのメッセージルーティングロジックを集約する。リクエスト/レスポンスの相関管理（`_responseHandlers` Map）、タイムアウト制御、プログレス通知、キャンセル処理をこの1クラスに閉じ込めている。
 
 サブクラスが実装すべき抽象メソッドは5つ:
+
 - `buildContext()`: BaseContext → ContextT への変換
 - `assertCapabilityForMethod()`: リモート側の capability チェック
 - `assertNotificationCapability()`: ローカル側の notification capability チェック
@@ -67,10 +68,10 @@ private setToolRequestHandlers() {
 
 ```typescript
 // packages/server/src/shimsNode.ts
-export { AjvJsonSchemaValidator as DefaultJsonSchemaValidator } from '@modelcontextprotocol/core';
+export { AjvJsonSchemaValidator as DefaultJsonSchemaValidator } from "@modelcontextprotocol/core";
 
 // packages/server/src/shimsWorkerd.ts
-export { CfWorkerJsonSchemaValidator as DefaultJsonSchemaValidator } from '@modelcontextprotocol/core';
+export { CfWorkerJsonSchemaValidator as DefaultJsonSchemaValidator } from "@modelcontextprotocol/core";
 ```
 
 Server/Client のコンストラクタでは `options?.jsonSchemaValidator ?? new DefaultJsonSchemaValidator()` とデフォルトを適用し、ユーザーによる差し替えも可能にしている。
@@ -116,11 +117,13 @@ type Middleware = (next: FetchLike) => FetchLike;
 ```typescript
 // packages/server/src/server/completable.ts:52-60
 export function completable<T extends AnySchema>(schema: T, complete: CompleteCallback<T>): CompletableSchema<T> {
-    Object.defineProperty(schema as object, COMPLETABLE_SYMBOL, {
-        value: { complete } as CompletableMeta<T>,
-        enumerable: false, writable: false, configurable: false
-    });
-    return schema as CompletableSchema<T>;
+  Object.defineProperty(schema as object, COMPLETABLE_SYMBOL, {
+    value: { complete } as CompletableMeta<T>,
+    enumerable: false,
+    writable: false,
+    configurable: false,
+  });
+  return schema as CompletableSchema<T>;
 }
 ```
 
@@ -171,7 +174,7 @@ static createLinkedPair(): [InMemoryTransport, InMemoryTransport] {
 ```typescript
 // packages/server/src/server/mcp.ts:836-838
 this._registeredTools[name] = registeredTool;
-this.setToolRequestHandlers();   // 初回のみ実行される遅延初期化
+this.setToolRequestHandlers(); // 初回のみ実行される遅延初期化
 this.sendToolListChanged();
 ```
 
@@ -196,10 +199,10 @@ this.sendToolListChanged();
 ```typescript
 // Bad: コールバック未設定で start
 const transport = new StdioServerTransport();
-await transport.start();  // onmessage が未設定のためメッセージが消失する
+await transport.start(); // onmessage が未設定のためメッセージが消失する
 
 // Better: Protocol.connect() 経由で使う（コールバック設定 → start の順序が保証される）
-const server = new McpServer({ name: 'test', version: '1.0' });
+const server = new McpServer({ name: "test", version: "1.0" });
 await server.connect(transport);
 ```
 

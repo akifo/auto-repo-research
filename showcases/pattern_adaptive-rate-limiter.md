@@ -26,10 +26,10 @@ TCP 輻輳制御の AIMD に類似するが、増加側も乗算的（1.5 倍）
 
 ```typescript
 // src/scheduler/adaptiveConcurrency.ts:1-142
-const BACKOFF_FACTOR = 0.5;       // 429 で半減
-const RECOVERY_FACTOR = 1.5;      // 回復時 1.5 倍
-const RECOVERY_THRESHOLD = 5;     // 回復に必要な連続成功数
-const WARNING_THRESHOLD = 0.1;    // 残量 10% で先制削減
+const BACKOFF_FACTOR = 0.5; // 429 で半減
+const RECOVERY_FACTOR = 1.5; // 回復時 1.5 倍
+const RECOVERY_THRESHOLD = 5; // 回復に必要な連続成功数
+const WARNING_THRESHOLD = 0.1; // 残量 10% で先制削減
 
 export class AdaptiveConcurrency {
   private current: number;
@@ -42,12 +42,12 @@ export class AdaptiveConcurrency {
   recordApproachingLimit(ratio: number): ConcurrencyChangeResult {
     const clampedRatio = Math.max(0, Math.min(1, ratio));
     if (clampedRatio >= WARNING_THRESHOLD || this.current <= this.min) {
-      return { changed: false, previous: this.current, current: this.current, reason: 'proactive' };
+      return { changed: false, previous: this.current, current: this.current, reason: "proactive" };
     }
     const previous = this.current;
     const reductionFactor = 0.2 + (clampedRatio / WARNING_THRESHOLD) * 0.4;
     this.current = Math.max(this.min, Math.floor(this.current * reductionFactor));
-    return { changed: previous !== this.current, previous, current: this.current, reason: 'proactive' };
+    return { changed: previous !== this.current, previous, current: this.current, reason: "proactive" };
   }
 
   // Layer 2: リアクティブバックオフ -- 429 で即時半減
@@ -55,7 +55,7 @@ export class AdaptiveConcurrency {
     this.consecutiveSuccesses = 0;
     const previous = this.current;
     this.current = Math.max(this.min, Math.floor(this.current * BACKOFF_FACTOR));
-    return { changed: previous !== this.current, previous, current: this.current, reason: 'ratelimit' };
+    return { changed: previous !== this.current, previous, current: this.current, reason: "ratelimit" };
   }
 
   // Layer 3: 段階的回復 -- 5 連続成功で 1.5 倍（初期値上限）
@@ -66,9 +66,9 @@ export class AdaptiveConcurrency {
       const previous = this.current;
       this.current = Math.min(this.initial, Math.ceil(this.current * RECOVERY_FACTOR));
       this.consecutiveSuccesses = 0;
-      return { changed: previous !== this.current, previous, current: this.current, reason: 'recovery' };
+      return { changed: previous !== this.current, previous, current: this.current, reason: "recovery" };
     }
-    return { changed: false, previous: this.current, current: this.current, reason: 'recovery' };
+    return { changed: false, previous: this.current, current: this.current, reason: "recovery" };
   }
 }
 ```
@@ -85,10 +85,10 @@ export function parseRateLimitHeaders(headers: Record<string, string>): ParsedRa
 
   // OpenAI, Anthropic, Standard の順でフォールバック探索
   result.remainingRequests = parseFirstMatch(h, [
-    'x-ratelimit-remaining-requests',        // OpenAI
-    'anthropic-ratelimit-requests-remaining', // Anthropic
-    'x-ratelimit-remaining',                 // Standard alt
-    'ratelimit-remaining',                   // Standard
+    "x-ratelimit-remaining-requests", // OpenAI
+    "anthropic-ratelimit-requests-remaining", // Anthropic
+    "x-ratelimit-remaining", // Standard alt
+    "ratelimit-remaining", // Standard
   ]);
   // ... tokens, limits, reset time も同様
   return result;
@@ -128,7 +128,7 @@ private processQueue(): void {
 
 ```typescript
 // src/scheduler/providerWrapper.ts:27,93-125
-const WRAPPED_SYMBOL = Symbol.for('promptfoo.rateLimitWrapped');
+const WRAPPED_SYMBOL = Symbol.for("promptfoo.rateLimitWrapped");
 
 export function wrapProviderWithRateLimiting(
   provider: ApiProvider,
@@ -255,14 +255,14 @@ async function callApiWithRetry(prompts: string[], concurrency: number) {
 
 ### カスタマイズポイント
 
-| パラメータ | デフォルト | 調整指針 |
-|---|---|---|
-| `BACKOFF_FACTOR` | 0.5 | 429 時の削減率。厳しい API では 0.3 等に下げる |
-| `RECOVERY_FACTOR` | 1.5 | 回復時の増加率。保守的にするなら 1.2 |
-| `RECOVERY_THRESHOLD` | 5 | 回復に必要な連続成功数。慎重にするなら 10 |
-| `WARNING_THRESHOLD` | 0.1 | プロアクティブ削減の閾値。余裕を持つなら 0.2 |
-| `maxRetries` | 3 | リトライ上限。長時間バッチなら 5 に増やす |
-| `jitterFactor` | 0.2 | ジッター係数。クライアント数が多いなら 0.5 |
+| パラメータ           | デフォルト | 調整指針                                       |
+| -------------------- | ---------- | ---------------------------------------------- |
+| `BACKOFF_FACTOR`     | 0.5        | 429 時の削減率。厳しい API では 0.3 等に下げる |
+| `RECOVERY_FACTOR`    | 1.5        | 回復時の増加率。保守的にするなら 1.2           |
+| `RECOVERY_THRESHOLD` | 5          | 回復に必要な連続成功数。慎重にするなら 10      |
+| `WARNING_THRESHOLD`  | 0.1        | プロアクティブ削減の閾値。余裕を持つなら 0.2   |
+| `maxRetries`         | 3          | リトライ上限。長時間バッチなら 5 に増やす      |
+| `jitterFactor`       | 0.2        | ジッター係数。クライアント数が多いなら 0.5     |
 
 ## 参考
 

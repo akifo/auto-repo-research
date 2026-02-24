@@ -20,26 +20,26 @@ promptfoo は「宣言的 YAML 設定から 100 以上の LLM プロバイダを
 
 ## 分析した視点
 
-| # | 視点 | ファイル | 概要 |
-| - | ---- | -------- | ---- |
-| 1 | プロジェクト構造 | project-structure.md | npm workspaces で依存方向を制御し、tsdown 4構成ビルドと3層テストを単一設定で管理するモノレポ構成 |
-| 2 | アーキテクチャ | architecture.md | 最小インターフェース ApiProvider と eval パイプラインを共有コアに集約し CLI/Server/Library の三面を提供する設計 |
-| 3 | 設計思想 | design-philosophy.md | 宣言的 YAML 設定と file:// エスケープハッチの組み合わせで柔軟性と簡潔さを両立する設計思想 |
-| 4 | プラグイン合成 | plugin-composition.md | Plugin+Grader ペアの Template Method とコレクション定数による宣言的プラグイン合成パターン |
-| 5 | アサーションパターン | assertion-patterns.md | Zod enum + Record 型ハンドラマップで50種以上のアサーションの網羅性をコンパイル時に保証する設計 |
-| 6 | プロバイダ抽象化 | provider-abstraction.md | 文字列駆動のファクトリ配列と OpenAI 互換継承で100以上のプロバイダを統一的に管理する抽象化戦略 |
-| 7 | 設定駆動アーキテクチャ | config-driven-architecture.md | Zod スキーマを型・バリデーション・JSON Schema の Single Source of Truth とする多段設定パイプライン |
-| 8 | テスト戦略 | testing-practices.md | forks プール・ランダム順序・Echo プロバイダで625以上のテストファイルの信頼性と分離性を担保する戦略 |
-| 9 | エラーハンドリング | error-handling-idioms.md | Return-based Error・3層リトライ・一時的/永続的エラー分類で部分的失敗を許容するエラー戦略 |
-| 10 | 型システム | type-system-patterns.md | enum 禁止・Zod スキーマ型導出・AssertEqual 静的検証で型とスキーマの整合性を構造的に保証する設計 |
-| 11 | セキュリティ | security-practices.md | Lint による fetch 一元化・3層ログサニタイズ・リスク別依存更新遅延の多層セキュリティプラクティス |
-| 12 | 拡張性機構 | extensibility-mechanisms.md | URI プレフィックス統一ディスパッチと JSON 契約で多言語拡張を宣言的設定から接続する拡張機構 |
-| 13 | ビルド・ツーリング | build-and-tooling.md | tsdown 4構成デュアルビルドと Biome/Prettier 責務分離で大規模 TS プロジェクトの品質を自動担保 |
-| 14 | AI エージェント設定 | ai-settings.md | CLAUDE.md 委任パターンと階層的 AGENTS.md で AI エージェントにコンテキストの局所性を提供する戦略 |
-| 15 | CI/CD | ci-cd.md | release-please 自動化・動的テストマトリクス・AI レビュー増分戦略を統合した段階的品質ゲート |
-| 16 | 並行制御 | concurrency-patterns.md | 同期スロット割当・AIMD 風適応的並列度・Symbol 二重ラップ防止で API レートリミットに自動適応する設計 |
-| 17 | 開発規約 | dev-conventions.md | Lint ルールで fetch 一元化と enum 禁止を強制し差分ベースの品質チェックで開発体験を維持する規約体系 |
-| 18 | データベースパターン | database-patterns.md | SQLite WAL + Drizzle ORM + コンテンツアドレス Blob でローカルファースト CLI のゼロ設定永続化を実現 |
+| #  | 視点                   | ファイル                      | 概要                                                                                                            |
+| -- | ---------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| 1  | プロジェクト構造       | project-structure.md          | npm workspaces で依存方向を制御し、tsdown 4構成ビルドと3層テストを単一設定で管理するモノレポ構成                |
+| 2  | アーキテクチャ         | architecture.md               | 最小インターフェース ApiProvider と eval パイプラインを共有コアに集約し CLI/Server/Library の三面を提供する設計 |
+| 3  | 設計思想               | design-philosophy.md          | 宣言的 YAML 設定と file:// エスケープハッチの組み合わせで柔軟性と簡潔さを両立する設計思想                       |
+| 4  | プラグイン合成         | plugin-composition.md         | Plugin+Grader ペアの Template Method とコレクション定数による宣言的プラグイン合成パターン                       |
+| 5  | アサーションパターン   | assertion-patterns.md         | Zod enum + Record 型ハンドラマップで50種以上のアサーションの網羅性をコンパイル時に保証する設計                  |
+| 6  | プロバイダ抽象化       | provider-abstraction.md       | 文字列駆動のファクトリ配列と OpenAI 互換継承で100以上のプロバイダを統一的に管理する抽象化戦略                   |
+| 7  | 設定駆動アーキテクチャ | config-driven-architecture.md | Zod スキーマを型・バリデーション・JSON Schema の Single Source of Truth とする多段設定パイプライン              |
+| 8  | テスト戦略             | testing-practices.md          | forks プール・ランダム順序・Echo プロバイダで625以上のテストファイルの信頼性と分離性を担保する戦略              |
+| 9  | エラーハンドリング     | error-handling-idioms.md      | Return-based Error・3層リトライ・一時的/永続的エラー分類で部分的失敗を許容するエラー戦略                        |
+| 10 | 型システム             | type-system-patterns.md       | enum 禁止・Zod スキーマ型導出・AssertEqual 静的検証で型とスキーマの整合性を構造的に保証する設計                 |
+| 11 | セキュリティ           | security-practices.md         | Lint による fetch 一元化・3層ログサニタイズ・リスク別依存更新遅延の多層セキュリティプラクティス                 |
+| 12 | 拡張性機構             | extensibility-mechanisms.md   | URI プレフィックス統一ディスパッチと JSON 契約で多言語拡張を宣言的設定から接続する拡張機構                      |
+| 13 | ビルド・ツーリング     | build-and-tooling.md          | tsdown 4構成デュアルビルドと Biome/Prettier 責務分離で大規模 TS プロジェクトの品質を自動担保                    |
+| 14 | AI エージェント設定    | ai-settings.md                | CLAUDE.md 委任パターンと階層的 AGENTS.md で AI エージェントにコンテキストの局所性を提供する戦略                 |
+| 15 | CI/CD                  | ci-cd.md                      | release-please 自動化・動的テストマトリクス・AI レビュー増分戦略を統合した段階的品質ゲート                      |
+| 16 | 並行制御               | concurrency-patterns.md       | 同期スロット割当・AIMD 風適応的並列度・Symbol 二重ラップ防止で API レートリミットに自動適応する設計             |
+| 17 | 開発規約               | dev-conventions.md            | Lint ルールで fetch 一元化と enum 禁止を強制し差分ベースの品質チェックで開発体験を維持する規約体系              |
+| 18 | データベースパターン   | database-patterns.md          | SQLite WAL + Drizzle ORM + コンテンツアドレス Blob でローカルファースト CLI のゼロ設定永続化を実現              |
 
 ## 特に注目すべき知見
 

@@ -54,12 +54,12 @@ LLM-as-judge 系のアサーション（`llm-rubric`, `g-eval`, `factuality` 等
 ```typescript
 // src/types/index.ts:514-576 — Zod enum による型定義と自動導出
 export const BaseAssertionTypesSchema = z.enum([
-  'answer-relevance',
-  'bleu',
-  'classifier',
-  'contains',
+  "answer-relevance",
+  "bleu",
+  "classifier",
+  "contains",
   // ... 50+ types
-  'word-count',
+  "word-count",
 ]);
 
 export type BaseAssertionTypes = z.infer<typeof BaseAssertionTypesSchema>;
@@ -84,11 +84,11 @@ const ASSERTION_HANDLERS: Record<
   BaseAssertionTypes,
   (params: AssertionParams) => GradingResult | Promise<GradingResult>
 > = {
-  'answer-relevance': handleAnswerRelevance,
+  "answer-relevance": handleAnswerRelevance,
   bleu: handleBleuScore,
   contains: handleContains,
   // ... 全型に対応するハンドラ
-  'word-count': handleWordCount,
+  "word-count": handleWordCount,
 };
 ```
 
@@ -109,20 +109,20 @@ addResult({ index, result, metric, weight = 1 }: { ... }) {
 
 ```typescript
 // src/assertions/index.ts:404-447 — スクリプト値の型安全な解決
-const SCRIPT_RESULT_ASSERTIONS = new Set(['javascript', 'python', 'ruby']);
+const SCRIPT_RESULT_ASSERTIONS = new Set(["javascript", "python", "ruby"]);
 const baseType = getAssertionBaseType(assertion);
 
 if (valueFromScript !== undefined && !SCRIPT_RESULT_ASSERTIONS.has(baseType)) {
-  if (typeof valueFromScript === 'function') {
+  if (typeof valueFromScript === "function") {
     throw new Error(
-      `Script for "${assertion.type}" assertion returned a function. ` +
-        `Only javascript/python/ruby assertion types can return functions.`
+      `Script for "${assertion.type}" assertion returned a function. `
+        + `Only javascript/python/ruby assertion types can return functions.`,
     );
   }
-  if (typeof valueFromScript === 'boolean') {
+  if (typeof valueFromScript === "boolean") {
     throw new Error(
-      `Script for "${assertion.type}" assertion returned a boolean. ` +
-        `Only javascript/python/ruby assertion types can return boolean values.`
+      `Script for "${assertion.type}" assertion returned a boolean. `
+        + `Only javascript/python/ruby assertion types can return boolean values.`,
     );
   }
   renderedValue = valueFromScript as AssertionValue;
@@ -132,14 +132,14 @@ if (valueFromScript !== undefined && !SCRIPT_RESULT_ASSERTIONS.has(baseType)) {
 ```typescript
 // src/assertions/validateAssertions.ts:21-72 — Zod スキーマによるバリデーションと親切なエラー
 function parseAssertion(assertion: unknown, context: string): Assertion | AssertionSet {
-  if (!('type' in assertionObj) || assertionObj.type === undefined) {
+  if (!("type" in assertionObj) || assertionObj.type === undefined) {
     throw new AssertValidationError(
-      `Invalid assertion at ${context}:\n` +
-        `Missing required 'type' property\n\n` +
-        `Hint: In YAML, ensure all assertion properties are under the same list item:\n` +
-        `  assert:\n` +
-        `    - type: python\n` +
-        `      value: file://script.py   # No '-' before 'value'`,
+      `Invalid assertion at ${context}:\n`
+        + `Missing required 'type' property\n\n`
+        + `Hint: In YAML, ensure all assertion properties are under the same list item:\n`
+        + `  assert:\n`
+        + `    - type: python\n`
+        + `      value: file://script.py   # No '-' before 'value'`,
     );
   }
   const result = AssertionOrSetSchema.safeParse(assertion);
@@ -175,7 +175,7 @@ function parseAssertion(assertion: unknown, context: string): Assertion | Assert
   const ASSERTION_HANDLERS: Record<
     BaseAssertionTypes,
     (params: AssertionParams) => GradingResult | Promise<GradingResult>
-  > = { /* 全型のハンドラが必須 */ };
+  > = {/* 全型のハンドラが必須 */};
   ```
 
 - **統一パラメータオブジェクトによるハンドラの選択的分解**: `AssertionParams` という大きなパラメータオブジェクトをハンドラに渡し、各ハンドラは必要なプロパティのみを分割代入で取り出す。将来のパラメータ追加時に既存ハンドラの変更が不要。

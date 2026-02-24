@@ -62,6 +62,7 @@ recordRateLimit(): ConcurrencyChangeResult {
 ```
 
 プロアクティブ削減の線形スケーリング公式:
+
 - 残量 10% → 60% に削減
 - 残量 5% → 40% に削減
 - 残量 1% → 24% に削減
@@ -93,11 +94,11 @@ export function getRateLimitKey(provider: ApiProvider): string {
 
 ```typescript
 // src/scheduler/providerWrapper.ts:27,97-100
-const WRAPPED_SYMBOL = Symbol.for('promptfoo.rateLimitWrapped');
+const WRAPPED_SYMBOL = Symbol.for("promptfoo.rateLimitWrapped");
 
 export function wrapProviderWithRateLimiting(provider, registry) {
   if (isRateLimitWrapped(provider)) {
-    return provider;  // 冪等
+    return provider; // 冪等
   }
   // ...
 }
@@ -221,7 +222,9 @@ class CircularBuffer {
   private buffer: number[];
   private head = 0;
   private count = 0;
-  constructor(private capacity: number) { this.buffer = new Array(capacity); }
+  constructor(private capacity: number) {
+    this.buffer = new Array(capacity);
+  }
   push(value: number): void {
     this.buffer[this.head] = value;
     this.head = (this.head + 1) % this.capacity;
@@ -237,7 +240,7 @@ class CircularBuffer {
 worker.call(request.functionName, request.args)
   .then(request.resolve)
   .catch(request.reject)
-  .finally(() => this.processQueue());  // 完了時に次を処理
+  .finally(() => this.processQueue()); // 完了時に次を処理
 ```
 
 ## Anti-Patterns / 注意点

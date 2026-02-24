@@ -45,17 +45,12 @@ MCP TypeScript SDK は Zod v4 スキーマを単一の信頼できる情報源�
 // packages/core/src/types/types.ts:2349-2362
 // Flatten ユーティリティ: z.infer の出力を可読な型に変換
 type Primitive = string | number | boolean | bigint | null | undefined;
-type Flatten<T> = T extends Primitive
-    ? T
-    : T extends Array<infer U>
-      ? Array<Flatten<U>>
-      : T extends Set<infer U>
-        ? Set<Flatten<U>>
-        : T extends Map<infer K, infer V>
-          ? Map<Flatten<K>, Flatten<V>>
-          : T extends object
-            ? { [K in keyof T]: Flatten<T[K]> }
-            : T;
+type Flatten<T> = T extends Primitive ? T
+  : T extends Array<infer U> ? Array<Flatten<U>>
+  : T extends Set<infer U> ? Set<Flatten<U>>
+  : T extends Map<infer K, infer V> ? Map<Flatten<K>, Flatten<V>>
+  : T extends object ? { [K in keyof T]: Flatten<T[K]>; }
+  : T;
 
 type Infer<Schema extends z.ZodTypeAny> = Flatten<z.infer<Schema>>;
 ```
@@ -64,10 +59,10 @@ type Infer<Schema extends z.ZodTypeAny> = Flatten<z.infer<Schema>>;
 // packages/core/src/types/types.ts:2610-2617
 // メソッド名 -> 型のマップを union 型から自動生成
 type MethodToTypeMap<U> = {
-    [T in U as T extends { method: infer M extends string } ? M : never]: T;
+  [T in U as T extends { method: infer M extends string; } ? M : never]: T;
 };
-export type RequestMethod = ClientRequest['method'] | ServerRequest['method'];
-export type NotificationMethod = ClientNotification['method'] | ServerNotification['method'];
+export type RequestMethod = ClientRequest["method"] | ServerRequest["method"];
+export type NotificationMethod = ClientNotification["method"] | ServerNotification["method"];
 export type RequestTypeMap = MethodToTypeMap<ClientRequest | ServerRequest>;
 export type NotificationTypeMap = MethodToTypeMap<ClientNotification | ServerNotification>;
 ```
@@ -75,21 +70,21 @@ export type NotificationTypeMap = MethodToTypeMap<ClientNotification | ServerNot
 ```typescript
 // packages/core/src/types/types.ts:2645-2674
 // ランタイムスキーマルックアップ: メソッド名からスキーマを取得
-function buildSchemaMap<T extends { shape: { method: { value: string } } }>(
-    schemas: readonly T[]
+function buildSchemaMap<T extends { shape: { method: { value: string; }; }; }>(
+  schemas: readonly T[],
 ): Record<string, T> {
-    const map: Record<string, T> = {};
-    for (const schema of schemas) {
-        const method = schema.shape.method.value;
-        map[method] = schema;
-    }
-    return map;
+  const map: Record<string, T> = {};
+  for (const schema of schemas) {
+    const method = schema.shape.method.value;
+    map[method] = schema;
+  }
+  return map;
 }
 
 export function getRequestSchema<M extends RequestMethod>(
-    method: M
+  method: M,
 ): z.ZodType<RequestTypeMap[M]> {
-    return requestSchemas[method] as unknown as z.ZodType<RequestTypeMap[M]>;
+  return requestSchemas[method] as unknown as z.ZodType<RequestTypeMap[M]>;
 }
 ```
 
@@ -102,10 +97,10 @@ export type SchemaInput<T extends AnySchema> = z.input<T>;
 export type SchemaOutput<T extends AnySchema> = z.output<T>;
 
 export function schemaToJson(
-    schema: AnySchema,
-    options?: { io?: 'input' | 'output' }
+  schema: AnySchema,
+  options?: { io?: "input" | "output"; },
 ): Record<string, unknown> {
-    return z.toJSONSchema(schema, options) as Record<string, unknown>;
+  return z.toJSONSchema(schema, options) as Record<string, unknown>;
 }
 ```
 
@@ -113,15 +108,17 @@ export function schemaToJson(
 // packages/server/src/server/mcp.ts:1067-1074
 // ツールコールバックの条件型: スキーマの有無で引数シグネチャが変わる
 export type BaseToolCallback<
-    ResultT extends Result,
-    Ctx extends ServerContext,
-    Args extends AnySchema | undefined
-> = Args extends AnySchema
-    ? (args: SchemaOutput<Args>, ctx: Ctx) => ResultT | Promise<ResultT>
-    : (ctx: Ctx) => ResultT | Promise<ResultT>;
+  ResultT extends Result,
+  Ctx extends ServerContext,
+  Args extends AnySchema | undefined,
+> = Args extends AnySchema ? (args: SchemaOutput<Args>, ctx: Ctx) => ResultT | Promise<ResultT>
+  : (ctx: Ctx) => ResultT | Promise<ResultT>;
 
-export type ToolCallback<Args extends AnySchema | undefined = undefined> =
-    BaseToolCallback<CallToolResult, ServerContext, Args>;
+export type ToolCallback<Args extends AnySchema | undefined = undefined> = BaseToolCallback<
+  CallToolResult,
+  ServerContext,
+  Args
+>;
 ```
 
 ```typescript
@@ -183,7 +180,7 @@ export type JSONRPCRequest = Infer<typeof JSONRPCRequestSchema>;
 ```typescript
 // packages/core/src/types/types.ts:184
 export const isJSONRPCRequest = (value: unknown): value is JSONRPCRequest =>
-    JSONRPCRequestSchema.safeParse(value).success;
+  JSONRPCRequestSchema.safeParse(value).success;
 ```
 
 - **`z.looseObject` と `.strict()` の使い分け**: JSON-RPC メッセージスキーマ（`JSONRPCRequestSchema` 等）は `.strict()` で未知フィールドを拒否し、結果型（`ResultSchema`）は `z.looseObject` で拡張フィールドを許容する。プロトコルの厳密性と拡張性を型レベルで表現している。
@@ -191,8 +188,8 @@ export const isJSONRPCRequest = (value: unknown): value is JSONRPCRequest =>
 ```typescript
 // packages/core/src/types/types.ts:176-182 (strict)
 export const JSONRPCRequestSchema = z
-    .object({ jsonrpc: z.literal(JSONRPC_VERSION), id: RequestIdSchema, ...RequestSchema.shape })
-    .strict();
+  .object({ jsonrpc: z.literal(JSONRPC_VERSION), id: RequestIdSchema, ...RequestSchema.shape })
+  .strict();
 
 // packages/core/src/types/types.ts:160 (loose)
 export const ResultSchema = z.looseObject({ _meta: RequestMetaSchema.optional() });
@@ -204,8 +201,8 @@ export const ResultSchema = z.looseObject({ _meta: RequestMetaSchema.optional() 
 // packages/core/src/shared/protocol.ts:1459-1463
 const schema = getRequestSchema(method);
 this._requestHandlers.set(method, (request, ctx) => {
-    const parsed = schema.parse(request) as RequestTypeMap[M];
-    return Promise.resolve(handler(parsed, ctx));
+  const parsed = schema.parse(request) as RequestTypeMap[M];
+  return Promise.resolve(handler(parsed, ctx));
 });
 ```
 

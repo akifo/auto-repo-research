@@ -28,8 +28,8 @@
 | [capabilities-flag](./pattern_capabilities-flag)                       | booleanフラグでバリアント機能を宣言するインターフェース設計パターン                            |
 | [circuit-breaker](./pattern_circuit-breaker)                           | 外部サービスの連続失敗検知+自動遮断+復旧によるCircuit Breakerパターン                          |
 | [trait-composition](./pattern_trait-composition)                       | $constructor+init()チェーンでクラス継承を排除しtree-shake可能なトレイト合成                    |
-| [adaptive-rate-limiter](./pattern_adaptive-rate-limiter)               | AIMD風3層適応的並列度制御でAPIレートリミットにゼロコンフィグ自動適応                          |
-| [zod-enum-handler-map](./pattern_zod-enum-handler-map)                 | Zod enum+Record型ハンドラマップで50種以上の処理分岐の網羅性をコンパイル時保証                 |
+| [adaptive-rate-limiter](./pattern_adaptive-rate-limiter)               | AIMD風3層適応的並列度制御でAPIレートリミットにゼロコンフィグ自動適応                           |
+| [zod-enum-handler-map](./pattern_zod-enum-handler-map)                 | Zod enum+Record型ハンドラマップで50種以上の処理分岐の網羅性をコンパイル時保証                  |
 
 ## Practice
 
@@ -69,13 +69,13 @@
 
 ## Claude
 
-| Showcase                                                            | 概要                                                                             |
-| ------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| [multi-ai-tool-config](./claude_multi-ai-tool-config)               | Claude Code/Cursor/Copilot 3ツール並行管理とカスタムMCPサーバーの実践パターン    |
-| [progressive-context-loading](./claude_progressive-context-loading) | CLAUDE.md/AGENTS.md/.claude/の階層設計によるAIへの段階的コンテキストロード       |
-| [agent-command-guardrails](./claude_agent-command-guardrails)       | 禁止コマンド列挙+scratchpadサンドボックス+ホワイトリスト権限によるAIガードレール |
-| [prompt-injection-defense](./claude_prompt-injection-defense)       | 外部データ処理時のプロンプトインジェクション防御の多層設計                       |
-| [llms-txt-mcp-integration](./claude_llms-txt-mcp-integration)       | llms.txt/llms-full.txt/MCPサーバー3段階のAI向けドキュメント提供パターン          |
+| Showcase                                                            | 概要                                                                                  |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| [multi-ai-tool-config](./claude_multi-ai-tool-config)               | Claude Code/Cursor/Copilot 3ツール並行管理とカスタムMCPサーバーの実践パターン         |
+| [progressive-context-loading](./claude_progressive-context-loading) | CLAUDE.md/AGENTS.md/.claude/の階層設計によるAIへの段階的コンテキストロード            |
+| [agent-command-guardrails](./claude_agent-command-guardrails)       | 禁止コマンド列挙+scratchpadサンドボックス+ホワイトリスト権限によるAIガードレール      |
+| [prompt-injection-defense](./claude_prompt-injection-defense)       | 外部データ処理時のプロンプトインジェクション防御の多層設計                            |
+| [llms-txt-mcp-integration](./claude_llms-txt-mcp-integration)       | llms.txt/llms-full.txt/MCPサーバー3段階のAI向けドキュメント提供パターン               |
 | [hierarchical-agents-md](./claude_hierarchical-agents-md)           | CLAUDE.md委任+ディレクトリ別AGENTS.md+PostToolUseフックによる階層的AIコンテキスト管理 |
 
 ## Tool
@@ -87,9 +87,9 @@
 
 ## Workflow
 
-| Showcase                                                    | 概要                                                                    |
-| ----------------------------------------------------------- | ----------------------------------------------------------------------- |
-| [codegen-diff-ci](./workflow_codegen-diff-ci)               | コード生成→git diff --exit-codeによる生成コード一貫性のCI検証           |
-| [loc-limit-enforcement](./workflow_loc-limit-enforcement)   | CIスクリプト+AIルール二層でファイル行数上限を強制し巨大ファイル化を防止 |
-| [e2e-parallel-isolation](./workflow_e2e-parallel-isolation)     | リソース複製によるE2Eテスト並列実行時のテスト間干渉排除                          |
+| Showcase                                                            | 概要                                                                                  |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| [codegen-diff-ci](./workflow_codegen-diff-ci)                       | コード生成→git diff --exit-codeによる生成コード一貫性のCI検証                         |
+| [loc-limit-enforcement](./workflow_loc-limit-enforcement)           | CIスクリプト+AIルール二層でファイル行数上限を強制し巨大ファイル化を防止               |
+| [e2e-parallel-isolation](./workflow_e2e-parallel-isolation)         | リソース複製によるE2Eテスト並列実行時のテスト間干渉排除                               |
 | [lint-enforced-architecture](./workflow_lint-enforced-architecture) | Biome/ESLintのnoRestrictedGlobals等でアーキテクチャ制約を機械的に強制するワークフロー |

@@ -26,15 +26,19 @@ MCP TypeScript SDK の設計判断を横断的に分析し、Web Standards 準�
 ```typescript
 // packages/server/src/server/streamableHttp.ts:224
 export class WebStandardStreamableHTTPServerTransport implements Transport {
-    // Web Standard Request/Response のみで動作
-    async handleRequest(req: Request, options?: HandleRequestOptions): Promise<Response> {
-        switch (req.method) {
-            case 'POST': return this.handlePostRequest(req, options);
-            case 'GET':  return this.handleGetRequest(req);
-            case 'DELETE': return this.handleDeleteRequest(req);
-            default: return this.handleUnsupportedRequest();
-        }
+  // Web Standard Request/Response のみで動作
+  async handleRequest(req: Request, options?: HandleRequestOptions): Promise<Response> {
+    switch (req.method) {
+      case "POST":
+        return this.handlePostRequest(req, options);
+      case "GET":
+        return this.handleGetRequest(req);
+      case "DELETE":
+        return this.handleDeleteRequest(req);
+      default:
+        return this.handleUnsupportedRequest();
     }
+  }
 }
 ```
 
@@ -72,17 +76,21 @@ export class NodeStreamableHTTPServerTransport implements Transport {
 
 ```typescript
 // packages/server/src/shimsNode.ts:6-7
-export { AjvJsonSchemaValidator as DefaultJsonSchemaValidator } from '@modelcontextprotocol/core';
-export { default as process } from 'node:process';
+export { AjvJsonSchemaValidator as DefaultJsonSchemaValidator } from "@modelcontextprotocol/core";
+export { default as process } from "node:process";
 ```
 
 ```typescript
 // packages/server/src/shimsWorkerd.ts:6-23
-export { CfWorkerJsonSchemaValidator as DefaultJsonSchemaValidator } from '@modelcontextprotocol/core';
+export { CfWorkerJsonSchemaValidator as DefaultJsonSchemaValidator } from "@modelcontextprotocol/core";
 // stdin/stdout は Workers で非サポート - 明確なエラーで通知
 export const process = {
-    get stdin(): never { return notSupported(); },
-    get stdout(): never { return notSupported(); }
+  get stdin(): never {
+    return notSupported();
+  },
+  get stdout(): never {
+    return notSupported();
+  },
 };
 ```
 
@@ -93,7 +101,7 @@ JSON Schema バリデーションは `jsonSchemaValidator` インターフェー
 ```typescript
 // packages/core/src/validation/types.ts:51-59
 export interface jsonSchemaValidator {
-    getValidator<T>(schema: JsonSchemaType): JsonSchemaValidator<T>;
+  getValidator<T>(schema: JsonSchemaType): JsonSchemaValidator<T>;
 }
 ```
 
@@ -182,10 +190,10 @@ fetch?: FetchLike;
 ```typescript
 // packages/core/src/errors/sdkErrors.ts:9-37
 export enum SdkErrorCode {
-    NotConnected = 'NOT_CONNECTED',
-    RequestTimeout = 'REQUEST_TIMEOUT',
-    CapabilityNotSupported = 'CAPABILITY_NOT_SUPPORTED',
-    // ...
+  NotConnected = "NOT_CONNECTED",
+  RequestTimeout = "REQUEST_TIMEOUT",
+  CapabilityNotSupported = "CAPABILITY_NOT_SUPPORTED",
+  // ...
 }
 ```
 

@@ -95,12 +95,12 @@ index.ts では core の全エクスポートを再エクスポートし、消�
 
 ```typescript
 // packages/client/src/index.ts:14
-export * from '@modelcontextprotocol/core';
+export * from "@modelcontextprotocol/core";
 ```
 
 ```typescript
 // packages/server/src/index.ts:12
-export * from '@modelcontextprotocol/core';
+export * from "@modelcontextprotocol/core";
 ```
 
 ### pnpm catalogs によるバージョン一元管理
@@ -147,9 +147,9 @@ catalogs:
 ```json
 // common/tsconfig/package.json
 {
-    "name": "@modelcontextprotocol/tsconfig",
-    "private": true,
-    "main": "tsconfig.json"
+  "name": "@modelcontextprotocol/tsconfig",
+  "private": true,
+  "main": "tsconfig.json"
 }
 ```
 
@@ -158,9 +158,9 @@ catalogs:
 ```json
 // packages/core/tsconfig.json
 {
-    "extends": "@modelcontextprotocol/tsconfig",
-    "include": ["./"],
-    "exclude": ["node_modules", "dist"]
+  "extends": "@modelcontextprotocol/tsconfig",
+  "include": ["./"],
+  "exclude": ["node_modules", "dist"]
 }
 ```
 
@@ -168,13 +168,13 @@ vitest と eslint も同じパターン:
 
 ```javascript
 // packages/core/vitest.config.js
-import baseConfig from '@modelcontextprotocol/vitest-config';
+import baseConfig from "@modelcontextprotocol/vitest-config";
 export default baseConfig;
 ```
 
 ```javascript
 // packages/core/eslint.config.mjs
-import baseConfig from '@modelcontextprotocol/eslint-config';
+import baseConfig from "@modelcontextprotocol/eslint-config";
 export default baseConfig;
 ```
 
@@ -208,10 +208,10 @@ shims ファイルの実体は JSON Schema バリデータの切り替え:
 
 ```typescript
 // packages/client/src/shimsNode.ts
-export { AjvJsonSchemaValidator as DefaultJsonSchemaValidator } from '@modelcontextprotocol/core';
+export { AjvJsonSchemaValidator as DefaultJsonSchemaValidator } from "@modelcontextprotocol/core";
 
 // packages/client/src/shimsWorkerd.ts
-export { CfWorkerJsonSchemaValidator as DefaultJsonSchemaValidator } from '@modelcontextprotocol/core';
+export { CfWorkerJsonSchemaValidator as DefaultJsonSchemaValidator } from "@modelcontextprotocol/core";
 ```
 
 ### middleware パッケージのアダプタ設計
@@ -275,7 +275,7 @@ changesets の設定で examples パッケージは明示的に ignore されて
 ]
 ```
 
-`private: true` のパッケージ群（core, common/*, test/*, examples/*）と `private: false` で公開されるパッケージ群（client, server, middleware/*）の境界が明確に管理されている。
+`private: true` のパッケージ群（core, common/_, test/_, examples/_）と `private: false` で公開されるパッケージ群（client, server, middleware/_）の境界が明確に管理されている。
 
 ## パターンカタログ
 
@@ -327,7 +327,7 @@ noExternal: ['@modelcontextprotocol/core'],
 
 ```javascript
 // packages/core/vitest.config.js（全文）
-import baseConfig from '@modelcontextprotocol/vitest-config';
+import baseConfig from "@modelcontextprotocol/vitest-config";
 export default baseConfig;
 ```
 

@@ -26,13 +26,13 @@ MCP TypeScript SDK は SSE (Server-Sent Events)・Streamable HTTP・stdio・WebS
 ```typescript
 // packages/core/src/shared/transport.ts:74-134
 export interface Transport {
-    start(): Promise<void>;
-    send(message: JSONRPCMessage, options?: TransportSendOptions): Promise<void>;
-    close(): Promise<void>;
-    onclose?: () => void;
-    onerror?: (error: Error) => void;
-    onmessage?: <T extends JSONRPCMessage>(message: T, extra?: MessageExtraInfo) => void;
-    sessionId?: string;
+  start(): Promise<void>;
+  send(message: JSONRPCMessage, options?: TransportSendOptions): Promise<void>;
+  close(): Promise<void>;
+  onclose?: () => void;
+  onerror?: (error: Error) => void;
+  onmessage?: <T extends JSONRPCMessage>(message: T, extra?: MessageExtraInfo) => void;
+  sessionId?: string;
 }
 ```
 
@@ -45,20 +45,20 @@ stdio トランスポートは改行区切りの JSON-RPC メッセージを扱�
 ```typescript
 // packages/core/src/shared/stdio.ts:7-32
 export class ReadBuffer {
-    private _buffer?: Buffer;
+  private _buffer?: Buffer;
 
-    append(chunk: Buffer): void {
-        this._buffer = this._buffer ? Buffer.concat([this._buffer, chunk]) : chunk;
-    }
+  append(chunk: Buffer): void {
+    this._buffer = this._buffer ? Buffer.concat([this._buffer, chunk]) : chunk;
+  }
 
-    readMessage(): JSONRPCMessage | null {
-        if (!this._buffer) { return null; }
-        const index = this._buffer.indexOf('\n');
-        if (index === -1) { return null; }
-        const line = this._buffer.toString('utf8', 0, index).replace(/\r$/, '');
-        this._buffer = this._buffer.subarray(index + 1);
-        return deserializeMessage(line);
-    }
+  readMessage(): JSONRPCMessage | null {
+    if (!this._buffer) return null;
+    const index = this._buffer.indexOf("\n");
+    if (index === -1) return null;
+    const line = this._buffer.toString("utf8", 0, index).replace(/\r$/, "");
+    this._buffer = this._buffer.subarray(index + 1);
+    return deserializeMessage(line);
+  }
 }
 ```
 
@@ -71,13 +71,13 @@ export class ReadBuffer {
 ```typescript
 // packages/server/src/server/streamableHttp.ts:740-749
 const readable = new ReadableStream<Uint8Array>({
-    start: controller => {
-        streamController = controller;
-    },
-    cancel: () => {
-        // Stream was cancelled by client
-        this._streamMapping.delete(streamId);
-    }
+  start: controller => {
+    streamController = controller;
+  },
+  cancel: () => {
+    // Stream was cancelled by client
+    this._streamMapping.delete(streamId);
+  },
 });
 ```
 
@@ -108,15 +108,15 @@ private writeSSEEvent(
 ```typescript
 // packages/client/src/client/streamableHttp.ts:325-336
 const reader = stream
-    .pipeThrough(new TextDecoderStream() as ReadableWritablePair<string, Uint8Array>)
-    .pipeThrough(
-        new EventSourceParserStream({
-            onRetry: (retryMs: number) => {
-                this._serverRetryMs = retryMs;
-            }
-        })
-    )
-    .getReader();
+  .pipeThrough(new TextDecoderStream() as ReadableWritablePair<string, Uint8Array>)
+  .pipeThrough(
+    new EventSourceParserStream({
+      onRetry: (retryMs: number) => {
+        this._serverRetryMs = retryMs;
+      },
+    }),
+  )
+  .getReader();
 ```
 
 バイナリストリーム -> テキストデコード -> SSE パースという変換チェーンを宣言的に構成している。`onRetry` コールバックでサーバーが指示する再接続間隔をキャプチャしている点も重要。
@@ -148,11 +148,11 @@ let hasPrimingEvent = false;
 let receivedResponse = false;
 // ...
 if (event.id) {
-    lastEventId = event.id;
-    hasPrimingEvent = true;
-    onresumptiontoken?.(event.id);
+  lastEventId = event.id;
+  hasPrimingEvent = true;
+  onresumptiontoken?.(event.id);
 }
-if (!event.data) { continue; } // Skip priming events
+if (!event.data) continue; // Skip priming events
 // ...
 const canResume = isReconnectable || hasPrimingEvent;
 const needsReconnect = canResume && !receivedResponse;
@@ -204,14 +204,14 @@ protected async *requestStream<T extends AnyObjectSchema>(
 ```typescript
 // packages/core/src/shared/protocol.ts:1379-1425
 if (canDebounce) {
-    if (this._pendingDebouncedNotifications.has(notification.method)) { return; }
-    this._pendingDebouncedNotifications.add(notification.method);
-    Promise.resolve().then(() => {
-        this._pendingDebouncedNotifications.delete(notification.method);
-        if (!this._transport) { return; }
-        // send notification
-    });
-    return;
+  if (this._pendingDebouncedNotifications.has(notification.method)) return;
+  this._pendingDebouncedNotifications.add(notification.method);
+  Promise.resolve().then(() => {
+    this._pendingDebouncedNotifications.delete(notification.method);
+    if (!this._transport) return;
+    // send notification
+  });
+  return;
 }
 ```
 
@@ -257,7 +257,7 @@ send(message: JSONRPCMessage): Promise<void> {
 ```typescript
 // packages/server/src/server/streamableHttp.ts:385-388
 // Only send priming events to clients with protocol version >= 2025-11-25
-if (protocolVersion < '2025-11-25') { return; }
+if (protocolVersion < "2025-11-25") return;
 ```
 
 - **段階的シャットダウン**: stdio クライアントの `close()` は stdin を閉じ、2秒待ち、SIGTERM を送り、さらに2秒待ち、最後に SIGKILL を送る。各段階でプロセスの終了を確認する。
@@ -267,11 +267,11 @@ if (protocolVersion < '2025-11-25') { return; }
 processToClose.stdin?.end();
 await Promise.race([closePromise, new Promise(resolve => setTimeout(resolve, 2000).unref())]);
 if (processToClose.exitCode === null) {
-    processToClose.kill('SIGTERM');
-    await Promise.race([closePromise, new Promise(resolve => setTimeout(resolve, 2000).unref())]);
+  processToClose.kill("SIGTERM");
+  await Promise.race([closePromise, new Promise(resolve => setTimeout(resolve, 2000).unref())]);
 }
 if (processToClose.exitCode === null) {
-    processToClose.kill('SIGKILL');
+  processToClose.kill("SIGKILL");
 }
 ```
 
@@ -289,23 +289,23 @@ const needsReconnect = canResume && !receivedResponse;
 
 ```typescript
 // Bad: controller がクローズ済みか確認せず close を呼ぶ
-cleanup: () => {
-    this._streamMapping.delete(streamId);
-    try {
-        streamController!.close();
-    } catch {
-        // Controller might already be closed
-    }
-}
+cleanup: (() => {
+  this._streamMapping.delete(streamId);
+  try {
+    streamController!.close();
+  } catch {
+    // Controller might already be closed
+  }
+});
 
 // Better: ストリームの状態を明示的に管理する
-cleanup: () => {
-    this._streamMapping.delete(streamId);
-    if (!streamClosed) {
-        streamClosed = true;
-        streamController!.close();
-    }
-}
+cleanup: (() => {
+  this._streamMapping.delete(streamId);
+  if (!streamClosed) {
+    streamClosed = true;
+    streamController!.close();
+  }
+});
 ```
 
 - **認証リトライの無限ループリスク**: SSE クライアントの `send` メソッドで 401 レスポンス時に再帰的に `this.send(message)` を呼ぶ。Streamable HTTP クライアントは `_hasCompletedAuthFlow` フラグでサーキットブレーカーを実装しているが、レガシー SSE クライアントにはこの保護がない。
@@ -316,8 +316,10 @@ return this.send(message);
 
 // packages/client/src/client/streamableHttp.ts:498-503 — サーキットブレーカーあり
 if (this._hasCompletedAuthFlow) {
-    throw new SdkError(SdkErrorCode.ClientHttpAuthentication,
-        'Server returned 401 after successful authentication', { status: 401, text });
+  throw new SdkError(SdkErrorCode.ClientHttpAuthentication, "Server returned 401 after successful authentication", {
+    status: 401,
+    text,
+  });
 }
 ```
 

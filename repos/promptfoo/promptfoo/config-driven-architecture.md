@@ -53,13 +53,13 @@ promptfoo は YAML/JSON/JS ファイルから設定を読み込み、バリデ�
 // 設定ファイル読み込みの多段パイプライン
 export async function readConfig(configPath: string): Promise<UnifiedConfig> {
   let ret: UnifiedConfig & {
-    targets?: UnifiedConfig['providers'];
+    targets?: UnifiedConfig["providers"];
     plugins?: RedteamPluginObject[];
     strategies?: RedteamStrategyObject[];
   };
   const ext = path.parse(configPath).ext;
-  if (ext === '.json' || ext === '.yaml' || ext === '.yml') {
-    const rawConfig = yaml.load(await fsPromises.readFile(configPath, 'utf-8')) ?? {};
+  if (ext === ".json" || ext === ".yaml" || ext === ".yml") {
+    const rawConfig = yaml.load(await fsPromises.readFile(configPath, "utf-8")) ?? {};
     const dereferencedConfig = await dereferenceConfig(rawConfig as UnifiedConfig);
     const renderedConfig = renderConfigEnvTemplates(dereferencedConfig as UnifiedConfig);
 
@@ -106,8 +106,10 @@ export const UnifiedConfigSchema = TestSuiteConfigSchema.extend({
       data.providers = data.targets;
       delete data.targets;
     }
-    if (data.extensions === null || data.extensions === undefined ||
-        (Array.isArray(data.extensions) && data.extensions.length === 0)) {
+    if (
+      data.extensions === null || data.extensions === undefined
+      || (Array.isArray(data.extensions) && data.extensions.length === 0)
+    ) {
       delete data.extensions;
     }
     return data;
@@ -121,13 +123,13 @@ const innerSchema = getInnerSchema(UnifiedConfigSchema);
 
 const schemaContent = z.toJSONSchema(innerSchema, {
   ...nestedOptions,
-  reused: 'ref' as const,
+  reused: "ref" as const,
   override: (ctx: any) => {
     const zodSchema = ctx.zodSchema as ZodType;
-    const def = zodSchema._def as { type?: string; in?: ZodType; innerType?: ZodType };
-    if ((def?.type === 'optional' || def?.type === 'nullable') && def?.innerType) {
-      const innerDef = def.innerType._def as { type?: string };
-      if (innerDef?.type === 'pipe' || innerDef?.type === 'transform') {
+    const def = zodSchema._def as { type?: string; in?: ZodType; innerType?: ZodType; };
+    if ((def?.type === "optional" || def?.type === "nullable") && def?.innerType) {
+      const innerDef = def.innerType._def as { type?: string; };
+      if (innerDef?.type === "pipe" || innerDef?.type === "transform") {
         if (Object.keys(ctx.jsonSchema).length === 0) {
           const baseSchema = getBaseSchema(zodSchema);
           const result = z.toJSONSchema(baseSchema, nestedOptions);
@@ -150,8 +152,14 @@ export function writePromptfooConfig(
   headerComments?: string[],
 ): Partial<UnifiedConfig> {
   const orderedConfig = orderKeys(config, [
-    'description', 'targets', 'prompts', 'providers',
-    'redteam', 'defaultTest', 'tests', 'scenarios',
+    "description",
+    "targets",
+    "prompts",
+    "providers",
+    "redteam",
+    "defaultTest",
+    "tests",
+    "scenarios",
   ]);
   const yamlContent = yaml.dump(orderedConfig, { skipInvalid: true });
   const schemaComment = `# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json`;
@@ -219,12 +227,12 @@ export const UnifiedConfigSchema = TestSuiteConfigSchema.extend({
 ```typescript
 // src/assertions/validateAssertions.ts:35-42
 throw new AssertValidationError(
-  `Invalid assertion at ${context}:\n` +
-    `Missing required 'type' property\n\n` +
-    `Hint: In YAML, ensure all assertion properties are under the same list item:\n` +
-    `  assert:\n` +
-    `    - type: python\n` +
-    `      value: file://script.py   # No '-' before 'value'`,
+  `Invalid assertion at ${context}:\n`
+    + `Missing required 'type' property\n\n`
+    + `Hint: In YAML, ensure all assertion properties are under the same list item:\n`
+    + `  assert:\n`
+    + `    - type: python\n`
+    + `      value: file://script.py   # No '-' before 'value'`,
 );
 ```
 
@@ -233,8 +241,14 @@ throw new AssertValidationError(
 ```typescript
 // src/util/config/writer.ts:13-16
 const orderedConfig = orderKeys(config, [
-  'description', 'targets', 'prompts', 'providers',
-  'redteam', 'defaultTest', 'tests', 'scenarios',
+  "description",
+  "targets",
+  "prompts",
+  "providers",
+  "redteam",
+  "defaultTest",
+  "tests",
+  "scenarios",
 ]);
 ```
 
@@ -258,11 +272,11 @@ config: z.object({
 ```typescript
 // Bad: 関数呼び出しごとにスキーマを再生成
 export async function readConfig(configPath: string) {
-  const UnifiedConfigSchemaWithoutPrompts = TestSuiteConfigSchema.extend({ /* ... */ });
+  const UnifiedConfigSchemaWithoutPrompts = TestSuiteConfigSchema.extend({/* ... */});
 }
 
 // Better: モジュールスコープで一度だけ定義
-const ConfigValidationSchema = TestSuiteConfigSchema.extend({ /* ... */ });
+const ConfigValidationSchema = TestSuiteConfigSchema.extend({/* ... */});
 export async function readConfig(configPath: string) {
   const result = ConfigValidationSchema.safeParse(renderedConfig);
 }

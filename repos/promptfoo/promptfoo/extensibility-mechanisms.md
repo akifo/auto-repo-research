@@ -46,8 +46,8 @@ interface ProviderFactory {
 export function createScriptBasedProviderFactory(
   prefix: string,
   fileExtension: string | null,
-  providerConstructor: new (scriptPath: string, options: ProviderOptions) => ApiProvider,
-)
+  providerConstructor: new(scriptPath: string, options: ProviderOptions) => ApiProvider,
+);
 ```
 
 ```typescript
@@ -66,7 +66,7 @@ JavaScript ファイルがプロバイダパスとして指定された場合、
 
 ```typescript
 // src/esm.ts:234-237
-if (modulePath.endsWith('.js') && isCjsInEsmError(errorMessage)) {
+if (modulePath.endsWith(".js") && isCjsInEsmError(errorMessage)) {
   // vm-based CJS execution for .js files that use CJS syntax
   const mod = loadCjsModule(resolvedPath);
 }
@@ -113,7 +113,9 @@ export type ExtensionHookContextMap = {
 ```typescript
 // src/providers/packageParser.ts:53-61
 export async function parsePackageProvider(
-  providerPath: string, basePath: string, options: ProviderOptions,
+  providerPath: string,
+  basePath: string,
+  options: ProviderOptions,
 ): Promise<ApiProvider> {
   const Provider = await loadFromPackage(providerPath, basePath);
   return new Provider(options);
@@ -159,10 +161,12 @@ export interface ApiProvider {
 
 ```typescript
 // src/providers/pythonCompletion.ts:281-291
-if (!result || typeof result !== 'object' ||
-    (!('output' in result) && !('error' in result))) {
+if (
+  !result || typeof result !== "object"
+  || (!("output" in result) && !("error" in result))
+) {
   throw new Error(
-    `The Python script must return a dict with an 'output' or 'error'`
+    `The Python script must return a dict with an 'output' or 'error'`,
   );
 }
 ```

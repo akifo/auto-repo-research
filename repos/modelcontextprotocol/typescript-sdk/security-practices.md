@@ -26,24 +26,24 @@ MCP TypeScript SDK の OAuth 2.0 / 2.1 実装におけるセキュリティプ�
 ```typescript
 // packages/core/src/shared/auth.ts:6-25
 export const SafeUrlSchema = z
-    .url()
-    .superRefine((val, ctx) => {
-        if (!URL.canParse(val)) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: 'URL must be parseable',
-                fatal: true
-            });
-            return z.NEVER;
-        }
-    })
-    .refine(
-        url => {
-            const u = new URL(url);
-            return u.protocol !== 'javascript:' && u.protocol !== 'data:' && u.protocol !== 'vbscript:';
-        },
-        { message: 'URL cannot use javascript:, data:, or vbscript: scheme' }
-    );
+  .url()
+  .superRefine((val, ctx) => {
+    if (!URL.canParse(val)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "URL must be parseable",
+        fatal: true,
+      });
+      return z.NEVER;
+    }
+  })
+  .refine(
+    url => {
+      const u = new URL(url);
+      return u.protocol !== "javascript:" && u.protocol !== "data:" && u.protocol !== "vbscript:";
+    },
+    { message: "URL cannot use javascript:, data:, or vbscript: scheme" },
+  );
 ```
 
 このスキーマは `OAuthMetadataSchema` の `authorization_endpoint`, `token_endpoint`, `registration_endpoint` など全エンドポイント URL に適用されている（`auth.ts:52-53`）。テストでも `javascript:alert(1)` が明示的に検証される（`packages/core/test/shared/auth.test.ts:19-22`）。
@@ -58,10 +58,10 @@ const challenge = await pkceChallenge();
 const codeVerifier = challenge.code_verifier;
 const codeChallenge = challenge.code_challenge;
 
-authorizationUrl.searchParams.set('response_type', AUTHORIZATION_CODE_RESPONSE_TYPE);
-authorizationUrl.searchParams.set('client_id', clientInformation.client_id);
-authorizationUrl.searchParams.set('code_challenge', codeChallenge);
-authorizationUrl.searchParams.set('code_challenge_method', AUTHORIZATION_CODE_CHALLENGE_METHOD);
+authorizationUrl.searchParams.set("response_type", AUTHORIZATION_CODE_RESPONSE_TYPE);
+authorizationUrl.searchParams.set("client_id", clientInformation.client_id);
+authorizationUrl.searchParams.set("code_challenge", codeChallenge);
+authorizationUrl.searchParams.set("code_challenge_method", AUTHORIZATION_CODE_CHALLENGE_METHOD);
 ```
 
 `AUTHORIZATION_CODE_CHALLENGE_METHOD` は `'S256'` に固定されており（`auth.ts:243`）、設定で変更できない。
@@ -77,16 +77,16 @@ DNS リバインディング保護は 3 つのレイヤーで提供される:
 ```typescript
 // packages/middleware/express/src/express.ts:60-76
 if (allowedHosts) {
-    app.use(hostHeaderValidation(allowedHosts));
+  app.use(hostHeaderValidation(allowedHosts));
 } else {
-    const localhostHosts = ['127.0.0.1', 'localhost', '::1'];
-    if (localhostHosts.includes(host)) {
-        app.use(localhostHostValidation());
-    } else if (host === '0.0.0.0' || host === '::') {
-        console.warn(
-            `Warning: Server is binding to ${host} without DNS rebinding protection. ...`
-        );
-    }
+  const localhostHosts = ["127.0.0.1", "localhost", "::1"];
+  if (localhostHosts.includes(host)) {
+    app.use(localhostHostValidation());
+  } else if (host === "0.0.0.0" || host === "::") {
+    console.warn(
+      `Warning: Server is binding to ${host} without DNS rebinding protection. ...`,
+    );
+  }
 }
 ```
 
@@ -99,18 +99,18 @@ if (allowedHosts) {
 ```typescript
 // packages/client/src/client/auth.ts:403-419
 try {
-    return await authInternal(provider, options);
+  return await authInternal(provider, options);
 } catch (error) {
-    if (error instanceof OAuthError) {
-        if (error.code === OAuthErrorCode.InvalidClient || error.code === OAuthErrorCode.UnauthorizedClient) {
-            await provider.invalidateCredentials?.('all');
-            return await authInternal(provider, options);
-        } else if (error.code === OAuthErrorCode.InvalidGrant) {
-            await provider.invalidateCredentials?.('tokens');
-            return await authInternal(provider, options);
-        }
+  if (error instanceof OAuthError) {
+    if (error.code === OAuthErrorCode.InvalidClient || error.code === OAuthErrorCode.UnauthorizedClient) {
+      await provider.invalidateCredentials?.("all");
+      return await authInternal(provider, options);
+    } else if (error.code === OAuthErrorCode.InvalidGrant) {
+      await provider.invalidateCredentials?.("tokens");
+      return await authInternal(provider, options);
     }
-    throw error;
+  }
+  throw error;
 }
 ```
 
@@ -150,8 +150,8 @@ export function selectClientAuthMethod(clientInformation: OAuthClientInformation
 
 ```typescript
 // packages/core/src/shared/authUtils.ts:53-56
-const requestedPath = requested.pathname.endsWith('/') ? requested.pathname : requested.pathname + '/';
-const configuredPath = configured.pathname.endsWith('/') ? configured.pathname : configured.pathname + '/';
+const requestedPath = requested.pathname.endsWith("/") ? requested.pathname : requested.pathname + "/";
+const configuredPath = configured.pathname.endsWith("/") ? configured.pathname : configured.pathname + "/";
 return requestedPath.startsWith(configuredPath);
 ```
 
@@ -204,15 +204,19 @@ token_endpoint: SafeUrlSchema,
 
 ```typescript
 // packages/client/src/client/auth.ts:766-777
-async function fetchWithCorsRetry(url: URL, headers?: Record<string, string>, fetchFn: FetchLike = fetch): Promise<Response | undefined> {
-    try {
-        return await fetchFn(url, { headers });
-    } catch (error) {
-        if (error instanceof TypeError) {
-            return headers ? fetchWithCorsRetry(url, undefined, fetchFn) : undefined;
-        }
-        throw error;
+async function fetchWithCorsRetry(
+  url: URL,
+  headers?: Record<string, string>,
+  fetchFn: FetchLike = fetch,
+): Promise<Response | undefined> {
+  try {
+    return await fetchFn(url, { headers });
+  } catch (error) {
+    if (error instanceof TypeError) {
+      return headers ? fetchWithCorsRetry(url, undefined, fetchFn) : undefined;
     }
+    throw error;
+  }
 }
 ```
 
@@ -225,12 +229,12 @@ async function fetchWithCorsRetry(url: URL, headers?: Record<string, string>, fe
 ```typescript
 // packages/client/src/client/auth.ts:1252-1261 (Better)
 try {
-    return OAuthTokensSchema.parse(json);
+  return OAuthTokensSchema.parse(json);
 } catch (parseError) {
-    if (typeof json === 'object' && json !== null && 'error' in json) {
-        throw await parseErrorResponse(JSON.stringify(json));
-    }
-    throw parseError;
+  if (typeof json === "object" && json !== null && "error" in json) {
+    throw await parseErrorResponse(JSON.stringify(json));
+  }
+  throw parseError;
 }
 ```
 

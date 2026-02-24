@@ -27,16 +27,16 @@ let sqliteInstance: Database.Database | null = null;
 
 export function getDb() {
   if (!dbInstance) {
-    const isMemoryDb = getEnvBool('IS_TESTING');
-    const dbPath = isMemoryDb ? ':memory:' : getDbPath();
+    const isMemoryDb = getEnvBool("IS_TESTING");
+    const dbPath = isMemoryDb ? ":memory:" : getDbPath();
     sqliteInstance = new Database(dbPath);
-    sqliteInstance.pragma('foreign_keys = ON');
+    sqliteInstance.pragma("foreign_keys = ON");
 
-    if (!isMemoryDb && !getEnvBool('PROMPTFOO_DISABLE_WAL_MODE', false)) {
-      sqliteInstance.pragma('journal_mode = WAL');
+    if (!isMemoryDb && !getEnvBool("PROMPTFOO_DISABLE_WAL_MODE", false)) {
+      sqliteInstance.pragma("journal_mode = WAL");
       // WAL 設定の検証と追加チューニング
-      sqliteInstance.pragma('wal_autocheckpoint = 1000');
-      sqliteInstance.pragma('synchronous = NORMAL');
+      sqliteInstance.pragma("wal_autocheckpoint = 1000");
+      sqliteInstance.pragma("synchronous = NORMAL");
     }
     // ...
   }
@@ -55,8 +55,8 @@ DB クローズ時に WAL ファイルを TRUNCATE モードでチェックポ�
 export function closeDb() {
   if (sqliteInstance) {
     try {
-      if (!getEnvBool('IS_TESTING') && !getEnvBool('PROMPTFOO_DISABLE_WAL_MODE', false)) {
-        sqliteInstance.pragma('wal_checkpoint(TRUNCATE)');
+      if (!getEnvBool("IS_TESTING") && !getEnvBool("PROMPTFOO_DISABLE_WAL_MODE", false)) {
+        sqliteInstance.pragma("wal_checkpoint(TRUNCATE)");
       }
       sqliteInstance.close();
     } catch (err) {
@@ -138,7 +138,7 @@ db.transaction(() => {
 
 ```typescript
 // src/cacheMigration.ts:16-17
-const MIGRATION_SUNSET_DATE = new Date('2026-04-01T00:00:00Z');
+const MIGRATION_SUNSET_DATE = new Date("2026-04-01T00:00:00Z");
 // TODO(2026-04-01): Remove this migration code after sunset date.
 ```
 
@@ -146,8 +146,8 @@ const MIGRATION_SUNSET_DATE = new Date('2026-04-01T00:00:00Z');
 
 ```typescript
 // src/cacheMigration.ts:437-453
-const tempFile = path.join(dir, `.cache.${randomBytes(8).toString('hex')}.tmp`);
-fs.writeFileSync(tempFile, serialized, 'utf-8');
+const tempFile = path.join(dir, `.cache.${randomBytes(8).toString("hex")}.tmp`);
+fs.writeFileSync(tempFile, serialized, "utf-8");
 fs.renameSync(tempFile, newCachePath); // アトミックリネーム
 validateCacheFile(newCachePath, entries.size); // 書き込み後の検証
 ```
@@ -161,7 +161,7 @@ DB の変更を WebSocket 等を使わずにプロセス間で通知するため
 export function setupSignalWatcher(onChange: () => void): fs.FSWatcher {
   ensureSignalFile();
   const watcher = fs.watch(filePath);
-  watcher.on('change', debounce(onChange, 250));
+  watcher.on("change", debounce(onChange, 250));
   return watcher;
 }
 ```

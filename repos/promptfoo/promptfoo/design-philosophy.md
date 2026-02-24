@@ -29,7 +29,7 @@ promptfoo は「ユーザが書く設定」と「ランタイムが使う内部�
 // src/index.ts:63-74
 const constructedTestSuite: TestSuite = {
   ...testSuite,
-  defaultTest: resolvedDefaultTest as TestSuite['defaultTest'],
+  defaultTest: resolvedDefaultTest as TestSuite["defaultTest"],
   scenarios: testSuite.scenarios as Scenario[],
   providers: loadedProviders,
   tests: await readTests(testSuite.tests),

@@ -129,9 +129,9 @@ interface ProviderFactory {
 ```typescript
 // src/scheduler/providerWrapper.ts:27-39
 // Symbol ベースの二重ラップ防止。プロバイダが既にラップされているかを Symbol で判定。
-const WRAPPED_SYMBOL = Symbol.for('promptfoo.rateLimitWrapped');
+const WRAPPED_SYMBOL = Symbol.for("promptfoo.rateLimitWrapped");
 
-type WrappedApiProvider = ApiProvider & { [WRAPPED_SYMBOL]: boolean };
+type WrappedApiProvider = ApiProvider & { [WRAPPED_SYMBOL]: boolean; };
 
 export function isRateLimitWrapped(provider: ApiProvider): boolean {
   return (provider as WrappedApiProvider)[WRAPPED_SYMBOL] === true;
@@ -152,8 +152,7 @@ export async function runExtensionHook<HookName extends keyof ExtensionHookConte
 // src/entrypoint.ts:14-19
 // ビルド時定数注入。tsdown が package.json の engines フィールドから最小 Node バージョンを注入。
 declare const __PROMPTFOO_MIN_NODE_VERSION__: number | undefined;
-const minNodeVersion =
-  typeof __PROMPTFOO_MIN_NODE_VERSION__ !== 'undefined' ? __PROMPTFOO_MIN_NODE_VERSION__ : 20;
+const minNodeVersion = typeof __PROMPTFOO_MIN_NODE_VERSION__ !== "undefined" ? __PROMPTFOO_MIN_NODE_VERSION__ : 20;
 ```
 
 ## パターンカタログ

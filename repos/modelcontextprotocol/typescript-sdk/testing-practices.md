@@ -33,13 +33,13 @@ export default defineWorkspace(['packages/**/vitest.config.js']);
 
 ```javascript
 // packages/client/vitest.config.js:1-8
-import baseConfig from '@modelcontextprotocol/vitest-config';
-import { mergeConfig } from 'vitest/config';
+import baseConfig from "@modelcontextprotocol/vitest-config";
+import { mergeConfig } from "vitest/config";
 
 export default mergeConfig(baseConfig, {
-    test: {
-        setupFiles: ['./vitest.setup.js']
-    }
+  test: {
+    setupFiles: ["./vitest.setup.js"],
+  },
 });
 ```
 
@@ -47,7 +47,7 @@ export default mergeConfig(baseConfig, {
 
 ```javascript
 // packages/core/vitest.config.js:1-3
-import baseConfig from '@modelcontextprotocol/vitest-config';
+import baseConfig from "@modelcontextprotocol/vitest-config";
 export default baseConfig;
 ```
 
@@ -89,13 +89,13 @@ Conformance テストは、SDK の実装が MCP プロトコル仕様に準拠�
 const scenarioHandlers: Record<string, ScenarioHandler> = {};
 
 function registerScenario(name: string, handler: ScenarioHandler): void {
-    scenarioHandlers[name] = handler;
+  scenarioHandlers[name] = handler;
 }
 
 function registerScenarios(names: string[], handler: ScenarioHandler): void {
-    for (const name of names) {
-        scenarioHandlers[name] = handler;
-    }
+  for (const name of names) {
+    scenarioHandlers[name] = handler;
+  }
 }
 ```
 
@@ -182,7 +182,7 @@ let clientTransport: InMemoryTransport;
 let serverTransport: InMemoryTransport;
 
 beforeEach(() => {
-    [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+  [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
 });
 ```
 
@@ -190,27 +190,27 @@ beforeEach(() => {
 // test/integration/test/helpers/mcp.ts:14-70
 // テスト環境ファクトリ: InMemoryTransport + TaskStore を一括セットアップ
 export async function createInMemoryTaskEnvironment(options?: {
-    clientCapabilities?: ClientCapabilities;
-    serverCapabilities?: ServerCapabilities;
+  clientCapabilities?: ClientCapabilities;
+  serverCapabilities?: ServerCapabilities;
 }): Promise<InMemoryTaskEnvironment> {
-    const taskStore = new InMemoryTaskStore();
-    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
-    // ... client, server 初期化
-    await Promise.all([client.connect(clientTransport), server.connect(serverTransport)]);
-    return { client, server, taskStore, clientTransport, serverTransport };
+  const taskStore = new InMemoryTaskStore();
+  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+  // ... client, server 初期化
+  await Promise.all([client.connect(clientTransport), server.connect(serverTransport)]);
+  return { client, server, taskStore, clientTransport, serverTransport };
 }
 ```
 
 ```typescript
 // test/helpers/src/helpers/http.ts:10-17
 // ランダムポートでの HTTP サーバー起動ヘルパー
-export async function listenOnRandomPort(server: Server, host: string = '127.0.0.1'): Promise<URL> {
-    return new Promise<URL>(resolve => {
-        server.listen(0, host, () => {
-            const addr = server.address() as AddressInfo;
-            resolve(new URL(`http://${host}:${addr.port}`));
-        });
+export async function listenOnRandomPort(server: Server, host: string = "127.0.0.1"): Promise<URL> {
+  return new Promise<URL>(resolve => {
+    server.listen(0, host, () => {
+      const addr = server.address() as AddressInfo;
+      resolve(new URL(`http://${host}:${addr.port}`));
     });
+  });
 }
 ```
 
@@ -219,14 +219,14 @@ export async function listenOnRandomPort(server: Server, host: string = '127.0.0
 // test.each によるテーブル駆動テスト
 test.each`
     description                    | toolName
-    ${'simple alphanumeric names'} | ${'getUser'}
-    ${'names with underscores'}    | ${'get_user_profile'}
-    ${'names with dashes'}         | ${'user-profile-update'}
-    ${'names with dots'}           | ${'admin.tools.list'}
-`('should accept $description', ({ toolName }) => {
-    const result = validateToolName(toolName);
-    expect(result.isValid).toBe(true);
-    expect(result.warnings).toHaveLength(0);
+    ${"simple alphanumeric names"} | ${"getUser"}
+    ${"names with underscores"}    | ${"get_user_profile"}
+    ${"names with dashes"}         | ${"user-profile-update"}
+    ${"names with dots"}           | ${"admin.tools.list"}
+`("should accept $description", ({ toolName }) => {
+  const result = validateToolName(toolName);
+  expect(result.isValid).toBe(true);
+  expect(result.warnings).toHaveLength(0);
 });
 ```
 
@@ -267,20 +267,20 @@ test.each`
 ```typescript
 // Bad: 1 ファイルに全機能を集約
 function createMcpServer() {
-    // tools, resources, prompts, logging, completion, sampling, elicitation... (800+ 行)
+  // tools, resources, prompts, logging, completion, sampling, elicitation... (800+ 行)
 }
 ```
 
 ```typescript
 // Better: 機能ごとにモジュール分割し、createMcpServer() から参照する
-import { registerToolScenarios } from './scenarios/tools.js';
-import { registerResourceScenarios } from './scenarios/resources.js';
+import { registerResourceScenarios } from "./scenarios/resources.js";
+import { registerToolScenarios } from "./scenarios/tools.js";
 
 function createMcpServer() {
-    const mcpServer = new McpServer(/* ... */);
-    registerToolScenarios(mcpServer);
-    registerResourceScenarios(mcpServer);
-    return mcpServer;
+  const mcpServer = new McpServer(/* ... */);
+  registerToolScenarios(mcpServer);
+  registerResourceScenarios(mcpServer);
+  return mcpServer;
 }
 ```
 

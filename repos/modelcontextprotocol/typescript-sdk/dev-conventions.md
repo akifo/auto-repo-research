@@ -24,6 +24,7 @@ MCP TypeScript SDK のコーディング規約、JSDoc スニペット同期、C
 `common/eslint-config/eslint.config.mjs` が全パッケージの lint ルールを定義し、各パッケージは最小限のオーバーライドで利用する。
 
 注目すべきルール設計:
+
 - `unicorn/filename-case: camelCase` でファイル名を統一（例外なし）
 - `consistent-type-imports: error` で `import type` を強制し、ランタイムへの不要な依存を排除
 - `import/consistent-type-specifier-style: prefer-top-level` で型インポートスタイルを統一
@@ -33,6 +34,7 @@ MCP TypeScript SDK のコーディング規約、JSDoc スニペット同期、C
 - `@typescript-eslint/no-unused-vars` で `_` プレフィックスの引数を許可
 
 ファイル種別ごとのルール緩和が意図的に設計されている:
+
 - `.examples.ts`: `no-unused-vars` OFF（リージョンごとに独立した関数のため）
 - `.test.ts`: `consistent-function-scoping` OFF（テスト内ヘルパー関数のため）
 - `spec.types.ts`: 完全に ignore（自動生成ファイル）
@@ -42,10 +44,12 @@ MCP TypeScript SDK のコーディング規約、JSDoc スニペット同期、C
 `.examples.ts` ファイルは「型チェック付きコード例の置き場」として機能する。JSDoc 内のコードフェンスに `source=` 属性を付け、`pnpm sync:snippets` がリージョンの内容をそこに同期する。
 
 同期先は 2 種類:
-1. **JSDoc コメント（TypeScript ソースファイル）**: `* ```ts source="./mcp.examples.ts#McpServer_basicUsage"` の形式
+
+1. **JSDoc コメント（TypeScript ソースファイル）**: ``* ```ts source="./mcp.examples.ts#McpServer_basicUsage"`` の形式
 2. **マークダウンファイル（docs/）**: 通常のコードフェンスに `source=` を付加
 
 リージョン名の命名規則は `ClassName_methodName_variant` パターン。例:
+
 - `McpServer_basicUsage`
 - `McpServer_registerTool_basic`
 - `McpServer_connect_stdio`
@@ -55,6 +59,7 @@ CI では `pnpm sync:snippets --check` が `lint:all` の一部として実行�
 ### Changesets によるリリース管理
 
 `.changeset/config.json` で以下を設定:
+
 - `baseBranch: "main"` で v2 を主系統とする
 - `access: "public"` で npm パブリック公開
 - `commit: false` で changeset 追加時に自動コミットしない
@@ -62,6 +67,7 @@ CI では `pnpm sync:snippets --check` が `lint:all` の一部として実行�
 - `updateInternalDependencies: "patch"` でワークスペース内部依存を自動更新
 
 changeset ファイルの書き方は変更の「Why」を記述する形式:
+
 ```
 ---
 '@modelcontextprotocol/node': patch
@@ -74,18 +80,19 @@ Prevent Hono from overriding global Response object by passing `overrideGlobalOb
 
 8 つのワークフローが役割分担されている:
 
-| ワークフロー | トリガー | 役割 |
-|---|---|---|
-| `main.yml` | push/PR/release | ビルド + テスト（Node 20/22/24 マトリクス）+ publish + gh-pages |
-| `conformance.yml` | push/PR | プロトコル適合テスト（client/server 分離、continue-on-error） |
-| `release.yml` | push to main | changesets/action で Release PR 作成または npm publish |
-| `publish.yml` | push/PR | `pkg-pr-new` で PR ごとのプレビューパッケージ公開 |
-| `release-v1x.yml` | v1.* タグ push | v1.x 系の npm publish（`release-X.Y` タグ） |
-| `update-spec-types.yml` | 毎日 4:00 UTC | 上流の Protocol 仕様型定義を自動 PR |
-| `claude.yml` | @claude メンション | Claude Code による issue/PR 対応 |
-| `claude-code-review.yml` | PR open/sync | Claude Code による自動コードレビュー |
+| ワークフロー             | トリガー           | 役割                                                            |
+| ------------------------ | ------------------ | --------------------------------------------------------------- |
+| `main.yml`               | push/PR/release    | ビルド + テスト（Node 20/22/24 マトリクス）+ publish + gh-pages |
+| `conformance.yml`        | push/PR            | プロトコル適合テスト（client/server 分離、continue-on-error）   |
+| `release.yml`            | push to main       | changesets/action で Release PR 作成または npm publish          |
+| `publish.yml`            | push/PR            | `pkg-pr-new` で PR ごとのプレビューパッケージ公開               |
+| `release-v1x.yml`        | v1.* タグ push     | v1.x 系の npm publish（`release-X.Y` タグ）                     |
+| `update-spec-types.yml`  | 毎日 4:00 UTC      | 上流の Protocol 仕様型定義を自動 PR                             |
+| `claude.yml`             | @claude メンション | Claude Code による issue/PR 対応                                |
+| `claude-code-review.yml` | PR open/sync       | Claude Code による自動コードレビュー                            |
 
 特筆すべき設計:
+
 - `concurrency` で同一ブランチの重複ワークフローをキャンセル
 - Node.js バージョンマトリクスでの互換性保証（20/22/24）
 - v1.x リリースでは `release-X.Y` npm タグを使用し `latest` を上書きしない
@@ -142,7 +149,7 @@ rules: {
 }
 ```
 
-```typescript
+````typescript
 // packages/server/src/server/mcp.ts:53-64
 /**
  * High-level MCP server that provides a simpler API for working with resources, tools, and prompts.
@@ -155,18 +162,18 @@ rules: {
  * });
  * ```
  */
-```
+````
 
 ```typescript
 // packages/server/src/server/mcp.examples.ts:19-27
 function McpServer_basicUsage() {
-    //#region McpServer_basicUsage
-    const server = new McpServer({
-        name: 'my-server',
-        version: '1.0.0'
-    });
-    //#endregion McpServer_basicUsage
-    return server;
+  // #region McpServer_basicUsage
+  const server = new McpServer({
+    name: "my-server",
+    version: "1.0.0",
+  });
+  // #endregion McpServer_basicUsage
+  return server;
 }
 ```
 
@@ -174,15 +181,15 @@ function McpServer_basicUsage() {
 // packages/client/eslint.config.mjs:1-12
 // @ts-check
 
-import baseConfig from '@modelcontextprotocol/eslint-config';
+import baseConfig from "@modelcontextprotocol/eslint-config";
 
 export default [
-    ...baseConfig,
-    {
-        settings: {
-            'import/internal-regex': '^@modelcontextprotocol/core'
-        }
-    }
+  ...baseConfig,
+  {
+    settings: {
+      "import/internal-regex": "^@modelcontextprotocol/core",
+    },
+  },
 ];
 ```
 
@@ -211,12 +218,11 @@ export default [
 
 - **Region-based JSDoc Snippet Sync**: `.examples.ts` ファイルに `//#region` でコード例を定義し、JSDoc の `source=` 属性で参照して自動同期する。コード例が型チェックを通ることが保証され、かつ CI で同期状態を検証できる。ドキュメント内のコード例が古くなる問題を構造的に解消している。
 
-```typescript
+````typescript
 // scripts/sync-snippets.ts:106-108
-const JSDOC_LABELED_FENCE_PATTERN =
-  /^(\s*\*\s*)```(\w+)(?:\s+(\S+))?\s+source="([^"#]+)(?:#([^"]+))?"/;
+const JSDOC_LABELED_FENCE_PATTERN = /^(\s*\*\s*)```(\w+)(?:\s+(\S+))?\s+source="([^"#]+)(?:#([^"]+))?"/;
 const JSDOC_CLOSING_FENCE_PATTERN = /^(\s*\*\s*)```\s*$/;
-```
+````
 
 - **Catalog-based Version Pinning**: pnpm workspace の `catalogs` 機能で依存バージョンをカテゴリ別に一元管理。`devTools`, `runtimeShared`, `runtimeClientOnly`, `runtimeServerOnly` の 4 カテゴリに分類し、各パッケージは `catalog:devTools` で参照するだけ。バージョン更新が 1 ファイルで完結する。
 
@@ -264,8 +270,8 @@ catalogs:
 ```json
 // .prettierrc.json（実際の設定: 4-space）
 {
-    "tabWidth": 4,
-    "useTabs": false
+  "tabWidth": 4,
+  "useTabs": false
 }
 ```
 

@@ -23,11 +23,11 @@ promptfoo は 625 以上のテストファイルを持つ大規模 TypeScript �
 
 3 つの Vitest 設定ファイルが、各テスト層のリソース制約と実行特性を明確に定義している。
 
-| 設定 | テスト対象 | タイムアウト | シャッフル | メモリ上限 |
-|------|-----------|------------|----------|-----------|
-| `vitest.config.ts` | `test/**/*.test.ts` (unit) | 30s | true | 3GB/worker |
-| `vitest.integration.config.ts` | `**/*.integration.test.ts` | 60s | true | 4GB/worker |
-| `vitest.smoke.config.ts` | `test/smoke/**/*.test.ts` | 30s | false | (既定値) |
+| 設定                           | テスト対象                 | タイムアウト | シャッフル | メモリ上限 |
+| ------------------------------ | -------------------------- | ------------ | ---------- | ---------- |
+| `vitest.config.ts`             | `test/**/*.test.ts` (unit) | 30s          | true       | 3GB/worker |
+| `vitest.integration.config.ts` | `**/*.integration.test.ts` | 60s          | true       | 4GB/worker |
+| `vitest.smoke.config.ts`       | `test/smoke/**/*.test.ts`  | 30s          | false      | (既定値)   |
 
 unit テストの設定は integration テストを明示的に除外し (`exclude: ['**/*.integration.test.ts']`)、smoke テストは順序固定 (`shuffle: false`) で予測可能な出力を保証する。CI 環境では `bail: 1` で最初の失敗で即座に停止する。
 
@@ -35,10 +35,10 @@ unit テストの設定は integration テストを明示的に除外し (`exclu
 
 ```typescript
 // vitest.setup.ts:9-16
-const TEST_CONFIG_DIR = './.local/vitest/config';
-process.env.NODE_ENV = 'test';
-process.env.PROMPTFOO_CACHE_TYPE = 'memory';
-process.env.IS_TESTING = 'true';
+const TEST_CONFIG_DIR = "./.local/vitest/config";
+process.env.NODE_ENV = "test";
+process.env.PROMPTFOO_CACHE_TYPE = "memory";
+process.env.IS_TESTING = "true";
 process.env.PROMPTFOO_CONFIG_DIR = TEST_CONFIG_DIR;
 ```
 
@@ -112,17 +112,17 @@ echo プロバイダは入力をそのまま返す。コスト 0、外部依存�
 // test/smoke/cli.test.ts:23-39
 function runCli(
   args: string[],
-  options: { cwd?: string; expectError?: boolean; env?: NodeJS.ProcessEnv } = {},
-): { stdout: string; stderr: string; exitCode: number } {
-  const result = spawnSync('node', [CLI_PATH, ...args], {
+  options: { cwd?: string; expectError?: boolean; env?: NodeJS.ProcessEnv; } = {},
+): { stdout: string; stderr: string; exitCode: number; } {
+  const result = spawnSync("node", [CLI_PATH, ...args], {
     cwd: options.cwd || ROOT_DIR,
-    encoding: 'utf-8',
-    env: { ...process.env, ...options.env, NO_COLOR: '1' },
+    encoding: "utf-8",
+    env: { ...process.env, ...options.env, NO_COLOR: "1" },
     timeout: 30000,
   });
   return {
-    stdout: result.stdout || '',
-    stderr: result.stderr || '',
+    stdout: result.stdout || "",
+    stderr: result.stderr || "",
     exitCode: result.status ?? 1,
   };
 }
@@ -134,7 +134,7 @@ smoke テストはビルド済みの `dist/src/main.js` を `spawnSync` で実�
 
 ```typescript
 // test/python/worker.test.ts:13
-const describeOrSkip = process.platform === 'win32' && process.env.CI ? describe.skip : describe;
+const describeOrSkip = process.platform === "win32" && process.env.CI ? describe.skip : describe;
 
 // test/providers/openai-codex-sdk.e2e.test.ts:50
 const describeOrSkip = hasApiKey && hasSdk ? describe : describe.skip;
@@ -149,18 +149,18 @@ const describeIfBuildExists = buildExists ? describe : describe.skip;
 
 ```typescript
 // src/app/src/stores/evalConfig.test.ts:1-8
-import { beforeEach, describe, expect, it } from 'vitest';
-import { DEFAULT_CONFIG, useStore } from './evalConfig';
+import { beforeEach, describe, expect, it } from "vitest";
+import { DEFAULT_CONFIG, useStore } from "./evalConfig";
 
-describe('evalConfig store', () => {
+describe("evalConfig store", () => {
   beforeEach(() => {
     useStore.getState().reset();
   });
 
-  it('should update config with updateConfig', () => {
-    useStore.getState().updateConfig({ description: 'Test' });
+  it("should update config with updateConfig", () => {
+    useStore.getState().updateConfig({ description: "Test" });
     const { config } = useStore.getState();
-    expect(config.description).toBe('Test');
+    expect(config.description).toBe("Test");
   });
 });
 ```
@@ -190,11 +190,11 @@ describe('evalConfig store', () => {
 export function createMockChildProcess(options: MockChildProcessOptions = {}): MockChildProcess {
   const { exitCode = 0, error, stdoutData, stderrData, killed = false } = options;
   const mockProcess: MockChildProcess = {
-    stdout: { on: vi.fn().mockImplementation((event, callback) => { /* ... */ }) },
-    stderr: { on: vi.fn().mockImplementation((event, callback) => { /* ... */ }) },
+    stdout: { on: vi.fn().mockImplementation((event, callback) => {/* ... */}) },
+    stderr: { on: vi.fn().mockImplementation((event, callback) => {/* ... */}) },
     killed,
     kill: vi.fn(),
-    on: vi.fn().mockImplementation(function (event, callback) { /* ... */ }),
+    on: vi.fn().mockImplementation(function(event, callback) {/* ... */}),
   };
   return mockProcess;
 }
@@ -204,10 +204,10 @@ export function createMockChildProcess(options: MockChildProcessOptions = {}): M
 
 ```typescript
 // test/main.test.ts:346-358
-it('should complete gracefully when all operations succeed quickly', async () => {
+it("should complete gracefully when all operations succeed quickly", async () => {
   const shutdownPromise = shutdownGracefully();
-  await vi.runAllTimersAsync();  // タイマーを先に進める
-  await shutdownPromise;         // 結果を受け取る
+  await vi.runAllTimersAsync(); // タイマーを先に進める
+  await shutdownPromise; // 結果を受け取る
   expect(mockTelemetryShutdown).toHaveBeenCalled();
 });
 ```
@@ -218,8 +218,8 @@ it('should complete gracefully when all operations succeed quickly', async () =>
 // test/scheduler/providerRateLimitState.test.ts:4-9
 const FAST_RETRY_POLICY = {
   maxRetries: 3,
-  baseDelayMs: 1,      // 本番: 1000ms
-  maxDelayMs: 10,       // 本番: 60000ms
+  baseDelayMs: 1, // 本番: 1000ms
+  maxDelayMs: 10, // 本番: 60000ms
   jitterFactor: 0,
 };
 ```
@@ -245,15 +245,15 @@ beforeEach(() => {
 
 ```typescript
 // Bad: ストアをモックして呼び出し確認のみ
-vi.mock('./useMyStore');
+vi.mock("./useMyStore");
 const mockUpdate = vi.fn();
-test('calls update', () => {
+test("calls update", () => {
   fireEvent.click(button);
   expect(mockUpdate).toHaveBeenCalled(); // ストアロジック未検証
 });
 
 // Better: 実ストアで状態変更を検証
-test('updates store correctly', async () => {
+test("updates store correctly", async () => {
   render(<MyComponent />);
   await user.click(button);
   expect(useMyStore.getState().items).toHaveLength(1); // 実際の状態を検証

@@ -23,11 +23,11 @@ MCP TypeScript SDK では、Express / Hono / Node.js HTTP の 3 つのフレー�
 
 3 つのアダプターは異なる役割を持つ:
 
-| パッケージ | 種別 | 主な責務 |
-|---|---|---|
-| `@modelcontextprotocol/express` | App Factory + Middleware | Express アプリの安全な初期化、Host ヘッダー検証ミドルウェア |
-| `@modelcontextprotocol/hono` | App Factory + Middleware | Hono アプリの安全な初期化、JSON ボディパース、Host ヘッダー検証 |
-| `@modelcontextprotocol/node` | Transport Wrapper | Node.js HTTP (`IncomingMessage`/`ServerResponse`) を Web Standard API に変換 |
+| パッケージ                      | 種別                     | 主な責務                                                                     |
+| ------------------------------- | ------------------------ | ---------------------------------------------------------------------------- |
+| `@modelcontextprotocol/express` | App Factory + Middleware | Express アプリの安全な初期化、Host ヘッダー検証ミドルウェア                  |
+| `@modelcontextprotocol/hono`    | App Factory + Middleware | Hono アプリの安全な初期化、JSON ボディパース、Host ヘッダー検証              |
+| `@modelcontextprotocol/node`    | Transport Wrapper        | Node.js HTTP (`IncomingMessage`/`ServerResponse`) を Web Standard API に変換 |
 
 Express と Hono のアダプターは Transport を実装せず、「安全に設定されたアプリケーションインスタンス」を返すファクトリ関数を提供する。一方、Node.js アダプターは `Transport` インターフェースを実装し、`WebStandardStreamableHTTPServerTransport` への委譲パターンを使う。
 
@@ -73,6 +73,7 @@ this._requestListener = getRequestListener(
 Express と Hono の Host ヘッダー検証ミドルウェアは、同じコアロジック（`validateHostHeader`）をフレームワーク固有の形式で提供する。Express 版は `(req, res, next)` シグネチャの `RequestHandler` を返し、Hono 版は `async (c, next)` シグネチャの `MiddlewareHandler` を返す。エラーレスポンスの形式（JSON-RPC エラー）は統一されている:
 
 Express 版:
+
 ```
 // packages/middleware/express/src/middleware/hostHeaderValidation.ts:23-39
 export function hostHeaderValidation(allowedHostnames: string[]): RequestHandler {
@@ -92,6 +93,7 @@ export function hostHeaderValidation(allowedHostnames: string[]): RequestHandler
 ```
 
 Hono 版:
+
 ```
 // packages/middleware/hono/src/middleware/hostHeaderValidation.ts:8-26
 export function hostHeaderValidation(allowedHostnames: string[]): MiddlewareHandler {
@@ -270,12 +272,14 @@ allowedHosts?: string[];
 - **グローバルオブジェクトの汚染**: `@hono/node-server` はデフォルトでグローバルな `Response` を上書きする。これは Next.js など、ネイティブ `Response` を拡張するフレームワークを壊す。
 
 Bad:
+
 ```
 // overrideGlobalObjects のデフォルトは true
 this._requestListener = getRequestListener(handler);
 ```
 
 Better:
+
 ```
 // packages/middleware/node/src/streamableHttp.ts:80-90
 this._requestListener = getRequestListener(handler, { overrideGlobalObjects: false });
@@ -284,6 +288,7 @@ this._requestListener = getRequestListener(handler, { overrideGlobalObjects: fal
 - **Transport インターフェースの手動委譲の冗長性**: `NodeStreamableHTTPServerTransport` は `Transport` インターフェースの全メンバーに対して getter/setter を手動で記述している。インターフェースが拡張されるたびに委譲コードも更新が必要で、保守負担が増える。Proxy パターンや mixin の活用で自動化できる可能性がある。
 
 Bad:
+
 ```
 // 7 つのプロパティ/メソッドを個別に委譲
 set onclose(handler) { this._webStandardTransport.onclose = handler; }
@@ -294,6 +299,7 @@ get onerror() { return this._webStandardTransport.onerror; }
 ```
 
 Better（概念例）:
+
 ```
 // Proxy による自動委譲
 return new Proxy(this, {

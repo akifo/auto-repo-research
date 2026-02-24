@@ -35,13 +35,13 @@ export type Middleware = (next: FetchLike) => FetchLike;
 ```typescript
 // packages/client/src/client/middleware.ts:249-257
 export const applyMiddlewares = (...middleware: Middleware[]): Middleware => {
-    return next => {
-        let handler = next;
-        for (const mw of middleware) {
-            handler = mw(handler);
-        }
-        return handler;
-    };
+  return next => {
+    let handler = next;
+    for (const mw of middleware) {
+      handler = mw(handler);
+    }
+    return handler;
+  };
 };
 ```
 
@@ -54,9 +54,9 @@ export const applyMiddlewares = (...middleware: Middleware[]): Middleware => {
 ```typescript
 // packages/client/src/client/middleware.ts:317-318
 export const createMiddleware = (
-    handler: (next: FetchLike, input: string | URL, init?: RequestInit) => Promise<Response>
+  handler: (next: FetchLike, input: string | URL, init?: RequestInit) => Promise<Response>,
 ): Middleware => {
-    return next => (input, init) => handler(next, input as string | URL, init);
+  return next => (input, init) => handler(next, input as string | URL, init);
 };
 ```
 
@@ -69,23 +69,23 @@ Express と Hono のアダプターは、ファクトリ関数 `createMcpExpress
 ```typescript
 // packages/middleware/express/src/express.ts:53-79
 export function createMcpExpressApp(options: CreateMcpExpressAppOptions = {}): Express {
-    const { host = '127.0.0.1', allowedHosts } = options;
-    const app = express();
-    app.use(express.json());
+  const { host = "127.0.0.1", allowedHosts } = options;
+  const app = express();
+  app.use(express.json());
 
-    if (allowedHosts) {
-        app.use(hostHeaderValidation(allowedHosts));
-    } else {
-        const localhostHosts = ['127.0.0.1', 'localhost', '::1'];
-        if (localhostHosts.includes(host)) {
-            app.use(localhostHostValidation());
-        } else if (host === '0.0.0.0' || host === '::') {
-            console.warn(
-                `Warning: Server is binding to ${host} without DNS rebinding protection. ...`
-            );
-        }
+  if (allowedHosts) {
+    app.use(hostHeaderValidation(allowedHosts));
+  } else {
+    const localhostHosts = ["127.0.0.1", "localhost", "::1"];
+    if (localhostHosts.includes(host)) {
+      app.use(localhostHostValidation());
+    } else if (host === "0.0.0.0" || host === "::") {
+      console.warn(
+        `Warning: Server is binding to ${host} without DNS rebinding protection. ...`,
+      );
     }
-    return app;
+  }
+  return app;
 }
 ```
 
@@ -102,22 +102,22 @@ DNS リバインディング防御は三つの層に分離されている:
 ```typescript
 // packages/server/src/server/middleware/hostHeaderValidation.ts:17-35
 export function validateHostHeader(
-    hostHeader: string | null | undefined,
-    allowedHostnames: string[]
+  hostHeader: string | null | undefined,
+  allowedHostnames: string[],
 ): HostHeaderValidationResult {
-    if (!hostHeader) {
-        return { ok: false, errorCode: 'missing_host', message: 'Missing Host header' };
-    }
-    let hostname: string;
-    try {
-        hostname = new URL(`http://${hostHeader}`).hostname;
-    } catch {
-        return { ok: false, errorCode: 'invalid_host_header', message: `Invalid Host header: ${hostHeader}`, hostHeader };
-    }
-    if (!allowedHostnames.includes(hostname)) {
-        return { ok: false, errorCode: 'invalid_host', message: `Invalid Host: ${hostname}`, hostHeader, hostname };
-    }
-    return { ok: true, hostname };
+  if (!hostHeader) {
+    return { ok: false, errorCode: "missing_host", message: "Missing Host header" };
+  }
+  let hostname: string;
+  try {
+    hostname = new URL(`http://${hostHeader}`).hostname;
+  } catch {
+    return { ok: false, errorCode: "invalid_host_header", message: `Invalid Host header: ${hostHeader}`, hostHeader };
+  }
+  if (!allowedHostnames.includes(hostname)) {
+    return { ok: false, errorCode: "invalid_host", message: `Invalid Host: ${hostname}`, hostHeader, hostname };
+  }
+  return { ok: true, hostname };
 }
 ```
 
@@ -153,19 +153,19 @@ constructor(options: StreamableHTTPServerTransportOptions = {}) {
 ```typescript
 // packages/core/src/shared/transport.ts:31-46
 export function createFetchWithInit(baseFetch: FetchLike = fetch, baseInit?: RequestInit): FetchLike {
-    if (!baseInit) {
-        return baseFetch;
-    }
-    return async (url: string | URL, init?: RequestInit): Promise<Response> => {
-        const mergedInit: RequestInit = {
-            ...baseInit,
-            ...init,
-            headers: init?.headers
-                ? { ...normalizeHeaders(baseInit.headers), ...normalizeHeaders(init.headers) }
-                : baseInit.headers
-        };
-        return baseFetch(url, mergedInit);
+  if (!baseInit) {
+    return baseFetch;
+  }
+  return async (url: string | URL, init?: RequestInit): Promise<Response> => {
+    const mergedInit: RequestInit = {
+      ...baseInit,
+      ...init,
+      headers: init?.headers
+        ? { ...normalizeHeaders(baseInit.headers), ...normalizeHeaders(init.headers) }
+        : baseInit.headers,
     };
+    return baseFetch(url, mergedInit);
+  };
 }
 ```
 
@@ -201,19 +201,19 @@ export type Middleware = (next: FetchLike) => FetchLike;
 
 // テストでは mock fetch を直接注入
 // packages/client/test/client/middleware.test.ts:56-57
-const enhancedFetch = withOAuth(mockProvider, 'https://api.example.com')(mockFetch);
-await enhancedFetch('https://api.example.com/data');
+const enhancedFetch = withOAuth(mockProvider, "https://api.example.com")(mockFetch);
+await enhancedFetch("https://api.example.com/data");
 ```
 
 - **空のパイプラインに対するアイデンティティ保証**: `applyMiddlewares()` にミドルウェアを渡さない場合、元のハンドラがそのまま返される。ラッパー関数が不要に生成されず、パフォーマンスペナルティがない。
 
 ```typescript
 // packages/client/test/client/middleware.test.ts:626-633
-it('should compose no middleware correctly', () => {
-    const response = new Response('success', { status: 200 });
-    mockFetch.mockResolvedValue(response);
-    const composedFetch = applyMiddlewares()(mockFetch);
-    expect(composedFetch).toBe(mockFetch); // 同一参照
+it("should compose no middleware correctly", () => {
+  const response = new Response("success", { status: 200 });
+  mockFetch.mockResolvedValue(response);
+  const composedFetch = applyMiddlewares()(mockFetch);
+  expect(composedFetch).toBe(mockFetch); // 同一参照
 });
 ```
 
@@ -222,16 +222,16 @@ it('should compose no middleware correctly', () => {
 ```typescript
 // packages/middleware/express/src/express.ts:60-76
 if (allowedHosts) {
-    app.use(hostHeaderValidation(allowedHosts));
+  app.use(hostHeaderValidation(allowedHosts));
 } else {
-    const localhostHosts = ['127.0.0.1', 'localhost', '::1'];
-    if (localhostHosts.includes(host)) {
-        app.use(localhostHostValidation());
-    } else if (host === '0.0.0.0' || host === '::') {
-        console.warn(
-            `Warning: Server is binding to ${host} without DNS rebinding protection. ...`
-        );
-    }
+  const localhostHosts = ["127.0.0.1", "localhost", "::1"];
+  if (localhostHosts.includes(host)) {
+    app.use(localhostHostValidation());
+  } else if (host === "0.0.0.0" || host === "::") {
+    console.warn(
+      `Warning: Server is binding to ${host} without DNS rebinding protection. ...`,
+    );
+  }
 }
 ```
 
@@ -242,26 +242,26 @@ if (allowedHosts) {
 ```typescript
 // Bad: 各アダプターにバリデーションロジックを直接書く
 function expressHostValidation(allowedHostnames: string[]) {
-    return (req, res, next) => {
-        const hostname = new URL(`http://${req.headers.host}`).hostname;
-        if (!allowedHostnames.includes(hostname)) {
-            res.status(403).json({ error: 'Invalid host' });
-            return;
-        }
-        next();
-    };
+  return (req, res, next) => {
+    const hostname = new URL(`http://${req.headers.host}`).hostname;
+    if (!allowedHostnames.includes(hostname)) {
+      res.status(403).json({ error: "Invalid host" });
+      return;
+    }
+    next();
+  };
 }
 
 // Better: コアロジックを呼び出し、アダプター層は変換のみ
 function expressHostValidation(allowedHostnames: string[]) {
-    return (req, res, next) => {
-        const result = validateHostHeader(req.headers.host, allowedHostnames);
-        if (!result.ok) {
-            res.status(403).json({ jsonrpc: '2.0', error: { code: -32_000, message: result.message }, id: null });
-            return;
-        }
-        next();
-    };
+  return (req, res, next) => {
+    const result = validateHostHeader(req.headers.host, allowedHostnames);
+    if (!result.ok) {
+      res.status(403).json({ jsonrpc: "2.0", error: { code: -32_000, message: result.message }, id: null });
+      return;
+    }
+    next();
+  };
 }
 ```
 
@@ -269,7 +269,7 @@ function expressHostValidation(allowedHostnames: string[]) {
 
 ```typescript
 // Bad: 独自コンテキスト型
-type CustomMiddleware = (ctx: { req: CustomRequest; res: CustomResponse; next: () => void }) => void;
+type CustomMiddleware = (ctx: { req: CustomRequest; res: CustomResponse; next: () => void; }) => void;
 
 // Better: プラットフォーム標準型を合成単位にする
 type Middleware = (next: FetchLike) => FetchLike;

@@ -23,12 +23,12 @@ promptfoo は大規模 TypeScript CLI/ライブラリプロジェクト（2,327 
 
 `tsdown.config.ts` では `defineConfig` に配列を渡すことで 4 つのビルドターゲットを定義している。
 
-| ターゲット | format | entry | fixedExtension | 用途 |
-|---|---|---|---|---|
-| Server | ESM | `src/server/index.ts` | false (.js) | ワークフロー安定パス |
-| CLI | ESM | `src/entrypoint.ts`, `src/main.ts` | false (.js) | CLI バイナリ |
-| Library ESM | ESM | `src/index.ts` | false (.js) | ライブラリ (import) |
-| Library CJS | CJS | `src/index.ts` | true (.cjs) | ライブラリ (require) |
+| ターゲット  | format | entry                              | fixedExtension | 用途                 |
+| ----------- | ------ | ---------------------------------- | -------------- | -------------------- |
+| Server      | ESM    | `src/server/index.ts`              | false (.js)    | ワークフロー安定パス |
+| CLI         | ESM    | `src/entrypoint.ts`, `src/main.ts` | false (.js)    | CLI バイナリ         |
+| Library ESM | ESM    | `src/index.ts`                     | false (.js)    | ライブラリ (import)  |
+| Library CJS | CJS    | `src/index.ts`                     | true (.cjs)    | ライブラリ (require) |
 
 `"type": "module"` を持つ `package.json` の下で ESM ビルドには `fixedExtension: false`（= `.js` 出力）、CJS ビルドのみ `fixedExtension: true`（= `.cjs` 出力）とすることで、Node.js のモジュール解決に自然に適合させている。
 
@@ -114,37 +114,36 @@ export default defineConfig([
 // src/esm.ts:161-192
 export function getDirectory(): string {
   // In bundled CJS builds, skip the ESM path entirely - import.meta.url will be empty
-  if (typeof BUILD_FORMAT !== 'undefined' && BUILD_FORMAT === 'cjs') {
+  if (typeof BUILD_FORMAT !== "undefined" && BUILD_FORMAT === "cjs") {
     // @ts-ignore - __dirname exists in CJS builds
     return __dirname;
   }
 
   try {
     const url = import.meta.url;
-    if (url && url !== '') {
+    if (url && url !== "") {
       return path.dirname(fileURLToPath(url));
     }
   } catch {
     // Expected in CJS environments where import.meta syntax is invalid
   }
 
-  if (typeof __dirname !== 'undefined') {
+  if (typeof __dirname !== "undefined") {
     // @ts-ignore
     return __dirname;
   }
 
   throw new Error(
-    'Unable to determine directory: neither import.meta.url nor __dirname available.',
+    "Unable to determine directory: neither import.meta.url nor __dirname available.",
   );
 }
 ```
 
 ```typescript
 // src/version.ts:23-26
-export const VERSION: string =
-  typeof __PROMPTFOO_VERSION__ !== 'undefined'
-    ? __PROMPTFOO_VERSION__
-    : (process.env.npm_package_version ?? '0.0.0-development');
+export const VERSION: string = typeof __PROMPTFOO_VERSION__ !== "undefined"
+  ? __PROMPTFOO_VERSION__
+  : (process.env.npm_package_version ?? "0.0.0-development");
 ```
 
 ```jsonc
@@ -175,11 +174,11 @@ export const VERSION: string =
 ```typescript
 // scripts/postbuild.ts:50-57
 const REQUIRED_BUILD_OUTPUTS = [
-  'dist/src/entrypoint.js', // CLI entry (Node version check wrapper)
-  'dist/src/main.js',       // CLI main module
-  'dist/src/index.js',      // ESM library entry
-  'dist/src/index.cjs',     // CJS library entry
-  'dist/src/server/index.js', // Server entry
+  "dist/src/entrypoint.js", // CLI entry (Node version check wrapper)
+  "dist/src/main.js", // CLI main module
+  "dist/src/index.js", // ESM library entry
+  "dist/src/index.cjs", // CJS library entry
+  "dist/src/server/index.js", // Server entry
 ];
 ```
 
@@ -231,13 +230,13 @@ function verifyBuildOutputs(): string[] {
   "linter": {
     "rules": {
       "suspicious": {
-        "noExplicitAny": "off"
+        "noExplicitAny": "off",
       },
       "nursery": {
-        "noFloatingPromises": "off"
-      }
-    }
-  }
+        "noFloatingPromises": "off",
+      },
+    },
+  },
 }
 ```
 
@@ -250,8 +249,8 @@ function verifyBuildOutputs(): string[] {
 ```typescript
 // Bad: 並列ビルドで clean: true
 export default defineConfig([
-  { entry: ['src/index.ts'], format: ['esm'], outDir: 'dist', clean: true },
-  { entry: ['src/index.ts'], format: ['cjs'], outDir: 'dist', clean: true },
+  { entry: ["src/index.ts"], format: ["esm"], outDir: "dist", clean: true },
+  { entry: ["src/index.ts"], format: ["cjs"], outDir: "dist", clean: true },
 ]);
 ```
 
@@ -259,8 +258,8 @@ export default defineConfig([
 // Better: clean: false + 明示的なクリーンコマンド
 // package.json: "build:clean": "shx rm -rf dist"
 export default defineConfig([
-  { entry: ['src/index.ts'], format: ['esm'], outDir: 'dist', clean: false },
-  { entry: ['src/index.ts'], format: ['cjs'], outDir: 'dist', clean: false },
+  { entry: ["src/index.ts"], format: ["esm"], outDir: "dist", clean: false },
+  { entry: ["src/index.ts"], format: ["cjs"], outDir: "dist", clean: false },
 ]);
 ```
 
@@ -269,7 +268,7 @@ export default defineConfig([
 ```typescript
 // Bad: ランタイムで import.meta を条件分岐
 function getDir() {
-  if (typeof import.meta !== 'undefined' && import.meta.url) {
+  if (typeof import.meta !== "undefined" && import.meta.url) {
     return path.dirname(fileURLToPath(import.meta.url));
   }
   return __dirname;
@@ -278,9 +277,9 @@ function getDir() {
 
 ```typescript
 // Better: コンパイル時定数で分岐（デッドコード除去も効く）
-declare const BUILD_FORMAT: 'esm' | 'cjs' | undefined;
+declare const BUILD_FORMAT: "esm" | "cjs" | undefined;
 function getDir() {
-  if (typeof BUILD_FORMAT !== 'undefined' && BUILD_FORMAT === 'cjs') {
+  if (typeof BUILD_FORMAT !== "undefined" && BUILD_FORMAT === "cjs") {
     return __dirname;
   }
   // ESM path...

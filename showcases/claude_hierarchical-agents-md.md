@@ -24,6 +24,7 @@ CLAUDE.md をエントリポイントとし、実質的なガイダンスは AGE
 
 ```markdown
 <!-- promptfoo/promptfoo CLAUDE.md:1 -->
+
 @AGENTS.md
 ```
 
@@ -35,6 +36,7 @@ promptfoo ではルートを含む 12 箇所すべてで CLAUDE.md が `@AGENTS.
 
 ```markdown
 <!-- promptfoo/promptfoo AGENTS.md:9-24 -->
+
 ## Project Structure
 
 | Directory        | Purpose                       | Local Docs                |
@@ -56,6 +58,7 @@ promptfoo ではルートを含む 12 箇所すべてで CLAUDE.md が `@AGENTS.
 
 ```markdown
 <!-- promptfoo/promptfoo src/commands/AGENTS.md:91-95 -->
+
 ## Do / Don't
 
 **Do:** Use logger, track telemetry, validate with Zod, set exitCode on errors
@@ -64,7 +67,9 @@ promptfoo ではルートを含む 12 箇所すべてで CLAUDE.md が `@AGENTS.
 
 ```markdown
 <!-- promptfoo/promptfoo src/providers/AGENTS.md:88-98 -->
+
 **All seven items are required** before a provider is complete:
+
 1. Implement `ApiProvider` interface
 2. Add env vars to `src/types/env.ts`
 3. Add env vars to `src/envars.ts`
@@ -82,18 +87,19 @@ promptfoo ではルートを含む 12 箇所すべてで CLAUDE.md が `@AGENTS.
 
 ```markdown
 <!-- promptfoo/promptfoo AGENTS.md:268-284 -->
+
 ## Additional Documentation
 
 Read these when relevant to your task:
 
-| Document                               | When to Read                   |
-| -------------------------------------- | ------------------------------ |
-| `docs/agents/pr-conventions.md`        | Creating pull requests         |
-| `docs/agents/git-workflow.md`          | Git operations                 |
-| `docs/agents/dependency-management.md` | Updating packages              |
-| `docs/agents/logging.md`              | Adding logging to code         |
-| `docs/agents/python.md`               | Python providers/scripts       |
-| `docs/agents/database-security.md`     | Writing database queries       |
+| Document                               | When to Read             |
+| -------------------------------------- | ------------------------ |
+| `docs/agents/pr-conventions.md`        | Creating pull requests   |
+| `docs/agents/git-workflow.md`          | Git operations           |
+| `docs/agents/dependency-management.md` | Updating packages        |
+| `docs/agents/logging.md`               | Adding logging to code   |
+| `docs/agents/python.md`                | Python providers/scripts |
+| `docs/agents/database-security.md`     | Writing database queries |
 ```
 
 「When to Read」列により、エージェントは現在のタスクに関連するドキュメントだけを選択的に読み込める。
@@ -104,14 +110,18 @@ AGENTS.md 内でパターンを説明する際、必ず実際のコードファ�
 
 ```markdown
 <!-- promptfoo/promptfoo test/AGENTS.md:35-38 -->
+
 **Reference files:**
+
 - **Vitest (frontend)**: `src/app/src/hooks/usePageMeta.test.ts` - explicit imports
 - **Vitest (backend)**: `test/assertions/contains.test.ts` - explicit imports
 ```
 
 ```markdown
 <!-- promptfoo/promptfoo src/providers/AGENTS.md:24-28 -->
+
 **Reference implementations:**
+
 - `openai.ts` - Most comprehensive
 - `anthropic/index.ts` - Complex provider with subdirectory
 - `http.ts` - Generic HTTP pattern
@@ -173,6 +183,7 @@ project-root/
 
 ```markdown
 <!-- promptfoo/promptfoo docs/agents/git-workflow.md:1-16 -->
+
 ## Critical Rules
 
 1. **NEVER** commit directly to main
@@ -182,6 +193,7 @@ project-root/
 5. **ALWAYS** create new commits - never amend or rebase unless explicitly asked
 
 **Forbidden commands:**
+
 - `git push origin main`
 - `git merge feature-branch` while on main
 - Any direct commits to main
@@ -195,17 +207,27 @@ project-root/
 
 ```markdown
 <!-- Bad: AGENTS.md が 800 行超で全情報を内包 -->
+
 # AGENTS.md
 
 ## Project Structure... (50行)
+
 ## Build Commands... (30行)
+
 ## Coding Style... (80行)
+
 ## Testing Guidelines... (100行)
+
 ## Provider Development... (120行)
+
 ## Git Workflow... (80行)
+
 ## PR Conventions... (200行)
+
 ## Logging... (50行)
+
 ## Database Security... (40行)
+
 ## Python... (50行)
 
 <!-- AI がファイルの前半を読み終えた頃には、後半の重要なルールの重みが下がる -->
@@ -214,14 +236,19 @@ project-root/
 
 ```markdown
 <!-- Better: ルートはマップとリンクに限定し、詳細は分離 -->
+
 # AGENTS.md (root, ~280行)
 
 ## Project Structure
+
 | Directory | Local Docs |
+
 <!-- 各ディレクトリの AGENTS.md にリンク -->
 
 ## Additional Documentation
+
 | Document | When to Read |
+
 <!-- docs/agents/ に条件付きリンク -->
 ```
 
@@ -230,8 +257,10 @@ project-root/
 ```markdown
 <!-- Bad: 同じタグ参照表が 2 箇所に存在 -->
 <!-- promptfoo/promptfoo src/redteam/plugins/AGENTS.md -->
+
 ## Quick Tag Reference
-| Correct       | Incorrect                                 |
+
+| Correct | Incorrect |
 | `<UserQuery>` | `<UserPrompt>`, `<UserInput>`, `<prompt>` |
 
 <!-- .claude/skills/redteam-plugin-development/skill.md にも同じテーブル -->
@@ -241,7 +270,9 @@ project-root/
 ```markdown
 <!-- Better: AGENTS.md は概要のみ、詳細はスキルに一本化 -->
 <!-- src/redteam/plugins/AGENTS.md -->
+
 See `.claude/skills/redteam-plugin-development/skill.md` for full standards.
+
 <!-- タグ参照表はスキルファイルにのみ記載 -->
 ```
 

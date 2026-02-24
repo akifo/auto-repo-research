@@ -27,6 +27,7 @@ promptfoo では CLAUDE.md を `@AGENTS.md` の一行だけで構成し、実質
 2. **責務の統一**: CLAUDE.md が複数存在する場合（ルート + 8 サブディレクトリ）、すべてが `@AGENTS.md` の一行であり、メンテナンス対象はAGENTS.md のみ
 
 確認されたファイル:
+
 - `/CLAUDE.md` → `@AGENTS.md`
 - `/test/CLAUDE.md` → `@AGENTS.md`
 - `/src/app/CLAUDE.md` → `@AGENTS.md`
@@ -48,6 +49,7 @@ promptfoo では CLAUDE.md を `@AGENTS.md` の一行だけで構成し、実質
 **第 2 層: サブディレクトリ AGENTS.md（12 ファイル, 計 1,343 行）** — ドメイン固有
 
 各ファイルは独立して読めるようにドメインの概要・テックスタック・ディレクトリ構造・具体的パターンとアンチパターン・テスト手順を含む。特に大きいのは:
+
 - `test/AGENTS.md`（383 行）: テストフレームワーク、モッキング、Zustand ストアテスト、スモークテスト、フェイクタイマーの詳細パターン
 - `src/ui/AGENTS.md`（176 行）: ターミナル UI のオプトイン設計、動的インポート、Vim ナビゲーション
 - `src/app/AGENTS.md`（120 行）: React 19 パターン、Radix UI、Tailwind、callApi() の強制
@@ -89,6 +91,7 @@ promptfoo では CLAUDE.md を `@AGENTS.md` の一行だけで構成し、実質
 
 ```markdown
 // AGENTS.md:9-24
+
 ## Project Structure
 
 | Directory        | Purpose                       | Local Docs                |
@@ -109,18 +112,19 @@ promptfoo では CLAUDE.md を `@AGENTS.md` の一行だけで構成し、実質
 
 ```markdown
 // AGENTS.md:268-280
+
 ## Additional Documentation
 
 Read these when relevant to your task:
 
-| Document                               | When to Read                   |
-| -------------------------------------- | ------------------------------ |
-| `docs/agents/pr-conventions.md`        | Creating pull requests         |
-| `docs/agents/git-workflow.md`          | Git operations                 |
-| `docs/agents/dependency-management.md` | Updating packages              |
-| `docs/agents/logging.md`              | Adding logging to code         |
-| `docs/agents/python.md`               | Python providers/scripts       |
-| `docs/agents/database-security.md`     | Writing database queries       |
+| Document                               | When to Read             |
+| -------------------------------------- | ------------------------ |
+| `docs/agents/pr-conventions.md`        | Creating pull requests   |
+| `docs/agents/git-workflow.md`          | Git operations           |
+| `docs/agents/dependency-management.md` | Updating packages        |
+| `docs/agents/logging.md`               | Adding logging to code   |
+| `docs/agents/python.md`                | Python providers/scripts |
+| `docs/agents/database-security.md`     | Writing database queries |
 ```
 
 ```json
@@ -143,6 +147,7 @@ Read these when relevant to your task:
 ```
 
 ::: v-pre
+
 ```yaml
 # .github/workflows/claude-code-review.yml:106-114
       - name: Run Claude Code Review
@@ -155,6 +160,7 @@ Read these when relevant to your task:
           allowed_bots: use-tusk
           claude_args: '--model opus --max-turns 30 --allowed-tools "Bash(gh issue view:*),..."'
 ```
+
 :::
 
 ```bash
@@ -210,10 +216,10 @@ fi
 
 ```markdown
 // AGENTS.md:272-280
-| Document                               | When to Read                   |
-| `docs/agents/pr-conventions.md`        | Creating pull requests         |
-| `docs/agents/git-workflow.md`          | Git operations                 |
-| `docs/agents/dependency-management.md` | Updating packages              |
+| Document | When to Read |
+| `docs/agents/pr-conventions.md` | Creating pull requests |
+| `docs/agents/git-workflow.md` | Git operations |
+| `docs/agents/dependency-management.md` | Updating packages |
 ```
 
 - **チェックリスト形式の完全性検証**: Provider 追加時の 7 項目チェックリスト（`src/providers/AGENTS.md:88-98`）は、エージェントが「何を忘れやすいか」を網羅的にリスト化している。verify コマンド例も添付されており、エージェントが自己検証できる。
@@ -221,6 +227,7 @@ fi
 ```markdown
 // src/providers/AGENTS.md:88-98
 **All seven items are required** before a provider is complete:
+
 1. Implement `ApiProvider` interface
 2. Add env vars to `src/types/env.ts`
 3. Add env vars to `src/envars.ts`
@@ -243,7 +250,7 @@ fi
 ```typescript
 // test/AGENTS.md:159-174
 // BAD: Mocking the store hook loses integration coverage
-vi.mock('./useMyStore');
+vi.mock("./useMyStore");
 const mockUpdateItems = vi.fn();
 (useMyStore as any).mockReturnValue({
   items: [],
@@ -261,8 +268,8 @@ const mockUpdateItems = vi.fn();
 // .claude/skills/ に書いてあるルール、.github/prompts/ に書いてあるルール...
 
 // Better: ルートの AGENTS.md にドキュメントマップを設置（promptfoo はこれを実施済み）
-| Document                               | When to Read                   |
-| `docs/agents/pr-conventions.md`        | Creating pull requests         |
+| Document | When to Read |
+| `docs/agents/pr-conventions.md` | Creating pull requests |
 ```
 
 - **スキルとAGENTS.md の責務境界の曖昧さ**: `src/redteam/plugins/AGENTS.md` は「See `.claude/skills/redteam-plugin-development/skill.md` for full standards」と委任するが、AGENTS.md 自体にもタグ参照表がある。どちらが正式な情報源かが不明確。

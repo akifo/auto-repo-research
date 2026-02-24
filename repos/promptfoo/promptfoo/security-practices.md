@@ -152,18 +152,25 @@ OpenTelemetry トレースデータにも秘匿情報のサニタイズが適用
 ```typescript
 // src/tracing/store.ts:39-82
 const SENSITIVE_ATTRIBUTE_KEYS = [
-  'authorization', 'cookie', 'set-cookie', 'token',
-  'api_key', 'apikey', 'secret', 'password', 'passphrase',
+  "authorization",
+  "cookie",
+  "set-cookie",
+  "token",
+  "api_key",
+  "apikey",
+  "secret",
+  "password",
+  "passphrase",
 ];
 
 function sanitizeAttributes(attributes: Record<string, any>): Record<string, any> {
   for (const [key, value] of Object.entries(attributes)) {
     const lowerKey = key.toLowerCase();
     if (SENSITIVE_ATTRIBUTE_KEYS.some((sensitiveKey) => lowerKey.includes(sensitiveKey))) {
-      sanitized[key] = '<redacted>';
+      sanitized[key] = "<redacted>";
       continue;
     }
-    sanitized[key] = sanitizeValue(value);  // 長い文字列は400文字に切り詰め
+    sanitized[key] = sanitizeValue(value); // 長い文字列は400文字に切り詰め
   }
 }
 ```
@@ -205,12 +212,12 @@ function sanitizeAttributes(attributes: Record<string, any>): Record<string, any
 ```typescript
 // Bad: 全オリジン許可
 app.use(cors());
-const io = new SocketIOServer(httpServer, { cors: { origin: '*' } });
+const io = new SocketIOServer(httpServer, { cors: { origin: "*" } });
 
 // Better: 明示的なオリジン制限（本番環境向け）
-app.use(cors({ origin: ['http://localhost:3000'] }));
+app.use(cors({ origin: ["http://localhost:3000"] }));
 const io = new SocketIOServer(httpServer, {
-  cors: { origin: ['http://localhost:3000'] }
+  cors: { origin: ["http://localhost:3000"] },
 });
 ```
 
@@ -222,7 +229,7 @@ const { evaluateOptions, providers: _validatedProviders, ...restData } = result.
 const testSuite = { ...restData, providers: req.body.providers };
 
 // Better: passthrough() でスキーマを柔軟にし、バリデーション済みデータを使う
-const testSuite = result.data;  // passthrough() で未知フィールドも保持
+const testSuite = result.data; // passthrough() で未知フィールドも保持
 ```
 
 ## 導出ルール

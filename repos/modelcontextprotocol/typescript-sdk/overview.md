@@ -21,23 +21,23 @@ MCP TypeScript SDK は、Web Standard API を核に据えた3層アーキテク�
 
 ## 分析した視点
 
-| # | 視点 | ファイル | 概要 |
-| - | ---- | -------- | ---- |
-| 1 | project-structure | project-structure.md | 内部パッケージのバンドル吸収、pnpm catalogs による依存一元管理、アダプタ層の peerDependencies 疎結合設計 |
-| 2 | architecture | architecture.md | Transport→Protocol→High-Level API の3層アーキテクチャと Capability Gate による安全な機能制御 |
-| 3 | design-philosophy | design-philosophy.md | Web Standard API を核に据え、Platform Shim と Thin Adapter で多ランタイム対応を実現する設計思想 |
-| 4 | type-system-patterns | type-system-patterns.md | Zod スキーマを Single Source of Truth とし、約120型を z.infer で導出する Schema-First 型設計 |
-| 5 | abstraction-patterns | abstraction-patterns.md | 最小 Transport インターフェース、Protocol Template Method、McpServer Facade の4層抽象化設計 |
-| 6 | streaming-patterns | streaming-patterns.md | バックプレッシャー対応、再開可能ストリーム、段階的シャットダウン等のプロダクション級ストリーミング実装 |
-| 7 | api-design-practices | api-design-practices.md | Progressive Disclosure の3層 API、Registration-Driven Capabilities、入出力自動バリデーション |
-| 8 | middleware-composition | middleware-composition.md | fetch シグネチャを合成単位とするミドルウェアパイプラインとフレームワーク非依存のバリデーション共有 |
-| 9 | adapter-implementation-patterns | adapter-implementation-patterns.md | Web Standard コア + 薄いアダプター層の分離、セキュリティデフォルト自動適用、WeakMap コンテキスト伝搬 |
-| 10 | platform-abstraction | platform-abstraction.md | export conditions + 最小 shim による静的ランタイム分岐と Web Standard API ファーストのコア設計 |
-| 11 | error-handling-idioms | error-handling-idioms.md | ProtocolError/SdkError のワイヤー境界分離、安全なフォールバック変換、段階的な資格情報無効化 |
-| 12 | testing-practices | testing-practices.md | InMemoryTransport による高速テスト、Issue 番号付き回帰テスト、3層テスト分離と共有設定パッケージ化 |
-| 13 | security-practices | security-practices.md | SafeUrlSchema による構造的 URL 検証、PKCE S256 必須化、エラーコード別の段階的資格情報回復 |
-| 14 | schema-validation-patterns | schema-validation-patterns.md | Zod→型→JSON Schema の一方向導出チェーン、strict/loose の段階的厳密度、プラガブルバリデーター戦略 |
-| 15 | dev-conventions | dev-conventions.md | 共有 ESLint/TSConfig パッケージ、JSDoc コード例の型チェック同期、changesets + PR プレビュー公開 |
+| #  | 視点                            | ファイル                           | 概要                                                                                                     |
+| -- | ------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| 1  | project-structure               | project-structure.md               | 内部パッケージのバンドル吸収、pnpm catalogs による依存一元管理、アダプタ層の peerDependencies 疎結合設計 |
+| 2  | architecture                    | architecture.md                    | Transport→Protocol→High-Level API の3層アーキテクチャと Capability Gate による安全な機能制御             |
+| 3  | design-philosophy               | design-philosophy.md               | Web Standard API を核に据え、Platform Shim と Thin Adapter で多ランタイム対応を実現する設計思想          |
+| 4  | type-system-patterns            | type-system-patterns.md            | Zod スキーマを Single Source of Truth とし、約120型を z.infer で導出する Schema-First 型設計             |
+| 5  | abstraction-patterns            | abstraction-patterns.md            | 最小 Transport インターフェース、Protocol Template Method、McpServer Facade の4層抽象化設計              |
+| 6  | streaming-patterns              | streaming-patterns.md              | バックプレッシャー対応、再開可能ストリーム、段階的シャットダウン等のプロダクション級ストリーミング実装   |
+| 7  | api-design-practices            | api-design-practices.md            | Progressive Disclosure の3層 API、Registration-Driven Capabilities、入出力自動バリデーション             |
+| 8  | middleware-composition          | middleware-composition.md          | fetch シグネチャを合成単位とするミドルウェアパイプラインとフレームワーク非依存のバリデーション共有       |
+| 9  | adapter-implementation-patterns | adapter-implementation-patterns.md | Web Standard コア + 薄いアダプター層の分離、セキュリティデフォルト自動適用、WeakMap コンテキスト伝搬     |
+| 10 | platform-abstraction            | platform-abstraction.md            | export conditions + 最小 shim による静的ランタイム分岐と Web Standard API ファーストのコア設計           |
+| 11 | error-handling-idioms           | error-handling-idioms.md           | ProtocolError/SdkError のワイヤー境界分離、安全なフォールバック変換、段階的な資格情報無効化              |
+| 12 | testing-practices               | testing-practices.md               | InMemoryTransport による高速テスト、Issue 番号付き回帰テスト、3層テスト分離と共有設定パッケージ化        |
+| 13 | security-practices              | security-practices.md              | SafeUrlSchema による構造的 URL 検証、PKCE S256 必須化、エラーコード別の段階的資格情報回復                |
+| 14 | schema-validation-patterns      | schema-validation-patterns.md      | Zod→型→JSON Schema の一方向導出チェーン、strict/loose の段階的厳密度、プラガブルバリデーター戦略         |
+| 15 | dev-conventions                 | dev-conventions.md                 | 共有 ESLint/TSConfig パッケージ、JSDoc コード例の型チェック同期、changesets + PR プレビュー公開          |
 
 ## 特に注目すべき知見
 

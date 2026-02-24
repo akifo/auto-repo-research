@@ -24,24 +24,24 @@ promptfoo は LLM 出力の品質評価フレームワークで、文字列含�
 ```typescript
 // src/types/index.ts:514-576
 export const BaseAssertionTypesSchema = z.enum([
-  'answer-relevance',
-  'bleu',
-  'classifier',
-  'contains',
-  'contains-all',
-  'contains-any',
-  'contains-json',
-  'cost',
-  'equals',
-  'factuality',
-  'javascript',
-  'latency',
-  'llm-rubric',
-  'python',
-  'regex',
-  'similar',
+  "answer-relevance",
+  "bleu",
+  "classifier",
+  "contains",
+  "contains-all",
+  "contains-any",
+  "contains-json",
+  "cost",
+  "equals",
+  "factuality",
+  "javascript",
+  "latency",
+  "llm-rubric",
+  "python",
+  "regex",
+  "similar",
   // ... 50+ types
-  'word-count',
+  "word-count",
 ]);
 
 export type BaseAssertionTypes = z.infer<typeof BaseAssertionTypesSchema>;
@@ -57,21 +57,21 @@ const ASSERTION_HANDLERS: Record<
   BaseAssertionTypes,
   (params: AssertionParams) => GradingResult | Promise<GradingResult>
 > = {
-  'answer-relevance': handleAnswerRelevance,
+  "answer-relevance": handleAnswerRelevance,
   bleu: handleBleuScore,
   contains: handleContains,
-  'contains-all': handleContainsAll,
+  "contains-all": handleContainsAll,
   cost: handleCost,
   equals: handleEquals,
   factuality: handleFactuality,
   javascript: handleJavascript,
   latency: handleLatency,
-  'llm-rubric': handleLlmRubric,
+  "llm-rubric": handleLlmRubric,
   python: handlePython,
   regex: handleRegex,
   similar: handleSimilar,
   // ... 全型に対応するハンドラが必須
-  'word-count': handleWordCount,
+  "word-count": handleWordCount,
 };
 ```
 
@@ -118,7 +118,7 @@ export const AssertionTypeSchema = z.union([
 ```typescript
 // src/assertions/index.ts:237-249
 export function isAssertionInverse(assertion: Assertion): boolean {
-  return assertion.type.startsWith('not-');
+  return assertion.type.startsWith("not-");
 }
 
 export function getAssertionBaseType(assertion: Assertion): AssertionType {
@@ -141,9 +141,9 @@ const pass = outputString.includes(String(value)) !== inverse;
 ```typescript
 // Step 1: Zod enum に新しい型 'embedding-distance' を追加
 export const BaseAssertionTypesSchema = z.enum([
-  'contains',
-  'equals',
-  'embedding-distance',  // 新規追加
+  "contains",
+  "equals",
+  "embedding-distance", // 新規追加
   // ...
 ]);
 export type BaseAssertionTypes = z.infer<typeof BaseAssertionTypesSchema>;
@@ -184,8 +184,8 @@ export const handleContains = ({
     pass,
     score: pass ? 1 : 0,
     reason: pass
-      ? 'Assertion passed'
-      : `Expected output to ${inverse ? 'not ' : ''}contain "${value}"`,
+      ? "Assertion passed"
+      : `Expected output to ${inverse ? "not " : ""}contain "${value}"`,
     assertion,
   };
 };
@@ -201,9 +201,9 @@ export const handleContains = ({
 // Bad: 新しい型を追加しても default でサイレントに失敗する
 function runAssertion(type: string, params: AssertionParams): GradingResult {
   switch (type) {
-    case 'contains':
+    case "contains":
       return handleContains(params);
-    case 'equals':
+    case "equals":
       return handleEquals(params);
     default:
       // 'embedding-distance' を追加しても、ここでサイレントに失敗する
@@ -233,17 +233,17 @@ function runAssertion(type: BaseAssertionTypes, params: AssertionParams) {
 
 ```typescript
 // Bad: 型定義とバリデーションが分離しており、乖離のリスクがある
-type AssertionType = 'contains' | 'equals' | 'regex';
+type AssertionType = "contains" | "equals" | "regex";
 
 function isValidType(type: string): type is AssertionType {
-  return ['contains', 'equals'].includes(type);
+  return ["contains", "equals"].includes(type);
   // 'regex' が含まれていない! でもコンパイラは検出しない
 }
 ```
 
 ```typescript
 // Good: Zod enum から型を導出し、バリデーションも同一スキーマで行う
-export const BaseAssertionTypesSchema = z.enum(['contains', 'equals', 'regex']);
+export const BaseAssertionTypesSchema = z.enum(["contains", "equals", "regex"]);
 export type BaseAssertionTypes = z.infer<typeof BaseAssertionTypesSchema>;
 
 // バリデーション: スキーマと型定義が常に一致

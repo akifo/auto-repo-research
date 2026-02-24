@@ -73,14 +73,21 @@ export type ResultFailureReason = (typeof ResultFailureReason)[keyof typeof Resu
 
 ```typescript
 // src/redteam/constants/plugins.ts:152-155 — Enum 代替パターン B（配列定数 + [number] 型）
-export const AGENTIC_PLUGINS = ['agentic:memory-poisoning'] as const;
+export const AGENTIC_PLUGINS = ["agentic:memory-poisoning"] as const;
 export type AgenticPlugin = (typeof AGENTIC_PLUGINS)[number];
 ```
 
 ```typescript
 // src/types/index.ts:1326-1336 — Enum 代替パターン C（z.enum による定義）
 export const OutputFileExtension = z.enum([
-  'csv', 'html', 'json', 'jsonl', 'txt', 'xml', 'yaml', 'yml',
+  "csv",
+  "html",
+  "json",
+  "jsonl",
+  "txt",
+  "xml",
+  "yaml",
+  "yml",
 ]);
 export type OutputFileExtension = z.infer<typeof OutputFileExtension>;
 ```
@@ -126,20 +133,23 @@ export const UnifiedConfigSchema = TestSuiteConfigSchema.extend({
 
 ```typescript
 // src/types/env.ts:124-125 — 既知プロパティ + 任意キーの交差型
-export type EnvOverrides = z.infer<typeof ProviderEnvOverridesSchema> &
-  Record<string, string | undefined>;
+export type EnvOverrides =
+  & z.infer<typeof ProviderEnvOverridesSchema>
+  & Record<string, string | undefined>;
 ```
 
 ```typescript
 // src/redteam/constants/plugins.ts:465-472 — satisfies で型安全な定数定義
-export const DEFAULT_PLUGINS: ReadonlySet<Plugin> = new Set([
-  ...[
-    ...BASE_PLUGINS,
-    ...(Object.keys(HARM_PLUGINS) as HarmPlugin[]),
-    ...PII_PLUGINS,
-    ...BIAS_PLUGINS,
-  ].sort(),
-] as const satisfies readonly Plugin[]);
+export const DEFAULT_PLUGINS: ReadonlySet<Plugin> = new Set(
+  [
+    ...[
+      ...BASE_PLUGINS,
+      ...(Object.keys(HARM_PLUGINS) as HarmPlugin[]),
+      ...PII_PLUGINS,
+      ...BIAS_PLUGINS,
+    ].sort(),
+  ] as const satisfies readonly Plugin[],
+);
 ```
 
 ```typescript
@@ -148,9 +158,9 @@ export default function invariant(
   condition: any,
   message?: string | (() => string),
 ): asserts condition {
-  if (condition) { return; }
-  const prefix = 'Invariant failed';
-  const provided = typeof message === 'function' ? message() : message;
+  if (condition) return;
+  const prefix = "Invariant failed";
+  const provided = typeof message === "function" ? message() : message;
   throw new Error(provided ? `${prefix}: ${provided}` : prefix);
 }
 ```
@@ -181,17 +191,19 @@ export default function invariant(
 
 ```typescript
 // src/redteam/constants/plugins.ts:474-477
-export const MINIMAL_TEST_PLUGINS: ReadonlySet<Plugin> = new Set([
-  'harmful:hate',
-  'harmful:self-harm',
-] as const satisfies readonly Plugin[]);
+export const MINIMAL_TEST_PLUGINS: ReadonlySet<Plugin> = new Set(
+  [
+    "harmful:hate",
+    "harmful:self-harm",
+  ] as const satisfies readonly Plugin[],
+);
 ```
 
 - **配列定数 + ReadonlySet でルックアップを最適化**: 型定義用の `as const` 配列と、ランタイムルックアップ用の `ReadonlySet` をセットで提供する。型安全性と O(1) パフォーマンスを両立している。
 
 ```typescript
 // src/redteam/constants/strategies.ts:14-16
-export const DEFAULT_STRATEGIES = ['basic', 'jailbreak:meta', 'jailbreak:composite'] as const;
+export const DEFAULT_STRATEGIES = ["basic", "jailbreak:meta", "jailbreak:composite"] as const;
 export type DefaultStrategy = (typeof DEFAULT_STRATEGIES)[number];
 export const DEFAULT_STRATEGIES_SET: ReadonlySet<string> = new Set(DEFAULT_STRATEGIES);
 ```
@@ -201,12 +213,12 @@ export const DEFAULT_STRATEGIES_SET: ReadonlySet<string> = new Set(DEFAULT_STRAT
 ```typescript
 // src/types/providers.ts:262-278
 export function isApiProvider(provider: any): provider is ApiProvider {
-  return typeof provider === 'object' && provider != null &&
-    'id' in provider && typeof provider.id === 'function';
+  return typeof provider === "object" && provider != null
+    && "id" in provider && typeof provider.id === "function";
 }
 export function isProviderOptions(provider: any): provider is ProviderOptions {
-  return typeof provider === 'object' && provider != null &&
-    'id' in provider && typeof provider.id === 'string';
+  return typeof provider === "object" && provider != null
+    && "id" in provider && typeof provider.id === "string";
 }
 ```
 
@@ -214,7 +226,7 @@ export function isProviderOptions(provider: any): provider is ProviderOptions {
 
 ```typescript
 // src/types/index.ts:305-307
-export type ServerPromptWithMetadata = Omit<PromptWithMetadata, 'recentEvalDate'> & {
+export type ServerPromptWithMetadata = Omit<PromptWithMetadata, "recentEvalDate"> & {
   recentEvalDate: string;
 };
 ```

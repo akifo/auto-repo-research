@@ -230,8 +230,8 @@ export const ResultSchema = z.looseObject({ _meta: RequestMetaSchema.optional() 
 ```ts
 // packages/core/src/util/schema.ts:78-81
 export function isOptionalSchema(schema: AnySchema): boolean {
-    const candidate = schema as { type?: string };
-    return candidate.type === 'optional';  // zod/v4 と zod/v4/mini の両方で動作
+  const candidate = schema as { type?: string; };
+  return candidate.type === "optional"; // zod/v4 と zod/v4/mini の両方で動作
 }
 ```
 
@@ -239,10 +239,12 @@ export function isOptionalSchema(schema: AnySchema): boolean {
 
 ```ts
 // packages/core/test/validation/validation.test.ts:560-579
-it('should be able to import cfWorkerProvider when ajv is missing', async () => {
-    vi.doMock('ajv', () => { throw new Error("Cannot find module 'ajv'"); });
-    const cfworkerModule = await import('../../src/validation/cfWorkerProvider.js');
-    expect(cfworkerModule.CfWorkerJsonSchemaValidator).toBeDefined();
+it("should be able to import cfWorkerProvider when ajv is missing", async () => {
+  vi.doMock("ajv", () => {
+    throw new Error("Cannot find module 'ajv'");
+  });
+  const cfworkerModule = await import("../../src/validation/cfWorkerProvider.js");
+  expect(cfworkerModule.CfWorkerJsonSchemaValidator).toBeDefined();
 });
 ```
 
@@ -253,19 +255,19 @@ it('should be able to import cfWorkerProvider when ajv is missing', async () => 
 ```ts
 // Bad: 毎回コンパイル
 function validate(schema: JsonSchemaType, data: unknown) {
-    const validator = provider.getValidator(schema);  // 毎回新規コンパイル
-    return validator(data);
+  const validator = provider.getValidator(schema); // 毎回新規コンパイル
+  return validator(data);
 }
 
 // Better: バリデーターをキャッシュ
 const validatorCache = new Map<string, JsonSchemaValidator<unknown>>();
 function validate(schemaId: string, schema: JsonSchemaType, data: unknown) {
-    let validator = validatorCache.get(schemaId);
-    if (!validator) {
-        validator = provider.getValidator(schema);
-        validatorCache.set(schemaId, validator);
-    }
-    return validator(data);
+  let validator = validatorCache.get(schemaId);
+  if (!validator) {
+    validator = provider.getValidator(schema);
+    validatorCache.set(schemaId, validator);
+  }
+  return validator(data);
 }
 ```
 

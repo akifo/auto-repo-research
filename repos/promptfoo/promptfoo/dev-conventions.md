@@ -80,11 +80,11 @@ export async function fetchWithProxy(
   abortSignal?: AbortSignal,
 ): Promise<Response> {
   // ... URL パース、AbortSignal 合成 ...
-  const finalOptions: FetchOptions & { dispatcher?: any } = {
+  const finalOptions: FetchOptions & { dispatcher?: any; } = {
     ...options,
     headers: {
       ...(options.headers as Record<string, string>),
-      'x-promptfoo-version': VERSION,  // バージョンヘッダー自動付与
+      "x-promptfoo-version": VERSION, // バージョンヘッダー自動付与
     },
     signal: combinedSignal,
   };
@@ -95,8 +95,8 @@ export async function fetchWithProxy(
 ```typescript
 // src/util/fetch/monkeyPatchFetch.ts:64-66
 // 唯一の例外: 生の fetch を使う箇所は biome-ignore で明示的に許可
-    // biome-ignore lint/style/noRestrictedGlobals: we need raw fetch here
-    const response = await fetch(url, opts);
+// biome-ignore lint/style/noRestrictedGlobals: we need raw fetch here
+const response = await fetch(url, opts);
 ```
 
 ```jsonc
@@ -204,11 +204,11 @@ echo "$STAGED_JS_TS_FILES" | xargs git add
 
 ```typescript
 // Bad: グローバル fetch の直接使用
-const response = await fetch('https://api.example.com/data');
+const response = await fetch("https://api.example.com/data");
 
 // Better: fetchWithProxy 経由
-import { fetchWithProxy } from '../util/fetch';
-const response = await fetchWithProxy('https://api.example.com/data');
+import { fetchWithProxy } from "../util/fetch";
+const response = await fetchWithProxy("https://api.example.com/data");
 ```
 
 - **TypeScript enum の使用**: ツリーシェイキングを阻害し、JavaScript にトランスパイルした際に不要なコードが残る。
@@ -216,14 +216,14 @@ const response = await fetchWithProxy('https://api.example.com/data');
 ```typescript
 // Bad: enum の使用（Biome が error で報告）
 enum Status {
-  Active = 'active',
-  Inactive = 'inactive',
+  Active = "active",
+  Inactive = "inactive",
 }
 
 // Better: as const オブジェクト + 型導出
 const Status = {
-  Active: 'active',
-  Inactive: 'inactive',
+  Active: "active",
+  Inactive: "inactive",
 } as const;
 type Status = (typeof Status)[keyof typeof Status];
 ```
@@ -235,7 +235,7 @@ type Status = (typeof Status)[keyof typeof Status];
 logger.debug(`Config: ${JSON.stringify(config)}`);
 
 // Better: オブジェクトコンテキストを渡すと自動サニタイズ
-logger.debug('[Provider] Config loaded', { config });
+logger.debug("[Provider] Config loaded", { config });
 ```
 
 - **PRスコープのプロダクト領域優先**: ドメイン横断機能を `webui` や `cli` のスコープでコミットすると、ドメイン全体の変更履歴が分散して追跡困難になる。

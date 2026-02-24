@@ -21,6 +21,7 @@ promptfoo は 12 の GitHub Actions ワークフローを軸に、メインCI・
 release-please と GitHub App トークンの組み合わせが特徴的である。GitHub のデフォルト `GITHUB_TOKEN` で作成した PR は CI ワークフローをトリガーしないため、GitHub App トークンを使う工夫が施されている。
 
 リリースフローは4段階で構成される:
+
 1. **release-please** がコミット履歴からバージョンを決定し、PR を作成/リリースを作成
 2. **build** ジョブがリリース作成時にテストを実行
 3. **publish-npm** が `--provenance` 付きで npm に公開（ソフトウェアサプライチェーンの透明性）
@@ -35,6 +36,7 @@ release-please が生成する CHANGELOG のフォーマットを prettier で�
 レビュープロンプトはテンプレート方式で管理され（`.github/prompts/claude-code-review.md`）、変数置換でコンテキストを注入する。プロンプトは優先順位付きのレビュー観点を定義しており、セキュリティ > 正確性 > テスト の順で問題を分類する。
 
 ::: v-pre
+
 ```yaml
 # .github/workflows/claude-code-review.yml:27-37
 # Pass event data as env vars to avoid shell injection via ${{ }} interpolation
@@ -44,6 +46,7 @@ env:
   PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
   PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
 ```
+
 :::
 
 <code v-pre>${{ }}</code> 式を直接シェルコマンドに展開するとインジェクション脆弱性の原因になるため、環境変数経由で値を渡している。
@@ -53,6 +56,7 @@ env:
 テストマトリクスの構成を `ci-config` ジョブで動的に生成し、PR と main push で異なる範囲を実行する。
 
 ::: v-pre
+
 ```yaml
 # .github/workflows/main.yml:21-68
 ci-config:
@@ -63,6 +67,7 @@ ci-config:
     test-matrix: ${{ steps.set-matrix.outputs.test-matrix }}
     build-matrix: ${{ steps.set-matrix.outputs.build-matrix }}
 ```
+
 :::
 
 PR 時: Linux 3 バージョン + Windows 3 シャード + macOS 1 バージョン（ビルドは Node 20, 24 のみ）
@@ -74,18 +79,19 @@ Windows テストは 3 シャードに分割され、大量のテストを並列
 
 依存関係の更新頻度をパッケージの性質に応じて 4 段階に分類している:
 
-| カテゴリ | スケジュール | minimumReleaseAge | 例 |
-|---|---|---|---|
-| LLMプロバイダ | 毎平日 | 0日 | @anthropic-ai/*, openai |
-| ランタイム依存 | デフォルト | 5日 | npm dependencies |
-| 開発依存 | デフォルト | 2日 | devDependencies |
-| 低頻度ライブラリ | 月次 | 7日 | framer-motion, Storybook |
+| カテゴリ         | スケジュール | minimumReleaseAge | 例                       |
+| ---------------- | ------------ | ----------------- | ------------------------ |
+| LLMプロバイダ    | 毎平日       | 0日               | @anthropic-ai/*, openai  |
+| ランタイム依存   | デフォルト   | 5日               | npm dependencies         |
+| 開発依存         | デフォルト   | 2日               | devDependencies          |
+| 低頻度ライブラリ | 月次         | 7日               | framer-motion, Storybook |
 
 同一組織のパッケージは `groupName` でグルーピングし、PR の氾濫を防止している。lockFileMaintenance は月2回（1日と15日）に限定する。
 
 ### セキュリティスキャンの多層化
 
 CI には 3 層のセキュリティ検証がある:
+
 1. **Claude Code Review**: AI によるセキュリティレビュー（インジェクション、SSRF、パストラバーサル等）
 2. **promptfoo-code-scan**: 自社の code-scan-action によるセキュリティスキャン
 3. **lockfile-lint**: ロックファイルの整合性検証（npm レジストリ + HTTPS のみ許可）
@@ -95,6 +101,7 @@ CI には 3 層のセキュリティ検証がある:
 各ワークフローに `concurrency` グループを設定し、同一 PR/ブランチの重複実行を制御している。
 
 ::: v-pre
+
 ```yaml
 # main.yml - PR時のみキャンセル、mainプッシュは完走させる
 concurrency:
@@ -106,6 +113,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number }}
   cancel-in-progress: false
 ```
+
 :::
 
 メインCIは PR 時のみ旧実行をキャンセルする（main push は常に完走）。Claude Code のタスクはキャンセルしない設計で、AI の作業中断を防いでいる。
@@ -135,6 +143,7 @@ fi
 ```
 
 ::: v-pre
+
 ```yaml
 # .github/workflows/release-please.yml:21-32
 # GitHub App トークンで release-please PR の CI トリガーを確保
@@ -149,9 +158,11 @@ fi
   with:
     token: ${{ steps.app-token.outputs.token }}
 ```
+
 :::
 
 ::: v-pre
+
 ```yaml
 # .github/workflows/main.yml:108-117
 # node_modules キャッシュ（OS + Node バージョン + lockfile ハッシュでキー生成）
@@ -166,15 +177,18 @@ fi
   if: steps.cache-node-modules.outputs.cache-hit != 'true'
   run: npm ci
 ```
+
 :::
 
 ::: v-pre
+
 ```yaml
 # .github/workflows/main.yml:119-120
 # テストシャーディング + カバレッジの条件付き有効化を1行で表現
 - name: Test
   run: npm run test${{ matrix.shard && format(' -- --shard={0}/3', matrix.shard) || '' }}${{ matrix.os == 'ubuntu-latest' && matrix.node == '20.20' && !matrix.shard && ' -- --coverage' || '' }}
 ```
+
 :::
 
 ## パターンカタログ
@@ -196,6 +210,7 @@ fi
 - **GitHub App トークンによる CI トリガーの連鎖**: release-please が作成する PR に対して CI が自動実行されるよう、`GITHUB_TOKEN` ではなく GitHub App トークンを使用する。`GITHUB_TOKEN` で作成した PR はワークフローをトリガーしない制約を回避するための意図的な設計である。
 
 ::: v-pre
+
 ```yaml
 # .github/workflows/release-please.yml:21-32
 - uses: actions/create-github-app-token@v2
@@ -207,11 +222,13 @@ fi
   with:
     token: ${{ steps.app-token.outputs.token }}
 ```
+
 :::
 
 - **環境変数経由のイベントデータ受け渡し**: <code v-pre>${{ }}</code> 式をシェルスクリプト内で直接展開するとインジェクション攻撃の対象になる。env ブロックで一度変数に格納し、シェル内では環境変数として参照することで安全にデータを渡す。
 
 ::: v-pre
+
 ```yaml
 # .github/workflows/claude-code-review.yml:28-37
 env:
@@ -219,17 +236,20 @@ env:
   PR_TITLE: ${{ github.event.pull_request.title }}
   PR_AUTHOR: ${{ github.event.pull_request.user.login }}
 ```
+
 :::
 
 - **条件付き concurrency キャンセル**: PR の実行は旧ビルドをキャンセルして最新のみ残す一方、main push は常に完走させる。`cancel-in-progress` を式で動的に制御する。
 
 ::: v-pre
+
 ```yaml
 # .github/workflows/main.yml:15-17
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 ```
+
 :::
 
 - **AI レビューの増分/全体切り替え**: push ごとに全体レビューを行うとコストと時間がかかる。`synchronize` イベントかつ非マージコミットの場合のみ差分レビューにすることで、効率とカバレッジを両立させる。

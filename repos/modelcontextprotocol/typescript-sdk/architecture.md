@@ -110,34 +110,34 @@ async connect(transport: Transport): Promise<void> {
 ```typescript
 // packages/core/src/shared/transport.ts:74-134
 export interface Transport {
-    start(): Promise<void>;
-    send(message: JSONRPCMessage, options?: TransportSendOptions): Promise<void>;
-    close(): Promise<void>;
-    onclose?: () => void;
-    onerror?: (error: Error) => void;
-    onmessage?: <T extends JSONRPCMessage>(message: T, extra?: MessageExtraInfo) => void;
-    sessionId?: string;
-    setProtocolVersion?: (version: string) => void;
-    setSupportedProtocolVersions?: (versions: string[]) => void;
+  start(): Promise<void>;
+  send(message: JSONRPCMessage, options?: TransportSendOptions): Promise<void>;
+  close(): Promise<void>;
+  onclose?: () => void;
+  onerror?: (error: Error) => void;
+  onmessage?: <T extends JSONRPCMessage>(message: T, extra?: MessageExtraInfo) => void;
+  sessionId?: string;
+  setProtocolVersion?: (version: string) => void;
+  setSupportedProtocolVersions?: (versions: string[]) => void;
 }
 ```
 
 ```typescript
 // packages/server/src/server/mcp.ts:66-82
 export class McpServer {
-    public readonly server: Server;
-    private _registeredResources: { [uri: string]: RegisteredResource } = {};
-    private _registeredResourceTemplates: { [name: string]: RegisteredResourceTemplate } = {};
-    private _registeredTools: { [name: string]: RegisteredTool } = {};
-    private _registeredPrompts: { [name: string]: RegisteredPrompt } = {};
+  public readonly server: Server;
+  private _registeredResources: { [uri: string]: RegisteredResource; } = {};
+  private _registeredResourceTemplates: { [name: string]: RegisteredResourceTemplate; } = {};
+  private _registeredTools: { [name: string]: RegisteredTool; } = {};
+  private _registeredPrompts: { [name: string]: RegisteredPrompt; } = {};
 
-    constructor(serverInfo: Implementation, options?: ServerOptions) {
-        this.server = new Server(serverInfo, options);
-    }
-    // ...
-    async connect(transport: Transport): Promise<void> {
-        return await this.server.connect(transport);
-    }
+  constructor(serverInfo: Implementation, options?: ServerOptions) {
+    this.server = new Server(serverInfo, options);
+  }
+  // ...
+  async connect(transport: Transport): Promise<void> {
+    return await this.server.connect(transport);
+  }
 }
 ```
 
@@ -226,8 +226,8 @@ protected assertCapabilityForMethod(method: RequestMethod): void {
 // packages/core/src/shared/protocol.ts:689-693
 const _onclose = this.transport?.onclose;
 this._transport.onclose = () => {
-    _onclose?.();  // 既存コールバックを先に呼ぶ
-    this._onclose();
+  _onclose?.(); // 既存コールバックを先に呼ぶ
+  this._onclose();
 };
 ```
 
@@ -236,16 +236,16 @@ this._transport.onclose = () => {
 ```typescript
 // packages/core/src/shared/protocol.ts:1386-1424
 if (canDebounce) {
-    if (this._pendingDebouncedNotifications.has(notification.method)) {
-        return;
-    }
-    this._pendingDebouncedNotifications.add(notification.method);
-    Promise.resolve().then(() => {
-        this._pendingDebouncedNotifications.delete(notification.method);
-        if (!this._transport) { return; }
-        // ... send
-    });
+  if (this._pendingDebouncedNotifications.has(notification.method)) {
     return;
+  }
+  this._pendingDebouncedNotifications.add(notification.method);
+  Promise.resolve().then(() => {
+    this._pendingDebouncedNotifications.delete(notification.method);
+    if (!this._transport) return;
+    // ... send
+  });
+  return;
 }
 ```
 
@@ -280,10 +280,10 @@ private _requestResolvers: Map<...>;
 ```typescript
 // Better: タスク管理を別クラスに分離
 class TaskManager {
-    private _taskStore: TaskStore;
-    private _taskMessageQueue: TaskMessageQueue;
-    private _taskProgressTokens: Map<string, number>;
-    // タスク関連ロジックを集約
+  private _taskStore: TaskStore;
+  private _taskMessageQueue: TaskMessageQueue;
+  private _taskProgressTokens: Map<string, number>;
+  // タスク関連ロジックを集約
 }
 ```
 
@@ -303,8 +303,8 @@ protected assertCapabilityForMethod(method: RequestMethod): void {
 ```typescript
 // Better: method -> capability のマッピングテーブル（ただしプロトコル SDK では switch の方が明示的で安全な場合も多い）
 const METHOD_CAPABILITIES: Record<string, keyof ServerCapabilities> = {
-    'tools/call': 'tools',
-    'prompts/get': 'prompts',
+  "tools/call": "tools",
+  "prompts/get": "prompts",
 };
 ```
 

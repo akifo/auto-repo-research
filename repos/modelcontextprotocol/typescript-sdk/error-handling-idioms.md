@@ -60,41 +60,41 @@ SDK は以下の独立したエラー階層を持つ:
 ```typescript
 // packages/core/src/errors/sdkErrors.ts:9-37
 export enum SdkErrorCode {
-    // State errors
-    NotConnected = 'NOT_CONNECTED',
-    AlreadyConnected = 'ALREADY_CONNECTED',
-    NotInitialized = 'NOT_INITIALIZED',
+  // State errors
+  NotConnected = "NOT_CONNECTED",
+  AlreadyConnected = "ALREADY_CONNECTED",
+  NotInitialized = "NOT_INITIALIZED",
 
-    // Capability errors
-    CapabilityNotSupported = 'CAPABILITY_NOT_SUPPORTED',
+  // Capability errors
+  CapabilityNotSupported = "CAPABILITY_NOT_SUPPORTED",
 
-    // Transport errors
-    RequestTimeout = 'REQUEST_TIMEOUT',
-    ConnectionClosed = 'CONNECTION_CLOSED',
-    SendFailed = 'SEND_FAILED',
+  // Transport errors
+  RequestTimeout = "REQUEST_TIMEOUT",
+  ConnectionClosed = "CONNECTION_CLOSED",
+  SendFailed = "SEND_FAILED",
 
-    // Transport errors
-    ClientHttpNotImplemented = 'CLIENT_HTTP_NOT_IMPLEMENTED',
-    ClientHttpAuthentication = 'CLIENT_HTTP_AUTHENTICATION',
-    ClientHttpForbidden = 'CLIENT_HTTP_FORBIDDEN',
-    ClientHttpUnexpectedContent = 'CLIENT_HTTP_UNEXPECTED_CONTENT',
-    ClientHttpFailedToOpenStream = 'CLIENT_HTTP_FAILED_TO_OPEN_STREAM',
-    ClientHttpFailedToTerminateSession = 'CLIENT_HTTP_FAILED_TO_TERMINATE_SESSION'
+  // Transport errors
+  ClientHttpNotImplemented = "CLIENT_HTTP_NOT_IMPLEMENTED",
+  ClientHttpAuthentication = "CLIENT_HTTP_AUTHENTICATION",
+  ClientHttpForbidden = "CLIENT_HTTP_FORBIDDEN",
+  ClientHttpUnexpectedContent = "CLIENT_HTTP_UNEXPECTED_CONTENT",
+  ClientHttpFailedToOpenStream = "CLIENT_HTTP_FAILED_TO_OPEN_STREAM",
+  ClientHttpFailedToTerminateSession = "CLIENT_HTTP_FAILED_TO_TERMINATE_SESSION",
 }
 ```
 
 ```typescript
 // packages/core/src/types/types.ts:222-232
 export enum ProtocolErrorCode {
-    // Standard JSON-RPC error codes
-    ParseError = -32_700,
-    InvalidRequest = -32_600,
-    MethodNotFound = -32_601,
-    InvalidParams = -32_602,
-    InternalError = -32_603,
+  // Standard JSON-RPC error codes
+  ParseError = -32_700,
+  InvalidRequest = -32_600,
+  MethodNotFound = -32_601,
+  InvalidParams = -32_602,
+  InternalError = -32_603,
 
-    // MCP-specific error codes
-    UrlElicitationRequired = -32_042
+  // MCP-specific error codes
+  UrlElicitationRequired = -32_042,
 }
 ```
 
@@ -168,28 +168,28 @@ static fromError(code: number, message: string, data?: unknown): ProtocolError {
 ```typescript
 // packages/core/src/errors/sdkErrors.ts:57-66
 export class SdkError extends Error {
-    constructor(
-        public readonly code: SdkErrorCode,
-        message: string,
-        public readonly data?: unknown
-    ) {
-        super(message);
-        this.name = 'SdkError';
-    }
+  constructor(
+    public readonly code: SdkErrorCode,
+    message: string,
+    public readonly data?: unknown,
+  ) {
+    super(message);
+    this.name = "SdkError";
+  }
 }
 ```
 
 ```typescript
 // packages/core/src/types/types.ts:2306-2314
 export class ProtocolError extends Error {
-    constructor(
-        public readonly code: number,
-        message: string,
-        public readonly data?: unknown
-    ) {
-        super(`MCP error ${code}: ${message}`);
-        this.name = 'ProtocolError';
-    }
+  constructor(
+    public readonly code: number,
+    message: string,
+    public readonly data?: unknown,
+  ) {
+    super(`MCP error ${code}: ${message}`);
+    this.name = "ProtocolError";
+  }
 }
 ```
 
@@ -225,8 +225,8 @@ static fromResponse(response: OAuthErrorResponse): OAuthError {
 ```typescript
 // packages/core/src/shared/protocol.ts:847-849,872-874
 if (abortController.signal.aborted) {
-    // Request was cancelled
-    return;
+  // Request was cancelled
+  return;
 }
 ```
 
@@ -236,20 +236,20 @@ if (abortController.signal.aborted) {
 
 ```typescript
 // Bad: エラーの種類を伝達できない
-throw new Error('Tool not found');
+throw new Error("Tool not found");
 
 // Better: 適切なエラーコードを含める
-throw new ProtocolError(ProtocolErrorCode.InvalidParams, 'Tool not found');
+throw new ProtocolError(ProtocolErrorCode.InvalidParams, "Tool not found");
 ```
 
 - **SdkError をリモート側に送信しようとする**: `SdkError` は文字列コードを持つためシリアライズすると JSON-RPC 仕様に違反する。`Number.isSafeInteger()` チェックにより `InternalError` にフォールバックされるが、意図したエラー情報が失われる。
 
 ```typescript
 // Bad: ローカルエラーをハンドラ内でthrowするとワイヤー上で意味を失う
-throw new SdkError(SdkErrorCode.NotConnected, 'Transport is not connected');
+throw new SdkError(SdkErrorCode.NotConnected, "Transport is not connected");
 
 // Better: ワイヤーに送信される文脈では ProtocolError を使う
-throw new ProtocolError(ProtocolErrorCode.InternalError, 'Transport is not connected');
+throw new ProtocolError(ProtocolErrorCode.InternalError, "Transport is not connected");
 ```
 
 - **catch での型ガードなし re-throw**: `ProtocolError` を特別扱いする必要がある場合に、型ガードなしで一律処理すると、本来 re-throw すべきプロトコルエラーがアプリケーションエラーとして処理される。

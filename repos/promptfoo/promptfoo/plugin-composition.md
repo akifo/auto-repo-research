@@ -44,8 +44,8 @@ interface ProviderFactory {
 export function createScriptBasedProviderFactory(
   prefix: string,
   fileExtension: string | null,
-  providerConstructor: new (scriptPath: string, options: ProviderOptions) => ApiProvider,
-)
+  providerConstructor: new(scriptPath: string, options: ProviderOptions) => ApiProvider,
+);
 ```
 
 ### プラグインの3層構造: Base → Specialized Base → Concrete
@@ -55,6 +55,7 @@ Red Team プラグインは明確な3層の継承階層を持つ。
 **第1層: `RedteamPluginBase`** — 全プラグイン共通のテストケース生成ロジック。バッチ生成、重複排除、リトライ、モディファイア適用を担う（`src/redteam/plugins/base.ts:33-296`）。
 
 **第2層: 特化型基底クラス** — ドメイン固有の共通処理を担う。
+
 - `ImageDatasetPluginBase` — HuggingFace データセットからのテストケース生成（`src/redteam/plugins/imageDatasetPluginBase.ts:19-146`）
 - `AlignedHarmfulPlugin` — harm カテゴリごとの動的プロンプト切り替え（`src/redteam/plugins/harmful/aligned.ts:11-72`）
 
@@ -97,7 +98,7 @@ const ASSERTION_HANDLERS: Record<
   BaseAssertionTypes,
   (params: AssertionParams) => GradingResult | Promise<GradingResult>
 > = {
-  'answer-relevance': handleAnswerRelevance,
+  "answer-relevance": handleAnswerRelevance,
   bleu: handleBleuScore,
   classifier: handleClassifier,
   // ... 50以上のハンドラ
@@ -115,8 +116,8 @@ Red Team アサーション（`promptfoo:redteam:*` プレフィックス）は�
 export function getGraderById(id: string): RedteamGraderBase | undefined {
   if (!id) return undefined;
   const grader = id in GRADERS ? GRADERS[id as keyof typeof GRADERS] : undefined;
-  if (!grader && id.startsWith('promptfoo:redteam:harmful')) {
-    return GRADERS['promptfoo:redteam:harmful'];
+  if (!grader && id.startsWith("promptfoo:redteam:harmful")) {
+    return GRADERS["promptfoo:redteam:harmful"];
   }
   return grader;
 }
@@ -131,8 +132,8 @@ export function getGraderById(id: string): RedteamGraderBase | undefined {
 ```typescript
 // src/redteam/plugins/custom.ts:10-16
 const CustomPluginDefinitionSchema = z.strictObject({
-  generator: z.string().min(1, 'Generator must not be empty').trim(),
-  grader: z.string().min(1, 'Grader must not be empty').trim(),
+  generator: z.string().min(1, "Generator must not be empty").trim(),
+  grader: z.string().min(1, "Grader must not be empty").trim(),
   threshold: z.number().optional(),
   metric: z.string().optional(),
   id: z.string().optional(),
@@ -172,9 +173,9 @@ const CustomPluginDefinitionSchema = z.strictObject({
 // src/redteam/plugins/hallucination.ts:20-97
 export class HallucinationPlugin extends RedteamPluginBase {
   readonly id = PLUGIN_ID;
-  protected async getTemplate(): Promise<string> { /* ... */ }
+  protected async getTemplate(): Promise<string> {/* ... */}
   protected getAssertions(_prompt: string): Assertion[] {
-    return [{ type: PLUGIN_ID, metric: 'Hallucination' }];
+    return [{ type: PLUGIN_ID, metric: "Hallucination" }];
   }
 }
 export class HallucinationGrader extends RedteamGraderBase {
@@ -188,8 +189,8 @@ export class HallucinationGrader extends RedteamGraderBase {
 ```typescript
 // src/redteam/constants/plugins.ts:242-254
 export const FINANCIAL_PLUGINS = [
-  'financial:calculation-error',
-  'financial:compliance-violation',
+  "financial:calculation-error",
+  "financial:compliance-violation",
   // ... 11プラグイン
 ] as const;
 ```
@@ -199,8 +200,8 @@ export const FINANCIAL_PLUGINS = [
 ```typescript
 // src/redteam/plugins/custom.ts:10-16, 23-37
 const CustomPluginDefinitionSchema = z.strictObject({
-  generator: z.string().min(1, 'Generator must not be empty').trim(),
-  grader: z.string().min(1, 'Grader must not be empty').trim(),
+  generator: z.string().min(1, "Generator must not be empty").trim(),
+  grader: z.string().min(1, "Grader must not be empty").trim(),
   // ...
 });
 const result = CustomPluginDefinitionSchema.safeParse(maybeLoadFromExternalFile(filePath));
@@ -213,8 +214,8 @@ const result = CustomPluginDefinitionSchema.safeParse(maybeLoadFromExternalFile(
 ```typescript
 // Bad: 手動で120以上のエントリを管理
 export const GRADERS: Record<RedteamAssertionTypes, RedteamGraderBase> = {
-  'promptfoo:redteam:aegis': new AegisGrader(),
-  'promptfoo:redteam:beavertails': new BeavertailsGrader(),
+  "promptfoo:redteam:aegis": new AegisGrader(),
+  "promptfoo:redteam:beavertails": new BeavertailsGrader(),
   // ... 120行以上続く
 };
 ```

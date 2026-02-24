@@ -32,11 +32,11 @@ SDK は Protocol > Server > McpServer の3層で構成される。各層が明�
 ```typescript
 // packages/core/src/shared/protocol.ts:392
 export abstract class Protocol<ContextT extends BaseContext> {
-    private _requestHandlers: Map<string, (request: JSONRPCRequest, ctx: ContextT) => Promise<Result>> = new Map();
-    // ...
-    protected abstract assertCapabilityForMethod(method: RequestMethod): void;
-    protected abstract assertNotificationCapability(method: NotificationMethod): void;
-    protected abstract assertRequestHandlerCapability(method: string): void;
+  private _requestHandlers: Map<string, (request: JSONRPCRequest, ctx: ContextT) => Promise<Result>> = new Map();
+  // ...
+  protected abstract assertCapabilityForMethod(method: RequestMethod): void;
+  protected abstract assertNotificationCapability(method: NotificationMethod): void;
+  protected abstract assertRequestHandlerCapability(method: string): void;
 }
 ```
 
@@ -45,16 +45,19 @@ export abstract class Protocol<ContextT extends BaseContext> {
 ```typescript
 // packages/server/src/server/server.ts:89
 export class Server extends Protocol<ServerContext> {
-    protected assertCapabilityForMethod(method: RequestMethod): void {
-        switch (method) {
-            case 'sampling/createMessage':
-                if (!this._clientCapabilities?.sampling) {
-                    throw new SdkError(SdkErrorCode.CapabilityNotSupported, `Client does not support sampling (required for ${method})`);
-                }
-                break;
-            // ...
+  protected assertCapabilityForMethod(method: RequestMethod): void {
+    switch (method) {
+      case "sampling/createMessage":
+        if (!this._clientCapabilities?.sampling) {
+          throw new SdkError(
+            SdkErrorCode.CapabilityNotSupported,
+            `Client does not support sampling (required for ${method})`,
+          );
         }
+        break;
+        // ...
     }
+  }
 }
 ```
 
@@ -139,11 +142,11 @@ override async connect(transport: Transport, options?: RequestOptions): Promise<
 ```typescript
 // packages/core/src/errors/sdkErrors.ts:9-37
 export enum SdkErrorCode {
-    NotConnected = 'NOT_CONNECTED',
-    AlreadyConnected = 'ALREADY_CONNECTED',
-    CapabilityNotSupported = 'CAPABILITY_NOT_SUPPORTED',
-    RequestTimeout = 'REQUEST_TIMEOUT',
-    // ...
+  NotConnected = "NOT_CONNECTED",
+  AlreadyConnected = "ALREADY_CONNECTED",
+  CapabilityNotSupported = "CAPABILITY_NOT_SUPPORTED",
+  RequestTimeout = "REQUEST_TIMEOUT",
+  // ...
 }
 ```
 
@@ -156,15 +159,15 @@ export enum SdkErrorCode {
 ```typescript
 // packages/server/src/server/mcp.ts:1086-1112
 export type RegisteredTool = {
-    title?: string;
-    description?: string;
-    inputSchema?: AnySchema;
-    outputSchema?: AnySchema;
-    enabled: boolean;
-    enable(): void;
-    disable(): void;
-    update(updates: { /* ... */ }): void;
-    remove(): void;
+  title?: string;
+  description?: string;
+  inputSchema?: AnySchema;
+  outputSchema?: AnySchema;
+  enabled: boolean;
+  enable(): void;
+  disable(): void;
+  update(updates: {/* ... */}): void;
+  remove(): void;
 };
 ```
 
@@ -254,9 +257,9 @@ public readonly server: Server;
 ```typescript
 // packages/core/src/shared/toolNameValidation.ts:109-116
 export function validateAndWarnToolName(name: string): boolean {
-    const result = validateToolName(name);
-    issueToolNameWarning(name, result.warnings);
-    return result.isValid;
+  const result = validateToolName(name);
+  issueToolNameWarning(name, result.warnings);
+  return result.isValid;
 }
 ```
 
@@ -265,7 +268,7 @@ export function validateAndWarnToolName(name: string): boolean {
 ```typescript
 // packages/core/src/validation/types.ts:51-59
 export interface jsonSchemaValidator {
-    getValidator<T>(schema: JsonSchemaType): JsonSchemaValidator<T>;
+  getValidator<T>(schema: JsonSchemaType): JsonSchemaValidator<T>;
 }
 ```
 
@@ -276,11 +279,11 @@ export interface jsonSchemaValidator {
 ```typescript
 // Bad: 能力チェックを無視してリクエスト送信
 const client = new Client(info); // enforceStrictCapabilities defaults to false
-await client.callTool({ name: 'tool' }); // サーバーが tools 能力を宣言していなくても送信される
+await client.callTool({ name: "tool" }); // サーバーが tools 能力を宣言していなくても送信される
 
 // Better: 厳密な能力チェックを有効化
 const client = new Client(info, { enforceStrictCapabilities: true });
-await client.callTool({ name: 'tool' }); // サーバーが tools 能力を宣言していなければ即座にエラー
+await client.callTool({ name: "tool" }); // サーバーが tools 能力を宣言していなければ即座にエラー
 ```
 
 - **コールバックスタイルの Transport 所有権**: `Protocol.connect()` が Transport のコールバック（`onmessage`, `onclose`, `onerror`）を上書きする設計は、Transport の再利用を不可能にする。既存コールバックの連鎖は行うが、意図的に所有権を奪う設計のため注意が必要。

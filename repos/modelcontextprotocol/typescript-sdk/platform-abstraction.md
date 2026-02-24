@@ -69,26 +69,28 @@ core パッケージに共通の `jsonSchemaValidator` インターフェース�
 ```typescript
 // packages/server/src/shimsNode.ts:1-7
 // Node.js 向け shim: re-export のみ
-export { AjvJsonSchemaValidator as DefaultJsonSchemaValidator } from '@modelcontextprotocol/core';
-export { default as process } from 'node:process';
+export { AjvJsonSchemaValidator as DefaultJsonSchemaValidator } from "@modelcontextprotocol/core";
+export { default as process } from "node:process";
 ```
 
 ```typescript
 // packages/server/src/shimsWorkerd.ts:1-23
 // Cloudflare Workers 向け shim: バリデーター切替 + process スタブ
-export { CfWorkerJsonSchemaValidator as DefaultJsonSchemaValidator } from '@modelcontextprotocol/core';
+export { CfWorkerJsonSchemaValidator as DefaultJsonSchemaValidator } from "@modelcontextprotocol/core";
 
 function notSupported(): never {
-    throw new Error('StdioServerTransport is not supported in this environment. Use StreamableHTTPServerTransport instead.');
+  throw new Error(
+    "StdioServerTransport is not supported in this environment. Use StreamableHTTPServerTransport instead.",
+  );
 }
 
 export const process = {
-    get stdin(): never {
-        return notSupported();
-    },
-    get stdout(): never {
-        return notSupported();
-    }
+  get stdin(): never {
+    return notSupported();
+  },
+  get stdout(): never {
+    return notSupported();
+  },
 };
 ```
 
@@ -102,7 +104,7 @@ external: ['@modelcontextprotocol/server/_shims']
 ```typescript
 // packages/server/src/server/server.ts:56,112
 // 消費側: shim 経由で DefaultJsonSchemaValidator をインポート
-import { DefaultJsonSchemaValidator } from '@modelcontextprotocol/server/_shims';
+import { DefaultJsonSchemaValidator } from "@modelcontextprotocol/server/_shims";
 // ...
 this._jsonSchemaValidator = options?.jsonSchemaValidator ?? new DefaultJsonSchemaValidator();
 ```
@@ -111,7 +113,7 @@ this._jsonSchemaValidator = options?.jsonSchemaValidator ?? new DefaultJsonSchem
 // packages/core/src/validation/types.ts:51-59
 // 共通インターフェース: プラットフォーム非依存の契約
 export interface jsonSchemaValidator {
-    getValidator<T>(schema: JsonSchemaType): JsonSchemaValidator<T>;
+  getValidator<T>(schema: JsonSchemaType): JsonSchemaValidator<T>;
 }
 ```
 
@@ -119,22 +121,22 @@ export interface jsonSchemaValidator {
 // packages/middleware/node/src/streamableHttp.ts:67-91
 // Node.js アダプター: Web Standard トランスポートを IncomingMessage/ServerResponse に変換
 export class NodeStreamableHTTPServerTransport implements Transport {
-    private _webStandardTransport: WebStandardStreamableHTTPServerTransport;
-    private _requestListener: ReturnType<typeof getRequestListener>;
+  private _webStandardTransport: WebStandardStreamableHTTPServerTransport;
+  private _requestListener: ReturnType<typeof getRequestListener>;
 
-    constructor(options: StreamableHTTPServerTransportOptions = {}) {
-        this._webStandardTransport = new WebStandardStreamableHTTPServerTransport(options);
-        this._requestListener = getRequestListener(
-            async (webRequest: Request) => {
-                const context = this._requestContext.get(webRequest);
-                return this._webStandardTransport.handleRequest(webRequest, {
-                    authInfo: context?.authInfo,
-                    parsedBody: context?.parsedBody
-                });
-            },
-            { overrideGlobalObjects: false }
-        );
-    }
+  constructor(options: StreamableHTTPServerTransportOptions = {}) {
+    this._webStandardTransport = new WebStandardStreamableHTTPServerTransport(options);
+    this._requestListener = getRequestListener(
+      async (webRequest: Request) => {
+        const context = this._requestContext.get(webRequest);
+        return this._webStandardTransport.handleRequest(webRequest, {
+          authInfo: context?.authInfo,
+          parsedBody: context?.parsedBody,
+        });
+      },
+      { overrideGlobalObjects: false },
+    );
+  }
 }
 ```
 
@@ -158,7 +160,7 @@ export class NodeStreamableHTTPServerTransport implements Transport {
 
 ```typescript
 // packages/client/src/shimsNode.ts:6-7
-export { AjvJsonSchemaValidator as DefaultJsonSchemaValidator } from '@modelcontextprotocol/core';
+export { AjvJsonSchemaValidator as DefaultJsonSchemaValidator } from "@modelcontextprotocol/core";
 ```
 
 - **明確なエラーメッセージ付きスタブ**: 非サポート環境で利用不可能な機能にアクセスした場合、ランタイムエラーでクラッシュするのではなく、代替手段を案内する明確なメッセージを提供する。
@@ -166,7 +168,9 @@ export { AjvJsonSchemaValidator as DefaultJsonSchemaValidator } from '@modelcont
 ```typescript
 // packages/server/src/shimsWorkerd.ts:12-14
 function notSupported(): never {
-    throw new Error('StdioServerTransport is not supported in this environment. Use StreamableHTTPServerTransport instead.');
+  throw new Error(
+    "StdioServerTransport is not supported in this environment. Use StreamableHTTPServerTransport instead.",
+  );
 }
 ```
 
@@ -174,7 +178,7 @@ function notSupported(): never {
 
 ```typescript
 // packages/server/src/server/stdio.ts:1
-import type { Readable, Writable } from 'node:stream';
+import type { Readable, Writable } from "node:stream";
 ```
 
 - **optional peer dependency による漸進的採用**: `@cfworker/json-schema` を optional な peer dependency として宣言し、Node.js 専用環境では不要なパッケージのインストールを回避する。shim の条件付きエクスポートにより、存在しないパッケージがインポートされることもない。
@@ -192,16 +196,16 @@ import type { Readable, Writable } from 'node:stream';
 
 ```typescript
 // Bad: 実行時ランタイム検出
-import { AjvJsonSchemaValidator } from './ajvProvider.js';
-import { CfWorkerJsonSchemaValidator } from './cfWorkerProvider.js';
+import { AjvJsonSchemaValidator } from "./ajvProvider.js";
+import { CfWorkerJsonSchemaValidator } from "./cfWorkerProvider.js";
 
-const validator = typeof process !== 'undefined'
-    ? new AjvJsonSchemaValidator()
-    : new CfWorkerJsonSchemaValidator();
+const validator = typeof process !== "undefined"
+  ? new AjvJsonSchemaValidator()
+  : new CfWorkerJsonSchemaValidator();
 
 // Better: 条件付きエクスポート + shim で静的解決
 // package.json の export conditions で解決し、消費側は単一インポートで済む
-import { DefaultJsonSchemaValidator } from '@my-package/_shims';
+import { DefaultJsonSchemaValidator } from "@my-package/_shims";
 const validator = new DefaultJsonSchemaValidator();
 ```
 
@@ -210,22 +214,22 @@ const validator = new DefaultJsonSchemaValidator();
 ```typescript
 // Bad: shim 内にロジック
 export class DefaultJsonSchemaValidator {
-    private ajv?: Ajv;
-    getValidator<T>(schema: JsonSchemaType): JsonSchemaValidator<T> {
-        if (!this.ajv) this.ajv = new Ajv({ strict: false });
-        // ... バリデーションロジック
-    }
+  private ajv?: Ajv;
+  getValidator<T>(schema: JsonSchemaType): JsonSchemaValidator<T> {
+    if (!this.ajv) this.ajv = new Ajv({ strict: false });
+    // ... バリデーションロジック
+  }
 }
 
 // Better: shim は re-export のみ、ロジックは別ファイルに
-export { AjvJsonSchemaValidator as DefaultJsonSchemaValidator } from '@my-package/core';
+export { AjvJsonSchemaValidator as DefaultJsonSchemaValidator } from "@my-package/core";
 ```
 
 - **コアモジュールから Node.js 固有 API を直接インポート**: コアで `node:http` や `node:fs` を直接 import すると、Web Standard ランタイムではモジュール解決に失敗する。Node.js 固有 API は shim またはアダプターパッケージに隔離すべき。
 
 ```typescript
 // Bad: コアモジュール内で Node.js API を直接使用
-import { createServer } from 'node:http';
+import { createServer } from "node:http";
 
 // Better: コアは Web Standard API のみ使用し、Node.js 固有はアダプターに分離
 // core: Request/Response ベースの実装

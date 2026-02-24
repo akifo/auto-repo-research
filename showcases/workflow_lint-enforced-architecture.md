@@ -62,22 +62,22 @@ export async function fetchWithProxy(
   abortSignal?: AbortSignal,
 ): Promise<Response> {
   // ...
-  const finalOptions: FetchOptions & { dispatcher?: any } = {
+  const finalOptions: FetchOptions & { dispatcher?: any; } = {
     ...options,
     headers: {
       ...(options.headers as Record<string, string>),
-      'x-promptfoo-version': VERSION,  // バージョンヘッダー自動付与
+      "x-promptfoo-version": VERSION, // バージョンヘッダー自動付与
     },
     signal: combinedSignal,
   };
 
   // TLS 設定（カスタム CA 証明書、SSL 検証スキップ）
   const tlsOptions: ConnectionOptions = {
-    rejectUnauthorized: !getEnvBool('PROMPTFOO_INSECURE_SSL', true),
+    rejectUnauthorized: !getEnvBool("PROMPTFOO_INSECURE_SSL", true),
   };
 
   // プロキシ自動検出
-  const proxyUrl = finalUrlString ? getProxyForUrl(finalUrlString) : '';
+  const proxyUrl = finalUrlString ? getProxyForUrl(finalUrlString) : "";
   if (proxyUrl) {
     finalOptions.dispatcher = getOrCreateProxyAgent(proxyUrl, tlsOptions);
   }
@@ -102,8 +102,8 @@ export async function fetchWithProxy(
 
 ```typescript
 // src/util/fetch/monkeyPatchFetch.ts:65-66 (promptfoo/promptfoo)
-    // biome-ignore lint/style/noRestrictedGlobals: we need raw fetch here
-    const response = await fetch(url, opts);
+// biome-ignore lint/style/noRestrictedGlobals: we need raw fetch here
+const response = await fetch(url, opts);
 ```
 
 ### 4. 領域ごとの段階的厳格化（promptfoo）
@@ -117,13 +117,13 @@ export async function fetchWithProxy(
   "linter": {
     "rules": {
       "style": {
-        "noRestrictedGlobals": "off"  // テストでは生 fetch を許可
+        "noRestrictedGlobals": "off", // テストでは生 fetch を許可
       },
       "suspicious": {
-        "noExplicitAny": "off"
-      }
-    }
-  }
+        "noExplicitAny": "off",
+      },
+    },
+  },
 }
 ```
 
@@ -135,10 +135,10 @@ export async function fetchWithProxy(
     "rules": {
       "recommended": false,
       "style": {
-        "noRestrictedGlobals": "off"  // サンプルコードでも緩和
-      }
-    }
-  }
+        "noRestrictedGlobals": "off", // サンプルコードでも緩和
+      },
+    },
+  },
 }
 ```
 
@@ -154,7 +154,9 @@ AGENTS.md で「なぜ」を伝え、ESLint ルールで機械的に強制する
 
 ```markdown
 <!-- AGENTS.md (fabian-hiller/valibot) -->
+
 ## Code Conventions
+
 - Use `interface` instead of `type` for object type definitions
 ```
 
@@ -171,12 +173,12 @@ AGENTS.md で「なぜ」を伝え、ESLint ルールで機械的に強制する
           "level": "error",
           "options": {
             "deniedGlobals": {
-              "fetch": "Use fetchWithProxy() instead of global fetch()."
-            }
-          }
-        }
-      }
-    }
+              "fetch": "Use fetchWithProxy() instead of global fetch().",
+            },
+          },
+        },
+      },
+    },
   },
   "overrides": [
     {
@@ -184,20 +186,20 @@ AGENTS.md で「なぜ」を伝え、ESLint ルールで機械的に強制する
       "linter": {
         "rules": {
           "style": {
-            "noRestrictedGlobals": "off"
-          }
-        }
-      }
-    }
-  ]
+            "noRestrictedGlobals": "off",
+          },
+        },
+      },
+    },
+  ],
 }
 ```
 
 ```typescript
 // 正しい使い方: ラッパー関数を経由
-import { fetchWithProxy } from '../util/fetch';
+import { fetchWithProxy } from "../util/fetch";
 
-const response = await fetchWithProxy('https://api.example.com/data');
+const response = await fetchWithProxy("https://api.example.com/data");
 ```
 
 ## Bad Example
@@ -205,14 +207,14 @@ const response = await fetchWithProxy('https://api.example.com/data');
 ```typescript
 // Bad: グローバル fetch の直接使用
 // プロキシ非対応・リトライなし・バージョンヘッダーなし
-const response = await fetch('https://api.example.com/data');
+const response = await fetch("https://api.example.com/data");
 ```
 
 ```typescript
 // Bad: node-fetch の直接インポート
 // fetchWithProxy の横断的関心事をバイパスする
-import fetch from 'node-fetch';
-const response = await fetch('https://api.example.com/data');
+import fetch from "node-fetch";
+const response = await fetch("https://api.example.com/data");
 ```
 
 ```typescript

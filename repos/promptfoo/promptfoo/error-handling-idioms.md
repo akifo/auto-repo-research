@@ -81,13 +81,13 @@ export function isTransientError(response: Response): boolean {
   const statusText = response.statusText.toLowerCase();
   switch (response.status) {
     case 502:
-      return statusText.includes('bad gateway');
+      return statusText.includes("bad gateway");
     case 503:
-      return statusText.includes('service unavailable');
+      return statusText.includes("service unavailable");
     case 504:
-      return statusText.includes('gateway timeout');
+      return statusText.includes("gateway timeout");
     case 524: // Cloudflare-specific timeout error
-      return statusText.includes('timeout');
+      return statusText.includes("timeout");
     default:
       return false;
   }
@@ -107,27 +107,27 @@ export function isTransientConnectionError(error: Error | undefined): boolean {
     return false;
   }
   const code = (error as SystemError).code;
-  if (code === 'ECONNRESET' || code === 'EPIPE') {
+  if (code === "ECONNRESET" || code === "EPIPE") {
     return true;
   }
-  const message = (error.message ?? '').toLowerCase();
+  const message = (error.message ?? "").toLowerCase();
   // EPROTO can wrap permanent TLS misconfigs. Exclude when paired with
   // known permanent error phrases to avoid futile retries.
   if (
-    message.includes('eproto') &&
-    (message.includes('wrong version number') ||
-      message.includes('self signed') ||
-      message.includes('unable to verify') ||
-      message.includes('unknown ca') ||
-      message.includes('cert'))
+    message.includes("eproto")
+    && (message.includes("wrong version number")
+      || message.includes("self signed")
+      || message.includes("unable to verify")
+      || message.includes("unknown ca")
+      || message.includes("cert"))
   ) {
     return false;
   }
   return (
-    message.includes('bad record mac') ||
-    message.includes('eproto') ||
-    message.includes('econnreset') ||
-    message.includes('socket hang up')
+    message.includes("bad record mac")
+    || message.includes("eproto")
+    || message.includes("econnreset")
+    || message.includes("socket hang up")
   );
 }
 ```
@@ -265,12 +265,14 @@ case 502:
 
 ```typescript
 // Bad: EPROTO を常にリトライ
-if (message.includes('eproto')) return true;
+if (message.includes("eproto")) return true;
 
 // Better: 永続的な TLS エラーを除外 (promptfoo の実装)
-if (message.includes('eproto') &&
-    (message.includes('wrong version number') ||
-     message.includes('self signed'))) {
+if (
+  message.includes("eproto")
+  && (message.includes("wrong version number")
+    || message.includes("self signed"))
+) {
   return false;
 }
 ```
