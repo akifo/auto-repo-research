@@ -30,6 +30,9 @@
 | [trait-composition](./pattern_trait-composition)                       | $constructor+init()チェーンでクラス継承を排除しtree-shake可能なトレイト合成                    |
 | [adaptive-rate-limiter](./pattern_adaptive-rate-limiter)               | AIMD風3層適応的並列度制御でAPIレートリミットにゼロコンフィグ自動適応                           |
 | [zod-enum-handler-map](./pattern_zod-enum-handler-map)                 | Zod enum+Record型ハンドラマップで50種以上の処理分岐の網羅性をコンパイル時保証                  |
+| [type-state-builder](./pattern_type-state-builder)                     | センチネル型+条件付き型+TypeError phantomによる型パラメータ状態マシンfluent builder            |
+| [recursive-proxy-api](./pattern_recursive-proxy-api)                   | Proxy+ファサード型キャストで型安全な動的APIを構築する二重構造パターン（3防御策込み）           |
+| [structural-duck-typing](./pattern_structural-duck-typing)             | -Esque構造型+ランタイムFeature Detectionで外部ライブラリをゼロ依存統合                        |
 
 ## Practice
 
@@ -66,6 +69,7 @@
 | [ai-fixture-management](./practice_ai-fixture-management)               | 実APIレスポンスキャプチャ+SSEチャンクフィクスチャ+型安全テストサーバーによるAIテスト |
 | [provider-conformance-testing](./practice_provider-conformance-testing) | ファクトリ関数vsクラス継承の2アプローチによるAIプロバイダー横断適合テスト            |
 | [llm-test-optimization](./practice_llm-test-optimization)               | AIエージェント向けテスト出力最適化+バージョン横断テスト+統合テストキャッシュ戦略     |
+| [streaming-leak-prevention](./practice_streaming-leak-prevention)       | subscribe/unsubscribeペア+null解放+WeakMap+bind()による長寿命Promiseメモリリーク防止 |
 
 ## Claude
 
@@ -93,3 +97,4 @@
 | [loc-limit-enforcement](./workflow_loc-limit-enforcement)           | CIスクリプト+AIルール二層でファイル行数上限を強制し巨大ファイル化を防止               |
 | [e2e-parallel-isolation](./workflow_e2e-parallel-isolation)         | リソース複製によるE2Eテスト並列実行時のテスト間干渉排除                               |
 | [lint-enforced-architecture](./workflow_lint-enforced-architecture) | Biome/ESLintのnoRestrictedGlobals等でアーキテクチャ制約を機械的に強制するワークフロー |
+| [self-consuming-api](./workflow_self-consuming-api)                 | 公開APIのみでファーストパーティadapterを実装しlintで境界強制する自己消費テスト運用     |
