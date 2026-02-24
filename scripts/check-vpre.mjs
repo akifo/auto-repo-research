@@ -1,10 +1,11 @@
 /**
- * VitePress コンテンツ内の ${{ }} が v-pre で保護されていない箇所を検出する。
+ * VitePress コンテンツ内の {{ }} が v-pre で保護されていない箇所を検出する。
  *
  * 対象: repos/, showcases/ 配下の .md ファイル
  * 保護パターン:
  *   - ::: v-pre ～ ::: ブロック内
  *   - <code v-pre>...</code> インライン内
+ *   - fenced code block (``` ～ ```) 内
  */
 
 import { readdir, readFile } from "node:fs/promises";
@@ -12,7 +13,7 @@ import { join, relative } from "node:path";
 
 const ROOT = new URL("..", import.meta.url).pathname.replace(/\/$/, "");
 const TARGET_DIRS = ["repos", "showcases"];
-const DOLLAR_BRACE = /\$\{\{/;
+const DOUBLE_BRACE = /\{\{/;
 
 async function collectMarkdownFiles(dir) {
   const files = [];
@@ -29,10 +30,10 @@ async function collectMarkdownFiles(dir) {
 }
 
 function isProtectedInline(line) {
-  // <code v-pre>...</code> で ${{ が囲まれているかチェック
-  // 全ての ${{ が <code v-pre>...</code> 内に収まっているか確認
+  // <code v-pre>...</code> で {{ が囲まれているかチェック
+  // 全ての {{ が <code v-pre>...</code> 内に収まっているか確認
   const stripped = line.replace(/<code v-pre>.*?<\/code>/g, "");
-  return !DOLLAR_BRACE.test(stripped);
+  return !DOUBLE_BRACE.test(stripped);
 }
 
 function checkFile(filePath, content) {
@@ -41,9 +42,19 @@ function checkFile(filePath, content) {
 
   // ::: v-pre ブロックのネスト追跡用スタック
   const stack = [];
+  let insideFencedCode = false;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
+
+    // fenced code block の開閉: ```
+    if (/^`{3,}/.test(line)) {
+      insideFencedCode = !insideFencedCode;
+      continue;
+    }
+
+    // fenced code block 内はスキップ（VitePress が <pre><code> に変換するため安全）
+    if (insideFencedCode) continue;
 
     // コンテナディレクティブの開始: :::+ <directive>
     const openMatch = line.match(/^(:{3,})\s+(\S+)/);
@@ -65,8 +76,8 @@ function checkFile(filePath, content) {
       continue;
     }
 
-    // ${{ を含む行のチェック
-    if (!DOLLAR_BRACE.test(line)) continue;
+    // {{ を含む行のチェック
+    if (!DOUBLE_BRACE.test(line)) continue;
 
     const insideVpre = stack.some((entry) => entry.isVpre);
     if (insideVpre) continue;
@@ -100,7 +111,7 @@ async function main() {
 
   if (allErrors.length > 0) {
     console.error(
-      `\x1b[31mError: ${allErrors.length} unprotected \${{ }} found.\x1b[0m`,
+      `\x1b[31mError: ${allErrors.length} unprotected {{ }} found.\x1b[0m`,
     );
     console.error("Wrap with ::: v-pre block or <code v-pre>...</code>:\n");
     for (const err of allErrors) {
@@ -109,7 +120,7 @@ async function main() {
     process.exit(1);
   }
 
-  console.log("No unprotected ${{ }} found.");
+  console.log("No unprotected {{ }} found.");
 }
 
 main();

@@ -25,14 +25,14 @@ promptfoo は YAML/JSON/JS ファイルから設定を読み込み、バリデ�
 
 1. **ファイル読み込みとパース**: 拡張子に基づき YAML/JSON/JS を判定（`src/util/config/extensions.ts` で 9 種類の拡張子をサポート）
 2. **JSON Reference 解決**: `@apidevtools/json-schema-ref-parser` による `$ref` の展開
-3. **環境変数テンプレート展開**: Nunjucks テンプレートで `{{ env.VAR }}` を解決（2パスレンダリング）
+3. **環境変数テンプレート展開**: Nunjucks テンプレートで <code v-pre>{{ env.VAR }}</code> を解決（2パスレンダリング）
 4. **スキーマバリデーション**: Zod の `safeParse` による構造チェック
 5. **エイリアス正規化**: `targets` → `providers`、`plugins` → `redteam.plugins` 等の変換
-6. **デフォルト値注入**: `prompts` 未指定時に `['{{prompt}}']` をフォールバック設定
+6. **デフォルト値注入**: `prompts` 未指定時に <code v-pre>['{{prompt}}']</code> をフォールバック設定
 
 ### 環境変数テンプレートの2パスレンダリング
 
-`renderConfigEnvTemplates` は config.env 自体が `{{ env.VAR }}` を含む問題を解決するため2パスで展開する。Pass 1 で `config.env` を `process.env` のみから展開し、Pass 2 で展開済みの `config.env` をオーバーライドとして全体を展開する。この設計により、`config.env` 内の循環参照や watch/reload 時の stale state 問題を回避している。
+`renderConfigEnvTemplates` は config.env 自体が <code v-pre>{{ env.VAR }}</code> を含む問題を解決するため2パスで展開する。Pass 1 で `config.env` を `process.env` のみから展開し、Pass 2 で展開済みの `config.env` をオーバーライドとして全体を展開する。この設計により、`config.env` 内の循環参照や watch/reload 時の stale state 問題を回避している。
 
 ### 複数設定ファイルのマージ戦略
 
