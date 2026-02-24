@@ -1,0 +1,85 @@
+url: https://github.com/modelcontextprotocol/typescript-sdk
+stars: 11658
+language: TypeScript
+license: Apache-2.0
+description: "The official TypeScript SDK for Model Context Protocol servers and clients"
+analyzed_at: "2026-02-24"
+local_path: /Users/akiho/github/github.com/modelcontextprotocol/typescript-sdk
+scale: medium
+
+perspectives:
+  - name: project-structure
+    file: project-structure.md
+    wave: 1
+    intent: "pnpm モノレポの packages 分割戦略と依存グラフを明らかにする"
+    summary: "内部パッケージのバンドル吸収、pnpm catalogs による依存一元管理、アダプタ層の peerDependencies 疎結合設計"
+  - name: architecture
+    file: architecture.md
+    wave: 1
+    intent: "Protocol 基底クラスを核とした双方向メッセージルーティングの階層設計を解明する"
+    summary: "Transport→Protocol→High-Level API の3層アーキテクチャと Capability Gate による安全な機能制御"
+  - name: design-philosophy
+    file: design-philosophy.md
+    wave: 1
+    intent: "Web Standards 準拠・最小限の依存・双方向プロトコルの設計判断の根拠を明らかにする"
+    summary: "Web Standard API を核に据え、Platform Shim と Thin Adapter で多ランタイム対応を実現する設計思想"
+  - name: type-system-patterns
+    file: type-system-patterns.md
+    wave: 1
+    intent: "Zod v4 スキーマと TypeScript 型の連携、JSON-RPC メッセージの型安全性の実現手法を分析する"
+    summary: "Zod スキーマを Single Source of Truth とし、約120型を z.infer で導出する Schema-First 型設計"
+  - name: abstraction-patterns
+    file: abstraction-patterns.md
+    wave: 1
+    intent: "Transport・Protocol・Server/Client の抽象化レイヤー設計とインターフェース境界を評価する"
+    summary: "最小 Transport インターフェース、Protocol Template Method、McpServer Facade の4層抽象化設計"
+  - name: streaming-patterns
+    file: streaming-patterns.md
+    wave: 1
+    intent: "SSE・Streamable HTTP・stdio の各トランスポートにおけるストリーム処理パターンを分析する"
+    summary: "バックプレッシャー対応、再開可能ストリーム、段階的シャットダウン等のプロダクション級ストリーミング実装"
+  - name: api-design-practices
+    file: api-design-practices.md
+    wave: 2
+    intent: "McpServer の高レベル API 設計、Capability negotiation、ハンドラー登録パターンを分析する"
+    summary: "Progressive Disclosure の3層 API、Registration-Driven Capabilities、入出力自動バリデーション"
+  - name: middleware-composition
+    file: middleware-composition.md
+    wave: 2
+    intent: "フレームワークミドルウェア層の合成パターンとクライアントリクエストミドルウェアの設計を分析する"
+    summary: "fetch シグネチャを合成単位とするミドルウェアパイプラインとフレームワーク非依存のバリデーション共有"
+  - name: adapter-implementation-patterns
+    file: adapter-implementation-patterns.md
+    wave: 2
+    intent: "Express/Hono/Node の各フレームワークアダプターの実装パターンと共通インターフェースを分析する"
+    summary: "Web Standard コア + 薄いアダプター層の分離、セキュリティデフォルト自動適用、WeakMap コンテキスト伝搬"
+  - name: platform-abstraction
+    file: platform-abstraction.md
+    wave: 2
+    intent: "Node.js/Cloudflare Workers 間のランタイム差異を shims で吸収するパターンを分析する"
+    summary: "export conditions + 最小 shim による静的ランタイム分岐と Web Standard API ファーストのコア設計"
+  - name: error-handling-idioms
+    file: error-handling-idioms.md
+    wave: 2
+    intent: "JSON-RPC エラーコード体系、カスタムエラークラス階層、エラー伝播戦略を分析する"
+    summary: "ProtocolError/SdkError のワイヤー境界分離、安全なフォールバック変換、段階的な資格情報無効化"
+  - name: testing-practices
+    file: testing-practices.md
+    wave: 2
+    intent: "Conformance テスト・統合テスト・ユニットテストの戦略と Vitest ワークスペース設計を分析する"
+    summary: "InMemoryTransport による高速テスト、Issue 番号付き回帰テスト、3層テスト分離と共有設定パッケージ化"
+  - name: security-practices
+    file: security-practices.md
+    wave: 2
+    intent: "OAuth 2.0 実装、認証フロー、トークン検証のセキュリティパターンを分析する"
+    summary: "SafeUrlSchema による構造的 URL 検証、PKCE S256 必須化、エラーコード別の段階的資格情報回復"
+  - name: schema-validation-patterns
+    file: schema-validation-patterns.md
+    wave: 2
+    intent: "Zod v4 スキーマ定義、プラガブルバリデーター（Ajv/cfworker）、仕様型生成パイプラインを分析する"
+    summary: "Zod→型→JSON Schema の一方向導出チェーン、strict/loose の段階的厳密度、プラガブルバリデーター戦略"
+  - name: dev-conventions
+    file: dev-conventions.md
+    wave: 2
+    intent: "コーディング規約、JSDoc snippet sync、CI/CD ワークフロー、changesets によるリリース管理を分析する"
+    summary: "共有 ESLint/TSConfig パッケージ、JSDoc コード例の型チェック同期、changesets + PR プレビュー公開"

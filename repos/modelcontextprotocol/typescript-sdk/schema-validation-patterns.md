@@ -1,0 +1,312 @@
+# Schema Validation Patterns
+
+> リポジトリ: modelcontextprotocol/typescript-sdk
+> 分析日: 2026-02-24
+
+## 概要
+
+MCP TypeScript SDK は、スキーマバリデーションを 2 層に分離している。プロトコルメッセージの構造検証には Zod v4 を使い、ユーザー入力（elicitation/tool output）の検証には JSON Schema バリデーターをプラガブルに差し替えられる設計を採用している。さらに、仕様リポジトリから TypeScript 型を自動取得するパイプラインを持ち、「仕様→Zod スキーマ→TypeScript 型→JSON Schema」という一方向の型生成チェーンを構成している点が特筆に値する。
+
+## 背景にある原則
+
+- **Single Source of Truth for Types**: Zod スキーマを型定義の唯一の情報源とし、`z.infer` で TypeScript 型を導出する。手書きの型と実行時スキーマの乖離を構造的に排除している（`packages/core/src/types/types.ts:2362-2540` で全型を `Infer<typeof ...Schema>` として導出）。
+
+- **Validation Concern Separation**: プロトコルレベルの構造検証（Zod）とユーザー入力のスキーマ検証（JSON Schema）を異なるレイヤーに分離すべき。前者はコンパイル時に固定されたスキーマ、後者は実行時に動的に提供されるスキーマであり、要件が根本的に異なるため（`packages/core/src/util/schema.ts` vs `packages/core/src/validation/types.ts`）。
+
+- **Environment-Adaptive Defaults**: ランタイム環境に応じたデフォルト実装を package.json の export conditions で自動切替すべき。利用者に環境判定のボイラープレートを書かせない（`packages/server/package.json:29-46` の `workerd`/`node` 条件分岐）。
+
+- **Forward-Compatible Leniency**: プロトコルメッセージのバリデーションでは、既知フィールドは厳密に検証しつつ未知フィールドを許容する（`z.looseObject`）ことで、プロトコルの前方互換性を確保する。ただし JSON-RPC エンベロープなど規格に厳密な部分は `.strict()` で閉じる。
+
+## 実例と分析
+
+### Zod スキーマを起点とした型導出チェーン
+
+SDK 全体の型定義はすべて Zod スキーマからの導出で統一されている。`types.ts` の末尾 180 行ほどが `type X = Infer<typeof XSchema>` のエクスポートで占められており、手書きの interface は `AuthInfo`・`RequestInfo`・`MessageExtraInfo` など Zod で表現しにくいもの（`URL` 型や `Headers` 型を含むもの）に限定されている。
+
+`Flatten` ユーティリティ型を介して `z.infer` の結果を再帰的に展開し、IDE のホバー表示で深いネスト型が見やすくなるよう工夫している。
+
+```
+// packages/core/src/types/types.ts:2349-2362
+type Primitive = string | number | boolean | bigint | null | undefined;
+type Flatten<T> = T extends Primitive
+    ? T
+    : T extends Array<infer U>
+      ? Array<Flatten<U>>
+      : T extends Set<infer U>
+        ? Set<Flatten<U>>
+        : T extends Map<infer K, infer V>
+          ? Map<Flatten<K>, Flatten<V>>
+          : T extends object
+            ? { [K in keyof T]: Flatten<T[K]> }
+            : T;
+
+type Infer<Schema extends z.ZodTypeAny> = Flatten<z.infer<Schema>>;
+```
+
+### looseObject と strict の使い分け
+
+プロトコルメッセージの設計には、前方互換性を意識した厳密度の段階分けが見られる。
+
+- **JSON-RPC エンベロープ**: `.strict()` を適用。JSON-RPC 仕様で定められた固定構造であり、未知フィールドの混入を許可すると仕様違反になる。
+- **Result / RequestMeta**: `z.looseObject()` を使用。プロトコル拡張で新しいメタデータフィールドが追加されても、古いバージョンの SDK が壊れないようにしている。
+- **Capability オブジェクト**: `z.looseObject()` でネストし、未知の capability カテゴリをパススルーする。
+
+```
+// packages/core/src/types/types.ts:176-182 (strict: JSON-RPC envelope)
+export const JSONRPCRequestSchema = z
+    .object({
+        jsonrpc: z.literal(JSONRPC_VERSION),
+        id: RequestIdSchema,
+        ...RequestSchema.shape
+    })
+    .strict();
+
+// packages/core/src/types/types.ts:160-166 (loose: extensible result)
+export const ResultSchema = z.looseObject({
+    _meta: RequestMetaSchema.optional()
+});
+```
+
+### プラガブルバリデーター戦略
+
+JSON Schema バリデーションは `jsonSchemaValidator` インターフェース（小文字始まり -- 意図的な命名規則）を通じて抽象化されている。SDK は 2 つの実装を提供する。
+
+1. **AjvJsonSchemaValidator** -- Node.js 向け。コード生成ベースで高速。`$id` によるスキーマキャッシュをサポート。
+2. **CfWorkerJsonSchemaValidator** -- Edge ランタイム向け。`eval` / `new Function` を使わないインタプリタベース。
+
+両者は互いに独立したモジュールとして実装されており、一方の依存が欠落しても他方のインポートに影響しない。テストでこの独立性が明示的に検証されている。
+
+```
+// packages/core/src/validation/types.ts:51-59
+export interface jsonSchemaValidator {
+    getValidator<T>(schema: JsonSchemaType): JsonSchemaValidator<T>;
+}
+```
+
+### Runtime Shims によるデフォルト切替
+
+package.json の `exports` フィールドで `workerd`/`browser`/`node`/`default` の条件分岐を定義し、ランタイムに応じて適切なバリデーター実装をデフォルトとして注入する。
+
+```
+// packages/server/src/shimsNode.ts:6
+export { AjvJsonSchemaValidator as DefaultJsonSchemaValidator } from '@modelcontextprotocol/core';
+
+// packages/server/src/shimsWorkerd.ts:6
+export { CfWorkerJsonSchemaValidator as DefaultJsonSchemaValidator } from '@modelcontextprotocol/core';
+```
+
+Server/Client のコンストラクタでは `options?.jsonSchemaValidator ?? new DefaultJsonSchemaValidator()` として、明示的な指定がなければ環境適応型のデフォルトが使われる。
+
+### Zod から JSON Schema への変換パイプライン
+
+`schemaToJson()` ヘルパーは Zod v4 の `z.toJSONSchema()` をラップし、ツール定義の `inputSchema` / `outputSchema` を Zod スキーマから JSON Schema に変換する。これにより、開発者は Zod でスキーマを書くだけでプロトコル上の JSON Schema 表現が自動生成される。
+
+```
+// packages/core/src/util/schema.ts:28-30
+export function schemaToJson(schema: AnySchema, options?: { io?: 'input' | 'output' }): Record<string, unknown> {
+    return z.toJSONSchema(schema, options) as Record<string, unknown>;
+}
+
+// packages/server/src/server/mcp.ts:149-160 (usage)
+inputSchema: tool.inputSchema
+    ? (schemaToJson(tool.inputSchema, { io: 'input' }) as Tool['inputSchema'])
+    : EMPTY_OBJECT_JSON_SCHEMA,
+```
+
+### 仕様型の自動取得パイプライン
+
+`scripts/fetch-spec-types.ts` は GitHub API から仕様リポジトリの最新コミット SHA を取得し、`schema/draft/schema.ts` の内容をそのまま `packages/core/src/types/spec.types.ts` に書き出す。生成ファイルには SHA とヘッダーコメントが付与され、手動編集の禁止が明示される。
+
+```
+// scripts/fetch-spec-types.ts:59-68
+const headerTemplate = `/**
+ * This file is automatically generated from the Model Context Protocol specification.
+ * ...
+ * Last updated from commit: {SHA}
+ *
+ * DO NOT EDIT THIS FILE MANUALLY. Changes will be overwritten by automated updates.
+ * To update this file, run: pnpm run fetch:spec-types
+ */`;
+```
+
+### メソッドベースのスキーマディスパッチ
+
+リクエスト/通知スキーマを `method` フィールドの文字列リテラルでルックアップする仕組みが `buildSchemaMap` で構築されている。Union 型の各メンバーから `shape.method.value` を抽出して `Record<method, schema>` を構成し、`getRequestSchema(method)` / `getNotificationSchema(method)` で型安全にアクセスできる。
+
+```
+// packages/core/src/types/types.ts:2645-2652
+function buildSchemaMap<T extends { shape: { method: { value: string } } }>(schemas: readonly T[]): Record<string, T> {
+    const map: Record<string, T> = {};
+    for (const schema of schemas) {
+        const method = schema.shape.method.value;
+        map[method] = schema;
+    }
+    return map;
+}
+```
+
+## コード例
+
+```ts
+// packages/core/src/util/schema.ts:6-8
+// 型エイリアスで Zod の内部型を抽象化し、将来のバージョン変更に備える
+export type AnySchema = z.core.$ZodType;
+export type AnyObjectSchema = z.core.$ZodObject;
+```
+
+```ts
+// packages/core/src/validation/ajvProvider.ts:71-93
+// Ajv の $id キャッシュ活用: 同じスキーマの再コンパイルを回避
+getValidator<T>(schema: JsonSchemaType): JsonSchemaValidator<T> {
+    const ajvValidator =
+        '$id' in schema && typeof schema.$id === 'string'
+            ? (this._ajv.getSchema(schema.$id) ?? this._ajv.compile(schema))
+            : this._ajv.compile(schema);
+
+    return (input: unknown): JsonSchemaValidatorResult<T> => {
+        const valid = ajvValidator(input);
+        return valid
+            ? { valid: true, data: input as T, errorMessage: undefined }
+            : { valid: false, data: undefined, errorMessage: this._ajv.errorsText(ajvValidator.errors) };
+    };
+}
+```
+
+```ts
+// packages/server/src/server/mcp.ts:247-268
+// ツール入力の Zod バリデーション: エラーメッセージを集約して ProtocolError にラップ
+private async validateToolInput<...>(tool: Tool, args: Args, toolName: string): Promise<Args> {
+    if (!tool.inputSchema) {
+        return undefined as Args;
+    }
+    const parseResult = await parseSchemaAsync(tool.inputSchema, args ?? {});
+    if (!parseResult.success) {
+        const errorMessage = parseResult.error.issues.map((i: { message: string }) => i.message).join(', ');
+        throw new ProtocolError(
+            ProtocolErrorCode.InvalidParams,
+            `Input validation error: Invalid arguments for tool ${toolName}: ${errorMessage}`
+        );
+    }
+    return parseResult.data as unknown as Args;
+}
+```
+
+## パターンカタログ
+
+- **Strategy パターン** (分類: 振る舞い)
+  - 解決する問題: JSON Schema バリデーションの実装をランタイム環境に応じて差し替えたい
+  - 適用条件: 同一インターフェースに対して複数の実装が必要で、環境や構成によって選択が変わる場合
+  - コード例: `packages/core/src/validation/types.ts:51-59` (`jsonSchemaValidator` インターフェース), `ajvProvider.ts`, `cfWorkerProvider.ts`
+  - 注意点: デフォルト実装を環境に応じて自動選択する仕組み（export conditions + shims）と組み合わせることで、利用者の設定負担を最小化している
+
+- **Discriminated Union + Registry パターン** (分類: 構造/振る舞い)
+  - 解決する問題: プロトコルメッセージの `method` フィールドに応じて型安全にスキーマを取得したい
+  - 適用条件: 識別子フィールドを持つ Union 型のメンバーごとに異なるスキーマ/ハンドラを対応付ける場合
+  - コード例: `packages/core/src/types/types.ts:2645-2683` (`buildSchemaMap`, `getRequestSchema`)
+  - 注意点: TypeScript の型推論の限界から `as unknown as` のキャストが必要になるが、Union の各メンバーとレジストリの値は構造的に一致している
+
+## Good Patterns
+
+- **Schema-First Type Derivation**: Zod スキーマを唯一の情報源として定義し、`type X = Infer<typeof XSchema>` で型を導出する。スキーマと型が構造的に同期するため、プロトコル変更時の修正箇所が一元化される。
+
+```ts
+// packages/core/src/types/types.ts:2402-2410
+export type ProgressToken = Infer<typeof ProgressTokenSchema>;
+export type Request = Infer<typeof RequestSchema>;
+export type JSONRPCRequest = Infer<typeof JSONRPCRequestSchema>;
+```
+
+- **Graduated Strictness**: メッセージの各レイヤーで適切な厳密度を選択し、仕様準拠と前方互換性を両立する。JSON-RPC エンベロープは `.strict()`、内部ペイロードは `z.looseObject()` という段階分けが明確。
+
+```ts
+// strict で仕様外フィールドを拒否
+export const JSONRPCRequestSchema = z.object({ ... }).strict();
+// loose で拡張フィールドを許容
+export const ResultSchema = z.looseObject({ _meta: RequestMetaSchema.optional() });
+```
+
+- **Schema Utility Abstraction Layer**: `AnySchema`, `parseSchema`, `schemaToJson` などのヘルパーで Zod の API を薄くラップし、バリデーションライブラリの交換コストを下げている。`zod/v4` と `zod/v4/mini` の両対応を意識した実装。
+
+```ts
+// packages/core/src/util/schema.ts:78-81
+export function isOptionalSchema(schema: AnySchema): boolean {
+    const candidate = schema as { type?: string };
+    return candidate.type === 'optional';  // zod/v4 と zod/v4/mini の両方で動作
+}
+```
+
+- **Validator Independence via Module Isolation**: Ajv プロバイダーと cfworker プロバイダーが互いに独立したモジュールとして存在し、片方の依存が欠落しても他方が使える。テストで明示的に検証している。
+
+```ts
+// packages/core/test/validation/validation.test.ts:560-579
+it('should be able to import cfWorkerProvider when ajv is missing', async () => {
+    vi.doMock('ajv', () => { throw new Error("Cannot find module 'ajv'"); });
+    const cfworkerModule = await import('../../src/validation/cfWorkerProvider.js');
+    expect(cfworkerModule.CfWorkerJsonSchemaValidator).toBeDefined();
+});
+```
+
+## Anti-Patterns / 注意点
+
+- **Dynamic Schema Recompilation Without Caching**: JSON Schema バリデーターを呼び出すたびにスキーマをコンパイルすると、ホットパスで深刻なパフォーマンス劣化を招く。Ajv は `$id` によるキャッシュを内蔵するが、cfworker プロバイダーは内部キャッシュを持たない点に注意（コメントで明記されている: "Unlike AJV, this validator is not cached internally"）。
+
+```ts
+// Bad: 毎回コンパイル
+function validate(schema: JsonSchemaType, data: unknown) {
+    const validator = provider.getValidator(schema);  // 毎回新規コンパイル
+    return validator(data);
+}
+
+// Better: バリデーターをキャッシュ
+const validatorCache = new Map<string, JsonSchemaValidator<unknown>>();
+function validate(schemaId: string, schema: JsonSchemaType, data: unknown) {
+    let validator = validatorCache.get(schemaId);
+    if (!validator) {
+        validator = provider.getValidator(schema);
+        validatorCache.set(schemaId, validator);
+    }
+    return validator(data);
+}
+```
+
+Client 実装では `_cachedToolOutputValidators` として実際にキャッシュが行われている（`packages/client/src/client/client.ts:201,942`）。
+
+- **Overly Permissive looseObject on Security Boundaries**: `z.looseObject` は前方互換性のために有用だが、セキュリティ境界では未知フィールドの混入がインジェクションや情報漏洩のリスクになりうる。SDK では JSON-RPC エンベロープに `.strict()` を適用してこのリスクを軽減している。
+
+```ts
+// Bad: セキュリティ境界で loose
+const AuthTokenSchema = z.looseObject({ token: z.string() });
+
+// Better: 信頼境界では strict、拡張ポイントでは loose
+const AuthTokenSchema = z.object({ token: z.string() }).strict();
+```
+
+## 導出ルール
+
+- `[MUST]` ランタイムバリデーションスキーマと TypeScript 型を同一ソースから導出する -- 手書きの型とスキーマを別々に管理すると乖離が必ず発生する
+  - 根拠: MCP SDK は 100 以上の型を全て `type X = Infer<typeof XSchema>` で統一し、手書き interface は Zod で表現できない型のみに限定している（`types.ts:2402-2540`）
+
+- `[MUST]` バリデーション結果は discriminated union（`{ success: true; data: T } | { success: false; error: E }`）で返す -- 例外ベースのエラー処理では呼び出し側がバリデーション失敗を握りつぶしやすい
+  - 根拠: `parseSchema` / `JsonSchemaValidatorResult` の両方が discriminated union を返し、呼び出し側に `.success` チェックを強制している（`schema.ts:36-41`, `validation/types.ts:19-21`）
+
+- `[SHOULD]` プラガブルバリデーションには Strategy パターン + 環境適応デフォルトを組み合わせる -- 利用者にランタイム判定コードを書かせず、かつカスタマイズの余地を残す
+  - 根拠: `jsonSchemaValidator` インターフェース + export conditions による `DefaultJsonSchemaValidator` の自動切替で、ゼロ設定と完全カスタマイズの両方をサポート（`shimsNode.ts`, `shimsWorkerd.ts`）
+
+- `[SHOULD]` プロトコルメッセージの strictness を層ごとに段階的に設定する -- エンベロープは strict（仕様準拠）、ペイロードは loose（前方互換性）という分離が拡張性と安全性を両立する
+  - 根拠: JSON-RPC エンベロープに `.strict()`、Result/Meta に `z.looseObject()` を使い分けている（`types.ts:182,194,160`）
+
+- `[SHOULD]` 動的スキーマのバリデーターはコンパイル結果をキャッシュする -- JSON Schema コンパイルは高コストであり、同一スキーマの繰り返し検証でボトルネックになる
+  - 根拠: Client は `_cachedToolOutputValidators` でツールごとのバリデーターをキャッシュし、`listTools` 呼び出し時に一括プリコンパイルしている（`client.ts:934-943`）
+
+- `[AVOID]` バリデーションライブラリの API を直接散在させる -- ヘルパー層で薄くラップすることで、ライブラリのメジャーバージョンアップ時の影響範囲を限定できる
+  - 根拠: `AnySchema`, `parseSchema`, `schemaToJson` などの抽象層が Zod v4 の API を包み、`zod/v4` と `zod/v4/mini` の両対応を可能にしている（`schema.ts:1-94`）
+
+## 適用チェックリスト
+
+- [ ] ランタイムバリデーションスキーマと TypeScript 型が同一ソースから導出されているか（スキーマと型の二重定義がないか）
+- [ ] バリデーション結果が discriminated union で返され、呼び出し側が成功/失敗を明示的にハンドリングしているか
+- [ ] 複数のランタイム環境をサポートする場合、package.json の export conditions でデフォルト実装を自動切替しているか
+- [ ] プロトコルメッセージの各レイヤーで適切な strictness レベル（strict/loose）が設定されているか
+- [ ] 動的に提供されるスキーマ（JSON Schema 等）のバリデーターがキャッシュされているか
+- [ ] バリデーションライブラリの API がヘルパー層で抽象化され、直接依存が散在していないか
+- [ ] 自動生成ファイルにヘッダーコメント（生成元、更新方法、手動編集禁止の注記）が付与されているか
