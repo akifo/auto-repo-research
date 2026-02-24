@@ -72,7 +72,7 @@ find <repo_path> -type f \( -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -na
 
 ### Step 3: 視点の適応的生成
 
-Step 2 の情報を基に、分析する視点リストを生成する。
+Step 2 の情報を基に、3フェーズで分析視点リストを生成する。
 
 **規模に応じた視点数**:
 
@@ -86,24 +86,111 @@ Step 2 の情報を基に、分析する視点リストを生成する。
 - `wave`: `1`（コア）または `2`（拡張）
 - `intent`: 1行の分析意図（perspective-writer に渡す。例: "ミドルウェアの合成パターンと実行順序制御の仕組みを明らかにする"）
 
-**Wave 1（コア視点）**: 5-8 個。リポジトリ理解の基盤となる視点:
+---
 
-- `project-structure` — ディレクトリ構成・モジュール分割
-- `architecture` — 全体アーキテクチャ・レイヤー構成
+#### Phase A: カタログからの選定
+
+以下のカタログは参考リストであり、チェックリストではない。リポジトリに該当する視点のみを選ぶ。
+
+**構造・設計**:
+- `project-structure` — ディレクトリ構成・モジュール分割・パッケージ境界
+- `architecture` — 全体アーキテクチャ・レイヤー構成・依存方向
 - `design-philosophy` — 設計思想・哲学・技術選定の根拠
--
-  - プラクティス軸の視点 2-5 個（例: `code-organization`, `abstraction-patterns`, `performance-techniques`, `type-system-patterns`）
+- `code-organization` — コード配置規約・命名規則・ファイル分割戦略
 
-**Wave 2（拡張視点）**: 残り。プラクティス指向の横断的な視点:
+**型・抽象化**:
+- `type-system-patterns` — 型レベルプログラミング・ジェネリクス活用・型安全性の保証手法
+- `abstraction-patterns` — 抽象化レイヤーの設計・インターフェース境界・DI パターン
+- `metaprogramming-techniques` — コード生成・マクロ・リフレクション・デコレータ活用
 
-- 汎用視点（該当するものを選択）:
-  - `error-handling-idioms`, `testing-practices`, `type-system-patterns`, `api-design-practices`
-  - `performance-techniques`, `security-practices`, `dependency-management`, `build-and-tooling`
-  - `extensibility-mechanisms`, `concurrency-patterns`, `ci-cd`, `dev-conventions`
-- `ai-settings` — AI設定ファイルが存在する場合のみ生成（条件付き）
-- リポジトリ固有視点: **機能名ではなくプラクティス名で命名する**
-  - 良い例: `performance-techniques`, `abstraction-patterns`, `metaprogramming-techniques`
-  - 悪い例: `router-design`, `middleware-system`, `jsx-engine`（これらは機能分解であり、プラクティスの視点ではない）
+**API・合成**:
+- `api-design-practices` — 公開 API 設計・シグネチャ設計・互換性維持
+- `composition-patterns` — 関数合成・パイプライン・ビルダーパターン・チェイニング
+- `middleware-composition` — ミドルウェアの合成・実行順序制御・コンテキスト伝播
+- `hook-and-lifecycle-patterns` — フック設計・ライフサイクル管理・プラグインポイント
+- `extensibility-mechanisms` — プラグインアーキテクチャ・拡張ポイント・アダプター
+
+**信頼性**:
+- `error-handling-idioms` — エラー型設計・伝播戦略・リカバリーパターン
+- `testing-practices` — テスト戦略・フィクスチャ設計・モック手法・カバレッジ方針
+- `security-practices` — 認証認可・入力検証・シークレット管理・脆弱性対策
+- `logging-and-observability` — 構造化ログ・トレーシング・メトリクス・デバッグ支援
+
+**性能・並行処理**:
+- `performance-techniques` — ホットパス最適化・メモリ効率・レイジー評価・プーリング
+- `concurrency-patterns` — 非同期制御・並列処理・ロック戦略・バックプレッシャー
+- `streaming-patterns` — ストリーム処理・チャンク分割・イテレータプロトコル
+- `tree-shaking-optimization` — バンドルサイズ最適化・副作用管理・コード分割
+
+**データ・状態**:
+- `state-management-patterns` — 状態モデル・イミュータビリティ・リアクティブ更新
+- `schema-validation-patterns` — スキーマ定義・ランタイム検証・型導出
+- `serialization-patterns` — シリアライズ/デシリアライズ・フォーマット変換・ワイヤープロトコル
+- `persistence-patterns` — データ永続化・キャッシュ戦略・ストレージ抽象化
+- `database-patterns` — クエリビルダー・マイグレーション・コネクション管理
+- `configuration-patterns` — 設定ロード・環境変数・デフォルト値・バリデーション
+
+**運用・協働**:
+- `build-and-tooling` — ビルドパイプライン・ツールチェーン・開発体験
+- `ci-cd` — CI/CD 設計・自動化ワークフロー・リリースプロセス
+- `dependency-management` — 依存関係管理・バージョニング・モノレポ戦略
+- `dev-conventions` — コーディング規約・レビュー文化・ドキュメンテーション慣行
+- `migration-patterns` — スキーマ移行・API バージョン移行・破壊的変更の管理
+- `versioning-strategy` — セマンティックバージョニング・チェンジログ・リリース方針
+- `internationalization-patterns` — i18n/l10n・メッセージカタログ・ロケール管理
+
+**条件付き**（該当する場合のみ）:
+- `ai-settings` — AI 設定ファイルが存在する場合のみ
+- `platform-abstraction` — 複数ランタイム/OS 対応がある場合のみ
+- `adapter-implementation-patterns` — アダプター/ドライバー層が存在する場合のみ
+- `cli-framework-patterns` — CLI ツールの場合のみ
+- `domain-modeling` — 明確なドメインモデル層がある場合のみ
+
+---
+
+#### Phase B: 自律的な視点発見
+
+カタログにない視点をリポジトリから自律的に発見する。
+
+**B-1: シグナル検出テーブル**
+
+Step 2 で収集したディレクトリ名・ファイルパターン・設定ファイルから、以下の要領で視点候補を検出する:
+
+| シグナル例 | 示唆される視点 |
+|---|---|
+| `middleware/`, `plugins/` | `middleware-composition`, `hook-and-lifecycle-patterns` |
+| `__tests__/`, `fixtures/`, `*.test.*` | `testing-practices`（カタログ内） |
+| `adapters/`, `drivers/`, `providers/` | `adapter-implementation-patterns` |
+| `migrations/`, `schemas/` | `migration-patterns`, `database-patterns` |
+| `i18n/`, `locales/` | `internationalization-patterns` |
+| `streams/`, `iterators/` | `streaming-patterns` |
+| `cache/`, `store/` | `persistence-patterns`, `state-management-patterns` |
+| `codegen/`, `generated/` | `metaprogramming-techniques` |
+| `wasm/`, `native/` | `platform-abstraction` |
+| 独自の大規模ディレクトリ | 新規視点の候補（B-2 へ） |
+
+シグナルが見つかってもカタログで既にカバー済みなら追加不要。
+
+**B-2: ユニークネススキャン**
+
+リポジトリを特徴づける独自パターンを 3-5 個列挙し、カタログ（Phase A）でカバーされていないものを新規視点として命名する。
+
+- 「このリポジトリならではの技法は何か？」を問う
+- 機能名ではなくプラクティス名で命名する（悪い例: `router-design` → 良い例: `pattern-matching-routing`）
+
+---
+
+#### Phase C: 組み立てと Wave 割り当て
+
+Phase A + Phase B の候補を統合し、最終的な視点リストを組み立てる。
+
+**Wave 1（コア視点）**: 5-8 個。リポジトリ理解の基盤:
+- `project-structure`, `architecture`, `design-philosophy` は原則 Wave 1
+- 残り 2-5 個はリポジトリの中核プラクティスから選定
+
+**Wave 2（拡張視点）**: 残り。プラクティス指向の横断的分析。
+
+**重複チェック**: スコープが大きく重なる視点は統合する（例: `composition-patterns` と `middleware-composition` が両方該当する場合、リポの実態に応じてどちらかに統合）。
 
 **視点選定の基準**:
 
