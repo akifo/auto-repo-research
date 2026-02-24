@@ -1,0 +1,117 @@
+url: https://github.com/trpc/trpc
+stars: 39597
+language: TypeScript
+license: MIT
+description: "Move Fast and Break Nothing. End-to-end typesafe APIs made easy."
+analyzed_at: "2026-02-24"
+local_path: /Users/akiho/github/github.com/trpc/trpc
+scale: large
+
+perspectives:
+  - name: project-structure
+    file: project-structure.md
+    wave: 1
+    intent: "モノレポ構成、パッケージ境界、unstable-core パターンによる内部モジュール管理を明らかにする"
+    summary: "pnpm+Turborepo+Lerna三層モノレポで、unstable-core命名とESLintによるAPI境界の機械的強制を実現"
+
+  - name: architecture
+    file: architecture.md
+    wave: 1
+    intent: "サーバー/クライアント/React統合の3層アーキテクチャと依存方向、フレームワーク非依存性の実現を分析する"
+    summary: "Web Standard正規化のコア+Proxy透過API+import type結合で8アダプタをコア変更なしに維持"
+
+  - name: design-philosophy
+    file: design-philosophy.md
+    wave: 1
+    intent: "'Move Fast and Break Nothing' の設計哲学がコードベース全体にどう体現されているかを明らかにする"
+    summary: "型推論によるコンパイル時保証、段階的移行のAPI安定性スペクトラム、ランタイム防御の三層で哲学を具現化"
+
+  - name: type-system-patterns
+    file: type-system-patterns.md
+    wave: 1
+    intent: "ProcedureBuilder の8型パラメータ、条件付き型推論、TypeError phantom type 等の高度な型レベルプログラミングを体系化する"
+    summary: "8型パラメータBuilder、TypeError phantom型、UnsetMarkerセンチネル等の型レベルプログラミング体系"
+
+  - name: composition-patterns
+    file: composition-patterns.md
+    wave: 1
+    intent: "ProcedureBuilder.concat()、入力チェーニング、ルーターマージにおける型安全な合成パターンを分析する"
+    summary: "不変ビルダーチェーン、IntersectIfDefined型合成、mergeWithoutOverridesによる型安全な合成体系"
+
+  - name: proxy-based-type-inference
+    file: proxy-based-type-inference.md
+    wave: 1
+    intent: "createRecursiveProxy/createFlatProxy による透過的パス推論APIの仕組みと、Proxy を型安全に活用する設計パターンを明らかにする"
+    summary: "87行の2種Proxyプリミティブからクライアント・React・SSG全統合レイヤーを構築する二重構造パターン"
+
+  - name: middleware-composition
+    file: middleware-composition.md
+    wave: 1
+    intent: "ミドルウェア実行チェーン、コンテキスト拡張の型追跡、入出力バリデーションのミドルウェア統合を分析する"
+    summary: "再帰チェーン実行、middlewareMarkerブランド型、コンテキスト差分マージの型追跡で統一パイプラインを実現"
+
+  - name: api-design-practices
+    file: api-design-practices.md
+    wave: 2
+    intent: "公開API設計、unstable-core-do-not-import エクスポート戦略、サブパスexportsによるAPI境界制御を分析する"
+    summary: "3層エクスポート戦略、experimental_プレフィックス、ValidateShape型によるAPI境界とライフサイクル管理"
+
+  - name: adapter-implementation-patterns
+    file: adapter-implementation-patterns.md
+    wave: 2
+    intent: "8+フレームワークアダプターの共通構造、resolveResponse による抽象化、サードパーティアダプター作成可能な設計を分析する"
+    summary: "resolveResponse単一関数にプロトコル処理を集約し、アダプタは変換・委譲・書き戻しの薄い翻訳層に徹する設計"
+
+  - name: error-handling-idioms
+    file: error-handling-idioms.md
+    wave: 2
+    intent: "TRPCError 設計、ErrorFormatter によるカスタマイズ、ミドルウェアチェーンでのエラー伝播パターンを体系化する"
+    summary: "catch直後の正規化関数、Result型伝播、ErrorFormatter/onError分離によるエラー処理の体系的設計"
+
+  - name: testing-practices
+    file: testing-practices.md
+    wave: 2
+    intent: "テスト集約パッケージ、回帰テストの issue 番号命名、統合テスト設計、konn フレームワーク活用を分析する"
+    summary: "集約テストパッケージ、issue番号命名の回帰テスト、await using自動クリーンアップ、expectTypeOf型テスト"
+
+  - name: streaming-patterns
+    file: streaming-patterns.md
+    wave: 2
+    intent: "SSE、AsyncIterable ベース subscription、tracked output、httpBatchStreamLink のストリーミング設計を分析する"
+    summary: "producer/consumerペアによるプロトコル分離、Unpromiseメモリリーク防止、tracked再接続復旧の設計体系"
+
+  - name: schema-validation-patterns
+    file: schema-validation-patterns.md
+    wave: 2
+    intent: "Parser 抽象による zod/yup/valibot/superstruct/myzod 対応と、バリデーターに依存しない入出力検証設計を分析する"
+    summary: "構造的型付け+ランタイムduck typingで10以上のバリデータをゼロ依存で統合するParser抽象"
+
+  - name: extensibility-mechanisms
+    file: extensibility-mechanisms.md
+    wave: 2
+    intent: "リンクアーキテクチャ、experimental_caller、lazy router によるクライアント/サーバー双方の拡張機構を体系化する"
+    summary: "3層クロージャのリンクチェーン、lazy router遅延ロード、experimental_callerによる多層拡張機構"
+
+  - name: dev-conventions
+    file: dev-conventions.md
+    wave: 2
+    intent: "ESLint カスタムルール、型パラメータ命名規約、Symbol.dispose 禁止等の開発規約とその設計意図を分析する"
+    summary: "T/$二重プレフィックス型命名、Symbol.dispose隔離、ASTセレクタ禁止等の多層的開発規約"
+
+  - name: build-and-tooling
+    file: build-and-tooling.md
+    wave: 2
+    intent: "tsdown ビルド、turbo タスクグラフ、vitest 動的エイリアス生成、モノレポ開発体験の最適化を分析する"
+    summary: "tsdown onSuccessによるエントリポイント自動生成とpackage.json exports起点の動的テストエイリアス"
+
+  - name: ci-cd
+    file: ci-cd.md
+    wave: 2
+    intent: "CI/CD ワークフロー、canary/prerelease バージョニング、semantic PR チェック、リリースプロセスを分析する"
+    summary: "4段階リリースチャネル、pkg-pr-new即時PR公開、Semantic PRスコープ動的生成のCI/CD戦略"
+
+  - name: performance-techniques
+    file: performance-techniques.md
+    wave: 2
+    intent: "Proxy メモ化、lazy ルーターロード、バッチリクエスト、Object.create(null) 等のパフォーマンス最適化技法を収集する"
+    summary: "Proxyメモ化、DataLoaderバッチ、Unpromise参照管理、明示的null解放によるパフォーマンス最適化体系"
