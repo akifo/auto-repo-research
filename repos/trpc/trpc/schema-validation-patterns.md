@@ -23,24 +23,24 @@ tRPC はバリデーションライブラリに一切依存しない Parser 抽�
 // packages/server/src/unstable-core-do-not-import/parser.ts:84-140
 export function getParseFn<TType>(procedureParser: Parser): ParseFn<TType> {
   const parser = procedureParser as any;
-  const isStandardSchema = '~standard' in parser;
+  const isStandardSchema = "~standard" in parser;
 
-  if (typeof parser === 'function' && typeof parser.assert === 'function') {
+  if (typeof parser === "function" && typeof parser.assert === "function") {
     // ParserArkTypeEsque
     return parser.assert.bind(parser);
   }
 
-  if (typeof parser === 'function' && !isStandardSchema) {
+  if (typeof parser === "function" && !isStandardSchema) {
     // ParserCustomValidatorEsque / ParserValibotEsque (>= v0.31.0)
     return parser;
   }
 
-  if (typeof parser.parseAsync === 'function') {
+  if (typeof parser.parseAsync === "function") {
     // ParserZodEsque
     return parser.parseAsync.bind(parser);
   }
 
-  if (typeof parser.parse === 'function') {
+  if (typeof parser.parse === "function") {
     // ParserZodEsque / ParserValibotEsque (< v0.13.0)
     return parser.parse.bind(parser);
   }
@@ -58,14 +58,11 @@ export function getParseFn<TType>(procedureParser: Parser): ParseFn<TType> {
 // packages/server/src/unstable-core-do-not-import/parser.ts:62-80
 export type Parser = ParserWithInputOutput<any, any> | ParserWithoutInput<any>;
 
-export type inferParser<TParser extends Parser> =
-  TParser extends ParserStandardSchemaEsque<infer $TIn, infer $TOut>
-    ? { in: $TIn; out: $TOut }
-    : TParser extends ParserWithInputOutput<infer $TIn, infer $TOut>
-      ? { in: $TIn; out: $TOut }
-      : TParser extends ParserWithoutInput<infer $InOut>
-        ? { in: $InOut; out: $InOut }
-        : never;
+export type inferParser<TParser extends Parser> = TParser extends ParserStandardSchemaEsque<infer $TIn, infer $TOut>
+  ? { in: $TIn; out: $TOut; }
+  : TParser extends ParserWithInputOutput<infer $TIn, infer $TOut> ? { in: $TIn; out: $TOut; }
+  : TParser extends ParserWithoutInput<infer $InOut> ? { in: $InOut; out: $InOut; }
+  : never;
 ```
 
 `ParserWithInputOutput` は transform 対応（入力型と出力型が異なる）のライブラリ群、`ParserWithoutInput` は入力型と出力型が同一のライブラリ群を表す。Standard Schema は最優先でチェックされ、将来のバリデーターはこの規格に準拠すれば自動的にサポートされる。
@@ -90,23 +87,21 @@ input(input) {
 ```typescript
 // packages/server/src/unstable-core-do-not-import/middleware.ts:186-214
 export function createInputMiddleware<TInput>(parse: ParseFn<TInput>) {
-  const inputMiddleware: AnyMiddlewareFunction =
-    async function inputValidatorMiddleware(opts) {
-      let parsedInput: ReturnType<typeof parse>;
-      const rawInput = await opts.getRawInput();
-      try {
-        parsedInput = await parse(rawInput);
-      } catch (cause) {
-        throw new TRPCError({ code: 'BAD_REQUEST', cause });
-      }
-      // Multiple input parsers
-      const combinedInput =
-        isObject(opts.input) && isObject(parsedInput)
-          ? { ...opts.input, ...parsedInput }
-          : parsedInput;
-      return opts.next({ input: combinedInput });
-    };
-  inputMiddleware._type = 'input';
+  const inputMiddleware: AnyMiddlewareFunction = async function inputValidatorMiddleware(opts) {
+    let parsedInput: ReturnType<typeof parse>;
+    const rawInput = await opts.getRawInput();
+    try {
+      parsedInput = await parse(rawInput);
+    } catch (cause) {
+      throw new TRPCError({ code: "BAD_REQUEST", cause });
+    }
+    // Multiple input parsers
+    const combinedInput = isObject(opts.input) && isObject(parsedInput)
+      ? { ...opts.input, ...parsedInput }
+      : parsedInput;
+    return opts.next({ input: combinedInput });
+  };
+  inputMiddleware._type = "input";
   return inputMiddleware;
 }
 ```
@@ -119,11 +114,9 @@ export function createInputMiddleware<TInput>(parse: ParseFn<TInput>) {
 
 ```typescript
 // packages/server/src/unstable-core-do-not-import/procedureBuilder.ts:37-41
-type IntersectIfDefined<TType, TWith> = TType extends UnsetMarker
-  ? TWith
-  : TWith extends UnsetMarker
-    ? TType
-    : Simplify<TType & TWith>;
+type IntersectIfDefined<TType, TWith> = TType extends UnsetMarker ? TWith
+  : TWith extends UnsetMarker ? TType
+  : Simplify<TType & TWith>;
 ```
 
 この仕組みにより、基盤プロシージャで共通入力を定義し、派生プロシージャで追加フィールドを足す「段階的入力構築」が実現する。テストコード（`input.test.ts:18-59`）で `roomProcedure` が `roomId` を要求し、`sendMessage` が `text` を追加する例がこのパターンの典型である。
@@ -137,7 +130,7 @@ tRPC は Standard Schema の仕様を `vendor/standard-schema-v1/` にコピー�
 ```typescript
 // packages/server/src/vendor/standard-schema-v1/spec.ts:10-13
 export interface StandardSchemaV1<Input = unknown, Output = Input> {
-  readonly '~standard': StandardSchemaV1.Props<Input, Output>;
+  readonly "~standard": StandardSchemaV1.Props<Input, Output>;
 }
 ```
 
@@ -171,12 +164,12 @@ export type ParserZodEsque<TInput, TParsedInput> = {
 
 ```typescript
 // packages/server/src/unstable-core-do-not-import/middleware.ts:195-198 (入力)
-throw new TRPCError({ code: 'BAD_REQUEST', cause });
+throw new TRPCError({ code: "BAD_REQUEST", cause });
 
 // packages/server/src/unstable-core-do-not-import/middleware.ts:234-237 (出力)
 throw new TRPCError({
-  message: 'Output validation failed',
-  code: 'INTERNAL_SERVER_ERROR',
+  message: "Output validation failed",
+  code: "INTERNAL_SERVER_ERROR",
   cause,
 });
 ```
@@ -185,10 +178,10 @@ throw new TRPCError({
 
 ```typescript
 // packages/server/src/unstable-core-do-not-import/parser.ts:99-108
-if (typeof parser.parseAsync === 'function') {
+if (typeof parser.parseAsync === "function") {
   return parser.parseAsync.bind(parser);
 }
-if (typeof parser.parse === 'function') {
+if (typeof parser.parse === "function") {
   return parser.parse.bind(parser);
 }
 ```
@@ -199,15 +192,15 @@ if (typeof parser.parse === 'function') {
 
 ```typescript
 // Bad: 順序を意識せずにチェックを追加する
-if (typeof parser === 'function') {
+if (typeof parser === "function") {
   return parser; // arktype も function なのでここで捕捉されてしまう
 }
 
 // Better: より特殊な条件を先にチェックする
-if (typeof parser === 'function' && typeof parser.assert === 'function') {
+if (typeof parser === "function" && typeof parser.assert === "function") {
   return parser.assert.bind(parser); // arktype 用の特殊ケースが先
 }
-if (typeof parser === 'function' && !isStandardSchema) {
+if (typeof parser === "function" && !isStandardSchema) {
   return parser; // カスタムバリデーターはフォールバック
 }
 ```
@@ -217,13 +210,13 @@ if (typeof parser === 'function' && !isStandardSchema) {
 ```typescript
 // Bad: 非オブジェクト型をチェーンする（型エラーが出るが無視した場合）
 t.procedure
-  .input(z.literal('hello'))
-  .input(z.object({ foo: z.string() })) // 型エラー
+  .input(z.literal("hello"))
+  .input(z.object({ foo: z.string() })); // 型エラー
 
 // Better: チェーンが必要なら最初からオブジェクト型を使う
 t.procedure
-  .input(z.object({ greeting: z.literal('hello') }))
-  .input(z.object({ foo: z.string() }))
+  .input(z.object({ greeting: z.literal("hello") }))
+  .input(z.object({ foo: z.string() }));
 ```
 
 ## 導出ルール

@@ -30,13 +30,13 @@ export function createBuilder<TContext, TMeta>(
 ): ProcedureBuilder<
   TContext,
   TMeta,
-  object,          // TContextOverrides: 初期状態は空オブジェクト
-  UnsetMarker,     // TInputIn: 未設定
-  UnsetMarker,     // TInputOut: 未設定
-  UnsetMarker,     // TOutputIn: 未設定
-  UnsetMarker,     // TOutputOut: 未設定
-  false            // TCaller: デフォルトは無効
->
+  object, // TContextOverrides: 初期状態は空オブジェクト
+  UnsetMarker, // TInputIn: 未設定
+  UnsetMarker, // TInputOut: 未設定
+  UnsetMarker, // TOutputIn: 未設定
+  UnsetMarker, // TOutputOut: 未設定
+  false // TCaller: デフォルトは無効
+>;
 ```
 
 `.input()` を呼ぶと `TInputIn` と `TInputOut` のみが `IntersectIfDefined` を通じて更新され、他の6パラメータは変更されない。
@@ -83,14 +83,11 @@ export type TypeError<TMessage extends string> = TMessage & {
 
 ```typescript
 // parser.ts:64-80
-export type inferParser<TParser extends Parser> =
-  TParser extends ParserStandardSchemaEsque<infer $TIn, infer $TOut>
-    ? { in: $TIn; out: $TOut }
-    : TParser extends ParserWithInputOutput<infer $TIn, infer $TOut>
-      ? { in: $TIn; out: $TOut }
-      : TParser extends ParserWithoutInput<infer $InOut>
-        ? { in: $InOut; out: $InOut }
-        : never;
+export type inferParser<TParser extends Parser> = TParser extends ParserStandardSchemaEsque<infer $TIn, infer $TOut>
+  ? { in: $TIn; out: $TOut; }
+  : TParser extends ParserWithInputOutput<infer $TIn, infer $TOut> ? { in: $TIn; out: $TOut; }
+  : TParser extends ParserWithoutInput<infer $InOut> ? { in: $InOut; out: $InOut; }
+  : never;
 ```
 
 各バリデーションライブラリの型を「-Esque」サフィックスの構造的型として表現し、`_input`/`_output` や `inferIn`/`infer` などライブラリ固有の型プロパティからダックタイピングで型情報を抽出している。
@@ -104,9 +101,9 @@ export type inferParser<TParser extends Parser> =
 export type IntersectionError<TKey extends string> =
   `The property '${TKey}' in your router collides with a built-in method, rename this router or procedure on your backend.`;
 
-export type ProtectedIntersection<TType, TWith> = keyof TType &
-  keyof TWith extends never
-  ? TType & TWith
+export type ProtectedIntersection<TType, TWith> =
+  & keyof TType
+  & keyof TWith extends never ? TType & TWith
   : IntersectionError<string & keyof TType & keyof TWith>;
 ```
 
@@ -118,18 +115,18 @@ tRPC では4つの branded type をランタイムマーカーとして使い分
 
 ```typescript
 // utils.ts:1-4
-export type UnsetMarker = 'unsetMarker' & { __brand: 'unsetMarker' };
+export type UnsetMarker = "unsetMarker" & { __brand: "unsetMarker"; };
 
 // middleware.ts:8-10
-export const middlewareMarker = 'middlewareMarker' as 'middlewareMarker' & {
-  __brand: 'middlewareMarker';
+export const middlewareMarker = "middlewareMarker" as "middlewareMarker" & {
+  __brand: "middlewareMarker";
 };
 
 // router.ts:80-81
-const lazyMarker = 'lazyMarker' as 'lazyMarker' & { __brand: 'lazyMarker' };
+const lazyMarker = "lazyMarker" as "lazyMarker" & { __brand: "lazyMarker"; };
 
 // stream/tracked.ts:3-5
-type TrackedId = string & { __brand: 'TrackedId' };
+type TrackedId = string & { __brand: "TrackedId"; };
 ```
 
 `string & { __brand: string }` パターンにより、構造的に同じ文字列型でも名目的に区別される。`middlewareMarker` はミドルウェアの戻り値が正しいプロトコルに従っているかの検証、`lazyMarker` は遅延ロードされたルーターの識別に使われる。
@@ -173,66 +170,58 @@ query<$Output>(...)
 // packages/server/src/unstable-core-do-not-import/types.ts:82-88
 // index signature を除去して明示的に定義されたキーだけを残す
 export type WithoutIndexSignature<TObj> = {
-  [K in keyof TObj as string extends K
-    ? never
-    : number extends K
-      ? never
-      : K]: TObj[K];
+  [
+    K in keyof TObj as string extends K ? never
+      : number extends K ? never
+      : K
+  ]: TObj[K];
 };
 ```
 
 ```typescript
 // packages/server/src/unstable-core-do-not-import/types.ts:96-112
 // index signature を考慮した安全なプロパティ上書き
-export type Overwrite<TType, TWith> = TWith extends any
-  ? TType extends object
-    ? {
-        [K in
-          | keyof WithoutIndexSignature<TType>
-          | keyof WithoutIndexSignature<TWith>]: K extends keyof TWith
-          ? TWith[K]
-          : K extends keyof TType
-            ? TType[K]
-            : never;
-      } & (string extends keyof TWith
-        ? { [key: string]: TWith[string] }
-        : number extends keyof TWith
-          ? { [key: number]: TWith[number] }
-          : {})
-    : TWith
+export type Overwrite<TType, TWith> = TWith extends any ? TType extends object ?
+      & {
+        [
+          K in
+            | keyof WithoutIndexSignature<TType>
+            | keyof WithoutIndexSignature<TWith>
+        ]: K extends keyof TWith ? TWith[K]
+          : K extends keyof TType ? TType[K]
+          : never;
+      }
+      & (string extends keyof TWith ? { [key: string]: TWith[string]; }
+        : number extends keyof TWith ? { [key: number]: TWith[number]; }
+        : {})
+  : TWith
   : never;
 ```
 
 ```typescript
 // packages/server/src/unstable-core-do-not-import/types.ts:117-122
 // 余分なプロパティの存在をコンパイル時に検出する
-export type ValidateShape<TActualShape, TExpectedShape> =
-  TActualShape extends TExpectedShape
-    ? Exclude<keyof TActualShape, keyof TExpectedShape> extends never
-      ? TActualShape
-      : TExpectedShape
-    : never;
+export type ValidateShape<TActualShape, TExpectedShape> = TActualShape extends TExpectedShape
+  ? Exclude<keyof TActualShape, keyof TExpectedShape> extends never ? TActualShape
+  : TExpectedShape
+  : never;
 ```
 
 ```typescript
 // packages/server/src/unstable-core-do-not-import/procedureBuilder.ts:37-45
 // sentinel type によるデフォルト値の分岐
-type IntersectIfDefined<TType, TWith> = TType extends UnsetMarker
-  ? TWith
-  : TWith extends UnsetMarker
-    ? TType
-    : Simplify<TType & TWith>;
+type IntersectIfDefined<TType, TWith> = TType extends UnsetMarker ? TWith
+  : TWith extends UnsetMarker ? TType
+  : Simplify<TType & TWith>;
 
-type DefaultValue<TValue, TFallback> = TValue extends UnsetMarker
-  ? TFallback
+type DefaultValue<TValue, TFallback> = TValue extends UnsetMarker ? TFallback
   : TValue;
 ```
 
 ```typescript
 // packages/server/src/unstable-core-do-not-import/rootConfig.ts:104-123
 // コンテキストが空 (object) なら createContext を省略可能にする
-type PartialIf<TCondition extends boolean, TType> = TCondition extends true
-  ? Partial<TType>
+type PartialIf<TCondition extends boolean, TType> = TCondition extends true ? Partial<TType>
   : TType;
 
 export type CreateContextCallback<
@@ -240,7 +229,7 @@ export type CreateContextCallback<
   TFunction extends (...args: any[]) => any,
 > = PartialIf<
   object extends TContext ? true : false,
-  { createContext: TFunction }
+  { createContext: TFunction; }
 >;
 ```
 
@@ -269,18 +258,15 @@ export type CreateContextCallback<
 - **Sentinel type + 条件付き型でビルダーの「未設定」状態を型安全に表現する**: `UnsetMarker` を未設定のデフォルト値に使い、`DefaultValue` / `IntersectIfDefined` で分岐する。これにより `.input()` を呼ばなければ input は `void` になり、呼べば指定した型になる。二重に `.input()` を呼べば型が交差で合成される。
   ```typescript
   // procedureBuilder.ts:37-45
-  type IntersectIfDefined<TType, TWith> = TType extends UnsetMarker
-    ? TWith
-    : TWith extends UnsetMarker
-      ? TType
-      : Simplify<TType & TWith>;
+  type IntersectIfDefined<TType, TWith> = TType extends UnsetMarker ? TWith
+    : TWith extends UnsetMarker ? TType
+    : Simplify<TType & TWith>;
   ```
 
 - **DistributiveOmit でユニオン型を保持する**: 標準の `Omit` はユニオン型を崩壊させるが、`TObj extends any ? Omit<TObj, TKey> : never` の distributive conditional type パターンを使えばユニオンの各メンバーに個別に適用される。
   ```typescript
   // types.ts:71-73
-  export type DistributiveOmit<TObj, TKey extends keyof any> = TObj extends any
-    ? Omit<TObj, TKey>
+  export type DistributiveOmit<TObj, TKey extends keyof any> = TObj extends any ? Omit<TObj, TKey>
     : never;
   ```
 
@@ -292,14 +278,11 @@ export type CreateContextCallback<
     _output: TParsedInput;
   };
   // ... (他のライブラリの -Esque 型)
-  export type inferParser<TParser extends Parser> =
-    TParser extends ParserStandardSchemaEsque<infer $TIn, infer $TOut>
-      ? { in: $TIn; out: $TOut }
-      : TParser extends ParserWithInputOutput<infer $TIn, infer $TOut>
-        ? { in: $TIn; out: $TOut }
-        : TParser extends ParserWithoutInput<infer $InOut>
-          ? { in: $InOut; out: $InOut }
-          : never;
+  export type inferParser<TParser extends Parser> = TParser extends ParserStandardSchemaEsque<infer $TIn, infer $TOut>
+    ? { in: $TIn; out: $TOut; }
+    : TParser extends ParserWithInputOutput<infer $TIn, infer $TOut> ? { in: $TIn; out: $TOut; }
+    : TParser extends ParserWithoutInput<infer $InOut> ? { in: $InOut; out: $InOut; }
+    : never;
   ```
 
 ## Anti-Patterns / 注意点

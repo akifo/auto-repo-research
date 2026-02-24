@@ -111,8 +111,8 @@ ESLint で `Symbol.dispose` / `Symbol.asyncDispose` の直接使用を禁止し�
 
 ```typescript
 // packages/tests/server/regression/issue-5034-input-with-index-signature.test.ts:50-55
-test('input type with a known key and an index signature', async () => {
-  type Input = AppRouterInputs['inputWithIndexSignature'];
+test("input type with a known key and an index signature", async () => {
+  type Input = AppRouterInputs["inputWithIndexSignature"];
   expectTypeOf<Input>().toEqualTypeOf<{
     [x: string]: unknown;
     name: string;
@@ -208,9 +208,9 @@ issue-3359-http-status-413-payload-too-large.test.ts
 
 ```typescript
 // Good: await using で自動クリーンアップ
-test('basic', async () => {
+test("basic", async () => {
   await using ctx = testServerAndClientResource(router);
-  expect(await ctx.client.hello.query()).toBe('world');
+  expect(await ctx.client.hello.query()).toBe("world");
   // スコープ終了時に自動的にサーバーが停止
 });
 ```
@@ -247,7 +247,7 @@ await using ctx = testServerAndClientResource(router);
 
 ```typescript
 // Bad: Testing Library の waitFor — フェイクタイマーと非互換
-import { waitFor } from '@testing-library/react';
+import { waitFor } from "@testing-library/react";
 await waitFor(() => expect(element).toBeVisible());
 
 // Better: vi.waitFor — フェイクタイマーと互換

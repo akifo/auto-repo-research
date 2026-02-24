@@ -166,25 +166,25 @@ Step 2 で収集した情報から視点候補を検出する。2種類のシグ
 
 カタログ補強シグナル（ディレクトリ名 → カタログ視点の見落とし防止）:
 
-| シグナル例 | 示唆される視点 |
-|---|---|
-| `middleware/`, `plugins/` | `middleware-composition`, `hook-and-lifecycle-patterns` |
-| `adapters/`, `drivers/`, `providers/` | `adapter-implementation-patterns` |
-| `migrations/`, `schemas/` | `migration-patterns`, `database-patterns` |
-| `i18n/`, `locales/` / `streams/`, `iterators/` | `internationalization-patterns` / `streaming-patterns` |
-| `cache/`, `store/` | `persistence-patterns`, `state-management-patterns` |
-| `codegen/`, `generated/` / `wasm/`, `native/` | `metaprogramming-techniques` / `platform-abstraction` |
+| シグナル例                                     | 示唆される視点                                          |
+| ---------------------------------------------- | ------------------------------------------------------- |
+| `middleware/`, `plugins/`                      | `middleware-composition`, `hook-and-lifecycle-patterns` |
+| `adapters/`, `drivers/`, `providers/`          | `adapter-implementation-patterns`                       |
+| `migrations/`, `schemas/`                      | `migration-patterns`, `database-patterns`               |
+| `i18n/`, `locales/` / `streams/`, `iterators/` | `internationalization-patterns` / `streaming-patterns`  |
+| `cache/`, `store/`                             | `persistence-patterns`, `state-management-patterns`     |
+| `codegen/`, `generated/` / `wasm/`, `native/`  | `metaprogramming-techniques` / `platform-abstraction`   |
 
 リポ固有視点シグナル（カタログにない視点の発見トリガー）:
 
-| シグナル | 示唆される視点 |
-|---|---|
-| コア型に3+型パラメータの独自抽象 | ドメイン固有の型モデル（例: `effect-model`） |
-| 同一インターフェースの実装が5+ | プロバイダー抽象化（例: `provider-abstraction`） |
-| テストが3階層以上に分類 | テスト戦略の階層化（例: `testing-strategy`） |
+| シグナル                                | 示唆される視点                                             |
+| --------------------------------------- | ---------------------------------------------------------- |
+| コア型に3+型パラメータの独自抽象        | ドメイン固有の型モデル（例: `effect-model`）               |
+| 同一インターフェースの実装が5+          | プロバイダー抽象化（例: `provider-abstraction`）           |
+| テストが3階層以上に分類                 | テスト戦略の階層化（例: `testing-strategy`）               |
 | 設定 → ランタイム構造の変換パイプライン | 設定駆動アーキテクチャ（例: `config-driven-architecture`） |
-| 30+種の enum/union バリアント | バリアント別ハンドラーマップ（例: `assertion-patterns`） |
-| 独自の大規模ディレクトリ | 新規視点の候補（B-2 へ） |
+| 30+種の enum/union バリアント           | バリアント別ハンドラーマップ（例: `assertion-patterns`）   |
+| 独自の大規模ディレクトリ                | 新規視点の候補（B-2 へ）                                   |
 
 シグナルが見つかってもカタログで既にカバー済みなら追加不要。
 

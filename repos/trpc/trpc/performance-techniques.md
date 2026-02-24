@@ -30,11 +30,11 @@ function createInnerProxy(
   path: readonly string[],
   memo: Record<string, unknown>,
 ) {
-  const cacheKey = path.join('.');
+  const cacheKey = path.join(".");
 
   memo[cacheKey] ??= new Proxy(noop, {
     get(_obj, key) {
-      if (typeof key !== 'string' || key === 'then') {
+      if (typeof key !== "string" || key === "then") {
         return undefined;
       }
       return createInnerProxy(callback, [...path, key], memo);
@@ -163,12 +163,12 @@ function once<T>(fn: () => T): () => T {
 
 ```ts
 // examples/lazy-load/src/server/routers/_app.ts:1-8
-import { lazy } from '@trpc/server';
-import { router } from '../trpc.js';
+import { lazy } from "@trpc/server";
+import { router } from "../trpc.js";
 
 export const appRouter = router({
-  user: lazy(() => import('./user.js')),
-  slow: lazy(() => import('./slow.js')),
+  user: lazy(() => import("./user.js")),
+  slow: lazy(() => import("./slow.js")),
 });
 ```
 
@@ -227,8 +227,8 @@ export function allAbortSignals(...signals: Maybe<AbortSignal>[]): AbortSignal {
 
 ```ts
 // packages/server/src/unstable-core-do-not-import/createProxy.ts:24-26
-const cacheKey = path.join('.');
-memo[cacheKey] ??= new Proxy(noop, { /* ... */ });
+const cacheKey = path.join(".");
+memo[cacheKey] ??= new Proxy(noop, {/* ... */});
 return memo[cacheKey];
 ```
 
@@ -266,6 +266,7 @@ let result: T | typeof uncalled = uncalled;
 - **長寿命 Promise への .then() 蓄積**: `Promise.race` を繰り返すと、元 Promise に `.then()` ハンドラが無限に蓄積し GC されない。tRPC はこれを Unpromise で回避している。
 
 Bad:
+
 ```ts
 // ストリームループで毎回 Promise.race を呼ぶ
 while (true) {
@@ -275,6 +276,7 @@ while (true) {
 ```
 
 Better:
+
 ```ts
 // Unpromise.race で subscribe/unsubscribe を管理
 while (true) {
@@ -286,6 +288,7 @@ while (true) {
 - **ループ内変数宣言による GC 遅延**: `for await` や `while` ループ内で `let` 宣言すると、次のイテレーションで `await` が解決するまで前の値が GC されない。
 
 Bad:
+
 ```ts
 while (true) {
   let result = await iterator.next(); // 次の await まで前の result が残る
@@ -294,6 +297,7 @@ while (true) {
 ```
 
 Better:
+
 ```ts
 let result: IteratorResult<T> | null; // ループ外で宣言
 while (true) {

@@ -33,7 +33,7 @@ export function retryLink<TInferrable extends InferrableClientTypes>(
     // 第2層: アプリ初期化（TRPCUntypedClient 構築時に実行）
     return (callOpts) => {
       // 第3層: リクエスト処理（各操作ごとに実行）
-      return observable((observer) => { /* ... */ });
+      return observable((observer) => {/* ... */});
     };
   };
 }
@@ -92,7 +92,7 @@ export function createChain<TRouter extends AnyRouter>(opts: {
     function execute(index = 0, op = opts.op) {
       const next = opts.links[index];
       if (!next) {
-        throw new Error('No more links to execute - did you forget to add an ending link?');
+        throw new Error("No more links to execute - did you forget to add an ending link?");
       }
       const subscription = next({
         op,
@@ -115,7 +115,7 @@ export function createChain<TRouter extends AnyRouter>(opts: {
 ```typescript
 // packages/server/src/unstable-core-do-not-import/router.ts:105-135
 export function lazy<TRouter extends AnyRouter>(
-  importRouter: () => Promise<TRouter | { [key: string]: TRouter }>,
+  importRouter: () => Promise<TRouter | { [key: string]: TRouter; }>,
 ): Lazy<NoInfer<TRouter>> {
   async function resolve(): Promise<TRouter> {
     const mod = await importRouter();
@@ -154,7 +154,7 @@ export async function getProcedureAtPath(router, path) {
 export type CallerOverride<TContext> = (opts: {
   args: unknown[];
   invoke: (opts: ProcedureCallOptions<TContext>) => Promise<unknown>;
-  _def: AnyProcedure['_def'];
+  _def: AnyProcedure["_def"];
 }) => Promise<unknown>;
 ```
 
@@ -165,15 +165,20 @@ Next.js App Router 統合の `nextAppDirCaller` がこの仕組みの最重要�
 ```typescript
 // packages/server/src/adapters/next-app-dir/nextAppDirCaller.ts:79-107
 switch (opts._def.type) {
-  case 'mutation': {
+  case "mutation": {
     // useFormState の追加引数を処理
     let input = opts.args.length === 1 ? opts.args[0] : opts.args[1];
     if (normalizeFormData && input instanceof FormData) {
       input = formDataToObject(input);
     }
     return await opts.invoke({
-      type: opts._def.type, ctx, getRawInput: async () => input,
-      path, input, signal: undefined, batchIndex: 0,
+      type: opts._def.type,
+      ctx,
+      getRawInput: async () => input,
+      path,
+      input,
+      signal: undefined,
+      batchIndex: 0,
     }).catch(handleError);
   }
 }
@@ -193,7 +198,7 @@ async function callRecursive(index, _def, opts) {
       return callRecursive(index + 1, _def, {
         ...opts,
         ctx: nextOpts?.ctx ? { ...opts.ctx, ...nextOpts.ctx } : opts.ctx,
-        input: nextOpts && 'input' in nextOpts ? nextOpts.input : opts.input,
+        input: nextOpts && "input" in nextOpts ? nextOpts.input : opts.input,
       });
     },
   });
@@ -275,7 +280,7 @@ function load(key: TKey): Promise<TValue> {
     const uncalled = Symbol();
     let result: T | typeof uncalled = uncalled;
     return (): T => {
-      if (result === uncalled) { result = fn(); }
+      if (result === uncalled) result = fn();
       return result;
     };
   }
@@ -284,7 +289,7 @@ function load(key: TKey): Promise<TValue> {
 - **ブランドマーカーによる型レベルの判別**: `lazyMarker` や `middlewareMarker` をブランド型として使い、ランタイムでの型判別と TypeScript の型推論を両立している。
   ```typescript
   // packages/server/src/unstable-core-do-not-import/router.ts:80-81
-  const lazyMarker = 'lazyMarker' as 'lazyMarker' & { __brand: 'lazyMarker' };
+  const lazyMarker = "lazyMarker" as "lazyMarker" & { __brand: "lazyMarker"; };
   ```
 
 ## Anti-Patterns / 注意点
@@ -299,7 +304,7 @@ function load(key: TKey): Promise<TValue> {
 
   // Better: 末端に httpLink を配置
   const client = createTRPCClient({
-    links: [loggerLink(), retryLink({ retry: () => true }), httpLink({ url: '/api/trpc' })],
+    links: [loggerLink(), retryLink({ retry: () => true }), httpLink({ url: "/api/trpc" })],
   });
   ```
 
@@ -307,13 +312,13 @@ function load(key: TKey): Promise<TValue> {
   ```typescript
   // Bad: next() を呼ばない
   t.middleware(async (opts) => {
-    console.log('logging');
+    console.log("logging");
     // return opts.next() を忘れている
   });
 
   // Better: 必ず next() の結果を返す
   t.middleware(async (opts) => {
-    console.log('logging');
+    console.log("logging");
     return opts.next();
   });
   ```
@@ -321,10 +326,10 @@ function load(key: TKey): Promise<TValue> {
 - **lazy router の同期的アクセス**: lazy でラップしたルーターのプロシージャに `_def.procedures` から直接アクセスすると、まだロードされていない可能性がある。必ず `getProcedureAtPath` 経由でアクセスする必要がある。
   ```typescript
   // Bad: procedures マップに直接アクセス
-  const proc = router._def.procedures['child.foo']; // undefined の可能性
+  const proc = router._def.procedures["child.foo"]; // undefined の可能性
 
   // Better: getProcedureAtPath を使う（内部で lazy ロードを解決する）
-  const proc = await getProcedureAtPath(router, 'child.foo');
+  const proc = await getProcedureAtPath(router, "child.foo");
   ```
 
 ## 導出ルール

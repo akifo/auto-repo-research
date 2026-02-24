@@ -55,9 +55,9 @@ export function tracked<TData>(
   id: string,
   data: TData,
 ): TrackedEnvelope<TData> {
-  if (id === '') {
+  if (id === "") {
     throw new Error(
-      '`id` must not be an empty string as empty string is the same as not setting the id at all',
+      "`id` must not be an empty string as empty string is the same as not setting the id at all",
     );
   }
   return [id as TrackedId, data, trackedSymbol];
@@ -75,7 +75,7 @@ async function* generator(): AsyncIterable<SSEvent, void> {
   // ...
   for await (value of iterable) {
     if (value === PING_SYM) {
-      yield { event: PING_EVENT, data: '' };
+      yield { event: PING_EVENT, data: "" };
       continue;
     }
     chunk = isTrackedEnvelope(value)
@@ -187,9 +187,9 @@ for await (value of iterable) {
 ```typescript
 // packages/server/src/unstable-core-do-not-import/stream/sse.ts:96-104
 if (
-  ping.enabled &&
-  client.reconnectAfterInactivityMs &&
-  ping.intervalMs > client.reconnectAfterInactivityMs
+  ping.enabled
+  && client.reconnectAfterInactivityMs
+  && ping.intervalMs > client.reconnectAfterInactivityMs
 ) {
   throw new Error(
     `Ping interval must be less than client reconnect interval...`,

@@ -29,13 +29,13 @@ export function getTRPCErrorFromUnknown(cause: unknown): TRPCError {
   if (cause instanceof TRPCError) {
     return cause;
   }
-  if (cause instanceof Error && cause.name === 'TRPCError') {
+  if (cause instanceof Error && cause.name === "TRPCError") {
     // https://github.com/trpc/trpc/pull/4848
     return cause as TRPCError;
   }
 
   const trpcError = new TRPCError({
-    code: 'INTERNAL_SERVER_ERROR',
+    code: "INTERNAL_SERVER_ERROR",
     cause,
   });
 
@@ -87,8 +87,8 @@ async function callRecursive(
 const result = await callRecursive(0, _def, opts);
 if (!result) {
   throw new TRPCError({
-    code: 'INTERNAL_SERVER_ERROR',
-    message: 'No result from middlewares - did you forget to `return next()`?',
+    code: "INTERNAL_SERVER_ERROR",
+    message: "No result from middlewares - did you forget to `return next()`?",
   });
 }
 if (!result.ok) {
@@ -104,20 +104,19 @@ return result.data;
 ```typescript
 // packages/server/src/unstable-core-do-not-import/middleware.ts:186-199
 export function createInputMiddleware<TInput>(parse: ParseFn<TInput>) {
-  const inputMiddleware: AnyMiddlewareFunction =
-    async function inputValidatorMiddleware(opts) {
-      let parsedInput: ReturnType<typeof parse>;
-      const rawInput = await opts.getRawInput();
-      try {
-        parsedInput = await parse(rawInput);
-      } catch (cause) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          cause,
-        });
-      }
-      // ...
-    };
+  const inputMiddleware: AnyMiddlewareFunction = async function inputValidatorMiddleware(opts) {
+    let parsedInput: ReturnType<typeof parse>;
+    const rawInput = await opts.getRawInput();
+    try {
+      parsedInput = await parse(rawInput);
+    } catch (cause) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        cause,
+      });
+    }
+    // ...
+  };
 }
 ```
 
@@ -126,23 +125,22 @@ export function createInputMiddleware<TInput>(parse: ParseFn<TInput>) {
 ```typescript
 // packages/server/src/unstable-core-do-not-import/middleware.ts:219-240
 export function createOutputMiddleware<TOutput>(parse: ParseFn<TOutput>) {
-  const outputMiddleware: AnyMiddlewareFunction =
-    async function outputValidatorMiddleware({ next }) {
-      const result = await next();
-      if (!result.ok) {
-        return result; // pass through failures without validating
-      }
-      try {
-        const data = await parse(result.data);
-        return { ...result, data };
-      } catch (cause) {
-        throw new TRPCError({
-          message: 'Output validation failed',
-          code: 'INTERNAL_SERVER_ERROR',
-          cause,
-        });
-      }
-    };
+  const outputMiddleware: AnyMiddlewareFunction = async function outputValidatorMiddleware({ next }) {
+    const result = await next();
+    if (!result.ok) {
+      return result; // pass through failures without validating
+    }
+    try {
+      const data = await parse(result.data);
+      return { ...result, data };
+    } catch (cause) {
+      throw new TRPCError({
+        message: "Output validation failed",
+        code: "INTERNAL_SERVER_ERROR",
+        cause,
+      });
+    }
+  };
 }
 ```
 
@@ -155,11 +153,11 @@ export function createOutputMiddleware<TOutput>(parse: ParseFn<TOutput>) {
 export function getErrorShape<TRoot extends AnyRootTypes>(opts: {
   config: RootConfig<TRoot>;
   error: TRPCError;
-  type: ProcedureType | 'unknown';
+  type: ProcedureType | "unknown";
   path: string | undefined;
   input: unknown;
-  ctx: TRoot['ctx'] | undefined;
-}): TRoot['errorShape'] {
+  ctx: TRoot["ctx"] | undefined;
+}): TRoot["errorShape"] {
   const { path, error, config } = opts;
   const shape: DefaultErrorShape = {
     message: error.message,
@@ -169,10 +167,10 @@ export function getErrorShape<TRoot extends AnyRootTypes>(opts: {
       httpStatus: getHTTPStatusCodeFromError(error),
     },
   };
-  if (config.isDev && typeof opts.error.stack === 'string') {
+  if (config.isDev && typeof opts.error.stack === "string") {
     shape.data.stack = opts.error.stack;
   }
-  if (typeof path === 'string') {
+  if (typeof path === "string") {
     shape.data.path = path;
   }
   return config.errorFormatter({ ...opts, shape });
@@ -189,7 +187,7 @@ export function getErrorShape<TRoot extends AnyRootTypes>(opts: {
 // packages/server/src/unstable-core-do-not-import/procedure.ts:97-103
 export interface ErrorHandlerOptions<TContext> {
   error: TRPCError;
-  type: ProcedureType | 'unknown';
+  type: ProcedureType | "unknown";
   path: string | undefined;
   input: unknown;
   ctx: TContext | undefined;
@@ -292,7 +290,7 @@ export class TRPCError extends Error {
     const message = opts.message ?? cause?.message ?? opts.code;
     super(message, { cause });
     this.code = opts.code;
-    this.name = 'TRPCError';
+    this.name = "TRPCError";
     this.cause ??= cause;
   }
 }
@@ -332,12 +330,16 @@ if (!result.ok) {
 ```typescript
 // Bad: HTTP ステータスをエラーコードとして直接使用
 class AppError extends Error {
-  constructor(public statusCode: number) { super(); }
+  constructor(public statusCode: number) {
+    super();
+  }
 }
 
 // Better: ドメインコードを定義し、トランスポート層で変換
 class AppError extends Error {
-  constructor(public code: 'NOT_FOUND' | 'UNAUTHORIZED') { super(); }
+  constructor(public code: "NOT_FOUND" | "UNAUTHORIZED") {
+    super();
+  }
 }
 const HTTP_STATUS_MAP = { NOT_FOUND: 404, UNAUTHORIZED: 401 };
 ```

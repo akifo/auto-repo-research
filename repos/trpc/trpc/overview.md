@@ -18,26 +18,26 @@ tRPC は「型をランタイムの代わりにする」という哲学のもと
 
 ## 分析した視点
 
-| # | 視点 | ファイル | 概要 |
-| - | ---- | -------- | ---- |
-| 1 | project-structure | project-structure.md | pnpm+Turborepo+Lerna三層モノレポで、unstable-core命名とESLintによるAPI境界の機械的強制を実現 |
-| 2 | architecture | architecture.md | Web Standard正規化のコア+Proxy透過API+import type結合で8アダプタをコア変更なしに維持 |
-| 3 | design-philosophy | design-philosophy.md | 型推論によるコンパイル時保証、段階的移行のAPI安定性スペクトラム、ランタイム防御の三層で哲学を具現化 |
-| 4 | type-system-patterns | type-system-patterns.md | 8型パラメータBuilder、TypeError phantom型、UnsetMarkerセンチネル等の型レベルプログラミング体系 |
-| 5 | composition-patterns | composition-patterns.md | 不変ビルダーチェーン、IntersectIfDefined型合成、mergeWithoutOverridesによる型安全な合成体系 |
-| 6 | proxy-based-type-inference | proxy-based-type-inference.md | 87行の2種Proxyプリミティブからクライアント・React・SSG全統合レイヤーを構築する二重構造パターン |
-| 7 | middleware-composition | middleware-composition.md | 再帰チェーン実行、middlewareMarkerブランド型、コンテキスト差分マージの型追跡で統一パイプラインを実現 |
-| 8 | api-design-practices | api-design-practices.md | 3層エクスポート戦略、experimental_プレフィックス、ValidateShape型によるAPI境界とライフサイクル管理 |
-| 9 | adapter-implementation-patterns | adapter-implementation-patterns.md | resolveResponse単一関数にプロトコル処理を集約し、アダプタは変換・委譲・書き戻しの薄い翻訳層に徹する設計 |
-| 10 | error-handling-idioms | error-handling-idioms.md | catch直後の正規化関数、Result型伝播、ErrorFormatter/onError分離によるエラー処理の体系的設計 |
-| 11 | testing-practices | testing-practices.md | 集約テストパッケージ、issue番号命名の回帰テスト、await using自動クリーンアップ、expectTypeOf型テスト |
-| 12 | streaming-patterns | streaming-patterns.md | producer/consumerペアによるプロトコル分離、Unpromiseメモリリーク防止、tracked再接続復旧の設計体系 |
-| 13 | schema-validation-patterns | schema-validation-patterns.md | 構造的型付け+ランタイムduck typingで10以上のバリデータをゼロ依存で統合するParser抽象 |
-| 14 | extensibility-mechanisms | extensibility-mechanisms.md | 3層クロージャのリンクチェーン、lazy router遅延ロード、experimental_callerによる多層拡張機構 |
-| 15 | dev-conventions | dev-conventions.md | T/$二重プレフィックス型命名、Symbol.dispose隔離、ASTセレクタ禁止等の多層的開発規約 |
-| 16 | build-and-tooling | build-and-tooling.md | tsdown onSuccessによるエントリポイント自動生成とpackage.json exports起点の動的テストエイリアス |
-| 17 | ci-cd | ci-cd.md | 4段階リリースチャネル、pkg-pr-new即時PR公開、Semantic PRスコープ動的生成のCI/CD戦略 |
-| 18 | performance-techniques | performance-techniques.md | Proxyメモ化、DataLoaderバッチ、Unpromise参照管理、明示的null解放によるパフォーマンス最適化体系 |
+| #  | 視点                            | ファイル                           | 概要                                                                                                    |
+| -- | ------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| 1  | project-structure               | project-structure.md               | pnpm+Turborepo+Lerna三層モノレポで、unstable-core命名とESLintによるAPI境界の機械的強制を実現            |
+| 2  | architecture                    | architecture.md                    | Web Standard正規化のコア+Proxy透過API+import type結合で8アダプタをコア変更なしに維持                    |
+| 3  | design-philosophy               | design-philosophy.md               | 型推論によるコンパイル時保証、段階的移行のAPI安定性スペクトラム、ランタイム防御の三層で哲学を具現化     |
+| 4  | type-system-patterns            | type-system-patterns.md            | 8型パラメータBuilder、TypeError phantom型、UnsetMarkerセンチネル等の型レベルプログラミング体系          |
+| 5  | composition-patterns            | composition-patterns.md            | 不変ビルダーチェーン、IntersectIfDefined型合成、mergeWithoutOverridesによる型安全な合成体系             |
+| 6  | proxy-based-type-inference      | proxy-based-type-inference.md      | 87行の2種Proxyプリミティブからクライアント・React・SSG全統合レイヤーを構築する二重構造パターン          |
+| 7  | middleware-composition          | middleware-composition.md          | 再帰チェーン実行、middlewareMarkerブランド型、コンテキスト差分マージの型追跡で統一パイプラインを実現    |
+| 8  | api-design-practices            | api-design-practices.md            | 3層エクスポート戦略、experimental_プレフィックス、ValidateShape型によるAPI境界とライフサイクル管理      |
+| 9  | adapter-implementation-patterns | adapter-implementation-patterns.md | resolveResponse単一関数にプロトコル処理を集約し、アダプタは変換・委譲・書き戻しの薄い翻訳層に徹する設計 |
+| 10 | error-handling-idioms           | error-handling-idioms.md           | catch直後の正規化関数、Result型伝播、ErrorFormatter/onError分離によるエラー処理の体系的設計             |
+| 11 | testing-practices               | testing-practices.md               | 集約テストパッケージ、issue番号命名の回帰テスト、await using自動クリーンアップ、expectTypeOf型テスト    |
+| 12 | streaming-patterns              | streaming-patterns.md              | producer/consumerペアによるプロトコル分離、Unpromiseメモリリーク防止、tracked再接続復旧の設計体系       |
+| 13 | schema-validation-patterns      | schema-validation-patterns.md      | 構造的型付け+ランタイムduck typingで10以上のバリデータをゼロ依存で統合するParser抽象                    |
+| 14 | extensibility-mechanisms        | extensibility-mechanisms.md        | 3層クロージャのリンクチェーン、lazy router遅延ロード、experimental_callerによる多層拡張機構             |
+| 15 | dev-conventions                 | dev-conventions.md                 | T/$二重プレフィックス型命名、Symbol.dispose隔離、ASTセレクタ禁止等の多層的開発規約                      |
+| 16 | build-and-tooling               | build-and-tooling.md               | tsdown onSuccessによるエントリポイント自動生成とpackage.json exports起点の動的テストエイリアス          |
+| 17 | ci-cd                           | ci-cd.md                           | 4段階リリースチャネル、pkg-pr-new即時PR公開、Semantic PRスコープ動的生成のCI/CD戦略                     |
+| 18 | performance-techniques          | performance-techniques.md          | Proxyメモ化、DataLoaderバッチ、Unpromise参照管理、明示的null解放によるパフォーマンス最適化体系          |
 
 ## 特に注目すべき知見
 

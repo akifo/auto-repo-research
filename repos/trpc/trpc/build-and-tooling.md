@@ -34,21 +34,21 @@ trpc/trpc は pnpm ワークスペース + Turborepo + tsdown + Vitest + Lerna �
 ```typescript
 // packages/server/tsdown.config.ts:21-43
 export default defineConfig({
-  target: ['node18', 'es2017'],
+  target: ["node18", "es2017"],
   entry: input,
   dts: {
     sourcemap: true,
-    tsconfig: './tsconfig.build.json',
+    tsconfig: "./tsconfig.build.json",
   },
-  format: ['cjs', 'esm'],
+  format: ["cjs", "esm"],
   outExtensions: (ctx) => ({
-    dts: ctx.format === 'cjs' ? '.d.cts' : '.d.mts',
-    js: ctx.format === 'cjs' ? '.cjs' : '.mjs',
+    dts: ctx.format === "cjs" ? ".d.cts" : ".d.mts",
+    js: ctx.format === "cjs" ? ".cjs" : ".mjs",
   }),
   onSuccess: async () => {
     const start = Date.now();
     const { generateEntrypoints } = await import(
-      '../../scripts/entrypoints.js'
+      "../../scripts/entrypoints.js"
     );
     await generateEntrypoints(input);
     console.log(`Generated entrypoints in ${Date.now() - start}ms`);
@@ -63,22 +63,25 @@ export default defineConfig({
 ```typescript
 // vitest.config.ts:14-37
 const dirs = readdirSync(packagesDir)
-  .filter((it) => it !== 'tests' && !it.startsWith('.'))
-  .filter((it) => existsSync(join(packagesDir, it, 'package.json')));
+  .filter((it) => it !== "tests" && !it.startsWith("."))
+  .filter((it) => existsSync(join(packagesDir, it, "package.json")));
 
 for (const pkg of dirs.sort()) {
-  const pkgJson = join(packagesDir, pkg, 'package.json');
-  const json = JSON.parse(readFileSync(pkgJson, 'utf-8').toString());
+  const pkgJson = join(packagesDir, pkg, "package.json");
+  const json = JSON.parse(readFileSync(pkgJson, "utf-8").toString());
   const exports = json.exports;
 
   for (const key of Object.keys(exports).sort()) {
-    if (key.includes('.json')) {
+    if (key.includes(".json")) {
       continue;
     }
     const trimmed = key.slice(1);
     aliases[`@trpc/${pkg}${trimmed}`] = join(
-      packagesDir, pkg, 'src', key.slice(1),
-    ).replace(/\\/g, '/');
+      packagesDir,
+      pkg,
+      "src",
+      key.slice(1),
+    ).replace(/\\/g, "/");
   }
 }
 ```
@@ -161,6 +164,7 @@ const newContent = content.replace(
 ### CI テスト環境の最適化
 
 Vitest の設定では CI 環境に応じた最適化を行っている:
+
 - `poolOptions.threads.useAtomics` を CI のみ有効化（ローカルでは不要なオーバーヘッドを避ける）
 - `poolOptions.forks.execArgv` に `--expose-gc` を渡し、メモリリークテストで `global.gc()` を使用可能にする
 - `retry` を CI で 2 回、ローカルで 0 回に設定（フレークテスト対策と開発速度のバランス）
@@ -180,9 +184,9 @@ Vitest の設定では CI 環境に応じた最適化を行っている:
 ```typescript
 // packages/client/tsdown.config.ts:3-11
 export const input = [
-  'src/index.ts',
-  'src/links/httpBatchLink.ts',
-  'src/links/httpLink.ts',
+  "src/index.ts",
+  "src/links/httpBatchLink.ts",
+  "src/links/httpLink.ts",
   // ...
 ];
 // onSuccess で generateEntrypoints(input) を呼び出し
@@ -193,9 +197,9 @@ export const input = [
 ```typescript
 // vitest.config.ts:24-36
 for (const key of Object.keys(exports).sort()) {
-  if (key.includes('.json')) continue;
+  if (key.includes(".json")) continue;
   const trimmed = key.slice(1);
-  aliases[`@trpc/${pkg}${trimmed}`] = join(packagesDir, pkg, 'src', key.slice(1));
+  aliases[`@trpc/${pkg}${trimmed}`] = join(packagesDir, pkg, "src", key.slice(1));
 }
 ```
 
@@ -219,7 +223,7 @@ for (const key of Object.keys(exports).sort()) {
 
 ```typescript
 // Better: input 配列から自動生成
-export const input = ['src/index.ts', 'src/foo.ts'];
+export const input = ["src/index.ts", "src/foo.ts"];
 // onSuccess で generateEntrypoints(input) を実行
 ```
 

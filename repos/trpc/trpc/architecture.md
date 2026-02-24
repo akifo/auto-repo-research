@@ -25,12 +25,12 @@ tRPC の 3 層アーキテクチャ（server / client / React 統合）を横断
 
 tRPC のパッケージ間依存は厳密に一方向に制御されている。
 
-| 層 | パッケージ | 依存先 |
-|---|---|---|
-| Core | `@trpc/server` (unstable-core) | 外部依存なし |
-| Adapter | `@trpc/server/adapters/*` | Core（エイリアス `@trpc/server` 経由） |
-| Client | `@trpc/client` | Core の型 + observable/rpc のランタイム |
-| UI Integration | `@trpc/react-query`, `@trpc/tanstack-react-query` | Client + Core の型 |
+| 層             | パッケージ                                        | 依存先                                  |
+| -------------- | ------------------------------------------------- | --------------------------------------- |
+| Core           | `@trpc/server` (unstable-core)                    | 外部依存なし                            |
+| Adapter        | `@trpc/server/adapters/*`                         | Core（エイリアス `@trpc/server` 経由）  |
+| Client         | `@trpc/client`                                    | Core の型 + observable/rpc のランタイム |
+| UI Integration | `@trpc/react-query`, `@trpc/tanstack-react-query` | Client + Core の型                      |
 
 依存方向の強制は ESLint の `no-restricted-imports` ルールで実現している。`eslint.config.js` でアダプタファイルからの `@trpc/server` 直接インポートと `unstable-core-do-not-import` 直接インポートの両方を禁止し、代わりにパッケージ内のエイリアスモジュール（`src/@trpc/server/index.ts` 等）経由のインポートを強制している。
 
@@ -78,10 +78,10 @@ function createInnerProxy(
   path: readonly string[],
   memo: Record<string, unknown>,
 ) {
-  const cacheKey = path.join('.');
+  const cacheKey = path.join(".");
   memo[cacheKey] ??= new Proxy(noop, {
     get(_obj, key) {
-      if (typeof key !== 'string' || key === 'then') {
+      if (typeof key !== "string" || key === "then") {
         return undefined;
       }
       return createInnerProxy(callback, [...path, key], memo);
@@ -100,16 +100,12 @@ function createInnerProxy(
 ```typescript
 // packages/server/src/@trpc/server/http.ts:1-27
 // エイリアスモジュール: コア内部の API を選択的に再エクスポート
-export {
-  getHTTPStatusCode,
-  getHTTPStatusCodeFromError,
-  resolveResponse,
-} from '../../unstable-core-do-not-import';
+export { getHTTPStatusCode, getHTTPStatusCodeFromError, resolveResponse } from "../../unstable-core-do-not-import";
 export type {
   BaseHandlerOptions,
   HTTPBaseHandlerOptions,
   // ...
-} from '../../unstable-core-do-not-import';
+} from "../../unstable-core-do-not-import";
 ```
 
 ```typescript
@@ -198,11 +194,11 @@ export function emptyObject<TObj extends Record<string, unknown>>(): TObj {
 // packages/server/src/@trpc/server/index.ts:12-13
 // 内部名 → 公開名のリネーム
 export {
+  type AnyRouter as AnyTRPCRouter,
   createFlatProxy as createTRPCFlatProxy,
   createRecursiveProxy as createTRPCRecursiveProxy,
-  type AnyRouter as AnyTRPCRouter,
   // ...
-} from '../../unstable-core-do-not-import';
+} from "../../unstable-core-do-not-import";
 ```
 
 - **`Object.create(null)` によるプロトタイプなしオブジェクト**: ルーターのプロシージャマップなど、動的にキーが追加されるオブジェクトには `Object.create(null)` を使い、プロトタイプチェーン汚染と `hasOwnProperty` チェック漏れを防止する。
@@ -234,8 +230,8 @@ get(_obj, key) {
 // packages/server/src/unstable-core-do-not-import/parser.ts:84-140
 export function getParseFn<TType>(procedureParser: Parser): ParseFn<TType> {
   const parser = procedureParser as any;
-  if (typeof parser.parseAsync === 'function') return parser.parseAsync.bind(parser);
-  if (typeof parser.parse === 'function') return parser.parse.bind(parser);
+  if (typeof parser.parseAsync === "function") return parser.parseAsync.bind(parser);
+  if (typeof parser.parse === "function") return parser.parse.bind(parser);
   // ... 8種類のバリデータ形状を検出
 }
 ```
@@ -248,11 +244,11 @@ export function getParseFn<TType>(procedureParser: Parser): ParseFn<TType> {
 // Bad: eslint-disable によるルール回避が散在
 // packages/server/src/adapters/node-http/nodeHTTPRequestHandler.ts:20-21
 // eslint-disable-next-line no-restricted-imports
-import { getErrorShape, run } from '../../unstable-core-do-not-import';
+import { getErrorShape, run } from "../../unstable-core-do-not-import";
 
 // Better: エイリアスモジュールに必要な API を追加してから使用する
 // packages/server/src/@trpc/server/index.ts に追加
-export { run, getErrorShape } from '../../unstable-core-do-not-import';
+export { getErrorShape, run } from "../../unstable-core-do-not-import";
 ```
 
 - **`any` の多用による型安全性の穴**: Builder パターンの内部実装（`createNewBuilder`, `createResolver`）で `as any` キャストが頻出する。パブリック API は型安全だが、内部ではジェネリクスの複雑さを `any` で吸収しており、内部コード変更時に型による保護が効かない。
@@ -261,7 +257,7 @@ export { run, getErrorShape } from '../../unstable-core-do-not-import';
 // Bad: 内部の any キャスト
 // packages/server/src/unstable-core-do-not-import/procedureBuilder.ts:547
 return createResolver(
-  { ..._def, type: 'query' },
+  { ..._def, type: "query" },
   resolver,
 ) as AnyQueryProcedure;
 

@@ -25,14 +25,14 @@ tRPC の `@trpc/server` パッケージは `package.json` の `exports` フィ�
 ```typescript
 // packages/server/src/@trpc/server/index.ts:14-29
 export {
-  type inferProcedureInput,
-  type inferProcedureOutput,
   type AnyProcedure as AnyTRPCProcedure,
   type AnyRouter as AnyTRPCRouter,
-  type RouterDef as TRPCRouterDef,
+  type inferProcedureInput,
+  type inferProcedureOutput,
   type ProcedureType as TRPCProcedureType,
+  type RouterDef as TRPCRouterDef,
   // ...
-} from '../../unstable-core-do-not-import';
+} from "../../unstable-core-do-not-import";
 ```
 
 **第 2 層: エコシステム向け内部 API**（`@trpc/server/unstable-core-do-not-import`）は tRPC エコシステムのパッケージ（`@trpc/client`, `@trpc/tanstack-react-query` 等）が内部的に使う API を公開する。名前に「DO NOT IMPORT」を含めることで、外部ユーザーの利用を抑止している。
@@ -122,12 +122,10 @@ export const initTRPC = new TRPCBuilder();
 
 ```typescript
 // packages/server/src/unstable-core-do-not-import/types.ts:117-122
-export type ValidateShape<TActualShape, TExpectedShape> =
-  TActualShape extends TExpectedShape
-    ? Exclude<keyof TActualShape, keyof TExpectedShape> extends never
-      ? TActualShape
-      : TExpectedShape
-    : never;
+export type ValidateShape<TActualShape, TExpectedShape> = TActualShape extends TExpectedShape
+  ? Exclude<keyof TActualShape, keyof TExpectedShape> extends never ? TActualShape
+  : TExpectedShape
+  : never;
 ```
 
 ### Duck Typing によるバリデータ非依存設計
@@ -138,22 +136,22 @@ export type ValidateShape<TActualShape, TExpectedShape> =
 // packages/server/src/unstable-core-do-not-import/parser.ts:84-140
 export function getParseFn<TType>(procedureParser: Parser): ParseFn<TType> {
   const parser = procedureParser as any;
-  const isStandardSchema = '~standard' in parser;
+  const isStandardSchema = "~standard" in parser;
 
-  if (typeof parser === 'function' && typeof parser.assert === 'function') {
+  if (typeof parser === "function" && typeof parser.assert === "function") {
     return parser.assert.bind(parser); // ArkType
   }
-  if (typeof parser === 'function' && !isStandardSchema) {
+  if (typeof parser === "function" && !isStandardSchema) {
     return parser; // Valibot / custom
   }
-  if (typeof parser.parseAsync === 'function') {
+  if (typeof parser.parseAsync === "function") {
     return parser.parseAsync.bind(parser); // Zod
   }
   // ... 他のライブラリ対応
   if (isStandardSchema) {
-    return async (value) => { /* Standard Schema v1 */ };
+    return async (value) => {/* Standard Schema v1 */};
   }
-  throw new Error('Could not find a validator fn');
+  throw new Error("Could not find a validator fn");
 }
 ```
 
@@ -200,19 +198,17 @@ lazy as experimental_lazy,
 
 ```typescript
 // ユーザーが誤って使おうとすると、インポート文自体が警告になる
-import { something } from '@trpc/server/unstable-core-do-not-import';
+import { something } from "@trpc/server/unstable-core-do-not-import";
 ```
 
 - **ValidateShape による余分なプロパティの検出**: TypeScript の構造的型付けではオプションオブジェクトに余分なプロパティを渡してもエラーにならない場合がある。`ValidateShape` 型はこの問題を解決し、タイポや廃止されたオプションの指定をコンパイル時に検出する。
 
 ```typescript
 // packages/server/src/unstable-core-do-not-import/types.ts:117-122
-export type ValidateShape<TActualShape, TExpectedShape> =
-  TActualShape extends TExpectedShape
-    ? Exclude<keyof TActualShape, keyof TExpectedShape> extends never
-      ? TActualShape
-      : TExpectedShape
-    : never;
+export type ValidateShape<TActualShape, TExpectedShape> = TActualShape extends TExpectedShape
+  ? Exclude<keyof TActualShape, keyof TExpectedShape> extends never ? TActualShape
+  : TExpectedShape
+  : never;
 ```
 
 - **リネームエクスポートによるプレフィクス付き公開型**: 内部で `AnyRouter` として使う型を公開 API では `AnyTRPCRouter` としてリネームエクスポートする。これにより内部のコードは短い名前で簡潔に書きつつ、外部ユーザーのコードでは名前衝突を避けられる。
@@ -228,9 +224,9 @@ type AnyRouter as AnyTRPCRouter,
 ```typescript
 // packages/server/src/unstable-core-do-not-import/router.ts:210-221
 const reservedWords = [
-  'then',  // Promise.resolve(proxy) との衝突防止
-  'call',  // fn.call() との衝突防止
-  'apply', // fn.apply() との衝突防止
+  "then", // Promise.resolve(proxy) との衝突防止
+  "call", // fn.call() との衝突防止
+  "apply", // fn.apply() との衝突防止
 ];
 ```
 
@@ -241,10 +237,10 @@ const reservedWords = [
 ```typescript
 // Bad: ESLint コメントで境界を回避
 // eslint-disable-next-line no-restricted-imports
-import { run } from '../unstable-core-do-not-import';
+import { run } from "../unstable-core-do-not-import";
 
 // Better: @trpc/server 経由のインポートで代替可能な API を提供する
-import { run } from '../@trpc/server/utils';
+import { run } from "../@trpc/server/utils";
 ```
 
 - **型パラメータの `any` での妥協**: `AnyProcedureBuilder` のように全型パラメータを `any` にしたワイルドカード型は便利だが、型安全性の穴になる。tRPC のコード内にも `FIXME typecast shouldn't be needed` というコメントがあり、改善の余地を認識している。

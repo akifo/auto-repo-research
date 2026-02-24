@@ -40,12 +40,12 @@ async function callRecursive(
       input: opts.input,
       next(_nextOpts?: any) {
         const nextOpts = _nextOpts as
-          | { ctx?: Record<string, unknown>; input?: unknown; getRawInput?: GetRawInputFn }
+          | { ctx?: Record<string, unknown>; input?: unknown; getRawInput?: GetRawInputFn; }
           | undefined;
         return callRecursive(index + 1, _def, {
           ...opts,
           ctx: nextOpts?.ctx ? { ...opts.ctx, ...nextOpts.ctx } : opts.ctx,
-          input: nextOpts && 'input' in nextOpts ? nextOpts.input : opts.input,
+          input: nextOpts && "input" in nextOpts ? nextOpts.input : opts.input,
           getRawInput: nextOpts?.getRawInput ?? opts.getRawInput,
         });
       },
@@ -69,8 +69,8 @@ async function callRecursive(
 
 ```typescript
 // packages/server/src/unstable-core-do-not-import/middleware.ts:8-19
-export const middlewareMarker = 'middlewareMarker' as 'middlewareMarker' & {
-  __brand: 'middlewareMarker';
+export const middlewareMarker = "middlewareMarker" as "middlewareMarker" & {
+  __brand: "middlewareMarker";
 };
 
 interface MiddlewareResultBase {
@@ -93,18 +93,18 @@ interface MiddlewareResultBase {
 const barMiddleware = fooMiddleware.unstable_pipe((opts) => {
   expectTypeOf(opts.ctx).toEqualTypeOf<{
     user: User;
-    foo: 'foo';
+    foo: "foo";
   }>();
-  return opts.next({ ctx: { bar: 'bar' as const } });
+  return opts.next({ ctx: { bar: "bar" as const } });
 });
 
 const bazMiddleware = barMiddleware.unstable_pipe((opts) => {
   expectTypeOf(opts.ctx).toEqualTypeOf<{
     user: User;
-    foo: 'foo';
-    bar: 'bar';
+    foo: "foo";
+    bar: "bar";
   }>();
-  return opts.next({ ctx: { baz: 'baz' as const } });
+  return opts.next({ ctx: { baz: "baz" as const } });
 });
 ```
 
@@ -117,23 +117,21 @@ const bazMiddleware = barMiddleware.unstable_pipe((opts) => {
 ```typescript
 // packages/server/src/unstable-core-do-not-import/middleware.ts:186-213
 export function createInputMiddleware<TInput>(parse: ParseFn<TInput>) {
-  const inputMiddleware: AnyMiddlewareFunction =
-    async function inputValidatorMiddleware(opts) {
-      let parsedInput: ReturnType<typeof parse>;
-      const rawInput = await opts.getRawInput();
-      try {
-        parsedInput = await parse(rawInput);
-      } catch (cause) {
-        throw new TRPCError({ code: 'BAD_REQUEST', cause });
-      }
-      // Multiple input parsers
-      const combinedInput =
-        isObject(opts.input) && isObject(parsedInput)
-          ? { ...opts.input, ...parsedInput }
-          : parsedInput;
-      return opts.next({ input: combinedInput });
-    };
-  inputMiddleware._type = 'input';
+  const inputMiddleware: AnyMiddlewareFunction = async function inputValidatorMiddleware(opts) {
+    let parsedInput: ReturnType<typeof parse>;
+    const rawInput = await opts.getRawInput();
+    try {
+      parsedInput = await parse(rawInput);
+    } catch (cause) {
+      throw new TRPCError({ code: "BAD_REQUEST", cause });
+    }
+    // Multiple input parsers
+    const combinedInput = isObject(opts.input) && isObject(parsedInput)
+      ? { ...opts.input, ...parsedInput }
+      : parsedInput;
+    return opts.next({ input: combinedInput });
+  };
+  inputMiddleware._type = "input";
   return inputMiddleware;
 }
 ```
@@ -169,25 +167,24 @@ concat<$Context, $Meta, $ContextOverrides, $InputIn, $InputOut, $OutputIn, $Outp
 // packages/server/src/unstable-core-do-not-import/middleware.ts:219-243
 // 出力バリデーションミドルウェア: next() の結果を後処理する before/after パターン
 export function createOutputMiddleware<TOutput>(parse: ParseFn<TOutput>) {
-  const outputMiddleware: AnyMiddlewareFunction =
-    async function outputValidatorMiddleware({ next }) {
-      const result = await next();
-      if (!result.ok) {
-        // pass through failures without validating
-        return result;
-      }
-      try {
-        const data = await parse(result.data);
-        return { ...result, data };
-      } catch (cause) {
-        throw new TRPCError({
-          message: 'Output validation failed',
-          code: 'INTERNAL_SERVER_ERROR',
-          cause,
-        });
-      }
-    };
-  outputMiddleware._type = 'output';
+  const outputMiddleware: AnyMiddlewareFunction = async function outputValidatorMiddleware({ next }) {
+    const result = await next();
+    if (!result.ok) {
+      // pass through failures without validating
+      return result;
+    }
+    try {
+      const data = await parse(result.data);
+      return { ...result, data };
+    } catch (cause) {
+      throw new TRPCError({
+        message: "Output validation failed",
+        code: "INTERNAL_SERVER_ERROR",
+        cause,
+      });
+    }
+  };
+  outputMiddleware._type = "output";
   return outputMiddleware;
 }
 ```
@@ -215,7 +212,7 @@ output(output: Parser) {
 // packages/server/src/unstable-core-do-not-import/procedureBuilder.ts:568-584
 // リゾルバも最後のミドルウェアとしてラップされる
 function createResolver(
-  _defIn: AnyProcedureBuilderDef & { type: ProcedureType },
+  _defIn: AnyProcedureBuilderDef & { type: ProcedureType; },
   resolver: AnyResolver,
 ) {
   const finalBuilder = createNewBuilder(_defIn, {
@@ -245,10 +242,9 @@ function createMiddlewareInner(
   return {
     _middlewares: middlewares,
     unstable_pipe(middlewareBuilderOrFn) {
-      const pipedMiddleware =
-        '_middlewares' in middlewareBuilderOrFn
-          ? middlewareBuilderOrFn._middlewares
-          : [middlewareBuilderOrFn];
+      const pipedMiddleware = "_middlewares" in middlewareBuilderOrFn
+        ? middlewareBuilderOrFn._middlewares
+        : [middlewareBuilderOrFn];
       return createMiddlewareInner([...middlewares, ...pipedMiddleware]);
     },
   };
@@ -294,9 +290,9 @@ middlewares: [async function resolveMiddleware(opts) { ... }]
 ```typescript
 // Good: 差分のみを渡す
 const authMiddleware = t.middleware((opts) => {
-  if (!opts.ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
+  if (!opts.ctx.user) throw new TRPCError({ code: "UNAUTHORIZED" });
   return opts.next({
-    ctx: { user: opts.ctx.user },  // non-nullable に絞る
+    ctx: { user: opts.ctx.user }, // non-nullable に絞る
   });
 });
 ```
@@ -329,7 +325,7 @@ export type TypeError<TMessage extends string> = TMessage & {
 ```typescript
 // Bad: next() を呼ばずに独自値を返そうとする
 const badMiddleware = t.middleware((opts) => {
-  return { ok: true, data: 'shortcut' };
+  return { ok: true, data: "shortcut" };
   // 型エラー: marker プロパティが不足
 });
 
@@ -345,7 +341,7 @@ const goodMiddleware = t.middleware((opts) => {
 // Bad: 既存プロパティを異なる型で暗黙にオーバーライド
 const overrideMiddleware = t.middleware((opts) => {
   return opts.next({
-    ctx: { init: 'override' as const },  // init の型が変わる
+    ctx: { init: "override" as const }, // init の型が変わる
   });
 });
 
@@ -362,12 +358,12 @@ const safeMiddleware = t.middleware((opts) => {
 ```typescript
 // Bad: fooMiddleware が init を上書きした後、barMiddleware が元の init を期待する
 const fooMiddleware = t.middleware((opts) => {
-  return opts.next({ ctx: { init: { a: 'a' as const }, foo: 'foo' as const } });
+  return opts.next({ ctx: { init: { a: "a" as const }, foo: "foo" as const } });
 });
 const barMiddleware = t.middleware((opts) => {
   // opts.ctx.init は { a: 'a'; b: 'b'; c: { d: 'd'; e: 'e' } } を期待するが
   // foo の後では { a: 'a' } になっている
-  return opts.next({ ctx: { bar: 'bar' as const } });
+  return opts.next({ ctx: { bar: "bar" as const } });
 });
 // @ts-expect-error barMiddleware accessing invalid property
 const combined = fooMiddleware.unstable_pipe(barMiddleware);

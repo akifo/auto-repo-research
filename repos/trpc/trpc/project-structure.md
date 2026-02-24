@@ -34,6 +34,7 @@ tRPC のモノレポは、pnpm workspace + Turborepo + Lerna(パブリッシュ�
 `packages/server/src/@trpc/server/` というディレクトリが存在し、adapter コードはここを相対パスで参照する。このディレクトリは `@trpc/server` パッケージの公開 API と同等のエクスポートを持ち、adapter が外部パッケージと同じインターフェースでコアにアクセスする「自己消費」を実現する。
 
 adapter がコアにアクセスする際のインポートパス:
+
 - 許可: `../../@trpc/server`（公開 API と同等）
 - 許可: `../../@trpc/server/http`（subpath export と同等）
 - 禁止: `../../unstable-core-do-not-import`（eslint-disable コメント必須）
@@ -69,30 +70,29 @@ adapter がコアにアクセスする際のインポートパス:
  * - make TypeScript happy and prevent _"The inferred type of 'createContext' cannot be named without a reference to [...]"_.
  * - the the glue between the official `@trpc/*`-packages
  *
- *
  * If you seem to need to import anything from here, please open an issue at https://github.com/trpc/trpc/issues
  */
-export * from './unstable-core-do-not-import/clientish/inference';
+export * from "./unstable-core-do-not-import/clientish/inference";
 ```
 
 ```typescript
 // packages/server/src/@trpc/server/index.ts:1-14
 export {
-  TRPCError,
-  experimental_standaloneMiddleware,
-  experimental_standaloneMiddleware as experimental_trpcMiddleware,
-  initTRPC,
-  getTRPCErrorFromUnknown,
-  transformTRPCResponse,
   createFlatProxy as createTRPCFlatProxy,
   createRecursiveProxy as createTRPCRecursiveProxy,
+  experimental_standaloneMiddleware,
+  experimental_standaloneMiddleware as experimental_trpcMiddleware,
+  getTRPCErrorFromUnknown,
+  initTRPC,
+  transformTRPCResponse,
+  TRPCError,
   // ...型エクスポートは省略
-} from '../../unstable-core-do-not-import';
+} from "../../unstable-core-do-not-import";
 ```
 
 ```typescript
 // packages/server/src/index.ts:1
-export * from './@trpc/server';
+export * from "./@trpc/server";
 ```
 
 ```javascript
@@ -122,27 +122,30 @@ export * from './@trpc/server';
 ```typescript
 // vitest.config.ts:18-36 (エイリアス動的生成)
 for (const pkg of dirs.sort()) {
-  const pkgJson = join(packagesDir, pkg, 'package.json');
-  const json = JSON.parse(readFileSync(pkgJson, 'utf-8').toString());
+  const pkgJson = join(packagesDir, pkg, "package.json");
+  const json = JSON.parse(readFileSync(pkgJson, "utf-8").toString());
   const exports = json.exports;
 
   for (const key of Object.keys(exports).sort()) {
-    if (key.includes('.json')) {
+    if (key.includes(".json")) {
       continue;
     }
     const trimmed = key.slice(1);
     aliases[`@trpc/${pkg}${trimmed}`] = join(
-      packagesDir, pkg, 'src', key.slice(1),
-    ).replace(/\\/g, '/');
+      packagesDir,
+      pkg,
+      "src",
+      key.slice(1),
+    ).replace(/\\/g, "/");
   }
 }
 ```
 
 ```typescript
 // packages/server/src/adapters/express.ts:10-13
-import type { AnyRouter } from '../@trpc/server';
+import type { AnyRouter } from "../@trpc/server";
 // eslint-disable-next-line no-restricted-imports
-import { run } from '../unstable-core-do-not-import';
+import { run } from "../unstable-core-do-not-import";
 ```
 
 ## パターンカタログ
@@ -206,17 +209,17 @@ patterns: [
 ```typescript
 // Bad: eslint-disable が複数蓄積
 // eslint-disable-next-line no-restricted-imports
-import { isAsyncIterable, isObject, isTrackedEnvelope, run, type MaybePromise } from '../unstable-core-do-not-import';
+import { isAsyncIterable, isObject, isTrackedEnvelope, type MaybePromise, run } from "../unstable-core-do-not-import";
 // eslint-disable-next-line no-restricted-imports
-import type { Result } from '../unstable-core-do-not-import';
+import type { Result } from "../unstable-core-do-not-import";
 // eslint-disable-next-line no-restricted-imports
-import { iteratorResource } from '../unstable-core-do-not-import/stream/utils/asyncIterable';
+import { iteratorResource } from "../unstable-core-do-not-import/stream/utils/asyncIterable";
 ```
 
 ```typescript
 // Better: 頻出するユーティリティは subpath export に昇格
-import { isAsyncIterable, isObject, run } from '../@trpc/server/shared';
-import type { Result, MaybePromise } from '../@trpc/server/shared';
+import { isAsyncIterable, isObject, run } from "../@trpc/server/shared";
+import type { MaybePromise, Result } from "../@trpc/server/shared";
 ```
 
 - **仮想パッケージディレクトリの認知負荷**: `src/@trpc/server/` というディレクトリ名はファイルシステム上で `@` プレフィクスを持ち、npm スコープパッケージのように見えるが実際はローカルの re-export 層である。初見の開発者にとって混乱を招きやすい。ただし、公開 API との 1:1 対応を維持するという目的には適合している。

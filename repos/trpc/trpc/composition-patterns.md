@@ -45,10 +45,9 @@ function createNewBuilder(
 
 ```typescript
 // middleware.ts:200-210
-const combinedInput =
-  isObject(opts.input) && isObject(parsedInput)
-    ? { ...opts.input, ...parsedInput }
-    : parsedInput;
+const combinedInput = isObject(opts.input) && isObject(parsedInput)
+  ? { ...opts.input, ...parsedInput }
+  : parsedInput;
 return opts.next({ input: combinedInput });
 ```
 
@@ -70,14 +69,14 @@ concat(builder) {
 ```typescript
 // procedureBuilder.test.ts:300-341
 function createLib() {
-  const t = initTRPC.context<{ foo: string }>().meta<{ foo: string }>().create();
+  const t = initTRPC.context<{ foo: string; }>().meta<{ foo: string; }>().create();
   return t.procedure
     .use((opts) => opts.next({ ctx: { __fromLib: true } }))
     .input(z.object({ foo: z.string() }));
 }
 const libBuilder = createLib();
-const t = initTRPC.context<{ foo: string; bar: string }>()
-  .meta<{ foo: string; bar: string }>().create();
+const t = initTRPC.context<{ foo: string; bar: string; }>()
+  .meta<{ foo: string; bar: string; }>().create();
 const libProc = t.procedure.unstable_concat(libBuilder).query((opts) => {
   return { input: opts.input, ctx: opts.ctx };
 });
@@ -93,7 +92,7 @@ function createMiddlewareInner(middlewares: AnyMiddlewareFunction[]): AnyMiddlew
   return {
     _middlewares: middlewares,
     unstable_pipe(middlewareBuilderOrFn) {
-      const pipedMiddleware = '_middlewares' in middlewareBuilderOrFn
+      const pipedMiddleware = "_middlewares" in middlewareBuilderOrFn
         ? middlewareBuilderOrFn._middlewares
         : [middlewareBuilderOrFn];
       return createMiddlewareInner([...middlewares, ...pipedMiddleware]);
@@ -146,10 +145,10 @@ builder: Overwrite<TContext, TContextOverrides> extends $Context
 
 ```typescript
 // utils.ts:1-4 / procedureBuilder.ts:37-45
-type UnsetMarker = 'unsetMarker' & { __brand: 'unsetMarker' };
-type IntersectIfDefined<TType, TWith> = TType extends UnsetMarker
-  ? TWith
-  : TWith extends UnsetMarker ? TType : Simplify<TType & TWith>;
+type UnsetMarker = "unsetMarker" & { __brand: "unsetMarker"; };
+type IntersectIfDefined<TType, TWith> = TType extends UnsetMarker ? TWith
+  : TWith extends UnsetMarker ? TType
+  : Simplify<TType & TWith>;
 ```
 
 - **重複キー衝突の即座検出**: `mergeWithoutOverrides` がプロパティ重複を例外として投げ、`Object.assign` のサイレント上書きを防止する（`utils.ts:10-25`）。
@@ -160,7 +159,7 @@ type IntersectIfDefined<TType, TWith> = TType extends UnsetMarker
 
 ```typescript
 // Bad: 既存プロパティの型を暗黙に変更
-return opts.next({ ctx: { init: 'override' as const } });
+return opts.next({ ctx: { init: "override" as const } });
 
 // Better: 新しいプロパティとして追加
 return opts.next({ ctx: { processedInit: opts.ctx.init.foundation } });

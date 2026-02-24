@@ -70,11 +70,11 @@ function createInnerProxy(
   path: readonly string[],
   memo: Record<string, unknown>,
 ) {
-  const cacheKey = path.join('.');
+  const cacheKey = path.join(".");
 
   memo[cacheKey] ??= new Proxy(noop, {
     get(_obj, key) {
-      if (typeof key !== 'string' || key === 'then') {
+      if (typeof key !== "string" || key === "then") {
         return undefined;
       }
       return createInnerProxy(callback, [...path, key], memo);
@@ -82,12 +82,12 @@ function createInnerProxy(
     apply(_1, _2, args) {
       const lastOfPath = path[path.length - 1];
       let opts = { args, path };
-      if (lastOfPath === 'call') {
+      if (lastOfPath === "call") {
         opts = {
           args: args.length >= 2 ? [args[1]] : [],
           path: path.slice(0, -1),
         };
-      } else if (lastOfPath === 'apply') {
+      } else if (lastOfPath === "apply") {
         opts = {
           args: args.length >= 2 ? args[1] : [],
           path: path.slice(0, -1),
@@ -112,7 +112,7 @@ export function createTRPCClientProxy<TRouter extends AnyRouter>(
   const proxy = createRecursiveProxy<TRPCClient<TRouter>>(({ path, args }) => {
     const pathCopy = [...path];
     const procedureType = clientCallTypeToProcedureType(pathCopy.pop()!);
-    const fullPath = pathCopy.join('.');
+    const fullPath = pathCopy.join(".");
     return (client[procedureType] as any)(fullPath, ...(args as any));
   });
   return createFlatProxy<TRPCClient<TRouter>>((key) => {
@@ -128,7 +128,7 @@ export function createTRPCClientProxy<TRouter extends AnyRouter>(
 // packages/react-query/src/createTRPCReact.tsx:489-506
 // React 統合での FlatProxy 合成 — トップレベルフック + プロシージャプロキシ
 return createFlatProxy<CreateHooksInternal>((key) => {
-  if (key === 'useContext' || key === 'useUtils') {
+  if (key === "useContext" || key === "useUtils") {
     return () => {
       const context = trpc.useUtils();
       return React.useMemo(() => {
@@ -151,10 +151,10 @@ export const createTinyRPCClient = <TRouter extends AnyTRPCRouter>(
 ) =>
   createRecursiveProxy(async (opts) => {
     const path = [...opts.path];
-    const method = path.pop()! as 'mutate' | 'query';
-    const dotPath = path.join('.');
+    const method = path.pop()! as "mutate" | "query";
+    const dotPath = path.join(".");
     // ... fetch ロジック
-  }, []) as DecorateRouterRecord<TRouter['_def']['record']>;
+  }, []) as DecorateRouterRecord<TRouter["_def"]["record"]>;
 ```
 
 ## パターンカタログ
@@ -209,9 +209,9 @@ export function emptyObject<TObj extends Record<string, unknown>>(): TObj {
 
 ```typescript
 // packages/server/src/unstable-core-do-not-import/types.ts:159-162
-export type ProtectedIntersection<TType, TWith> = keyof TType &
-  keyof TWith extends never
-  ? TType & TWith
+export type ProtectedIntersection<TType, TWith> =
+  & keyof TType
+  & keyof TWith extends never ? TType & TWith
   : IntersectionError<string & keyof TType & keyof TWith>;
 ```
 
@@ -248,8 +248,8 @@ function createInnerProxy(callback, path) {
 
 // Better: ドットパスをキーにメモ化
 function createInnerProxy(callback, path, memo) {
-  const cacheKey = path.join('.');
-  memo[cacheKey] ??= new Proxy(noop, { /* ... */ });
+  const cacheKey = path.join(".");
+  memo[cacheKey] ??= new Proxy(noop, {/* ... */});
   return memo[cacheKey];
 }
 ```

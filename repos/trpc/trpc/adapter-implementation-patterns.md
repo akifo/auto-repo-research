@@ -28,16 +28,16 @@ tRPC は 8 以上のフレームワーク向けアダプター（Express, Fastif
 3. **`resolveResponse()` への委譲**: 変換済み `Request` とコンテキスト生成関数を渡す
 4. **レスポンス書き戻し**: 得られた `Response` をフレームワーク固有の応答に変換
 
-| アダプター | 変換方式 | resolveResponse 呼び出し | 応答処理 |
-|---|---|---|---|
-| Fetch | 不要（既に `Request`） | 直接呼び出し | `Response` をそのまま返却 |
-| Node HTTP | `incomingMessageToRequest()` | `nodeHTTPRequestHandler` 経由 | `writeResponse()` |
-| Express | Node HTTP に委譲 | `nodeHTTPRequestHandler` 経由 | `writeResponse()` |
-| Next.js Pages | Node HTTP に委譲 | `nodeHTTPRequestHandler` 経由 | `writeResponse()` |
-| Standalone | Node HTTP に委譲 | `nodeHTTPRequestHandler` 経由 | `writeResponse()` |
-| Fastify | `incomingMessageToRequest(req.raw)` | 直接呼び出し | `res.send(response)` |
-| AWS Lambda | `getPlanner()` で `Request` 構築 | 直接呼び出し | `planner.toResult()` |
-| WebSocket | 別アーキテクチャ | `callTRPCProcedure` 直接 | `client.send()` |
+| アダプター    | 変換方式                            | resolveResponse 呼び出し      | 応答処理                  |
+| ------------- | ----------------------------------- | ----------------------------- | ------------------------- |
+| Fetch         | 不要（既に `Request`）              | 直接呼び出し                  | `Response` をそのまま返却 |
+| Node HTTP     | `incomingMessageToRequest()`        | `nodeHTTPRequestHandler` 経由 | `writeResponse()`         |
+| Express       | Node HTTP に委譲                    | `nodeHTTPRequestHandler` 経由 | `writeResponse()`         |
+| Next.js Pages | Node HTTP に委譲                    | `nodeHTTPRequestHandler` 経由 | `writeResponse()`         |
+| Standalone    | Node HTTP に委譲                    | `nodeHTTPRequestHandler` 経由 | `writeResponse()`         |
+| Fastify       | `incomingMessageToRequest(req.raw)` | 直接呼び出し                  | `res.send(response)`      |
+| AWS Lambda    | `getPlanner()` で `Request` 構築    | 直接呼び出し                  | `planner.toResult()`      |
+| WebSocket     | 別アーキテクチャ                    | `callTRPCProcedure` 直接      | `client.send()`           |
 
 ### `@trpc/server` エイリアスによるアーキテクチャ境界
 
@@ -45,11 +45,7 @@ tRPC は 8 以上のフレームワーク向けアダプター（Express, Fastif
 
 ```ts
 // packages/server/src/@trpc/server/http.ts:1-6
-export {
-  getHTTPStatusCode,
-  getHTTPStatusCodeFromError,
-  resolveResponse,
-} from '../../unstable-core-do-not-import';
+export { getHTTPStatusCode, getHTTPStatusCodeFromError, resolveResponse } from "../../unstable-core-do-not-import";
 ```
 
 各アダプターファイルの冒頭にはサードパーティ向けの案内コメントが統一的に記載されている:
@@ -100,7 +96,7 @@ AWS Lambda は API Gateway v1 と v2 の 2 つの異なるイベント形式を�
 // packages/server/src/adapters/aws-lambda/getPlanner.ts:38-45
 interface Processor<TEvent extends LambdaEvent> {
   getTRPCPath: (event: TEvent) => string;
-  url(event: TEvent): Pick<URL, 'hostname' | 'pathname' | 'search'>;
+  url(event: TEvent): Pick<URL, "hostname" | "pathname" | "search">;
   getHeaders: (event: TEvent) => Headers;
   getMethod: (event: TEvent) => string;
   toResult: (response: Response) => Promise<inferAPIGWReturn<TEvent>>;
@@ -158,8 +154,10 @@ export async function fetchRequestHandler<TRouter extends AnyRouter>(
     createContext,
     path,
     error: null,
-    onError(o) { opts?.onError?.({ ...o, req: opts.req }); },
-    responseMeta(data) { /* ... */ },
+    onError(o) {
+      opts?.onError?.({ ...o, req: opts.req });
+    },
+    responseMeta(data) {/* ... */},
   });
 }
 ```
@@ -180,14 +178,14 @@ onError(o) {
 
 ```ts
 // packages/server/src/adapters/node-http/incomingMessageToRequest.ts:6-72
-function createBody(req: NodeHTTPRequest, opts: { maxBodySize: number | null }): RequestInit['body'] {
-  if ('body' in req) {
-    if (typeof req.body === 'string') return req.body;
+function createBody(req: NodeHTTPRequest, opts: { maxBodySize: number | null; }): RequestInit["body"] {
+  if ("body" in req) {
+    if (typeof req.body === "string") return req.body;
     if (req.body instanceof IncomingMessage) return req.body as any;
     return JSON.stringify(req.body);
   }
   // ストリームとして ReadableStream を構築
-  return new ReadableStream({ /* ... maxBodySize 制限付き */ });
+  return new ReadableStream({/* ... maxBodySize 制限付き */});
 }
 ```
 
@@ -198,7 +196,7 @@ function createBody(req: NodeHTTPRequest, opts: { maxBodySize: number | null }):
 ```ts
 // Bad: アダプター内でストリーム判定
 async function myAdapter(req, res) {
-  if (req.headers['trpc-accept'] === 'application/jsonl') {
+  if (req.headers["trpc-accept"] === "application/jsonl") {
     // ストリーム処理...
   } else {
     // 通常処理...
@@ -207,7 +205,7 @@ async function myAdapter(req, res) {
 
 // Better: コアに委譲
 async function myAdapter(req, res) {
-  const response = await resolveResponse({ req, /* ... */ });
+  const response = await resolveResponse({ req /* ... */ });
   // コアがストリーム/通常の分岐を内部で処理する
 }
 ```
@@ -217,10 +215,10 @@ async function myAdapter(req, res) {
 ```ts
 // Bad: packages/server/src/adapters/next-app-dir/nextAppDirCaller.ts:3-16
 // eslint-disable-next-line no-restricted-imports
-import { formDataToObject } from '../../unstable-core-do-not-import';
+import { formDataToObject } from "../../unstable-core-do-not-import";
 // FIXME: fix lint rule, this is ok
 // eslint-disable-next-line no-restricted-imports
-import type { ErrorHandlerOptions } from '../../unstable-core-do-not-import/procedure';
+import type { ErrorHandlerOptions } from "../../unstable-core-do-not-import/procedure";
 ```
 
 ## 導出ルール

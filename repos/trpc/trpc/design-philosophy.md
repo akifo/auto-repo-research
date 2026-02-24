@@ -104,18 +104,18 @@ memo[cacheKey] ??= new Proxy(noop, {
 // packages/server/src/unstable-core-do-not-import/parser.ts:84-140
 export function getParseFn<TType>(procedureParser: Parser): ParseFn<TType> {
   const parser = procedureParser as any;
-  const isStandardSchema = '~standard' in parser;
-  if (typeof parser === 'function' && typeof parser.assert === 'function') {
+  const isStandardSchema = "~standard" in parser;
+  if (typeof parser === "function" && typeof parser.assert === "function") {
     return parser.assert.bind(parser);
   }
-  if (typeof parser === 'function' && !isStandardSchema) {
+  if (typeof parser === "function" && !isStandardSchema) {
     return parser;
   }
-  if (typeof parser.parseAsync === 'function') {
+  if (typeof parser.parseAsync === "function") {
     return parser.parseAsync.bind(parser);
   }
   // ... 他のバリデータ形式へのフォールバック
-  throw new Error('Could not find a validator fn');
+  throw new Error("Could not find a validator fn");
 }
 ```
 
@@ -164,8 +164,8 @@ export function mergeWithoutOverrides<TType extends Record<string, unknown>>(
 
 ```typescript
 // packages/server/src/unstable-core-do-not-import/utils.ts:1-4
-export type UnsetMarker = 'unsetMarker' & {
-  __brand: 'unsetMarker';
+export type UnsetMarker = "unsetMarker" & {
+  __brand: "unsetMarker";
 };
 ```
 
@@ -210,10 +210,10 @@ export interface ProcedureBuilder<TTypes extends ProcedureTypes> { ... }
 
 ```typescript
 // Bad: 内部パスから直接インポート（サードパーティが模倣するリスク）
-import { createRecursiveProxy } from '@trpc/server/unstable-core-do-not-import';
+import { createRecursiveProxy } from "@trpc/server/unstable-core-do-not-import";
 
 // Better: エコシステム向けの安定した拡張ポイントを別途提供する
-import { createRecursiveProxy } from '@trpc/server/extensibility';
+import { createRecursiveProxy } from "@trpc/server/extensibility";
 ```
 
 ## 導出ルール

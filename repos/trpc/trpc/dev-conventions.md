@@ -131,9 +131,9 @@ export function fakeTimersResource() {
 
 ```typescript
 // packages/server/src/adapters/standalone.ts:15-16
-import { type AnyRouter } from '../@trpc/server';
+import { type AnyRouter } from "../@trpc/server";
 // eslint-disable-next-line no-restricted-imports
-import { run } from '../unstable-core-do-not-import';
+import { run } from "../unstable-core-do-not-import";
 ```
 
 このファサードは `unstable-core-do-not-import` から re-export する薄いレイヤーであり、サードパーティアダプタ作者が `@trpc/server` の公開 API のみで実装できることを保証する設計意図がある。ただし、一部のアダプタ（`ws.ts`, `nextAppDirCaller.ts`）では `eslint-disable-next-line` で例外的に `unstable-core-do-not-import` を直接参照しており、ファサードの網羅性が完全ではない現状も確認できる。
@@ -210,17 +210,17 @@ await using ctx = testServerAndClientResource(appRouter, { ... });
 // Bad: eslint-disable が複数箇所に散在
 // packages/server/src/adapters/next-app-dir/nextAppDirCaller.ts:3-12
 // eslint-disable-next-line no-restricted-imports
-import { formDataToObject } from '../../unstable-core-do-not-import';
+import { formDataToObject } from "../../unstable-core-do-not-import";
 // FIXME: fix lint rule, this is ok
 // eslint-disable-next-line no-restricted-imports
-import type { ErrorHandlerOptions } from '../../unstable-core-do-not-import/procedure';
+import type { ErrorHandlerOptions } from "../../unstable-core-do-not-import/procedure";
 ```
 
 ```typescript
 // Better: ファサードに不足分を追加して eslint-disable を排除
 // @trpc/server/index.ts に export を追加
-export { formDataToObject } from '../../unstable-core-do-not-import';
-export type { ErrorHandlerOptions } from '../../unstable-core-do-not-import/procedure';
+export { formDataToObject } from "../../unstable-core-do-not-import";
+export type { ErrorHandlerOptions } from "../../unstable-core-do-not-import/procedure";
 ```
 
 - **max-params: 3 の形骸化リスク**: 関数パラメータを最大3に制限しているが、options オブジェクト内のプロパティ数に制限がないため、実質的にオブジェクトの中に多数のパラメータが隠れる。規約の意図（認知負荷の低減）を実現するには、options オブジェクトのプロパティ数にも目安を設けるべきである。
@@ -228,9 +228,13 @@ export type { ErrorHandlerOptions } from '../../unstable-core-do-not-import/proc
 ```typescript
 // Bad: パラメータは1つだが、プロパティが多すぎる
 function createHandler(opts: {
-  router: AnyRouter; basePath: string; createContext: Function;
-  onError: Function; transformer: any; batching: any; /* ... */
-}) { }
+  router: AnyRouter;
+  basePath: string;
+  createContext: Function;
+  onError: Function;
+  transformer: any;
+  batching: any; /* ... */
+}) {}
 
 // Better: 関連するプロパティをサブオブジェクトに構造化
 function createHandler(opts: {
@@ -238,7 +242,7 @@ function createHandler(opts: {
   basePath: string;
   context: ContextConfig;
   errorHandling: ErrorConfig;
-}) { }
+}) {}
 ```
 
 ## 導出ルール
