@@ -1,0 +1,117 @@
+url: https://github.com/vercel/chat
+stars: 388
+language: TypeScript
+license: MIT
+description: "A unified TypeScript SDK for building chat bots across Slack, Microsoft Teams, Google Chat, Discord, GitHub, and Linear."
+analyzed_at: "2026-02-25"
+local_path: /Users/akiho/github/github.com/vercel/chat
+scale: large
+
+perspectives:
+  - name: project-structure
+    file: project-structure.md
+    wave: 1
+    intent: "pnpm モノレポのパッケージ境界・ディレクトリ構成・モジュール分割戦略を明らかにする"
+    summary: "pnpm+Turborepo モノレポで14パッケージを4層(core/adapter/state/infra)に分け、一方向依存をパッケージ境界で物理的に強制"
+
+  - name: architecture
+    file: architecture.md
+    wave: 1
+    intent: "Adapter パターン中心のレイヤー構成と依存方向を明らかにし、モジュール間の結合度を評価する"
+    summary: "コアがインターフェースのみ定義し依存逆転を徹底、mdast AST正規化とoptionalメソッドによるケイパビリティ分岐が設計の要"
+
+  - name: design-philosophy
+    file: design-philosophy.md
+    wave: 1
+    intent: "Write once, deploy everywhere の設計思想と、mdast 正規化・プラグイン型アーキテクチャを選んだ技術選定の根拠を明らかにする"
+    summary: "mdast ASTを正規フォーマットに採用しN:N変換をN+N化、段階的フォールバックで最低共通分母に切り下げない設計思想"
+
+  - name: adapter-implementation-patterns
+    file: adapter-implementation-patterns.md
+    wave: 1
+    intent: "6つのプラットフォームアダプターに共通する実装パターンと、共通インターフェースの設計手法を分析する"
+    summary: "ジェネリクス付きAdapterインターフェース、構造化Thread IDエンコーディング、webhook署名検証の統一パターンを6アダプターで一貫適用"
+
+  - name: type-system-patterns
+    file: type-system-patterns.md
+    wave: 1
+    intent: "ジェネリクス・条件型・カスタム JSX 型を活用した型安全性の保証手法を分析する"
+    summary: "段階的ジェネリクス具体化、Mapped型によるAPI自動生成、モジュール拡張による型拡張ポイント、シリアライズ専用型の分離"
+
+  - name: streaming-patterns
+    file: streaming-patterns.md
+    wave: 1
+    intent: "ネイティブストリーミングとフォールバック post+edit の二層戦略と AsyncIterable ベースの統一インターフェースを分析する"
+    summary: "AsyncIterable<string>を統一入力とし、ネイティブstreaming/post+editフォールバックの二層戦略をCapability Detectionで自動分岐"
+
+  - name: cross-platform-normalization
+    file: cross-platform-normalization.md
+    wave: 1
+    intent: "mdast AST による正規化フォーマット、FormatConverter パターン、Thread ID エンコーディングの双方向変換メカニズムを分析する"
+    summary: "AST正規化・構造化ThreadID・絵文字双方向変換テーブルの3層正規化で、6プラットフォームの差異をビジネスロジックから完全分離"
+
+  - name: api-design-practices
+    file: api-design-practices.md
+    wave: 2
+    intent: "公開 API のシグネチャ設計・エクスポート戦略・多態的な post() の設計を分析する"
+    summary: "post()が7種の入力を受け付ける多態的設計、ファクトリ関数の環境変数フォールバック、SentMessageのFluent API"
+
+  - name: hook-and-lifecycle-patterns
+    file: hook-and-lifecycle-patterns.md
+    wave: 2
+    intent: "イベントハンドラの登録・実行順序・スレッドライフサイクル管理・subscribe/unsubscribe パターンを分析する"
+    summary: "状態駆動ディスパッチ(subscribed優先)、重複排除→ロック→ハンドラ選択のパイプライン、waitUntilパターンでサーバーレス対応"
+
+  - name: error-handling-idioms
+    file: error-handling-idioms.md
+    wave: 2
+    intent: "ChatError/LockError/RateLimitError の型階層・エラー伝播戦略・リカバリーパターンを分析する"
+    summary: "コア層ChatError/アダプター層AdapterErrorの二層エラー階層、レイヤー境界変換、段階的フォールバックとusedFallbackフラグ"
+
+  - name: testing-practices
+    file: testing-practices.md
+    wave: 2
+    intent: "モックアダプター・統合テスト・レコーディング＆リプレイテスト手法とテスト設計を分析する"
+    summary: "三層テスト(ユニット/合成統合/Replay)、インターフェース準拠モックファクトリ、本番webhookの録画再生テスト戦略"
+
+  - name: serialization-patterns
+    file: serialization-patterns.md
+    wave: 2
+    intent: "@workflow/serde 統合・toJSON/fromJSON・lazy singleton resolution パターンを分析する"
+    summary: "型タグ付きtoJSON/fromJSON対称ペア、Symbolベースの外部serdeプロトコル統合、シングルトン遅延解決によるプロセス間受け渡し"
+
+  - name: state-management-patterns
+    file: state-management-patterns.md
+    wave: 2
+    intent: "StateAdapter インターフェース・サブスクリプション・分散ロック・キャッシュ・重複排除の設計を分析する"
+    summary: "StateAdapterに3機能(サブスクリプション/ロック/KV)を集約、TTL-first設計、Luaアトミックロック解放、Connection Coalescing"
+
+  - name: jsx-runtime-patterns
+    file: jsx-runtime-patterns.md
+    wave: 2
+    intent: "カスタム JSX ランタイムによるクロスプラットフォーム Card/Modal UI コンポーネント設計を分析する"
+    summary: "React非依存のカスタムJSXランタイムでドメインDSLを構築、IntrinsicElements={}でHTML禁止、6アダプターへの変換をIR経由で実現"
+
+  - name: build-and-tooling
+    file: build-and-tooling.md
+    wave: 2
+    intent: "Turborepo・tsup・pnpm モノレポのビルドパイプラインとツールチェーン設計を分析する"
+    summary: "tsup ESM単一出力+external/noExternalでバンドル境界制御、Turborepo宣言的タスク依存、validate段階的ゲート"
+
+  - name: ai-settings
+    file: ai-settings.md
+    wave: 2
+    intent: "CLAUDE.md・skills/SKILL.md・.cursor/plans/ の AI エージェント向けコンテキスト設計を分析する"
+    summary: "貢献者向けCLAUDE.md/利用者向けSKILL.mdの対象読者別分離、npm同梱ドキュメント、検証コマンドの強調注入"
+
+  - name: ci-cd
+    file: ci-cd.md
+    wave: 2
+    intent: "GitHub Actions・Changesets・Preview Branch Testing の自動化ワークフロー設計を分析する"
+    summary: "CI並列3ジョブ+workflow_runリリースチェーン、モック環境変数でのビルド独立性、Preview Branch webhookプロキシ"
+
+  - name: dev-conventions
+    file: dev-conventions.md
+    wave: 2
+    intent: "Biome/Ultracite・Knip・コーディング規約の enforce 手法と開発体験の設計を分析する"
+    summary: "Ultracite zero-configベースライン+最小例外宣言、Knip未使用コード検出、pnpm validate単一ゲートで全品質チェック集約"
