@@ -139,6 +139,7 @@ export async function* withPing<TValue>(
 ```
 
 3 つの手法が組み合わさっている点に注目:
+
 1. `Unpromise.race` で Promise の参照チェーン切断
 2. `result = null` で処理済みデータの明示的解放
 3. `await using` / `using` でイテレータとタイマーの自動クリーンアップ
@@ -178,9 +179,7 @@ childSignal?.addEventListener("abort", onAbort, { once: true });
 // longLivedPromise に .then() ハンドラが毎回追加され、GC されない
 const longLivedPromise = iterator.next(); // 数分間 pending のまま
 while (true) {
-  const timeout = new Promise((_, reject) =>
-    setTimeout(() => reject(new Error("timeout")), 30000)
-  );
+  const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 30000));
   const result = await Promise.race([longLivedPromise, timeout]);
   // longLivedPromise に .then() ハンドラが蓄積し続ける
   // → 1 時間で数千個のハンドラが蓄積 → メモリ使用量が単調増加

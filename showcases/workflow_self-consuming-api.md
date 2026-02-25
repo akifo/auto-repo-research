@@ -27,23 +27,19 @@ adapter コードが公開 API と同等のインターフェースで内部に�
 // packages/server/src/@trpc/server/index.ts:1-14 (trpc/trpc)
 // 公開 API と同等のエクスポートを提供するローカルファサード
 export {
-  TRPCError,
   experimental_standaloneMiddleware,
-  initTRPC,
   getTRPCErrorFromUnknown,
+  initTRPC,
   transformTRPCResponse,
+  TRPCError,
   // ...型エクスポート
-} from '../../unstable-core-do-not-import';
+} from "../../unstable-core-do-not-import";
 ```
 
 ```typescript
 // packages/server/src/@trpc/server/http.ts:1-6 (trpc/trpc)
 // adapter 向けの HTTP ユーティリティも公開 API と同等のパスで提供
-export {
-  getHTTPStatusCode,
-  getHTTPStatusCodeFromError,
-  resolveResponse,
-} from '../../unstable-core-do-not-import';
+export { getHTTPStatusCode, getHTTPStatusCodeFromError, resolveResponse } from "../../unstable-core-do-not-import";
 ```
 
 ### 2. ESLint `no-restricted-imports` で境界を強制する
@@ -85,11 +81,8 @@ adapter ディレクトリ内から内部モジュールへの直接 import を�
  * If you're making an adapter for tRPC and looking at this file for reference,
  * you should import types and functions from `@trpc/server` and `@trpc/server/http`
  */
-import type { AnyRouter } from '../../@trpc/server';
-import {
-  type ResolveHTTPRequestOptionsContextFn,
-  resolveResponse,
-} from '../../@trpc/server/http';
+import type { AnyRouter } from "../../@trpc/server";
+import { type ResolveHTTPRequestOptionsContextFn, resolveResponse } from "../../@trpc/server/http";
 ```
 
 ### 4. `eslint-disable` の蓄積を API 不足のシグナルとして監視する
@@ -98,20 +91,20 @@ import {
 
 ```typescript
 // packages/server/src/adapters/standalone.ts:15-16 (trpc/trpc)
-import { type AnyRouter } from '../@trpc/server';
+import { type AnyRouter } from "../@trpc/server";
 // eslint-disable-next-line no-restricted-imports
-import { run } from '../unstable-core-do-not-import';
+import { run } from "../unstable-core-do-not-import";
 ```
 
 ```typescript
 // packages/server/src/adapters/ws.ts:28-39 (trpc/trpc)
 // eslint-disable が 3 箇所蓄積 = run, isAsyncIterable 等が公開 API に不足
 // eslint-disable-next-line no-restricted-imports
-import { isAsyncIterable, isObject, isTrackedEnvelope, run, type MaybePromise } from '../unstable-core-do-not-import';
+import { isAsyncIterable, isObject, isTrackedEnvelope, type MaybePromise, run } from "../unstable-core-do-not-import";
 // eslint-disable-next-line no-restricted-imports
-import type { Result } from '../unstable-core-do-not-import';
+import type { Result } from "../unstable-core-do-not-import";
 // eslint-disable-next-line no-restricted-imports
-import { iteratorResource } from '../unstable-core-do-not-import/stream/utils/asyncIterable';
+import { iteratorResource } from "../unstable-core-do-not-import/stream/utils/asyncIterable";
 ```
 
 ## Good Example
@@ -121,11 +114,8 @@ import { iteratorResource } from '../unstable-core-do-not-import/stream/utils/as
 ```typescript
 // packages/server/src/adapters/fetch/fetchRequestHandler.ts:24-80 (trpc/trpc)
 // Good: 全 import がファサード経由 -- eslint-disable なし
-import type { AnyRouter } from '../../@trpc/server';
-import {
-  type ResolveHTTPRequestOptionsContextFn,
-  resolveResponse,
-} from '../../@trpc/server/http';
+import type { AnyRouter } from "../../@trpc/server";
+import { type ResolveHTTPRequestOptionsContextFn, resolveResponse } from "../../@trpc/server/http";
 
 export async function fetchRequestHandler<TRouter extends AnyRouter>(
   opts: FetchHandlerRequestOptions<TRouter>,
@@ -145,7 +135,9 @@ export async function fetchRequestHandler<TRouter extends AnyRouter>(
     createContext,
     path,
     error: null,
-    onError(o) { opts?.onError?.({ ...o, req: opts.req }); },
+    onError(o) {
+      opts?.onError?.({ ...o, req: opts.req });
+    },
   });
 }
 ```
@@ -157,16 +149,15 @@ ESLint 設定と `eslint-disable` 監視の運用フロー:
 export default [
   // 1. adapter 層の境界強制
   {
-    files: ['packages/server/src/adapters/**/*'],
+    files: ["packages/server/src/adapters/**/*"],
     rules: {
-      'no-restricted-imports': [
-        'error',
+      "no-restricted-imports": [
+        "error",
         {
           patterns: [
             {
-              group: ['unstable-core-do-not-import'],
-              message:
-                'Use `../@trpc/server/http` instead - this ensures third party adapters can be made',
+              group: ["unstable-core-do-not-import"],
+              message: "Use `../@trpc/server/http` instead - this ensures third party adapters can be made",
             },
           ],
         },
@@ -184,9 +175,9 @@ export default [
 {
   "eslintConfig": {
     "rules": {
-      "no-restricted-imports": ["error", "@trpc/client"]
-    }
-  }
+      "no-restricted-imports": ["error", "@trpc/client"],
+    },
+  },
 }
 ```
 
@@ -195,9 +186,9 @@ export default [
 ```typescript
 // Bad: adapter が内部モジュールを直接 import
 // サードパーティは同じことができない
-import { resolveResponse } from '../unstable-core-do-not-import/http';
-import { getErrorShape } from '../unstable-core-do-not-import/error';
-import { callTRPCProcedure } from '../unstable-core-do-not-import/procedure';
+import { getErrorShape } from "../unstable-core-do-not-import/error";
+import { resolveResponse } from "../unstable-core-do-not-import/http";
+import { callTRPCProcedure } from "../unstable-core-do-not-import/procedure";
 
 // -> サードパーティ adapter 作者が参考にしても再現不可能
 // -> 内部リファクタリングで全 adapter が壊れるリスク
@@ -208,13 +199,13 @@ import { callTRPCProcedure } from '../unstable-core-do-not-import/procedure';
 // Bad: eslint-disable が蓄積しても放置する
 // packages/server/src/adapters/next-app-dir/nextAppDirCaller.ts:3-12 (trpc/trpc)
 // eslint-disable-next-line no-restricted-imports
-import { formDataToObject } from '../../unstable-core-do-not-import';
+import { formDataToObject } from "../../unstable-core-do-not-import";
 // FIXME: fix lint rule, this is ok
 // eslint-disable-next-line no-restricted-imports
-import type { ErrorHandlerOptions } from '../../unstable-core-do-not-import/procedure';
+import type { ErrorHandlerOptions } from "../../unstable-core-do-not-import/procedure";
 // FIXME: fix lint rule, this is ok
 // eslint-disable-next-line no-restricted-imports
-import type { CallerOverride } from '../../unstable-core-do-not-import/procedureBuilder';
+import type { CallerOverride } from "../../unstable-core-do-not-import/procedureBuilder";
 
 // -> eslint-disable が 4 箇所 + FIXME コメント
 // -> formDataToObject, ErrorHandlerOptions 等は公開 API に昇格すべきシグナル

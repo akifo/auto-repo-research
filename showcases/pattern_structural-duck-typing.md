@@ -50,14 +50,11 @@ export type Parser = ParserWithInputOutput<any, any> | ParserWithoutInput<any>;
 
 ```typescript
 // packages/server/src/unstable-core-do-not-import/parser.ts:64-80
-export type inferParser<TParser extends Parser> =
-  TParser extends ParserStandardSchemaEsque<infer $TIn, infer $TOut>
-    ? { in: $TIn; out: $TOut }
-    : TParser extends ParserWithInputOutput<infer $TIn, infer $TOut>
-      ? { in: $TIn; out: $TOut }
-      : TParser extends ParserWithoutInput<infer $InOut>
-        ? { in: $InOut; out: $InOut }
-        : never;
+export type inferParser<TParser extends Parser> = TParser extends ParserStandardSchemaEsque<infer $TIn, infer $TOut>
+  ? { in: $TIn; out: $TOut; }
+  : TParser extends ParserWithInputOutput<infer $TIn, infer $TOut> ? { in: $TIn; out: $TOut; }
+  : TParser extends ParserWithoutInput<infer $InOut> ? { in: $InOut; out: $InOut; }
+  : never;
 ```
 
 Standard Schema が最優先でチェックされ、将来のバリデータはこの規格に準拠すれば自動サポートされる設計になっている。
@@ -70,30 +67,30 @@ Standard Schema が最優先でチェックされ、将来のバリデータは�
 // packages/server/src/unstable-core-do-not-import/parser.ts:84-140
 export function getParseFn<TType>(procedureParser: Parser): ParseFn<TType> {
   const parser = procedureParser as any;
-  const isStandardSchema = '~standard' in parser;
+  const isStandardSchema = "~standard" in parser;
 
-  if (typeof parser === 'function' && typeof parser.assert === 'function') {
+  if (typeof parser === "function" && typeof parser.assert === "function") {
     // ParserArkTypeEsque: 関数かつ .assert を持つ
     return parser.assert.bind(parser);
   }
 
-  if (typeof parser === 'function' && !isStandardSchema) {
+  if (typeof parser === "function" && !isStandardSchema) {
     // ParserCustomValidatorEsque / ParserValibotEsque (>= v0.31.0)
     return parser;
   }
 
-  if (typeof parser.parseAsync === 'function') {
+  if (typeof parser.parseAsync === "function") {
     // ParserZodEsque: 非同期リファインメント対応
     return parser.parseAsync.bind(parser);
   }
 
-  if (typeof parser.parse === 'function') {
+  if (typeof parser.parse === "function") {
     // ParserZodEsque / ParserValibotEsque (< v0.13.0)
     return parser.parse.bind(parser);
   }
   // ... yup, superstruct, scale, standard-schema へのフォールバック続く
 
-  throw new Error('Could not find a validator fn');
+  throw new Error("Could not find a validator fn");
 }
 ```
 
@@ -135,12 +132,12 @@ type LoggerProvider = PinoEsque | WinstonEsque | ConsoleEsque;
 function getLogFn(provider: LoggerProvider): (level: string, msg: string) => void {
   const logger = provider as any;
 
-  if (typeof logger.child === 'function') {
+  if (typeof logger.child === "function") {
     // pino 風: child メソッドを持つ
     return (level, msg) => logger[level]?.(msg);
   }
 
-  if (typeof logger.log === 'function' && typeof logger.info === 'function') {
+  if (typeof logger.log === "function" && typeof logger.info === "function") {
     // winston 風: log(level, msg) を持つ
     return (level, msg) => logger.log(level, msg);
   }
@@ -159,19 +156,19 @@ function getLogFn(provider: LoggerProvider): (level: string, msg: string) => voi
 
 ```typescript
 // zod を使う場合 -- tRPC は zod を import していない
-import { z } from 'zod';
+import { z } from "zod";
 const appRouter = t.router({
   createUser: t.procedure
     .input(z.object({ name: z.string() }))
-    .mutation(({ input }) => { /* input は { name: string } と推論される */ }),
+    .mutation(({ input }) => {/* input は { name: string } と推論される */}),
 });
 
 // valibot を使う場合 -- tRPC は valibot を import していない
-import * as v from 'valibot';
+import * as v from "valibot";
 const appRouter = t.router({
   createUser: t.procedure
     .input(v.object({ name: v.string() }))
-    .mutation(({ input }) => { /* input は { name: string } と推論される */ }),
+    .mutation(({ input }) => {/* input は { name: string } と推論される */}),
 });
 ```
 
@@ -189,12 +186,16 @@ interface ValidatorAdapter<TInput, TOutput> {
 
 class ZodAdapter<T> implements ValidatorAdapter<T, T> {
   constructor(private schema: ZodSchema<T>) {} // zod を直接 import
-  parse(input: unknown) { return this.schema.parse(input); }
+  parse(input: unknown) {
+    return this.schema.parse(input);
+  }
 }
 
 class YupAdapter<T> implements ValidatorAdapter<T, T> {
   constructor(private schema: YupSchema<T>) {} // yup を直接 import
-  parse(input: unknown) { return this.schema.validateSync(input); }
+  parse(input: unknown) {
+    return this.schema.validateSync(input);
+  }
 }
 
 // ユーザーが手動でラップする必要がある
@@ -202,6 +203,7 @@ t.procedure.input(new ZodAdapter(z.object({ name: z.string() })));
 ```
 
 問題点:
+
 - ライブラリごとに `dependencies` が増える（使わないライブラリのコードもバンドルに含まれる可能性がある）
 - 新しいライブラリに対応するたびにアダプタークラスを作成・公開・保守する必要がある
 - ユーザーが適切なアダプタを選択して import する手間が発生する
@@ -211,10 +213,10 @@ t.procedure.input(new ZodAdapter(z.object({ name: z.string() })));
 ```typescript
 // Bad: 特殊ケースを先にチェックしない
 function getParseFn(parser: any) {
-  if (typeof parser === 'function') {
+  if (typeof parser === "function") {
     return parser; // arktype も function なのでここで捕捉されてしまう
   }
-  if (typeof parser === 'function' && typeof parser.assert === 'function') {
+  if (typeof parser === "function" && typeof parser.assert === "function") {
     return parser.assert.bind(parser); // ここには到達しない
   }
   // ...
@@ -222,10 +224,10 @@ function getParseFn(parser: any) {
 
 // Good: より特殊な条件を先にチェックする
 function getParseFn(parser: any) {
-  if (typeof parser === 'function' && typeof parser.assert === 'function') {
+  if (typeof parser === "function" && typeof parser.assert === "function") {
     return parser.assert.bind(parser); // arktype 用の特殊ケースが先
   }
-  if (typeof parser === 'function') {
+  if (typeof parser === "function") {
     return parser; // カスタムバリデーターはフォールバック
   }
   // ...
@@ -244,8 +246,8 @@ function createProcedure(validator: any) {
 
 // Good: 構造型で型推論を維持
 function createProcedure<T extends Parser>(validator: T) {
-  type Input = inferParser<T>['in'];
-  type Output = inferParser<T>['out'];
+  type Input = inferParser<T>["in"];
+  type Output = inferParser<T>["out"];
   const parse = getParseFn<Output>(validator);
   return { parse };
 }

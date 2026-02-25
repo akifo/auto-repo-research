@@ -32,7 +32,16 @@
 | [zod-enum-handler-map](./pattern_zod-enum-handler-map)                 | Zod enum+Record型ハンドラマップで50種以上の処理分岐の網羅性をコンパイル時保証                  |
 | [type-state-builder](./pattern_type-state-builder)                     | センチネル型+条件付き型+TypeError phantomによる型パラメータ状態マシンfluent builder            |
 | [recursive-proxy-api](./pattern_recursive-proxy-api)                   | Proxy+ファサード型キャストで型安全な動的APIを構築する二重構造パターン（3防御策込み）           |
-| [structural-duck-typing](./pattern_structural-duck-typing)             | -Esque構造型+ランタイムFeature Detectionで外部ライブラリをゼロ依存統合                        |
+| [structural-duck-typing](./pattern_structural-duck-typing)             | -Esque構造型+ランタイムFeature Detectionで外部ライブラリをゼロ依存統合                         |
+| [idempotent-schema-migration](./pattern_idempotent-schema-migration)   | CREATE TABLE IF NOT EXISTS+ALTER TABLE ADD COLUMN duplicate無視による無停止スキーマ進化        |
+| [resumable-stream-replay](./pattern_resumable-stream-replay)           | SQLiteバッファリング+3フェーズ再開プロトコルによる切断耐性ストリームリプレイ                   |
+| [single-alarm-multiplexing](./pattern_single-alarm-multiplexing)       | 単一アラーム制約をSQLiteテーブルで多重化し任意数のスケジュールを統一管理                       |
+| [object-augmentation](./pattern_object-augmentation)                   | Object.defineProperty+交差型で継承なしに型安全な機能注入                                       |
+| [bidirectional-state-sync](./pattern_bidirectional-state-sync)         | 対称メッセージ型+送信元除外ブロードキャスト+Serializable型制約の双方向ステート同期             |
+| [transport-auto-fallback](./pattern_transport-auto-fallback)           | autoモードでstreamable-httpを先に試行し404/405ならSSEにフォールバック                          |
+| [subsystem-stacking](./pattern_subsystem-stacking)                     | 単一基盤クラスに独立サブシステムをSQLiteテーブルとして冪等に積層                               |
+| [disposable-event-hierarchy](./pattern_disposable-event-hierarchy)     | emit()単一メソッド+DisposableStore+3層バブルアップの階層的イベント伝搬                         |
+| [mixin-feature-injection](./pattern_mixin-feature-injection)           | TypeScript mixinで継承チェーン変更なしにクロスカッティング機能を注入                           |
 
 ## Practice
 
@@ -70,6 +79,11 @@
 | [provider-conformance-testing](./practice_provider-conformance-testing) | ファクトリ関数vsクラス継承の2アプローチによるAIプロバイダー横断適合テスト            |
 | [llm-test-optimization](./practice_llm-test-optimization)               | AIエージェント向けテスト出力最適化+バージョン横断テスト+統合テストキャッシュ戦略     |
 | [streaming-leak-prevention](./practice_streaming-leak-prevention)       | subscribe/unsubscribeペア+null解放+WeakMap+bind()による長寿命Promiseメモリリーク防止 |
+| [exports-trinity-verification](./practice_exports-trinity-verification) | package.json exports/ビルドエントリ/CIスクリプトの三位一体によるAPI整合性自動検証    |
+| [eager-retry-validation](./practice_eager-retry-validation)             | リトライ設定の登録時即座バリデーション+tryN単一リトライ基盤+二重try-catch            |
+| [multi-runtime-test-isolation](./practice_multi-runtime-test-isolation) | vitest projectsによるWorkers/ブラウザ/Node.js/型テストの4層ランタイム分離            |
+| [single-point-access-control](./practice_single-point-access-control)   | アクセス制御を共通パスの単一ポイントに集約しチェック漏れを構造的に排除               |
+| [stability-tier-workspaces](./practice_stability-tier-workspaces)       | 安定度ティアによるワークスペース分類とchangeset/CI/依存方向のティア別制御            |
 
 ## Claude
 
@@ -81,13 +95,15 @@
 | [prompt-injection-defense](./claude_prompt-injection-defense)       | 外部データ処理時のプロンプトインジェクション防御の多層設計                            |
 | [llms-txt-mcp-integration](./claude_llms-txt-mcp-integration)       | llms.txt/llms-full.txt/MCPサーバー3段階のAI向けドキュメント提供パターン               |
 | [hierarchical-agents-md](./claude_hierarchical-agents-md)           | CLAUDE.md委任+ディレクトリ別AGENTS.md+PostToolUseフックによる階層的AIコンテキスト管理 |
+| [always-ask-never-boundaries](./claude_always-ask-never-boundaries) | Always/Ask first/Neverの3段階行動境界でAIツールの行動を明示的に制御                   |
 
 ## Tool
 
-| Showcase                                                  | 概要                                                                      |
-| --------------------------------------------------------- | ------------------------------------------------------------------------- |
-| [pnpm-catalogs](./tool_pnpm-catalogs)                     | catalog:プロトコル+catalogMode:strictによるモノレポ依存バージョン一元管理 |
-| [publint-attw-validation](./tool_publint-attw-validation) | publint+attwによるnpmパッケージexports/types設定の自動検証                |
+| Showcase                                                  | 概要                                                                        |
+| --------------------------------------------------------- | --------------------------------------------------------------------------- |
+| [pnpm-catalogs](./tool_pnpm-catalogs)                     | catalog:プロトコル+catalogMode:strictによるモノレポ依存バージョン一元管理   |
+| [publint-attw-validation](./tool_publint-attw-validation) | publint+attwによるnpmパッケージexports/types設定の自動検証                  |
+| [oxide-toolchain](./tool_oxide-toolchain)                 | oxlint+oxfmt Oxideツールチェーンによる高速lint/format+単一checkコマンド集約 |
 
 ## Workflow
 
@@ -97,4 +113,5 @@
 | [loc-limit-enforcement](./workflow_loc-limit-enforcement)           | CIスクリプト+AIルール二層でファイル行数上限を強制し巨大ファイル化を防止               |
 | [e2e-parallel-isolation](./workflow_e2e-parallel-isolation)         | リソース複製によるE2Eテスト並列実行時のテスト間干渉排除                               |
 | [lint-enforced-architecture](./workflow_lint-enforced-architecture) | Biome/ESLintのnoRestrictedGlobals等でアーキテクチャ制約を機械的に強制するワークフロー |
-| [self-consuming-api](./workflow_self-consuming-api)                 | 公開APIのみでファーストパーティadapterを実装しlintで境界強制する自己消費テスト運用     |
+| [self-consuming-api](./workflow_self-consuming-api)                 | 公開APIのみでファーストパーティadapterを実装しlintで境界強制する自己消費テスト運用    |
+| [pkg-pr-new-preview](./workflow_pkg-pr-new-preview)                 | pkg-pr-newによるPRプレビューパッケージ公開+changesets+Playwright3層キャッシュCI/CD    |

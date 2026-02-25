@@ -116,25 +116,25 @@ return createFlatProxy<TRPCClient<TRouter>>((key) => {
 // クライアント: query/mutate/subscribe
 type DecoratedClient = {
   user: {
-    byId: { query: (input: string) => Promise<User> };
-    list: { query: () => Promise<User[]> };
-    create: { mutate: (input: CreateUserInput) => Promise<User> };
+    byId: { query: (input: string) => Promise<User>; };
+    list: { query: () => Promise<User[]>; };
+    create: { mutate: (input: CreateUserInput) => Promise<User>; };
   };
 };
 
 // React Query: useQuery/useMutation/useSuspenseQuery
 type DecoratedReactQuery = {
   user: {
-    byId: { useQuery: (input: string) => UseQueryResult<User> };
-    list: { useSuspenseQuery: () => UseSuspenseQueryResult<User[]> };
-    create: { useMutation: () => UseMutationResult<User> };
+    byId: { useQuery: (input: string) => UseQueryResult<User>; };
+    list: { useSuspenseQuery: () => UseSuspenseQueryResult<User[]>; };
+    create: { useMutation: () => UseMutationResult<User>; };
   };
 };
 
 // Utils: fetch/invalidate/setData/getData
 type DecoratedUtils = {
   user: {
-    byId: { fetch: (input: string) => Promise<User>; invalidate: () => void };
+    byId: { fetch: (input: string) => Promise<User>; invalidate: () => void; };
   };
 };
 ```
@@ -186,12 +186,12 @@ function createRecursiveProxy<TFaux>(
 // サーバー側の API 定義から導出された型
 interface ApiRoutes {
   users: {
-    list: { get: () => Promise<User[]> };
-    byId: { get: (id: string) => Promise<User> };
-    create: { post: (data: CreateUser) => Promise<User> };
+    list: { get: () => Promise<User[]>; };
+    byId: { get: (id: string) => Promise<User>; };
+    create: { post: (data: CreateUser) => Promise<User>; };
   };
   posts: {
-    list: { get: () => Promise<Post[]> };
+    list: { get: () => Promise<Post[]>; };
   };
 }
 
@@ -311,7 +311,7 @@ function createBadProxy<TFaux>(callback: (opts: ProxyCallbackOptions) => unknown
 // Better: パスをキーにしたメモ化辞書で再利用する
 const memo: Record<string, unknown> = Object.create(null);
 const cacheKey = path.join(".");
-memo[cacheKey] ??= new Proxy(noop, { /* ... */ });
+memo[cacheKey] ??= new Proxy(noop, {/* ... */});
 return memo[cacheKey];
 ```
 
@@ -321,11 +321,11 @@ return memo[cacheKey];
 // Bad: {} はプロトタイプチェーンを持つ
 const memo = {};
 // "toString" や "constructor" がパスに含まれるとキャッシュが汚染される
-memo["toString"] // Object.prototype.toString がヒットする
+memo["toString"]; // Object.prototype.toString がヒットする
 
 // Better: Object.create(null) でプロトタイプのないオブジェクトを使う
 const memo: Record<string, unknown> = Object.create(null);
-memo["toString"] // undefined -- プロトタイプ汚染なし
+memo["toString"]; // undefined -- プロトタイプ汚染なし
 ```
 
 ## 適用ガイド
