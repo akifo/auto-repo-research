@@ -212,6 +212,16 @@
 | 119 | [stanfordnlp/dspy](https://github.com/stanfordnlp/dspy)                 | シグネチャ・モジュール・オプティマイザの3層アーキテクチャ、プロンプト自動最適化、モジュラー AI パイプライン |        |
 | 120 | [continuedev/continue](https://github.com/continuedev/continue)         | IDE 拡張アーキテクチャ（VS Code/JetBrains）、ローカル LLM 対応のプライバシー設計、カスタムモデル統合        |        |
 
+## Cloudflare Ecosystem
+
+| #   | リポジトリ                                                                                | 抽出できそうなプラクティス                                                               | Status |
+| --- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ------ |
+| 121 | [cloudflare/agents](https://github.com/cloudflare/agents)                                 | DO 上の Actor パターン、SQLite 永続化、双方向ステート同期、MCP 二面設計、6階層 AGENTS.md | 済     |
+| 122 | [cloudflare/workers-sdk](https://github.com/cloudflare/workers-sdk)                       | 大規模モノレポ CLI 設計、Miniflare シミュレータ、vitest-pool-workers、Vite 統合          |        |
+| 123 | [cloudflare/partykit](https://github.com/cloudflare/partykit)                             | リアルタイム協調、WebSocket Hibernation、Yjs CRDT 統合、分散 pub/sub                     |        |
+| 124 | [cloudflare/workers-oauth-provider](https://github.com/cloudflare/workers-oauth-provider) | OAuth 2.1 の Workers 実装、MCP 認可統合、KV トークンストレージ                           |        |
+| 125 | [cloudflare/chanfana](https://github.com/cloudflare/chanfana)                             | OpenAPI 自動生成、Zod スキーマ変換、ルーター非依存の抽象化                               |        |
+
 ---
 
 ## 選定基準
