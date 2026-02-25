@@ -1,0 +1,105 @@
+url: https://github.com/cloudflare/partykit
+stars: 997
+language: TypeScript
+license: ISC
+description: "PartyKit, for Workers — Libraries / Examples / Documentation for building real-time apps with Cloudflare Workers and Durable Objects"
+analyzed_at: "2026-02-25"
+local_path: /Users/akiho/github/github.com/cloudflare/partykit
+scale: medium
+
+perspectives:
+  - name: project-structure
+    file: project-structure.md
+    wave: 1
+    intent: "npm workspaces モノレポのパッケージ境界・依存関係・公開 API の構成を明らかにする"
+    summary: "peerDependencies による疎結合な依存グラフと subpath exports による環境別エントリポイント分離の一貫した適用"
+
+  - name: architecture
+    file: architecture.md
+    wave: 1
+    intent: "Durable Object ベースのリアルタイムプリミティブのレイヤー構成と Server/Client 分離の設計を分析する"
+    summary: "薄い基底クラス + ライフサイクルフックで DO を抽象化し、mixin/継承/factory の3手法で拡張する開放閉鎖設計"
+
+  - name: design-philosophy
+    file: design-philosophy.md
+    wave: 1
+    intent: "DX 優先の設計思想、Durable Object の抽象化方針、技術選定の根拠を明らかにする"
+    summary: "プラットフォーム制約をフック可能な空スロットに変換し、規約ベース自動検出で設定ゼロ DX を実現する思想"
+
+  - name: hook-and-lifecycle-patterns
+    file: hook-and-lifecycle-patterns.md
+    wave: 1
+    intent: "Server ライフサイクルフック（onStart/onConnect/onMessage/onClose/onError/onAlarm）と Connection ライフサイクルの設計を分析する"
+    summary: "排他的初期化 + 状態リセットによるリトライ保証と、Strategy パターンで Hibernation 差異を隠蔽するフック設計"
+
+  - name: type-system-patterns
+    file: type-system-patterns.md
+    wave: 1
+    intent: "ジェネリクス制約（Server<Env, Props>、Connection<TState>）、型レベル安全性の保証手法を分析する"
+    summary: "デフォルト付きジェネリクスによる段階的型付けと、再帰的イミュータブル型 + satisfies による型安全性の確保"
+
+  - name: abstraction-patterns
+    file: abstraction-patterns.md
+    wave: 1
+    intent: "Server 基底クラス、Mixin パターン（withYjs）、ConnectionManager インターフェースの抽象化設計を分析する"
+    summary: "Mixin/Strategy/Factory/継承を問題の性質に応じて使い分け、configurable: true で下流拡張点を提供する抽象化設計"
+
+  - name: api-design-practices
+    file: api-design-practices.md
+    wave: 2
+    intent: "パブリック API 設計、exports 構造、デュアルフォーマット出力（ESM/CJS）、naming convention を分析する"
+    summary: "subpath exports で環境分離し、ESM/CJS デュアルはクライアントのみに限定する最小コスト API 設計"
+
+  - name: composition-patterns
+    file: composition-patterns.md
+    wave: 2
+    intent: "Mixin（withYjs）、Factory（createPubSubServer）、Middleware 合成（hono-party）パターンを横断的に分析する"
+    summary: "Mixin + プリセットの二層 API、Factory のクロージャキャプチャ、三値フックによる宣言的制御フロー合成"
+
+  - name: concurrency-patterns
+    file: concurrency-patterns.md
+    wave: 2
+    intent: "blockConcurrencyWhile による初期化制御、Hibernation/Wake-up サイクル、DO Alarm スケジューリングを分析する"
+    summary: "排他ブロック外再スローによるデッドロック回避と、Hibernation/Wake-up を同一コードパスで処理する並行性制御"
+
+  - name: state-management-patterns
+    file: state-management-patterns.md
+    wave: 2
+    intent: "Connection 状態管理、WebSocket Attachment ネームスペーシング、Hibernation 永続化戦略を分析する"
+    summary: "__pk/__user ネームスペース分離と遅延復元 + WeakMap キャッシュによる Hibernation 対応状態管理"
+
+  - name: error-handling-idioms
+    file: error-handling-idioms.md
+    wave: 2
+    intent: "WebSocket エラー伝播、DO fetch エラーハンドリング、クライアント側リトライ戦略を横断的に分析する"
+    summary: "トランスポート適応型エラー返却、排他ブロック外再スロー、ランダムジッター付き指数バックオフの多層エラー戦略"
+
+  - name: testing-practices
+    file: testing-practices.md
+    wave: 2
+    intent: "vitest + @cloudflare/vitest-pool-workers によるテスト基盤と DO テスト戦略を分析する"
+    summary: "テストシナリオごとに DO サブクラスを分離し、workerd/jsdom/Node の3環境を設定ファイル分割で管理するテスト戦略"
+
+  - name: build-and-tooling
+    file: build-and-tooling.md
+    wave: 2
+    intent: "tsdown ビルド、oxfmt/oxlint フォーマット、デュアルフォーマットビルド、check-exports による品質保証を分析する"
+    summary: "tsdown のプログラマティック API でビルドし、成果物にもフォーマッター適用、check-exports で exports 整合性を自動検証"
+
+  - name: ai-settings
+    file: ai-settings.md
+    wave: 2
+    intent: "AGENTS.md の構成と AI コーディングエージェント向けガイドラインの設計パターンを分析する"
+    summary: "コマンド中心主義の単一ファイル AGENTS.md で、設定の意図補足と Common Patterns による AI 向けガイドライン設計"
+
+  - name: streaming-patterns
+    file: streaming-patterns.md
+    wave: 2
+    intent: "partytracks の RxJS ベース WebRTC ストリーム管理、BulkRequestDispatcher によるバッチ処理パターンを分析する"
+    summary: "Observable チェーンでリカバリーロジックを隠蔽し、FIFOScheduler + BulkRequestDispatcher で並行制御する設計"
+
+  - name: dependency-management
+    file: dependency-management.md
+    wave: 2
+    intent: "npm workspaces、sherif によるモノレポ一貫性、changesets によるバージョニング戦略を分析する"
+    summary: "peerDependencies 二重宣言 + sherif 一貫性検証 + changesets の慎重なバージョニングによるモノレポ依存管理"

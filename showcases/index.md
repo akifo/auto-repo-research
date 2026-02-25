@@ -42,6 +42,9 @@
 | [subsystem-stacking](./pattern_subsystem-stacking)                     | 単一基盤クラスに独立サブシステムをSQLiteテーブルとして冪等に積層                               |
 | [disposable-event-hierarchy](./pattern_disposable-event-hierarchy)     | emit()単一メソッド+DisposableStore+3層バブルアップの階層的イベント伝搬                         |
 | [mixin-feature-injection](./pattern_mixin-feature-injection)           | TypeScript mixinで継承チェーン変更なしにクロスカッティング機能を注入                           |
+| [exclusive-block-safe-rethrow](./pattern_exclusive-block-safe-rethrow) | 排他制御ブロック内エラーを変数退避+状態リセット+ブロック外再スローでデッドロック防止           |
+| [tri-value-hook-control](./pattern_tri-value-hook-control)             | Response\|Request\|voidの三値フック返却で拒否・変形・続行を単一型表現                          |
+| [mixin-preset-dual-api](./pattern_mixin-preset-dual-api)               | withFeature(Base) mixin+プリセットexportの二層APIで入門者と上級者を両立                        |
 
 ## Practice
 
@@ -84,6 +87,8 @@
 | [multi-runtime-test-isolation](./practice_multi-runtime-test-isolation) | vitest projectsによるWorkers/ブラウザ/Node.js/型テストの4層ランタイム分離            |
 | [single-point-access-control](./practice_single-point-access-control)   | アクセス制御を共通パスの単一ポイントに集約しチェック漏れを構造的に排除               |
 | [stability-tier-workspaces](./practice_stability-tier-workspaces)       | 安定度ティアによるワークスペース分類とchangeset/CI/依存方向のティア別制御            |
+| [hibernation-safe-state](./practice_hibernation-safe-state)             | WebSocket attachment+ネームスペース分離によるHibernation/eviction対応状態管理        |
+| [peer-deps-dual-declaration](./practice_peer-deps-dual-declaration)     | peerDependencies広レンジ+devDependencies具体バージョン二重宣言+sherif一貫性検証      |
 
 ## Claude
 
