@@ -45,6 +45,8 @@
 | [exclusive-block-safe-rethrow](./pattern_exclusive-block-safe-rethrow) | 排他制御ブロック内エラーを変数退避+状態リセット+ブロック外再スローでデッドロック防止           |
 | [tri-value-hook-control](./pattern_tri-value-hook-control)             | Response\|Request\|voidの三値フック返却で拒否・変形・続行を単一型表現                          |
 | [mixin-preset-dual-api](./pattern_mixin-preset-dual-api)               | withFeature(Base) mixin+プリセットexportの二層APIで入門者と上級者を両立                        |
+| [custom-jsx-domain-dsl](./pattern_custom-jsx-domain-dsl)               | React非依存カスタムJSXランタイム+IntrinsicElements={}でドメインDSLを型安全に構築               |
+| [ast-canonical-normalization](./pattern_ast-canonical-normalization)   | AST正規フォーマットでN:N変換をN+N化するクロスプラットフォーム正規化パターン                    |
 
 ## Practice
 
@@ -101,6 +103,7 @@
 | [llms-txt-mcp-integration](./claude_llms-txt-mcp-integration)       | llms.txt/llms-full.txt/MCPサーバー3段階のAI向けドキュメント提供パターン               |
 | [hierarchical-agents-md](./claude_hierarchical-agents-md)           | CLAUDE.md委任+ディレクトリ別AGENTS.md+PostToolUseフックによる階層的AIコンテキスト管理 |
 | [always-ask-never-boundaries](./claude_always-ask-never-boundaries) | Always/Ask first/Neverの3段階行動境界でAIツールの行動を明示的に制御                   |
+| [skills-npm-bundled-docs](./claude_skills-npm-bundled-docs)         | SKILL.md+docsをnpmパッケージに同梱しAIエージェントがnode_modules/から直接参照         |
 
 ## Tool
 
@@ -120,3 +123,4 @@
 | [lint-enforced-architecture](./workflow_lint-enforced-architecture) | Biome/ESLintのnoRestrictedGlobals等でアーキテクチャ制約を機械的に強制するワークフロー |
 | [self-consuming-api](./workflow_self-consuming-api)                 | 公開APIのみでファーストパーティadapterを実装しlintで境界強制する自己消費テスト運用    |
 | [pkg-pr-new-preview](./workflow_pkg-pr-new-preview)                 | pkg-pr-newによるPRプレビューパッケージ公開+changesets+Playwright3層キャッシュCI/CD    |
+| [recording-replay-testing](./workflow_recording-replay-testing)     | 本番webhookをRedis録画→JSONフィクスチャ化→リプレイテストのワークフロー                |
