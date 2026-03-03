@@ -1,0 +1,117 @@
+url: https://github.com/nestjs/nest
+stars: 74807
+language: TypeScript
+license: MIT
+description: "A progressive Node.js framework for building efficient, scalable, and enterprise-grade server-side applications with TypeScript/JavaScript"
+analyzed_at: "2026-03-03"
+local_path: /Users/akiho/github/github.com/nestjs/nest
+scale: large
+
+perspectives:
+  - name: project-structure
+    file: project-structure.md
+    wave: 1
+    intent: "Lerna モノレポの構成原則、パッケージ境界の設計、共通/コア/プラットフォームの分離戦略を明らかにする"
+    summary: "契約(common)・実装(core)・プラットフォーム(platform-*)の3層分離とtsconfig Project Referencesによる依存方向の強制"
+
+  - name: architecture
+    file: architecture.md
+    wave: 1
+    intent: "モジュールシステム、レイヤー構成、依存方向の制約、アプリケーションライフサイクルの全体像を把握する"
+    summary: "TopologyTreeによるモジュール初期化順序の自動決定、3フェーズブートストラップ、Barrierベースの並行依存解決"
+
+  - name: design-philosophy
+    file: design-philosophy.md
+    wave: 1
+    intent: "Angular インスパイアの設計思想、プラットフォーム非依存の原則、デコレータ駆動アプローチの根拠を抽出する"
+    summary: "デコレータはメタデータ格納のみに徹し、ランタイムが解釈する分離設計。横断的関心事をパイプラインで合成"
+
+  - name: decorator-driven-architecture
+    file: decorator-driven-architecture.md
+    wave: 1
+    intent: "デコレータをフレームワークの中核パラダイムとして使う設計パターン、reflect-metadata の活用、カスタムデコレータの設計原則を分析する"
+    summary: "Watermark・構成・累積・パラメータの4種デコレータパターンと3層メタデータマージ(Global→Class→Method)"
+
+  - name: dependency-injection-container
+    file: dependency-injection-container.md
+    wave: 1
+    intent: "IoC コンテナの実装パターン、プロバイダスコープ、モジュールコンパイル、遅延ロード、インスタンスライフサイクル管理を分析する"
+    summary: "WeakMapベースのスコープ管理、二段階インスタンス化による循環依存解決、SettlementSignalによる循環検出"
+
+  - name: request-pipeline-orchestration
+    file: request-pipeline-orchestration.md
+    wave: 1
+    intent: "Guards → Interceptors → Pipes → Handler → Exception Filters のリクエストパイプライン設計と実行コンテキストの伝播を分析する"
+    summary: "固定順序パイプライン+ContextCreator基底クラスによる3層メタデータ合成+null短絡最適化"
+
+  - name: adapter-implementation-patterns
+    file: adapter-implementation-patterns.md
+    wave: 1
+    intent: "Express/Fastify プラットフォームアダプターの抽象化パターン、アダプターインターフェース設計、プラットフォーム切り替えの実現方法を分析する"
+    summary: "Interface→AbstractClass→Concreteの三層抽象化、Proxyによるメソッド委譲、型付き脱出口の提供"
+
+  - name: type-system-patterns
+    file: type-system-patterns.md
+    wave: 2
+    intent: "ジェネリックモジュール型、メタデータリフレクション型、プロバイダトークン設計、条件型によるAPI型安全性を分析する"
+    summary: "inject?:neverによる排他的プロパティ制約、as const+indexed access typeでの型導出、Builder型パラメータの段階的確定"
+
+  - name: metaprogramming-techniques
+    file: metaprogramming-techniques.md
+    wave: 2
+    intent: "reflect-metadata によるメタデータ注入・スキャン、デコレータファクトリパターン、ランタイム型情報の活用手法を分析する"
+    summary: "3層デコレータファクトリ、design:paramtypesによるDI自動解決、MetadataScannerのキャッシュ付きプロトタイプ走査"
+
+  - name: middleware-composition
+    file: middleware-composition.md
+    wave: 2
+    intent: "ミドルウェアの登録・解決・実行チェーン、関数型ミドルウェア、ルートスコープミドルウェアの設計を分析する"
+    summary: "Fluent APIによる宣言的登録、モジュール依存グラフに基づく実行順序決定、関数→クラスの正規化変換"
+
+  - name: hook-and-lifecycle-patterns
+    file: hook-and-lifecycle-patterns.md
+    wave: 2
+    intent: "モジュールライフサイクルフック（OnModuleInit, OnApplicationBootstrap 等）、シャットダウンフック、スコープベースライフサイクルの設計を分析する"
+    summary: "トポロジカルソートによるフック実行順序制御、duck typingによるフック検出、再入防止付きシャットダウン"
+
+  - name: extensibility-mechanisms
+    file: extensibility-mechanisms.md
+    wave: 2
+    intent: "動的モジュール、ConfigurableModuleBuilder、カスタムプロバイダ、グローバルモジュール、モジュール再エクスポートによる拡張性設計を分析する"
+    summary: "ConfigurableModuleBuilderによるregister/registerAsyncの自動生成、setExtrasでのメタ設定とビジネス設定の分離"
+
+  - name: error-handling-idioms
+    file: error-handling-idioms.md
+    wave: 2
+    intent: "例外フィルタチェーン、組み込みHTTP例外階層、RPC/WebSocket例外、カスタム例外フィルタの設計パターンを分析する"
+    summary: "トランスポート独立の例外階層、instanceofベースのフィルタ選択、IntrinsicExceptionによるログ抑制マーカー"
+
+  - name: testing-practices
+    file: testing-practices.md
+    wave: 2
+    intent: "TestingModule によるDIコンテナモック、Mocha/Sinon テスト戦略、インテグレーションテストパターン、テストユーティリティ設計を分析する"
+    summary: "単体テスト(DI不使用)と統合テスト(TestingModule)の二層構造、useMockerによる自動モック、Noop実装パターン"
+
+  - name: transport-layer-abstraction
+    file: transport-layer-abstraction.md
+    wave: 2
+    intent: "マイクロサービスの複数トランスポートプロトコル（TCP, Redis, MQTT, NATS, Kafka, gRPC, AMQP）の抽象化、シリアライゼーション戦略を分析する"
+    summary: "ReadPacket/WritePacketによる統一メッセージ契約、Strategyパターンのシリアライザ差し替え、7トランスポートの抽象化"
+
+  - name: api-design-practices
+    file: api-design-practices.md
+    wave: 2
+    intent: "公開API設計、デコレータAPIのエルゴノミクス、バージョニング、後方互換性維持の設計原則を分析する"
+    summary: "段階的開示オーバーロード(引数なし→文字列→オプションオブジェクト)、barrel管理による公開面の明示的制御"
+
+  - name: concurrency-patterns
+    file: concurrency-patterns.md
+    wave: 2
+    intent: "リクエストスコーピング、トランジェントプロバイダ、実行コンテキスト伝播、非同期モジュール初期化の並行制御パターンを分析する"
+    summary: "WeakMap+オブジェクト参照キーによる自動GCスコーピング、Barrier同期プリミティブ、AsyncResource.bindでの非同期コンテキスト伝播"
+
+  - name: dependency-management
+    file: dependency-management.md
+    wave: 2
+    intent: "Lerna モノレポのバージョン管理、パッケージ間依存、ピア依存戦略、オプショナル依存の遅延ロードパターンを分析する"
+    summary: "lockstepバージョニング、loadPackageによる統一遅延ロード、peerDependenciesMeta(optional)でのinstall-what-you-use"
