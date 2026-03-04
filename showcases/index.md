@@ -47,6 +47,8 @@
 | [mixin-preset-dual-api](./pattern_mixin-preset-dual-api)               | withFeature(Base) mixin+プリセットexportの二層APIで入門者と上級者を両立                        |
 | [custom-jsx-domain-dsl](./pattern_custom-jsx-domain-dsl)               | React非依存カスタムJSXランタイム+IntrinsicElements={}でドメインDSLを型安全に構築               |
 | [ast-canonical-normalization](./pattern_ast-canonical-normalization)   | AST正規フォーマットでN:N変換をN+N化するクロスプラットフォーム正規化パターン                    |
+| [metadata-driven-architecture](./pattern_metadata-driven-architecture) | デコレータでメタデータ格納→ランタイム解釈のWrite/Read分離+キー集約+3層マージ                  |
+| [three-layer-platform-abstraction](./pattern_three-layer-platform-abstraction) | Interface→AbstractClass→Concreteの三層抽象化+型付き脱出口によるプラットフォーム交換          |
 
 ## Practice
 
@@ -91,6 +93,8 @@
 | [stability-tier-workspaces](./practice_stability-tier-workspaces)       | 安定度ティアによるワークスペース分類とchangeset/CI/依存方向のティア別制御            |
 | [hibernation-safe-state](./practice_hibernation-safe-state)             | WebSocket attachment+ネームスペース分離によるHibernation/eviction対応状態管理        |
 | [peer-deps-dual-declaration](./practice_peer-deps-dual-declaration)     | peerDependencies広レンジ+devDependencies具体バージョン二重宣言+sherif一貫性検証      |
+| [progressive-disclosure-api](./practice_progressive-disclosure-api)     | 引数なし→プリミティブ→オプションオブジェクトの段階的オーバーロードAPI設計             |
+| [optional-peer-lazy-load](./practice_optional-peer-lazy-load)           | optional peerDependencies+統一遅延ローダーでinstall-what-you-useを実現(4リポ横断)    |
 
 ## Claude
 
