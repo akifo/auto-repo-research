@@ -1,0 +1,117 @@
+url: https://github.com/shadcn-ui/ui
+stars: 107640
+language: TypeScript
+license: MIT
+description: "A set of beautifully-designed, accessible components and a code distribution platform. Works with your favorite frameworks. Open Source. Open Code."
+analyzed_at: "2026-03-04"
+local_path: /Users/akiho/github/github.com/shadcn-ui/ui
+scale: large
+
+perspectives:
+  - name: project-structure
+    file: project-structure.md
+    wave: 1
+    intent: "pnpm + Turborepo モノレポの構成と packages/apps の役割分担を明らかにする"
+    summary: "pnpm workspaces + Turborepo で CLI・レジストリ・テスト・テンプレートを4層分離し、publish 対象を1パッケージに限定"
+
+  - name: architecture
+    file: architecture.md
+    wave: 1
+    intent: "CLI → Registry → Transformer → Updater のパイプライン全体像とレイヤー間の依存方向を明らかにする"
+    summary: "CLI→Preflight→Registry→Transformer→Updater の単方向パイプラインで、Zod スキーマがレイヤー境界のゲートキーパーとして機能"
+
+  - name: design-philosophy
+    file: design-philosophy.md
+    wave: 1
+    intent: "『ライブラリではなくコード配布』という設計思想の背景と、それがアーキテクチャに与えた影響を分析する"
+    summary: "コードの所有権をユーザーに譲渡するコード配布モデルを AST 変換パイプラインとスキーマ駆動レジストリで実現"
+
+  - name: registry-distribution-architecture
+    file: registry-distribution-architecture.md
+    wave: 1
+    intent: "レジストリシステムの設計（namespace, resolver, fetcher, builder）とコード配布モデルの仕組みを解明する"
+    summary: "namespace による連邦型レジストリ、トポロジカルソートによる依存解決、Promise キャッシュによる重複排除を統合した配布基盤"
+
+  - name: code-transformation-pipeline
+    file: code-transformation-pipeline.md
+    wave: 1
+    intent: "AST ベースのコード変換パイプライン（recast, ts-morph, Babel）の合成パターンと拡張性を分析する"
+    summary: "統一 Transformer 型で14種の AST 変換を合成し、設定駆動の早期リターンとコアロジック再利用エクスポートで拡張性を確保"
+
+  - name: schema-validation-patterns
+    file: schema-validation-patterns.md
+    wave: 1
+    intent: "Zod による registryItemSchema の discriminatedUnion 設計と型導出パターンを明らかにする"
+    summary: "discriminatedUnion で12種のアイテム型を3バリアントに集約し、z.infer + Extract で型安全なバリアント操作を実現"
+
+  - name: cli-framework-patterns
+    file: cli-framework-patterns.md
+    wave: 1
+    intent: "Commander ベースの CLI 設計、サブコマンド構造、preflight チェーンの構成を分析する"
+    summary: "Commander + Zod オプション検証 + preflight 分離 + Shadow Config で多様なプロジェクト環境に適応する CLI アーキテクチャ"
+
+  - name: api-design-practices
+    file: api-design-practices.md
+    wave: 2
+    intent: "Registry API の公開インターフェース設計、エクスポート戦略、バージョニングを分析する"
+    summary: "subpath exports で6エントリポイントを段階的に公開し、data-slot + ComponentProps で安定的なコンポーネント API 契約を提供"
+
+  - name: composition-patterns
+    file: composition-patterns.md
+    wave: 2
+    intent: "トランスフォーマーチェーン、updater パイプライン、ビルダーパターンの合成手法を分析する"
+    summary: "AST トランスフォーマー・PostCSS プラグイン・トポロジカルソートの3層パイプラインと cn()+data-slot のコンポーネント合成"
+
+  - name: configuration-patterns
+    file: configuration-patterns.md
+    wave: 2
+    intent: "components.json の cosmiconfig ベース設定ロード、resolvedPaths 解決、マルチワークスペース対応を分析する"
+    summary: "raw→resolved の2層スキーマ設計、フレームワーク自動検出、DeepPartial ファクトリで多様なプロジェクト構成を吸収"
+
+  - name: error-handling-idioms
+    file: error-handling-idioms.md
+    wave: 2
+    intent: "Registry*Error 階層の設計、エラー伝播戦略、ユーザー向けエラーメッセージの構成を分析する"
+    summary: "16サブクラスの構造化エラー階層に suggestion フィールドを持たせ、handleError で単一集約する CLI エラー戦略"
+
+  - name: type-system-patterns
+    file: type-system-patterns.md
+    wave: 2
+    intent: "Zod discriminatedUnion と z.infer による型導出、ジェネリクス活用パターンを分析する"
+    summary: "z.infer を SSOT とした型導出優先アプローチ、React.ComponentProps によるインターフェースレス Props、Extract によるバリアント抽出"
+
+  - name: extensibility-mechanisms
+    file: extensibility-mechanisms.md
+    wave: 2
+    intent: "カスタムレジストリ、namespace システム、サードパーティ拡張ポイントの設計を分析する"
+    summary: "Union 型設定で参入障壁を最小化し、namespace + 環境変数展開 + MCP サーバーで多層の拡張ポイントを提供"
+
+  - name: migration-patterns
+    file: migration-patterns.md
+    wave: 2
+    intent: "icons/radix/RTL マイグレーションスクリプトの設計と自動変換戦略を分析する"
+    summary: "純粋関数の変換コア、マッピングテーブル駆動設計、非破壊マイグレーション戦略で安全なコード自動書き換えを実現"
+
+  - name: testing-practices
+    file: testing-practices.md
+    wave: 2
+    intent: "Vitest + MSW によるテスト戦略、registry テストのフィクスチャ設計を分析する"
+    summary: "Vitest Workspace で単体/統合テストを分離し、MSW + 実 HTTP サーバー + フレームワーク別フィクスチャで CLI テストを階層化"
+
+  - name: build-and-tooling
+    file: build-and-tooling.md
+    wave: 2
+    intent: "tsup + Turborepo のビルドパイプライン、registry:build のコード生成フローを分析する"
+    summary: "cn-* セマンティッククラスでロジックとスタイルを直交分離し、ベース×スタイルの直積をビルド時に AST 変換で合成"
+
+  - name: preflight-validation-patterns
+    file: preflight-validation-patterns.md
+    wave: 2
+    intent: "コマンド実行前の preflight チェック設計（init, add, build, migrate）と検証チェーンを分析する"
+    summary: "エラーマップ + 成果物の統一戻り値構造で検証と実行を分離し、エラー種別に応じた回復・案内・中断を実現"
+
+  - name: dev-conventions
+    file: dev-conventions.md
+    wave: 2
+    intent: "Conventional Commits、Prettier/ESLint 設定、Changesets リリースフロー、CI/CD 設計を分析する"
+    summary: "Conventional Commits + Changesets + 3層 CI/CD で107k+ stars 規模の品質とリリースフローを自動化"

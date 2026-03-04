@@ -35,7 +35,7 @@
 | 17 | [pmndrs/jotai](https://github.com/pmndrs/jotai)               | アトミック状態管理、ボトムアップ設計、Suspense 統合                        |        |
 | 18 | [dai-shi/waku](https://github.com/dai-shi/waku)               | React Server Components の最小実装、ストリーミング SSR                     |        |
 | 19 | [radix-ui/primitives](https://github.com/radix-ui/primitives) | アクセシブルコンポーネント設計、コンポジション API、headless パターン      |        |
-| 20 | [shadcn-ui/ui](https://github.com/shadcn-ui/ui)               | コピー&ペースト配布モデル、CLI によるコンポーネント生成、カスタマイズ戦略  |        |
+| 20 | [shadcn-ui/ui](https://github.com/shadcn-ui/ui)               | コピー&ペースト配布モデル、CLI によるコンポーネント生成、カスタマイズ戦略  | 済     |
 
 ## Type System / Validation
 
