@@ -1,0 +1,117 @@
+url: https://github.com/anomalyco/opencode
+stars: 116135
+language: TypeScript
+license: MIT
+description: "The open source coding agent."
+analyzed_at: "2026-03-05"
+local_path: /Users/akiho/github/github.com/anomalyco/opencode
+scale: large
+
+perspectives:
+  - name: project-structure
+    file: project-structure.md
+    wave: 1
+    intent: "モノレポ構成とパッケージ間の役割分担・依存方向を明らかにする"
+    summary: "SDK-first アーキテクチャで一方向依存を強制し、OpenAPI 自動生成で core と全 UI の型整合性を保証するモノレポ設計"
+
+  - name: architecture
+    file: architecture.md
+    wave: 1
+    intent: "TUI/Web/Desktop の統一アーキテクチャとサーバー・クライアント分離パターンを解明する"
+    summary: "fetch 差し替えによるトランスポート抽象化と Platform DI で TUI/Web/Desktop を統一 SDK で接続する3層アーキテクチャ"
+
+  - name: design-philosophy
+    file: design-philosophy.md
+    wave: 1
+    intent: "コーディングスタイルの設計哲学と AGENTS.md に具現化された開発規約の根拠を分析する"
+    summary: "AI エージェント出力を矯正する AGENTS.md 規約と、.catch() チェーン・短命名・else 排除による認知負荷最小化の設計哲学"
+
+  - name: agent-orchestration
+    file: agent-orchestration.md
+    wave: 1
+    intent: "AI エージェントの実行フロー・セッション管理・LLM 呼び出しパイプラインの設計を解明する"
+    summary: "三値戻り値のループ制御、doom loop 検出、ストリーム即時永続化を組み合わせた自律エージェントの安全な実行パイプライン"
+
+  - name: tool-system-design
+    file: tool-system-design.md
+    wave: 1
+    intent: "ツールレジストリ・ツール定義・実行制御の仕組みを分析し、拡張可能なツールシステムの設計パターンを抽出する"
+    summary: "Tool.define ファクトリで定義を統一し、レジストリ層でフィルタリング・権限・トランケーションを一元管理するツールシステム"
+
+  - name: type-system-patterns
+    file: type-system-patterns.md
+    wave: 1
+    intent: "型推論活用・ジェネリクス・型安全性の保証手法を横断的に分析する"
+    summary: "Zod スキーマを Single Source of Truth とし、namespace 同名エクスポートと discriminatedUnion で型安全なドメインモデルを構築"
+
+  - name: provider-abstraction
+    file: provider-abstraction.md
+    wave: 2
+    intent: "マルチプロバイダー対応のための抽象化レイヤーとモデル選択メカニズムを解明する"
+    summary: "3段フォールバックのモデルデータ取得、npm パッケージ名によるディスパッチ、Transform 層でプロバイダー差異を吸収する抽象化設計"
+
+  - name: api-design-practices
+    file: api-design-practices.md
+    wave: 2
+    intent: "サーバー API 設計・SDK 自動生成・クライアントとの型共有パターンを分析する"
+    summary: "Zod → hono-openapi → OpenAPI → SDK 自動生成の一気通貫パイプラインで、手動型同期を排除する契約駆動 API 設計"
+
+  - name: session-state-management
+    file: session-state-management.md
+    wave: 2
+    intent: "セッション・メッセージ・TODO の状態モデルとイベントバスによるリアクティブ更新パターンを解明する"
+    summary: "SQLite 永続化 + Database.effect による副作用遅延 + 型安全イベントバスで一方向データフローを実現する状態管理"
+
+  - name: storage-patterns
+    file: storage-patterns.md
+    wave: 2
+    intent: "SQLite ストレージ層の設計・スキーマ管理・JSON マイグレーション戦略を分析する"
+    summary: "スキーマの co-location、AsyncLocalStorage トランザクション伝播、ビルド時マイグレーション埋め込みによる CLI 向け永続化設計"
+
+  - name: permission-and-security
+    file: permission-and-security.md
+    wave: 2
+    intent: "ツール実行の権限制御・認証フロー・安全なコマンド実行の仕組みを解明する"
+    summary: "UX ガードレールとしての三層権限ルールセット、tree-sitter による bash コマンド構文解析、拒否理由別エラークラスの権限制御設計"
+
+  - name: error-handling-idioms
+    file: error-handling-idioms.md
+    wave: 2
+    intent: "try/catch 回避の設計方針・NamedError パターン・エラー伝播戦略を分析する"
+    summary: ".catch() チェーンで try/catch を回避し、NamedError + Zod スキーマで構造的判別可能なエラー型を構築するイディオム集"
+
+  - name: composition-patterns
+    file: composition-patterns.md
+    wave: 2
+    intent: "関数合成・パイプライン・ビルダーパターンの活用とミドルウェア的構成を分析する"
+    summary: "pipe+mergeDeep による宣言的設定合成、Plugin.trigger のミュータブル出力フック、スプレッド条件付き配列合成の合成パターン集"
+
+  - name: testing-practices
+    file: testing-practices.md
+    wave: 2
+    intent: "モック回避方針・パッケージ単位のテスト分離・E2E テスト戦略を分析する"
+    summary: "tmpdir + Instance.provide でモックを回避し、パッケージ境界でテストを隔離、data-* セレクタで E2E を安定化するテスト戦略"
+
+  - name: build-and-tooling
+    file: build-and-tooling.md
+    wave: 2
+    intent: "Bun + Turborepo のビルドパイプラインとスタンドアロンバイナリ生成の仕組みを分析する"
+    summary: "Bun compile でスタンドアロンバイナリを生成し、define で静的値を埋め込み、Nix で再現可能ビルドを実現するビルドパイプライン"
+
+  - name: ai-settings
+    file: ai-settings.md
+    wave: 2
+    intent: ".opencode/ ディレクトリの構造・AGENTS.md・カスタムツール/コマンド定義の設計パターンを分析する"
+    summary: "AGENTS.md の階層配置、frontmatter によるエージェント宣言、プロンプト+バリデーション二重防御の AI 設定基盤"
+
+  - name: tui-rendering-patterns
+    file: tui-rendering-patterns.md
+    wave: 2
+    intent: "SolidJS ベースの TUI レンダリングと opentui フレームワークの活用パターンを分析する"
+    summary: "SolidJS の fine-grained reactivity と 16ms バッチングで 60fps TUI を実現し、15 層 Provider で関心を分離するレンダリング設計"
+
+  - name: plugin-extensibility
+    file: plugin-extensibility.md
+    wave: 2
+    intent: "プラグイン・MCP サーバー統合・外部拡張メカニズムの設計を解明する"
+    summary: "Output Mutation フックで LLM パイプライン全段に介入可能な統一プラグインシステムと、4層の段階的拡張メカニズム"
