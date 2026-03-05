@@ -107,7 +107,7 @@ export class ExpressAdapter extends AbstractHttpAdapter<
   http.Server | https.Server
 > {
   public getType(): string {
-    return 'express';
+    return "express";
   }
   // デフォルト実装（this.instance.get() 等）をそのまま継承
 }
@@ -118,20 +118,20 @@ export class ExpressAdapter extends AbstractHttpAdapter<
 export class FastifyAdapter<
   TServer extends RawServerBase = RawServerDefault,
   TRawRequest extends FastifyRawRequest<TServer> = FastifyRawRequest<TServer>,
-  // ... デフォルト型により通常は型引数指定不要
-> extends AbstractHttpAdapter<TServer, TRequest, TReply> {
-
+> // ... デフォルト型により通常は型引数指定不要
+  extends AbstractHttpAdapter<TServer, TRequest, TReply>
+{
   // Fastify は Express と API が異なるため、ルーティングメソッドをオーバーライド
   public get(...args: any[]) {
-    return this.injectRouteOptions('GET', ...args);
+    return this.injectRouteOptions("GET", ...args);
   }
 
   public post(...args: any[]) {
-    return this.injectRouteOptions('POST', ...args);
+    return this.injectRouteOptions("POST", ...args);
   }
 
   public getType(): string {
-    return 'fastify';
+    return "fastify";
   }
 }
 ```
@@ -250,11 +250,11 @@ export class CfWorkerJsonSchemaValidator implements jsonSchemaValidator {
 
 ```typescript
 // modelcontextprotocol/typescript-sdk - packages/server/src/shimsNode.ts:6-7
-export { AjvJsonSchemaValidator as DefaultJsonSchemaValidator } from '@modelcontextprotocol/core';
-export { default as process } from 'node:process';
+export { AjvJsonSchemaValidator as DefaultJsonSchemaValidator } from "@modelcontextprotocol/core";
+export { default as process } from "node:process";
 
 // modelcontextprotocol/typescript-sdk - packages/server/src/shimsWorkerd.ts:6
-export { CfWorkerJsonSchemaValidator as DefaultJsonSchemaValidator } from '@modelcontextprotocol/core';
+export { CfWorkerJsonSchemaValidator as DefaultJsonSchemaValidator } from "@modelcontextprotocol/core";
 ```
 
 ## Bad Example
@@ -264,13 +264,13 @@ export { CfWorkerJsonSchemaValidator as DefaultJsonSchemaValidator } from '@mode
 ```typescript
 // Bad: コア層にプラットフォーム条件分岐
 class HttpServer {
-  private type: 'express' | 'fastify';
+  private type: "express" | "fastify";
 
   handleRequest(req: any, res: any) {
-    if (this.type === 'express') {
+    if (this.type === "express") {
       // Express 固有の処理
       res.send(data);
-    } else if (this.type === 'fastify') {
+    } else if (this.type === "fastify") {
       // Fastify 固有の処理
       res.send(data);
     }

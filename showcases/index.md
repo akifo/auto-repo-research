@@ -4,51 +4,51 @@
 
 ## Pattern
 
-| Showcase                                                               | 概要                                                                                           |
-| ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| [middleware-composition](./pattern_middleware-composition)             | ファクトリ関数+名前付き関数式+クロージャ事前計算によるミドルウェア合成                         |
-| [self-rewriting-method](./pattern_self-rewriting-method)               | 初回実行でメソッドを差し替え、2回目以降の分岐コストをゼロにする遅延最適化                      |
-| [dynamic-argument](./pattern_dynamic-argument)                         | `T \| ((ctx) => T)` で静的値と動的関数を統一する設定API設計パターン                            |
-| [self-filtering-strategy](./pattern_self-filtering-strategy)           | 全ハンドラを常に呼び出し各自が自己選別する、switch/if 不要のプラグイン設計                     |
-| [options-or-false](./pattern_options-or-false)                         | `Options \| false` + filter(Boolean) で宣言的にプラグイン配列を構築                            |
-| [phantom-type](./pattern_phantom-type)                                 | optional プロパティへの型情報埋め込みでランタイムコストゼロの型推論を実現                      |
-| [escalating-escape-hatches](./pattern_escalating-escape-hatches)       | 段階的抽象度の拡張ポイントで安全性と柔軟性を両立するライブラリ設計                             |
-| [subscribable-observer](./pattern_subscribable-observer)               | 30行のSubscribable基底クラスで6フレームワーク対応の最小購読パターン                            |
-| [consume-aware-resource](./pattern_consume-aware-resource)             | AbortSignalのgetter検出で消費有無を判定し適応的にキャンセルするリソース管理                    |
-| [register-declaration-merging](./pattern_register-declaration-merging) | 空Registerインターフェース+declaration mergingでライブラリ型をグローバルカスタマイズ           |
-| [promise-coalescing](./pattern_promise-coalescing)                     | 並行リクエストの重複排除+無効化タイムスタンプ検証でキャッシュ整合性を保証                      |
-| [weakmap-scoped-state](./pattern_weakmap-scoped-state)                 | WeakMap+ファクトリ関数による環境スコープ状態管理でメモリリークを防止                           |
-| [dependency-injection](./pattern_dependency-injection)                 | 関数引数DI→遅延プロキシ→プッシュ型Hub→型レベルLayer/Tagの4段階DIパターン体系                   |
-| [dual-api](./pattern_dual-api)                                         | dual()でdata-first/data-last両スタイルを単一実装から自動導出する二重APIパターン                |
-| [symbol-type-identity](./pattern_symbol-type-identity)                 | Symbol.for()+hasProperty型ガードでinstanceof代替の堅牢な型判定を実現                           |
-| [ast-interpreter](./pattern_ast-interpreter)                           | AST tagged union+Match型でコンパイル時網羅性チェック付き拡張可能インタプリタ                   |
-| [composition-root](./pattern_composition-root)                         | 単一クラス→関数+パイプライン→ビルド関数+コンテキスト→オーケストレーターの4形態Composition Root |
-| [scoped-resource-di](./pattern_scoped-resource-di)                     | Layer.scoped→using/Disposable→WeakMap→Observer連動→AbortControllerの5段階リソースDI            |
-| [e2e-fixture-composition](./pattern_e2e-fixture-composition)           | Playwright test.extendによる宣言的フィクスチャ設計と認証バイパス・自動クリーンアップ           |
-| [capabilities-flag](./pattern_capabilities-flag)                       | booleanフラグでバリアント機能を宣言するインターフェース設計パターン                            |
-| [circuit-breaker](./pattern_circuit-breaker)                           | 外部サービスの連続失敗検知+自動遮断+復旧によるCircuit Breakerパターン                          |
-| [trait-composition](./pattern_trait-composition)                       | $constructor+init()チェーンでクラス継承を排除しtree-shake可能なトレイト合成                    |
-| [adaptive-rate-limiter](./pattern_adaptive-rate-limiter)               | AIMD風3層適応的並列度制御でAPIレートリミットにゼロコンフィグ自動適応                           |
-| [zod-enum-handler-map](./pattern_zod-enum-handler-map)                 | Zod enum+Record型ハンドラマップで50種以上の処理分岐の網羅性をコンパイル時保証                  |
-| [type-state-builder](./pattern_type-state-builder)                     | センチネル型+条件付き型+TypeError phantomによる型パラメータ状態マシンfluent builder            |
-| [recursive-proxy-api](./pattern_recursive-proxy-api)                   | Proxy+ファサード型キャストで型安全な動的APIを構築する二重構造パターン（3防御策込み）           |
-| [structural-duck-typing](./pattern_structural-duck-typing)             | -Esque構造型+ランタイムFeature Detectionで外部ライブラリをゼロ依存統合                         |
-| [idempotent-schema-migration](./pattern_idempotent-schema-migration)   | CREATE TABLE IF NOT EXISTS+ALTER TABLE ADD COLUMN duplicate無視による無停止スキーマ進化        |
-| [resumable-stream-replay](./pattern_resumable-stream-replay)           | SQLiteバッファリング+3フェーズ再開プロトコルによる切断耐性ストリームリプレイ                   |
-| [single-alarm-multiplexing](./pattern_single-alarm-multiplexing)       | 単一アラーム制約をSQLiteテーブルで多重化し任意数のスケジュールを統一管理                       |
-| [object-augmentation](./pattern_object-augmentation)                   | Object.defineProperty+交差型で継承なしに型安全な機能注入                                       |
-| [bidirectional-state-sync](./pattern_bidirectional-state-sync)         | 対称メッセージ型+送信元除外ブロードキャスト+Serializable型制約の双方向ステート同期             |
-| [transport-auto-fallback](./pattern_transport-auto-fallback)           | autoモードでstreamable-httpを先に試行し404/405ならSSEにフォールバック                          |
-| [subsystem-stacking](./pattern_subsystem-stacking)                     | 単一基盤クラスに独立サブシステムをSQLiteテーブルとして冪等に積層                               |
-| [disposable-event-hierarchy](./pattern_disposable-event-hierarchy)     | emit()単一メソッド+DisposableStore+3層バブルアップの階層的イベント伝搬                         |
-| [mixin-feature-injection](./pattern_mixin-feature-injection)           | TypeScript mixinで継承チェーン変更なしにクロスカッティング機能を注入                           |
-| [exclusive-block-safe-rethrow](./pattern_exclusive-block-safe-rethrow) | 排他制御ブロック内エラーを変数退避+状態リセット+ブロック外再スローでデッドロック防止           |
-| [tri-value-hook-control](./pattern_tri-value-hook-control)             | Response\|Request\|voidの三値フック返却で拒否・変形・続行を単一型表現                          |
-| [mixin-preset-dual-api](./pattern_mixin-preset-dual-api)               | withFeature(Base) mixin+プリセットexportの二層APIで入門者と上級者を両立                        |
-| [custom-jsx-domain-dsl](./pattern_custom-jsx-domain-dsl)               | React非依存カスタムJSXランタイム+IntrinsicElements={}でドメインDSLを型安全に構築               |
-| [ast-canonical-normalization](./pattern_ast-canonical-normalization)   | AST正規フォーマットでN:N変換をN+N化するクロスプラットフォーム正規化パターン                    |
-| [metadata-driven-architecture](./pattern_metadata-driven-architecture) | デコレータでメタデータ格納→ランタイム解釈のWrite/Read分離+キー集約+3層マージ                  |
-| [three-layer-platform-abstraction](./pattern_three-layer-platform-abstraction) | Interface→AbstractClass→Concreteの三層抽象化+型付き脱出口によるプラットフォーム交換          |
+| Showcase                                                                       | 概要                                                                                           |
+| ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| [middleware-composition](./pattern_middleware-composition)                     | ファクトリ関数+名前付き関数式+クロージャ事前計算によるミドルウェア合成                         |
+| [self-rewriting-method](./pattern_self-rewriting-method)                       | 初回実行でメソッドを差し替え、2回目以降の分岐コストをゼロにする遅延最適化                      |
+| [dynamic-argument](./pattern_dynamic-argument)                                 | `T \| ((ctx) => T)` で静的値と動的関数を統一する設定API設計パターン                            |
+| [self-filtering-strategy](./pattern_self-filtering-strategy)                   | 全ハンドラを常に呼び出し各自が自己選別する、switch/if 不要のプラグイン設計                     |
+| [options-or-false](./pattern_options-or-false)                                 | `Options \| false` + filter(Boolean) で宣言的にプラグイン配列を構築                            |
+| [phantom-type](./pattern_phantom-type)                                         | optional プロパティへの型情報埋め込みでランタイムコストゼロの型推論を実現                      |
+| [escalating-escape-hatches](./pattern_escalating-escape-hatches)               | 段階的抽象度の拡張ポイントで安全性と柔軟性を両立するライブラリ設計                             |
+| [subscribable-observer](./pattern_subscribable-observer)                       | 30行のSubscribable基底クラスで6フレームワーク対応の最小購読パターン                            |
+| [consume-aware-resource](./pattern_consume-aware-resource)                     | AbortSignalのgetter検出で消費有無を判定し適応的にキャンセルするリソース管理                    |
+| [register-declaration-merging](./pattern_register-declaration-merging)         | 空Registerインターフェース+declaration mergingでライブラリ型をグローバルカスタマイズ           |
+| [promise-coalescing](./pattern_promise-coalescing)                             | 並行リクエストの重複排除+無効化タイムスタンプ検証でキャッシュ整合性を保証                      |
+| [weakmap-scoped-state](./pattern_weakmap-scoped-state)                         | WeakMap+ファクトリ関数による環境スコープ状態管理でメモリリークを防止                           |
+| [dependency-injection](./pattern_dependency-injection)                         | 関数引数DI→遅延プロキシ→プッシュ型Hub→型レベルLayer/Tagの4段階DIパターン体系                   |
+| [dual-api](./pattern_dual-api)                                                 | dual()でdata-first/data-last両スタイルを単一実装から自動導出する二重APIパターン                |
+| [symbol-type-identity](./pattern_symbol-type-identity)                         | Symbol.for()+hasProperty型ガードでinstanceof代替の堅牢な型判定を実現                           |
+| [ast-interpreter](./pattern_ast-interpreter)                                   | AST tagged union+Match型でコンパイル時網羅性チェック付き拡張可能インタプリタ                   |
+| [composition-root](./pattern_composition-root)                                 | 単一クラス→関数+パイプライン→ビルド関数+コンテキスト→オーケストレーターの4形態Composition Root |
+| [scoped-resource-di](./pattern_scoped-resource-di)                             | Layer.scoped→using/Disposable→WeakMap→Observer連動→AbortControllerの5段階リソースDI            |
+| [e2e-fixture-composition](./pattern_e2e-fixture-composition)                   | Playwright test.extendによる宣言的フィクスチャ設計と認証バイパス・自動クリーンアップ           |
+| [capabilities-flag](./pattern_capabilities-flag)                               | booleanフラグでバリアント機能を宣言するインターフェース設計パターン                            |
+| [circuit-breaker](./pattern_circuit-breaker)                                   | 外部サービスの連続失敗検知+自動遮断+復旧によるCircuit Breakerパターン                          |
+| [trait-composition](./pattern_trait-composition)                               | $constructor+init()チェーンでクラス継承を排除しtree-shake可能なトレイト合成                    |
+| [adaptive-rate-limiter](./pattern_adaptive-rate-limiter)                       | AIMD風3層適応的並列度制御でAPIレートリミットにゼロコンフィグ自動適応                           |
+| [zod-enum-handler-map](./pattern_zod-enum-handler-map)                         | Zod enum+Record型ハンドラマップで50種以上の処理分岐の網羅性をコンパイル時保証                  |
+| [type-state-builder](./pattern_type-state-builder)                             | センチネル型+条件付き型+TypeError phantomによる型パラメータ状態マシンfluent builder            |
+| [recursive-proxy-api](./pattern_recursive-proxy-api)                           | Proxy+ファサード型キャストで型安全な動的APIを構築する二重構造パターン（3防御策込み）           |
+| [structural-duck-typing](./pattern_structural-duck-typing)                     | -Esque構造型+ランタイムFeature Detectionで外部ライブラリをゼロ依存統合                         |
+| [idempotent-schema-migration](./pattern_idempotent-schema-migration)           | CREATE TABLE IF NOT EXISTS+ALTER TABLE ADD COLUMN duplicate無視による無停止スキーマ進化        |
+| [resumable-stream-replay](./pattern_resumable-stream-replay)                   | SQLiteバッファリング+3フェーズ再開プロトコルによる切断耐性ストリームリプレイ                   |
+| [single-alarm-multiplexing](./pattern_single-alarm-multiplexing)               | 単一アラーム制約をSQLiteテーブルで多重化し任意数のスケジュールを統一管理                       |
+| [object-augmentation](./pattern_object-augmentation)                           | Object.defineProperty+交差型で継承なしに型安全な機能注入                                       |
+| [bidirectional-state-sync](./pattern_bidirectional-state-sync)                 | 対称メッセージ型+送信元除外ブロードキャスト+Serializable型制約の双方向ステート同期             |
+| [transport-auto-fallback](./pattern_transport-auto-fallback)                   | autoモードでstreamable-httpを先に試行し404/405ならSSEにフォールバック                          |
+| [subsystem-stacking](./pattern_subsystem-stacking)                             | 単一基盤クラスに独立サブシステムをSQLiteテーブルとして冪等に積層                               |
+| [disposable-event-hierarchy](./pattern_disposable-event-hierarchy)             | emit()単一メソッド+DisposableStore+3層バブルアップの階層的イベント伝搬                         |
+| [mixin-feature-injection](./pattern_mixin-feature-injection)                   | TypeScript mixinで継承チェーン変更なしにクロスカッティング機能を注入                           |
+| [exclusive-block-safe-rethrow](./pattern_exclusive-block-safe-rethrow)         | 排他制御ブロック内エラーを変数退避+状態リセット+ブロック外再スローでデッドロック防止           |
+| [tri-value-hook-control](./pattern_tri-value-hook-control)                     | Response\|Request\|voidの三値フック返却で拒否・変形・続行を単一型表現                          |
+| [mixin-preset-dual-api](./pattern_mixin-preset-dual-api)                       | withFeature(Base) mixin+プリセットexportの二層APIで入門者と上級者を両立                        |
+| [custom-jsx-domain-dsl](./pattern_custom-jsx-domain-dsl)                       | React非依存カスタムJSXランタイム+IntrinsicElements={}でドメインDSLを型安全に構築               |
+| [ast-canonical-normalization](./pattern_ast-canonical-normalization)           | AST正規フォーマットでN:N変換をN+N化するクロスプラットフォーム正規化パターン                    |
+| [metadata-driven-architecture](./pattern_metadata-driven-architecture)         | デコレータでメタデータ格納→ランタイム解釈のWrite/Read分離+キー集約+3層マージ                   |
+| [three-layer-platform-abstraction](./pattern_three-layer-platform-abstraction) | Interface→AbstractClass→Concreteの三層抽象化+型付き脱出口によるプラットフォーム交換            |
 
 ## Practice
 
@@ -93,7 +93,7 @@
 | [stability-tier-workspaces](./practice_stability-tier-workspaces)       | 安定度ティアによるワークスペース分類とchangeset/CI/依存方向のティア別制御            |
 | [hibernation-safe-state](./practice_hibernation-safe-state)             | WebSocket attachment+ネームスペース分離によるHibernation/eviction対応状態管理        |
 | [peer-deps-dual-declaration](./practice_peer-deps-dual-declaration)     | peerDependencies広レンジ+devDependencies具体バージョン二重宣言+sherif一貫性検証      |
-| [progressive-disclosure-api](./practice_progressive-disclosure-api)     | 引数なし→プリミティブ→オプションオブジェクトの段階的オーバーロードAPI設計             |
+| [progressive-disclosure-api](./practice_progressive-disclosure-api)     | 引数なし→プリミティブ→オプションオブジェクトの段階的オーバーロードAPI設計            |
 | [optional-peer-lazy-load](./practice_optional-peer-lazy-load)           | optional peerDependencies+統一遅延ローダーでinstall-what-you-useを実現(4リポ横断)    |
 
 ## Claude
@@ -108,6 +108,7 @@
 | [hierarchical-agents-md](./claude_hierarchical-agents-md)           | CLAUDE.md委任+ディレクトリ別AGENTS.md+PostToolUseフックによる階層的AIコンテキスト管理 |
 | [always-ask-never-boundaries](./claude_always-ask-never-boundaries) | Always/Ask first/Neverの3段階行動境界でAIツールの行動を明示的に制御                   |
 | [skills-npm-bundled-docs](./claude_skills-npm-bundled-docs)         | SKILL.md+docsをnpmパッケージに同梱しAIエージェントがnode_modules/から直接参照         |
+| [agents-md-style-enforcement](./claude_agents-md-style-enforcement) | AGENTS.mdでAI生成コードのスタイルを強制する4リポ横断パターン比較と規模別構成ガイド    |
 
 ## Tool
 

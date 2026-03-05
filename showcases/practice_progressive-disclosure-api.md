@@ -32,22 +32,22 @@ export function Controller(options: ControllerOptions): ClassDecorator;
 export function Controller(
   prefixOrOptions?: string | string[] | ControllerOptions,
 ): ClassDecorator {
-  const defaultPath = '/';
+  const defaultPath = "/";
 
   const [path, host, scopeOptions, versionOptions] = isUndefined(
-    prefixOrOptions,
-  )
+      prefixOrOptions,
+    )
     ? [defaultPath, undefined, undefined, undefined]
     : isString(prefixOrOptions) || Array.isArray(prefixOrOptions)
-      ? [prefixOrOptions, undefined, undefined, undefined]
-      : [
-          prefixOrOptions.path || defaultPath,
-          prefixOrOptions.host,
-          { scope: prefixOrOptions.scope, durable: prefixOrOptions.durable },
-          Array.isArray(prefixOrOptions.version)
-            ? Array.from(new Set(prefixOrOptions.version))
-            : prefixOrOptions.version,
-        ];
+    ? [prefixOrOptions, undefined, undefined, undefined]
+    : [
+      prefixOrOptions.path || defaultPath,
+      prefixOrOptions.host,
+      { scope: prefixOrOptions.scope, durable: prefixOrOptions.durable },
+      Array.isArray(prefixOrOptions.version)
+        ? Array.from(new Set(prefixOrOptions.version))
+        : prefixOrOptions.version,
+    ];
 
   return (target: object) => {
     Reflect.defineMetadata(CONTROLLER_WATERMARK, true, target);
@@ -82,14 +82,12 @@ HTTP メソッドデコレータ (`@Get`, `@Post`, `@Delete` 等) は全て同�
 
 ```typescript
 // packages/common/decorators/http/request-mapping.decorator.ts:32-48
-const createMappingDecorator =
-  (method: RequestMethod) =>
-  (path?: string | string[]): MethodDecorator => {
-    return RequestMapping({
-      [PATH_METADATA]: path,
-      [METHOD_METADATA]: method,
-    });
-  };
+const createMappingDecorator = (method: RequestMethod) => (path?: string | string[]): MethodDecorator => {
+  return RequestMapping({
+    [PATH_METADATA]: path,
+    [METHOD_METADATA]: method,
+  });
+};
 
 export const Post = createMappingDecorator(RequestMethod.POST);
 export const Get = createMappingDecorator(RequestMethod.GET);
@@ -107,26 +105,24 @@ export const Search = createMappingDecorator(RequestMethod.SEARCH);
 
 ```typescript
 // packages/common/decorators/http/route-params.decorator.ts:67-86
-const createPipesRouteParamDecorator =
-  (paramtype: RouteParamtypes) =>
-  (
-    data?: any,
-    ...pipes: (Type<PipeTransform> | PipeTransform)[]
-  ): ParameterDecorator =>
-  (target, key, index) => {
-    const args =
-      Reflect.getMetadata(ROUTE_ARGS_METADATA, target.constructor, key!) || {};
-    const hasParamData = isNil(data) || isString(data);
-    const paramData = hasParamData ? data : undefined;
-    const paramPipes = hasParamData ? pipes : [data, ...pipes];
+const createPipesRouteParamDecorator = (paramtype: RouteParamtypes) =>
+(
+  data?: any,
+  ...pipes: (Type<PipeTransform> | PipeTransform)[]
+): ParameterDecorator =>
+(target, key, index) => {
+  const args = Reflect.getMetadata(ROUTE_ARGS_METADATA, target.constructor, key!) || {};
+  const hasParamData = isNil(data) || isString(data);
+  const paramData = hasParamData ? data : undefined;
+  const paramPipes = hasParamData ? pipes : [data, ...pipes];
 
-    Reflect.defineMetadata(
-      ROUTE_ARGS_METADATA,
-      assignMetadata(args, paramtype, index, paramData!, ...paramPipes),
-      target.constructor,
-      key!,
-    );
-  };
+  Reflect.defineMetadata(
+    ROUTE_ARGS_METADATA,
+    assignMetadata(args, paramtype, index, paramData!, ...paramPipes),
+    target.constructor,
+    key!,
+  );
+};
 ```
 
 ### パターン 3: パッケージ横断での一貫した適用

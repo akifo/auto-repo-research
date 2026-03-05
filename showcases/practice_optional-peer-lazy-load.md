@@ -71,7 +71,7 @@ NestJS の `loadPackage` は 20 行未満の関数だが、コードベース全
 const MISSING_REQUIRED_DEPENDENCY = (name: string, reason: string) =>
   `The "${name}" package is missing. Please, make sure to install it to take advantage of ${reason}.`;
 
-const logger = new Logger('PackageLoader');
+const logger = new Logger("PackageLoader");
 
 export function loadPackage(
   packageName: string,
@@ -221,8 +221,8 @@ function formatLocalSetupError(err: unknown): string {
     missing
       ? "Reason: optional dependency node-llama-cpp is missing (or failed to install)."
       : detail
-        ? `Reason: ${detail}`
-        : undefined,
+      ? `Reason: ${detail}`
+      : undefined,
     "To enable local embeddings:",
     "1) Use Node 22 LTS (recommended for installs/updates)",
     missing
@@ -245,31 +245,29 @@ zustand のコアストア（`vanilla.ts`）は React を一切 import せず、
 ```typescript
 // pmndrs/zustand: src/vanilla.ts:60-100 (React に依存しないコア)
 const createStoreImpl: CreateStoreImpl = (createState) => {
-  type TState = ReturnType<typeof createState>
-  type Listener = (state: TState, prevState: TState) => void
-  let state: TState
-  const listeners: Set<Listener> = new Set()
+  type TState = ReturnType<typeof createState>;
+  type Listener = (state: TState, prevState: TState) => void;
+  let state: TState;
+  const listeners: Set<Listener> = new Set();
 
-  const setState: StoreApi<TState>['setState'] = (partial, replace) => {
-    const nextState =
-      typeof partial === 'function'
-        ? (partial as (state: TState) => TState)(state)
-        : partial
+  const setState: StoreApi<TState>["setState"] = (partial, replace) => {
+    const nextState = typeof partial === "function"
+      ? (partial as (state: TState) => TState)(state)
+      : partial;
     if (!Object.is(nextState, state)) {
-      const previousState = state
-      state =
-        (replace ?? (typeof nextState !== 'object' || nextState === null))
-          ? (nextState as TState)
-          : Object.assign({}, state, nextState)
-      listeners.forEach((listener) => listener(state, previousState))
+      const previousState = state;
+      state = (replace ?? (typeof nextState !== "object" || nextState === null))
+        ? (nextState as TState)
+        : Object.assign({}, state, nextState);
+      listeners.forEach((listener) => listener(state, previousState));
     }
-  }
+  };
   // ...
-}
+};
 
 // pmndrs/zustand: src/index.ts:1-2 (React ありの場合はこちらから使う)
-export * from './vanilla.ts'
-export * from './react.ts'
+export * from "./react.ts";
+export * from "./vanilla.ts";
 ```
 
 ## Bad Example
@@ -281,9 +279,9 @@ export * from './react.ts'
 class ClientRedis {
   constructor() {
     try {
-      this.redis = require('ioredis');
+      this.redis = require("ioredis");
     } catch {
-      throw new Error('ioredis not found');  // 情報不足: 何のために必要かが不明
+      throw new Error("ioredis not found"); // 情報不足: 何のために必要かが不明
     }
   }
 }
@@ -291,9 +289,9 @@ class ClientRedis {
 class ClientKafka {
   constructor() {
     try {
-      this.kafka = require('kafkajs');
+      this.kafka = require("kafkajs");
     } catch {
-      console.log('kafkajs is needed');  // ログレベルも形式も不統一
+      console.log("kafkajs is needed"); // ログレベルも形式も不統一
       process.exit(1);
     }
   }
@@ -315,12 +313,12 @@ class ClientKafka {
 // Bad: バンドラーが 'ioredis' を必須依存として検出してしまう
 function loadPackage(packageName: string) {
   try {
-    return require(packageName);  // webpack/esbuild は動的 require を解析できない場合がある
+    return require(packageName); // webpack/esbuild は動的 require を解析できない場合がある
   } catch (e) { /* ... */ }
 }
 
 // Good: クロージャで渡すことで静的解析を回避（NestJS 方式）
-loadPackage('ioredis', ClientRedis.name, () => require('ioredis'));
+loadPackage("ioredis", ClientRedis.name, () => require("ioredis"));
 //                                        ^^^^^^^^^^^^^^^^^^^^^^
 //                     バンドラーはこのクロージャを optional として扱える
 ```
