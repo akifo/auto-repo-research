@@ -35,8 +35,8 @@ export async function transform(
     transformRtl,
     transformIcons,
     transformCleanup,
-  ]
-)
+  ],
+);
 ```
 
 各 transformer は `Transformer` 型（`SourceFile` を受け取り `SourceFile` を返す関数）に統一されており、パイプラインへの追加・削除が容易である。例えば `transformRsc`（`packages/shadcn/src/utils/transformers/transform-rsc.ts:6-18`）は、ユーザーが RSC を使わない場合に `"use client"` ディレクティブを除去する:
@@ -45,14 +45,14 @@ export async function transform(
 // packages/shadcn/src/utils/transformers/transform-rsc.ts:6-18
 export const transformRsc: Transformer = async ({ sourceFile, config }) => {
   if (config.rsc) {
-    return sourceFile
+    return sourceFile;
   }
-  const first = sourceFile.getFirstChildByKind(SyntaxKind.ExpressionStatement)
+  const first = sourceFile.getFirstChildByKind(SyntaxKind.ExpressionStatement);
   if (first && directiveRegex.test(first.getText())) {
-    first.remove()
+    first.remove();
   }
-  return sourceFile
-}
+  return sourceFile;
+};
 ```
 
 また `transformImport`（`packages/shadcn/src/utils/transformers/transform-import.ts`）はレジストリ内部の `@/registry/new-york-v4/ui/button` のような import パスを、ユーザーの `components.json` で設定されたエイリアス（`@/components/ui/button` 等）に書き換える。これはテキスト置換ではなく AST の `ImportDeclaration` を操作するため、コード構造を壊さない。
@@ -65,7 +65,7 @@ export const transformRsc: Transformer = async ({ sourceFile, config }) => {
 // packages/shadcn/src/registry/constants.ts:33-35
 export const BUILTIN_REGISTRIES: z.infer<typeof registryConfigSchema> = {
   "@shadcn": `${REGISTRY_URL}/styles/{style}/{name}.json`,
-}
+};
 ```
 
 ユーザーは `components.json` にサードパーティレジストリを追加でき、CLI は透過的にそれらを解決する。レジストリ名は `@` プレフィックスが必須（`packages/shadcn/src/registry/schema.ts:22-24` のバリデーション）であり、npm のスコープパッケージと類似した命名規約を採用している。
@@ -132,7 +132,7 @@ export const registryItemSchema = z.discriminatedUnion("type", [
   registryItemCommonSchema.extend({
     type: registryItemTypeSchema.exclude(["registry:base", "registry:font"]),
   }),
-])
+]);
 ```
 
 - **薄いコンポーネントラッパー**: コンポーネントは独自の state 管理や複雑なロジックを持たず、Radix UI プリミティブに Tailwind クラスを適用するだけの薄い層に留める。これにより、ユーザーがコードを所有した後の可読性と変更容易性が最大化される。
@@ -146,11 +146,11 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
       data-slot="input"
       className={cn(
         "h-9 w-full min-w-0 rounded-md border border-input bg-transparent ...",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 ```
 
@@ -165,9 +165,8 @@ export class RegistryNotFoundError extends RegistryError {
       statusCode: 404,
       cause,
       context: { url },
-      suggestion:
-        "Check if the item name is correct and the registry URL is accessible.",
-    })
+      suggestion: "Check if the item name is correct and the registry URL is accessible.",
+    });
   }
 }
 ```

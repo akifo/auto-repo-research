@@ -5,7 +5,7 @@
 
 ## 概要
 
-drizzle-orm のクエリビルダーは、メソッドチェインによる段階的なクエリ構築と、タグ付きテンプレートリテラル (`sql```) による SQL 式の合成という2つの合成軸を持つ。注目に値するのは、TypeScript の型システムを駆使して「一度しか呼べないメソッド」を型レベルで排除する Phantom Type パターンと、`SQLWrapper` インターフェースによる統一的な式合成モデルである。これらの合成パターンは SQL ビルダーに限らず、任意の宣言的 DSL 構築に応用できる。
+drizzle-orm のクエリビルダーは、メソッドチェインによる段階的なクエリ構築と、タグ付きテンプレートリテラル (``sql```) による SQL 式の合成という2つの合成軸を持つ。注目に値するのは、TypeScript の型システムを駆使して「一度しか呼べないメソッド」を型レベルで排除する Phantom Type パターンと、``SQLWrapper` インターフェースによる統一的な式合成モデルである。これらの合成パターンは SQL ビルダーに限らず、任意の宣言的 DSL 構築に応用できる。
 
 ## 背景にある原則
 
@@ -24,7 +24,7 @@ drizzle-orm のクエリビルダーは、メソッドチェインによる段�
 // sql/sql.ts:485-495
 export function sql(strings: TemplateStringsArray, ...params: SQLChunk[]): SQL {
   const queryChunks: SQLChunk[] = [];
-  if (params.length > 0 || (strings.length > 0 && strings[0] !== '')) {
+  if (params.length > 0 || (strings.length > 0 && strings[0] !== "")) {
     queryChunks.push(new StringChunk(strings[0]!));
   }
   for (const [paramIndex, param] of params.entries()) {
@@ -78,9 +78,9 @@ export function and(...unfilteredConditions: (SQLWrapper | undefined)[]): SQL | 
   if (conditions.length === 0) return undefined;
   if (conditions.length === 1) return new SQL(conditions);
   return new SQL([
-    new StringChunk('('),
-    sql.join(conditions, new StringChunk(' and ')),
-    new StringChunk(')'),
+    new StringChunk("("),
+    sql.join(conditions, new StringChunk(" and ")),
+    new StringChunk(")"),
   ]);
 }
 ```
@@ -156,9 +156,9 @@ if (is(chunk, Subquery)) {
     return { sql: escapeName(chunk._.alias), params: [] };
   }
   return this.buildQueryFromSourceParams([
-    new StringChunk('('),
+    new StringChunk("("),
     chunk._.sql,
-    new StringChunk(') '),
+    new StringChunk(") "),
     new Name(chunk._.alias),
   ], config);
 }
@@ -171,7 +171,7 @@ if (is(chunk, Subquery)) {
 ```typescript
 // selection-proxy.ts:79-88
 if (is(value, SQL.Aliased)) {
-  if (this.config.sqlAliasedBehavior === 'sql' && !value.isSelectionField) {
+  if (this.config.sqlAliasedBehavior === "sql" && !value.isSelectionField) {
     return value.sql;
   }
   const newValue = value.clone();
@@ -262,14 +262,14 @@ where(where: SQL | undefined): PgSelectWithout<this, TDynamic, 'where'> {
 ```typescript
 // Bad: エイリアスなしの SQL 式をサブクエリから参照
 const sq = db.select({
-  fullName: sql`first_name || ' ' || last_name`,  // エイリアスなし
-}).from(users).as('sq');
-db.select({ name: sq.fullName }).from(sq);  // ランタイムエラー
+  fullName: sql`first_name || ' ' || last_name`, // エイリアスなし
+}).from(users).as("sq");
+db.select({ name: sq.fullName }).from(sq); // ランタイムエラー
 
 // Better: .as() でエイリアスを付与
 const sq = db.select({
-  fullName: sql<string>`first_name || ' ' || last_name`.as('full_name'),
-}).from(users).as('sq');
+  fullName: sql<string>`first_name || ' ' || last_name`.as("full_name"),
+}).from(users).as("sq");
 ```
 
 ## 導出ルール

@@ -23,6 +23,7 @@ shadcn/ui は CLI ツール（shadcn）とコンポーネントライブラリ�
 `transform()` 関数はデフォルトのトランスフォーマーリストを持つが、呼び出し側がリストを上書きできる設計になっている。`update-files.ts:145-159` では、プロジェクトのコンテキストに応じて `transformNext` を条件付きで追加している。これは「デフォルト + コンテキスト依存の拡張」という合成の典型例である。
 
 各トランスフォーマーの責務は明確に分離されている:
+
 - `transformImport`: インポートパスのエイリアス変換
 - `transformRsc`: "use client" ディレクティブの除去
 - `transformCssVars`: CSS 変数からインラインカラーへの変換
@@ -65,9 +66,9 @@ UI コンポーネントでは 3 つの合成手法が統一的に適用され�
 // トランスフォーマーの統一型定義とパイプライン実行
 export type Transformer<Output = SourceFile> = (
   opts: TransformOpts & {
-    sourceFile: SourceFile
-  }
-) => Promise<Output>
+    sourceFile: SourceFile;
+  },
+) => Promise<Output>;
 
 export async function transform(
   opts: TransformOpts,
@@ -79,15 +80,15 @@ export async function transform(
     transformRtl,
     transformIcons,
     transformCleanup,
-  ]
+  ],
 ) {
-  const tempFile = await createTempSourceFile(opts.filename)
+  const tempFile = await createTempSourceFile(opts.filename);
   const sourceFile = project.createSourceFile(tempFile, opts.raw, {
     scriptKind: ScriptKind.TSX,
-  })
+  });
 
   for (const transformer of transformers) {
-    await transformer({ sourceFile, ...opts })
+    await transformer({ sourceFile, ...opts });
   }
   // ...
 }
@@ -96,28 +97,28 @@ export async function transform(
 ```typescript
 // packages/shadcn/src/utils/updaters/update-css-vars.ts:85-117
 // 条件分岐によるプラグインチェーンの動的構築
-let plugins = [updateCssVarsPlugin(cssVars)]
+let plugins = [updateCssVarsPlugin(cssVars)];
 
 if (options.cleanupDefaultNextStyles) {
-  plugins.push(cleanupDefaultNextStylesPlugin())
+  plugins.push(cleanupDefaultNextStylesPlugin());
 }
 
 if (options.tailwindVersion === "v4") {
-  plugins = []
-  plugins.push(addCustomVariant({ params: "dark (&:is(.dark *))" }))
+  plugins = [];
+  plugins.push(addCustomVariant({ params: "dark (&:is(.dark *))" }));
   if (options.cleanupDefaultNextStyles) {
-    plugins.push(cleanupDefaultNextStylesPlugin())
+    plugins.push(cleanupDefaultNextStylesPlugin());
   }
-  plugins.push(updateCssVarsPluginV4(cssVars, { overwriteCssVars: options.overwriteCssVars }))
-  plugins.push(updateThemePlugin(cssVars))
+  plugins.push(updateCssVarsPluginV4(cssVars, { overwriteCssVars: options.overwriteCssVars }));
+  plugins.push(updateThemePlugin(cssVars));
   if (options.tailwindConfig) {
-    plugins.push(updateTailwindConfigPlugin(options.tailwindConfig))
-    plugins.push(updateTailwindConfigAnimationPlugin(options.tailwindConfig))
-    plugins.push(updateTailwindConfigKeyframesPlugin(options.tailwindConfig))
+    plugins.push(updateTailwindConfigPlugin(options.tailwindConfig));
+    plugins.push(updateTailwindConfigAnimationPlugin(options.tailwindConfig));
+    plugins.push(updateTailwindConfigKeyframesPlugin(options.tailwindConfig));
   }
 }
 
-const result = await postcss(plugins).process(input, { from: undefined })
+const result = await postcss(plugins).process(input, { from: undefined });
 ```
 
 ```typescript
@@ -125,14 +126,14 @@ const result = await postcss(plugins).process(input, { from: undefined })
 // フェールソフトなトランスフォーマー: 対象がなければ素通しする
 export const transformRsc: Transformer = async ({ sourceFile, config }) => {
   if (config.rsc) {
-    return sourceFile
+    return sourceFile;
   }
-  const first = sourceFile.getFirstChildByKind(SyntaxKind.ExpressionStatement)
+  const first = sourceFile.getFirstChildByKind(SyntaxKind.ExpressionStatement);
   if (first && directiveRegex.test(first.getText())) {
-    first.remove()
+    first.remove();
   }
-  return sourceFile
-}
+  return sourceFile;
+};
 ```
 
 ```typescript
@@ -141,26 +142,26 @@ export const transformRsc: Transformer = async ({ sourceFile, config }) => {
 function topologicalSortRegistryItems(items, sourceMap) {
   // ... adjacency list とin-degree の構築 ...
   // Implements Kahn's algorithm.
-  const queue: string[] = []
-  const sorted = []
+  const queue: string[] = [];
+  const sorted = [];
   inDegree.forEach((degree, hash) => {
-    if (degree === 0) queue.push(hash)
-  })
+    if (degree === 0) queue.push(hash);
+  });
   while (queue.length > 0) {
-    const currentHash = queue.shift()!
-    sorted.push(itemMap.get(currentHash)!)
+    const currentHash = queue.shift()!;
+    sorted.push(itemMap.get(currentHash)!);
     adjacencyList.get(currentHash)!.forEach((dependentHash) => {
-      const newDegree = inDegree.get(dependentHash)! - 1
-      inDegree.set(dependentHash, newDegree)
-      if (newDegree === 0) queue.push(dependentHash)
-    })
+      const newDegree = inDegree.get(dependentHash)! - 1;
+      inDegree.set(dependentHash, newDegree);
+      if (newDegree === 0) queue.push(dependentHash);
+    });
   }
   // 循環依存のフォールバック
   if (sorted.length !== items.length) {
-    console.warn("Circular dependency detected in registry items")
+    console.warn("Circular dependency detected in registry items");
     // 未ソートのアイテムも末尾に追加
   }
-  return sorted
+  return sorted;
 }
 ```
 
@@ -173,11 +174,11 @@ function Card({ className, ...props }: React.ComponentProps<"div">) {
       data-slot="card"
       className={cn(
         "flex flex-col gap-6 rounded-xl border bg-card py-6 text-card-foreground shadow-sm",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 ```
 
@@ -216,12 +217,18 @@ function Card({ className, ...props }: React.ComponentProps<"div">) {
 const content = await transform(
   { filename: file.path, raw: file.content, config, baseColor, transformJsx: !config.tsx },
   [
-    transformImport, transformRsc, transformCssVars, transformTwPrefixes,
-    transformIcons, transformMenu, transformAsChild, transformRtl,
+    transformImport,
+    transformRsc,
+    transformCssVars,
+    transformTwPrefixes,
+    transformIcons,
+    transformMenu,
+    transformAsChild,
+    transformRtl,
     ...(_isNext16Middleware(filePath, projectInfo, config) ? [transformNext] : []),
-    transformCleanup,  // cleanup は常に最後
-  ]
-)
+    transformCleanup, // cleanup は常に最後
+  ],
+);
 ```
 
 - **フェールソフト変換**: 各トランスフォーマーが対象外の入力を静かにパススルーする設計。`transformIcons` はサポートされていないアイコンライブラリに対して `return sourceFile` するだけで、エラーを投げない（`transform-icons.ts:10-12`）。パイプラインの堅牢性が大幅に向上する。
@@ -229,12 +236,12 @@ const content = await transform(
 ```typescript
 // packages/shadcn/src/utils/transformers/transform-icons.ts:5-12
 export const transformIcons: Transformer = async ({ sourceFile, config }) => {
-  const iconLibrary = config.iconLibrary
+  const iconLibrary = config.iconLibrary;
   if (!iconLibrary || !(iconLibrary in iconLibraries)) {
-    return sourceFile  // 未対応ライブラリは素通し
+    return sourceFile; // 未対応ライブラリは素通し
   }
   // ...
-}
+};
 ```
 
 - **`cn()` による安全なクラス合成**: `clsx` でクラスのフィルタリングと結合を行い、`tailwind-merge` で競合するユーティリティクラスを解決する 2 段階合成。ユーザー提供の `className` を最後の引数にすることで、デフォルトスタイルのオーバーライドを保証する。
@@ -242,7 +249,7 @@ export const transformIcons: Transformer = async ({ sourceFile, config }) => {
 ```typescript
 // apps/v4/registry/new-york-v4/lib/utils.ts:4-6
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 ```
 
@@ -253,7 +260,7 @@ export function cn(...inputs: ClassValue[]) {
 ```typescript
 // Bad: 共有状態を変更するため、実行順序が結果に影響する
 for (const transformer of transformers) {
-  await transformer({ sourceFile, ...opts })  // sourceFile を in-place 変更
+  await transformer({ sourceFile, ...opts }); // sourceFile を in-place 変更
 }
 
 // Better: 不変変換が可能な場合はイミュータブルに

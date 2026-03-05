@@ -48,14 +48,12 @@ export const SetMetadata = <K = string, V = any>(
 
 ```typescript
 // packages/common/decorators/http/request-mapping.decorator.ts:32-39
-const createMappingDecorator =
-  (method: RequestMethod) =>
-  (path?: string | string[]): MethodDecorator => {
-    return RequestMapping({
-      [PATH_METADATA]: path,
-      [METHOD_METADATA]: method,
-    });
-  };
+const createMappingDecorator = (method: RequestMethod) => (path?: string | string[]): MethodDecorator => {
+  return RequestMapping({
+    [PATH_METADATA]: path,
+    [METHOD_METADATA]: method,
+  });
+};
 ```
 
 **第3層: エンドユーザー向けデコレータ** - ファクトリから生成された具象デコレータ。
@@ -238,7 +236,9 @@ export function applyDecorators(
         continue;
       }
       (decorator as MethodDecorator | PropertyDecorator)(
-        target, propertyKey!, descriptor!,
+        target,
+        propertyKey!,
+        descriptor!,
       );
     }
   };
@@ -251,13 +251,13 @@ export function applyDecorators(
 
 ```typescript
 // Bad: キーを直接文字列で指定
-Reflect.defineMetadata('myCustomKey', value, target);
+Reflect.defineMetadata("myCustomKey", value, target);
 // ... 別ファイルで
-Reflect.getMetadata('my_custom_key', target); // タイポで不整合
+Reflect.getMetadata("my_custom_key", target); // タイポで不整合
 
 // Better: 定数を中央管理
 // constants.ts
-export const MY_CUSTOM_KEY = 'myCustomKey';
+export const MY_CUSTOM_KEY = "myCustomKey";
 // decorator.ts
 Reflect.defineMetadata(MY_CUSTOM_KEY, value, target);
 // scanner.ts

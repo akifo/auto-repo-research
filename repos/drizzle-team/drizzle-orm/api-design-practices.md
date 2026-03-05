@@ -51,13 +51,14 @@ drizzle-orm のサブパスは以下の 3 層に分かれる。
 3. **ドライバレイヤー** (`drizzle-orm/node-postgres`, `drizzle-orm/postgres-js`, `drizzle-orm/neon-http` 等): 具体的なクライアントライブラリとの接続コード
 
 ユーザの典型的な import パターン:
+
 ```typescript
 // コアレイヤーから共通ユーティリティ
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql } from "drizzle-orm";
 // 方言レイヤーからスキーマ定義
-import { pgTable, text, integer } from 'drizzle-orm/pg-core';
+import { integer, pgTable, text } from "drizzle-orm/pg-core";
 // ドライバレイヤーからファクトリ関数
-import { drizzle } from 'drizzle-orm/node-postgres';
+import { drizzle } from "drizzle-orm/node-postgres";
 ```
 
 ### Symbol ベースの内部 API 隠蔽
@@ -67,15 +68,15 @@ drizzle-orm は `Symbol.for('drizzle:...')` を 27 箇所以上で使用し、�
 ```typescript
 // src/table.ts:20-40
 /** @internal */
-export const Schema = Symbol.for('drizzle:Schema');
+export const Schema = Symbol.for("drizzle:Schema");
 /** @internal */
-export const Columns = Symbol.for('drizzle:Columns');
+export const Columns = Symbol.for("drizzle:Columns");
 /** @internal */
-export const OriginalName = Symbol.for('drizzle:OriginalName');
+export const OriginalName = Symbol.for("drizzle:OriginalName");
 /** @internal */
-export const BaseName = Symbol.for('drizzle:BaseName');
+export const BaseName = Symbol.for("drizzle:BaseName");
 /** @internal */
-export const IsAlias = Symbol.for('drizzle:IsAlias');
+export const IsAlias = Symbol.for("drizzle:IsAlias");
 ```
 
 これらの Symbol は `Table.Symbol` 名前空間にまとめられ、内部コードからは `table[Table.Symbol.Columns]` のようにアクセスする。ユーザの IDE には通常のプロパティとして表示されないため、内部 API の誤使用を防止する。
@@ -130,15 +131,15 @@ export function drizzle<TSchema, TClient>(
 ```typescript
 // src/pg-core/session.ts:284-292
 export interface PgQueryResultHKT {
-  readonly $brand: 'PgQueryResultHKT';
+  readonly $brand: "PgQueryResultHKT";
   readonly row: unknown;
   readonly type: unknown;
 }
-export type PgQueryResultKind<TKind extends PgQueryResultHKT, TRow> = (TKind & { readonly row: TRow })['type'];
+export type PgQueryResultKind<TKind extends PgQueryResultHKT, TRow> = (TKind & { readonly row: TRow; })["type"];
 
 // src/node-postgres/session.ts:304
 export interface NodePgQueryResultHKT extends PgQueryResultHKT {
-  readonly type: QueryResult<Assume<this['row'], QueryResultRow>>;
+  readonly type: QueryResult<Assume<this["row"], QueryResultRow>>;
 }
 ```
 
@@ -154,9 +155,9 @@ TypeScript には HKT がないため、intersection + indexed access 型でエ�
 
 ```typescript
 // src/entity.ts:1-42 — Symbol ベースの型識別
-export const entityKind = Symbol.for('drizzle:entityKind');
+export const entityKind = Symbol.for("drizzle:entityKind");
 export function is<T extends DrizzleEntityClass<any>>(value: any, type: T): value is InstanceType<T> {
-  if (!value || typeof value !== 'object') return false;
+  if (!value || typeof value !== "object") return false;
   if (value instanceof type) return true;
   // ...prototype chain traversal using entityKind Symbol
 }
@@ -195,10 +196,10 @@ export interface DrizzleTypeError<T extends string> {
 
 ```typescript
 // scripts/build.ts:8-44
-const entries = await glob('src/**/*.ts');
+const entries = await glob("src/**/*.ts");
 pkg.exports = entries.reduce((acc, rawEntry) => {
   const entry = rawEntry.match(/src\/(.*)\.ts/)![1]!;
-  const exportsEntry = entry === 'index' ? '.' : './' + entry.replace(/\/index$/, '');
+  const exportsEntry = entry === "index" ? "." : "./" + entry.replace(/\/index$/, "");
   // ... CJS/ESM/types の4パスを生成
   return acc;
 }, {});
@@ -208,10 +209,10 @@ pkg.exports = entries.reduce((acc, rawEntry) => {
 
 ```typescript
 // scripts/fix-imports.ts:29-53
-const code = parse(await fs.readFile(file, 'utf8'), { parser });
+const code = parse(await fs.readFile(file, "utf8"), { parser });
 visit(code, {
   visitImportDeclaration(path) {
-    path.value.source.value = fixImportPath(path.value.source.value, file, '.cjs');
+    path.value.source.value = fixImportPath(path.value.source.value, file, ".cjs");
     this.traverse(path);
   },
   // ... visitExportAllDeclaration, visitCallExpression (require) 等
@@ -239,7 +240,7 @@ const db = drizzle("postgres://localhost:5432/mydb");
 // クライアント + 設定（中級者向け）
 const db = drizzle(pool, { schema, logger: true });
 // 統合設定オブジェクト（上級者向け）
-const db = drizzle({ client: pool, schema, casing: 'snake_case' });
+const db = drizzle({ client: pool, schema, casing: "snake_case" });
 ```
 
 ## Anti-Patterns / 注意点

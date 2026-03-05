@@ -87,20 +87,21 @@ export function extendArrayMetadata<T extends Array<unknown>>(
 ```typescript
 // packages/common/decorators/http/route-params.decorator.ts:47-65
 function createRouteParamDecorator(paramtype: RouteParamtypes) {
-  return (data?: ParamData): ParameterDecorator =>
-    (target, key, index) => {
-      const args =
-        Reflect.getMetadata(ROUTE_ARGS_METADATA, target.constructor, key!) ||
-        {};
-      Reflect.defineMetadata(
-        ROUTE_ARGS_METADATA,
-        assignMetadata<RouteParamtypes, Record<number, RouteParamMetadata>>(
-          args, paramtype, index, data,
-        ),
-        target.constructor,
-        key!,
-      );
-    };
+  return (data?: ParamData): ParameterDecorator => (target, key, index) => {
+    const args = Reflect.getMetadata(ROUTE_ARGS_METADATA, target.constructor, key!)
+      || {};
+    Reflect.defineMetadata(
+      ROUTE_ARGS_METADATA,
+      assignMetadata<RouteParamtypes, Record<number, RouteParamMetadata>>(
+        args,
+        paramtype,
+        index,
+        data,
+      ),
+      target.constructor,
+      key!,
+    );
+  };
 }
 ```
 
@@ -114,14 +115,12 @@ NestJS はデコレータ生成を多段階に抽象化している。
 
 ```typescript
 // packages/common/decorators/http/request-mapping.decorator.ts:32-39
-const createMappingDecorator =
-  (method: RequestMethod) =>
-  (path?: string | string[]): MethodDecorator => {
-    return RequestMapping({
-      [PATH_METADATA]: path,
-      [METHOD_METADATA]: method,
-    });
-  };
+const createMappingDecorator = (method: RequestMethod) => (path?: string | string[]): MethodDecorator => {
+  return RequestMapping({
+    [PATH_METADATA]: path,
+    [METHOD_METADATA]: method,
+  });
+};
 
 export const Post = createMappingDecorator(RequestMethod.POST);
 export const Get = createMappingDecorator(RequestMethod.GET);
@@ -148,20 +147,18 @@ public reflectConstructorParams<T>(type: Type<T>): any[] {
 ```typescript
 // packages/common/decorators/core/inject.decorator.ts:43-67
 return (target: object, key: string | symbol | undefined, index?: number) => {
-  let type = token || Reflect.getMetadata('design:type', target, key!);
+  let type = token || Reflect.getMetadata("design:type", target, key!);
   if (!type && !injectCallHasArguments) {
     type = Reflect.getMetadata(PARAMTYPES_METADATA, target, key!)?.[index!];
   }
   if (!isUndefined(index)) {
-    let dependencies =
-      Reflect.getMetadata(SELF_DECLARED_DEPS_METADATA, target) || [];
+    let dependencies = Reflect.getMetadata(SELF_DECLARED_DEPS_METADATA, target) || [];
     dependencies = [...dependencies, { index, param: type }];
     Reflect.defineMetadata(SELF_DECLARED_DEPS_METADATA, dependencies, target);
     return;
   }
   // property injection
-  let properties =
-    Reflect.getMetadata(PROPERTY_DEPS_METADATA, target.constructor) || [];
+  let properties = Reflect.getMetadata(PROPERTY_DEPS_METADATA, target.constructor) || [];
   properties = [...properties, { key, type }];
   Reflect.defineMetadata(PROPERTY_DEPS_METADATA, properties, target.constructor);
 };
@@ -174,15 +171,17 @@ return (target: object, key: string | symbol | undefined, index?: number) => {
 ```typescript
 // packages/common/constants.ts:1-47 (抜粋)
 export const MODULE_METADATA = {
-  IMPORTS: 'imports', PROVIDERS: 'providers',
-  CONTROLLERS: 'controllers', EXPORTS: 'exports',
+  IMPORTS: "imports",
+  PROVIDERS: "providers",
+  CONTROLLERS: "controllers",
+  EXPORTS: "exports",
 };
-export const PARAMTYPES_METADATA = 'design:paramtypes';
-export const SELF_DECLARED_DEPS_METADATA = 'self:paramtypes';
-export const GUARDS_METADATA = '__guards__';
-export const INTERCEPTORS_METADATA = '__interceptors__';
-export const INJECTABLE_WATERMARK = '__injectable__';
-export const CONTROLLER_WATERMARK = '__controller__';
+export const PARAMTYPES_METADATA = "design:paramtypes";
+export const SELF_DECLARED_DEPS_METADATA = "self:paramtypes";
+export const GUARDS_METADATA = "__guards__";
+export const INTERCEPTORS_METADATA = "__interceptors__";
+export const INJECTABLE_WATERMARK = "__injectable__";
+export const CONTROLLER_WATERMARK = "__controller__";
 ```
 
 ### クロスパッケージでのデコレータパターンの再利用
@@ -226,10 +225,10 @@ export const SubscribeMessage = <T = string>(message: T): MethodDecorator => {
 
 ```typescript
 // packages/common/constants.ts:11-14
-export const PARAMTYPES_METADATA = 'design:paramtypes';     // TS コンパイラ生成
-export const SELF_DECLARED_DEPS_METADATA = 'self:paramtypes'; // ユーザー宣言
-export const PROPERTY_DEPS_METADATA = 'self:properties_metadata';
-export const OPTIONAL_PROPERTY_DEPS_METADATA = 'optional:properties_metadata';
+export const PARAMTYPES_METADATA = "design:paramtypes"; // TS コンパイラ生成
+export const SELF_DECLARED_DEPS_METADATA = "self:paramtypes"; // ユーザー宣言
+export const PROPERTY_DEPS_METADATA = "self:properties_metadata";
+export const OPTIONAL_PROPERTY_DEPS_METADATA = "optional:properties_metadata";
 ```
 
 - **デコレータ入力のバリデーション**: `@UseGuards()`, `@UseInterceptors()` 等の enhancer デコレータは、受け取った引数が期待するインターフェースを実装しているかをデコレータ適用時にバリデーションする。実行時エラーの早期検出により、起動時ではなくデコレーション時に問題を発見できる。
@@ -240,7 +239,7 @@ const isGuardValid = <T extends Function | Record<string, any>>(guard: T) =>
   guard && (isFunction(guard) || isFunction(guard.canActivate));
 
 if (descriptor) {
-  validateEach(target.constructor, guards, isGuardValid, '@UseGuards', 'guard');
+  validateEach(target.constructor, guards, isGuardValid, "@UseGuards", "guard");
   extendArrayMetadata(GUARDS_METADATA, guards, descriptor.value);
   return descriptor;
 }
@@ -252,7 +251,7 @@ if (descriptor) {
 // packages/common/utils/validate-module-keys.util.ts:15-23
 export function validateModuleKeys(keys: string[]) {
   const validateKey = (key: string) => {
-    if (metadataKeys.includes(key)) { return; }
+    if (metadataKeys.includes(key)) return;
     throw new Error(INVALID_MODULE_CONFIG_MESSAGE`${key}`);
   };
   keys.forEach(validateKey);

@@ -55,9 +55,9 @@ export async function callModuleInitHook(module: Module): Promise<void> {
   // モジュールクラス自身は最後に呼ぶ
   const moduleClassInstance = moduleClassHost.instance;
   if (
-    moduleClassInstance &&
-    hasOnModuleInitHook(moduleClassInstance) &&
-    moduleClassHost.isDependencyTreeStatic()
+    moduleClassInstance
+    && hasOnModuleInitHook(moduleClassInstance)
+    && moduleClassHost.isDependencyTreeStatic()
   ) {
     await moduleClassInstance.onModuleInit();
   }

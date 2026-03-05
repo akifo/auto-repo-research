@@ -159,8 +159,8 @@ export function optionalRequire(packageName: string, loaderFn?: Function) {
 
 // packages/core/nest-application.ts:42-49
 const { SocketModule } = optionalRequire(
-  '@nestjs/websockets/socket-module',
-  () => require('@nestjs/websockets/socket-module'),
+  "@nestjs/websockets/socket-module",
+  () => require("@nestjs/websockets/socket-module"),
 );
 ```
 
@@ -215,6 +215,7 @@ export class ModuleA {}
 // Better: 共通部分を第3のモジュールに抽出して依存を一方向にする
 @Module({ imports: [SharedModule] })
 export class ModuleA {}
+
 @Module({ imports: [SharedModule] })
 export class ModuleB {}
 ```

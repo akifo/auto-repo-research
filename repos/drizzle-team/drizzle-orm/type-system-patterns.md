@@ -87,8 +87,8 @@ export type PgSerialBuilderInitial<TName extends string> = NotNull<
   HasDefault<
     PgSerialBuilder<{
       name: TName;
-      dataType: 'number';
-      columnType: 'PgSerial';
+      dataType: "number";
+      columnType: "PgSerial";
       data: number;
       driverParam: number;
       enumValues: undefined;
@@ -195,7 +195,7 @@ JOIN の種類ごとに Nullability マップを型レベルで更新し、最�
 
 ```typescript
 // entity.ts:1-42
-export const entityKind = Symbol.for('drizzle:entityKind');
+export const entityKind = Symbol.for("drizzle:entityKind");
 
 export function is<T extends DrizzleEntityClass<any>>(value: any, type: T): value is InstanceType<T> {
   // instanceof チェック → プロトタイプチェーン上の entityKind シンボルマッチング
@@ -258,7 +258,7 @@ export type Simplify<T> =
 export type Assume<T, U> = T extends U ? T : U;
 
 // 使用例: select.types.ts:205
-Assume<this['selection'], ColumnsSelection>
+Assume<this["selection"], ColumnsSelection>;
 ```
 
 ## Anti-Patterns / 注意点
@@ -271,7 +271,7 @@ Assume<this['selection'], ColumnsSelection>
 this._ = {
   selectedFields: fields as TSelectedFields,
   config: this.config,
-} as this['_'];
+} as this["_"];
 ```
 
 ```typescript

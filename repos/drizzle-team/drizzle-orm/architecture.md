@@ -86,12 +86,12 @@ src/<driver>/
 ```typescript
 // node-postgres/driver.ts:49-88
 function construct<TSchema>(client: TClient, config: DrizzleConfig<TSchema>) {
-    const dialect = new PgDialect({ casing: config.casing });
-    // ...
-    const driver = new NodePgDriver(client, dialect, { logger, cache });
-    const session = driver.createSession(schema);
-    const db = new NodePgDatabase(dialect, session, schema);
-    return db;
+  const dialect = new PgDialect({ casing: config.casing });
+  // ...
+  const driver = new NodePgDriver(client, dialect, { logger, cache });
+  const session = driver.createSession(schema);
+  const db = new NodePgDatabase(dialect, session, schema);
+  return db;
 }
 ```
 
@@ -103,17 +103,17 @@ function construct<TSchema>(client: TClient, config: DrizzleConfig<TSchema>) {
 
 ```typescript
 // entity.ts:1-42
-export const entityKind = Symbol.for('drizzle:entityKind');
+export const entityKind = Symbol.for("drizzle:entityKind");
 
 export function is<T extends DrizzleEntityClass<any>>(value: any, type: T): value is InstanceType<T> {
-    if (value instanceof type) return true;
-    // instanceof が失敗した場合、プロトタイプチェーンを辿って entityKind を比較
-    let cls = Object.getPrototypeOf(value).constructor;
-    while (cls) {
-        if (entityKind in cls && cls[entityKind] === type[entityKind]) return true;
-        cls = Object.getPrototypeOf(cls);
-    }
-    return false;
+  if (value instanceof type) return true;
+  // instanceof が失敗した場合、プロトタイプチェーンを辿って entityKind を比較
+  let cls = Object.getPrototypeOf(value).constructor;
+  while (cls) {
+    if (entityKind in cls && cls[entityKind] === type[entityKind]) return true;
+    cls = Object.getPrototypeOf(cls);
+  }
+  return false;
 }
 ```
 
@@ -126,14 +126,14 @@ TypeScript には Higher-Kinded Type がないため、drizzle-orm は「ブラ�
 ```typescript
 // pg-core/session.ts:284-292
 export interface PgQueryResultHKT {
-    readonly $brand: 'PgQueryResultHKT';
-    readonly row: unknown;
-    readonly type: unknown;  // 「型変数のスロット」
+  readonly $brand: "PgQueryResultHKT";
+  readonly row: unknown;
+  readonly type: unknown; // 「型変数のスロット」
 }
 
 export type PgQueryResultKind<TKind extends PgQueryResultHKT, TRow> = (TKind & {
-    readonly row: TRow;    // row を特殊化
-})['type'];                // type を取り出す
+  readonly row: TRow; // row を特殊化
+})["type"]; // type を取り出す
 ```
 
 各ドライバが `type` フィールドを具体型にマッピングする。
@@ -141,7 +141,7 @@ export type PgQueryResultKind<TKind extends PgQueryResultHKT, TRow> = (TKind & {
 ```typescript
 // node-postgres/session.ts:304-306
 export interface NodePgQueryResultHKT extends PgQueryResultHKT {
-    type: QueryResult<Assume<this['row'], QueryResultRow>>;
+  type: QueryResult<Assume<this["row"], QueryResultRow>>;
 }
 ```
 
@@ -179,11 +179,11 @@ export interface NodePgQueryResultHKT extends PgQueryResultHKT {
 ```typescript
 // 全ドライバ共通の組み立てパターン（node-postgres/driver.ts:49-88 を代表例として）
 function construct(client, config) {
-    const dialect = new PgDialect({ casing: config.casing });
-    const driver = new NodePgDriver(client, dialect, { logger, cache });
-    const session = driver.createSession(schema);
-    const db = new NodePgDatabase(dialect, session, schema);
-    return db;
+  const dialect = new PgDialect({ casing: config.casing });
+  const driver = new NodePgDriver(client, dialect, { logger, cache });
+  const session = driver.createSession(schema);
+  const db = new NodePgDatabase(dialect, session, schema);
+  return db;
 }
 ```
 
@@ -219,8 +219,8 @@ override mapFromDriverValue(value: T['data'] | string): T['data'] {
 ```typescript
 // Bad: 型エラー時に追跡困難
 export type PgQueryResultKind<TKind extends PgQueryResultHKT, TRow> = (TKind & {
-    readonly row: TRow;
-})['type'];
+  readonly row: TRow;
+})["type"];
 
 // Better: 可能であれば、ジェネリクスのみで解決できる設計を検討する。
 // ただし drizzle-orm の場合、ドライバごとの結果型が構造的に異なるため HKT エミュレーションは合理的な選択。

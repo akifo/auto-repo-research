@@ -177,7 +177,7 @@ inject: [useExisting],
 ```typescript
 // Bad: 大規模サービスが REQUEST スコープに引きずられる
 @Injectable({ scope: Scope.REQUEST })
-export class RequestContext { /* ... */ }
+export class RequestContext {/* ... */}
 
 @Injectable() // DEFAULT だが RequestContext に依存
 export class HeavyService {
@@ -188,11 +188,11 @@ export class HeavyService {
 ```typescript
 // Better: REQUEST スコープの依存を局所化し、必要な値だけを注入する
 @Injectable({ scope: Scope.REQUEST })
-export class RequestContext { /* ... */ }
+export class RequestContext {/* ... */}
 
 @Injectable() // DEFAULT のまま維持
 export class HeavyService {
-  constructor(@Inject('REQUEST_USER_ID') private userId: string) {}
+  constructor(@Inject("REQUEST_USER_ID") private userId: string) {}
 }
 // ファクトリプロバイダで必要な値だけを抽出
 ```

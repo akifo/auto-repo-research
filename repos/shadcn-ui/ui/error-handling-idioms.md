@@ -50,18 +50,18 @@ RegistryError (base)
 ```typescript
 // packages/shadcn/src/registry/fetcher.ts:89-110
 if (response.status === 401) {
-  throw new RegistryUnauthorizedError(url, messageFromServer)
+  throw new RegistryUnauthorizedError(url, messageFromServer);
 }
 if (response.status === 404) {
-  throw new RegistryNotFoundError(url, messageFromServer)
+  throw new RegistryNotFoundError(url, messageFromServer);
 }
 if (response.status === 410) {
-  throw new RegistryGoneError(url, messageFromServer)
+  throw new RegistryGoneError(url, messageFromServer);
 }
 if (response.status === 403) {
-  throw new RegistryForbiddenError(url, messageFromServer)
+  throw new RegistryForbiddenError(url, messageFromServer);
 }
-throw new RegistryFetchError(url, response.status, messageFromServer)
+throw new RegistryFetchError(url, response.status, messageFromServer);
 ```
 
 最後の `RegistryFetchError` がキャッチオールとして機能し、未知のステータスコードでもエラーが握り潰されることがない。
@@ -73,16 +73,16 @@ preflight 関数群は `Record<string, boolean>` 形式のエラーマップを�
 ```typescript
 // packages/shadcn/src/preflights/preflight-add.ts:10-24
 export async function preFlightAdd(options: z.infer<typeof addOptionsSchema>) {
-  const errors: Record<string, boolean> = {}
+  const errors: Record<string, boolean> = {};
 
   if (!fs.existsSync(options.cwd) || !fs.existsSync(path.resolve(options.cwd, "package.json"))) {
-    errors[ERRORS.MISSING_DIR_OR_EMPTY_PROJECT] = true
-    return { errors, config: null }
+    errors[ERRORS.MISSING_DIR_OR_EMPTY_PROJECT] = true;
+    return { errors, config: null };
   }
 
   if (!fs.existsSync(path.resolve(options.cwd, "components.json"))) {
-    errors[ERRORS.MISSING_CONFIG] = true
-    return { errors, config: null }
+    errors[ERRORS.MISSING_CONFIG] = true;
+    return { errors, config: null };
   }
   // ...
 }
@@ -97,18 +97,18 @@ export async function preFlightAdd(options: z.infer<typeof addOptionsSchema>) {
 ```typescript
 // packages/shadcn/src/utils/handle-error.ts:6-55
 export function handleError(error: unknown) {
-  logger.break()
-  logger.error(`Something went wrong. Please check the error below for more details.`)
-  logger.error(`If the problem persists, please open an issue on GitHub.`)
-  logger.error("")
+  logger.break();
+  logger.error(`Something went wrong. Please check the error below for more details.`);
+  logger.error(`If the problem persists, please open an issue on GitHub.`);
+  logger.error("");
 
   if (typeof error === "string") { /* string 出力 → exit */ }
   if (error instanceof RegistryError) { /* message + cause + suggestion → exit */ }
   if (error instanceof z.ZodError) { /* fieldErrors 展開 → exit */ }
   if (error instanceof Error) { /* message → exit */ }
 
-  logger.break()
-  process.exit(1)
+  logger.break();
+  process.exit(1);
 }
 ```
 
@@ -143,9 +143,11 @@ MCP サーバーでは `process.exit` が使えないため、同じ `RegistryEr
 ```typescript
 // packages/shadcn/src/registry/errors.ts:219-223
 if (parseError instanceof z.ZodError) {
-  message = `Failed to parse registry item: ${item}\n${parseError.errors
-    .map((e) => `  - ${e.path.join(".")}: ${e.message}`)
-    .join("\n")}`
+  message = `Failed to parse registry item: ${item}\n${
+    parseError.errors
+      .map((e) => `  - ${e.path.join(".")}: ${e.message}`)
+      .join("\n")
+  }`;
 }
 ```
 
@@ -156,7 +158,7 @@ if (parseError instanceof z.ZodError) {
 ```typescript
 // packages/shadcn/src/registry/resolver.ts:444-468
 try {
-  const [item] = await fetchRegistryItems([dep], config, options)
+  const [item] = await fetchRegistryItems([dep], config, options);
   // ... resolve nested deps
 } catch (error) {
   // If we can't fetch the registry item, that's okay - we'll still
@@ -182,34 +184,34 @@ try {
 // packages/shadcn/src/registry/errors.ts:32-76
 // 基底エラークラス — suggestion フィールドによるガイダンス付き
 export class RegistryError extends Error {
-  public readonly code: RegistryErrorCode
-  public readonly statusCode?: number
-  public readonly context?: Record<string, unknown>
-  public readonly suggestion?: string
-  public readonly timestamp: Date
-  public readonly cause?: unknown
+  public readonly code: RegistryErrorCode;
+  public readonly statusCode?: number;
+  public readonly context?: Record<string, unknown>;
+  public readonly suggestion?: string;
+  public readonly timestamp: Date;
+  public readonly cause?: unknown;
 
   constructor(
     message: string,
     options: {
-      code?: RegistryErrorCode
-      statusCode?: number
-      cause?: unknown
-      context?: Record<string, unknown>
-      suggestion?: string
-    } = {}
+      code?: RegistryErrorCode;
+      statusCode?: number;
+      cause?: unknown;
+      context?: Record<string, unknown>;
+      suggestion?: string;
+    } = {},
   ) {
-    super(message)
-    this.name = "RegistryError"
-    this.code = options.code || RegistryErrorCode.UNKNOWN_ERROR
-    this.statusCode = options.statusCode
-    this.cause = options.cause
-    this.context = options.context
-    this.suggestion = options.suggestion
-    this.timestamp = new Date()
+    super(message);
+    this.name = "RegistryError";
+    this.code = options.code || RegistryErrorCode.UNKNOWN_ERROR;
+    this.statusCode = options.statusCode;
+    this.cause = options.cause;
+    this.context = options.context;
+    this.suggestion = options.suggestion;
+    this.timestamp = new Date();
 
     if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, this.constructor)
+      Error.captureStackTrace(this, this.constructor);
     }
   }
 
@@ -223,7 +225,7 @@ export class RegistryError extends Error {
       suggestion: this.suggestion,
       timestamp: this.timestamp,
       stack: this.stack,
-    }
+    };
   }
 }
 ```
@@ -233,16 +235,15 @@ export class RegistryError extends Error {
 // ドメイン固有サブクラスの例 — コンストラクタで suggestion を自己完結的に構成
 export class RegistryNotFoundError extends RegistryError {
   constructor(public readonly url: string, cause?: unknown) {
-    const message = `The item at ${url} was not found. It may not exist at the registry.`
+    const message = `The item at ${url} was not found. It may not exist at the registry.`;
     super(message, {
       code: RegistryErrorCode.NOT_FOUND,
       statusCode: 404,
       cause,
       context: { url },
-      suggestion:
-        "Check if the item name is correct and the registry URL is accessible.",
-    })
-    this.name = "RegistryNotFoundError"
+      suggestion: "Check if the item name is correct and the registry URL is accessible.",
+    });
+    this.name = "RegistryNotFoundError";
   }
 }
 ```
@@ -263,24 +264,24 @@ export class RegistryNotFoundError extends RegistryError {
 // HTTP レスポンスからの型付きエラー生成
 if (!response.ok) {
   // RFC 7807 対応のサーバーメッセージ抽出
-  let messageFromServer = undefined
+  let messageFromServer = undefined;
   if (response.headers.get("content-type")?.includes("application/json")) {
-    const json = await response.json()
+    const json = await response.json();
     const parsed = z.object({
-      detail: z.string().optional(),  // RFC 7807
+      detail: z.string().optional(), // RFC 7807
       title: z.string().optional(),
       message: z.string().optional(), // 標準エラー
       error: z.string().optional(),
-    }).safeParse(json)
+    }).safeParse(json);
     if (parsed.success) {
-      messageFromServer = parsed.data.detail || parsed.data.message
+      messageFromServer = parsed.data.detail || parsed.data.message;
     }
   }
-  if (response.status === 401) throw new RegistryUnauthorizedError(url, messageFromServer)
-  if (response.status === 404) throw new RegistryNotFoundError(url, messageFromServer)
-  if (response.status === 410) throw new RegistryGoneError(url, messageFromServer)
-  if (response.status === 403) throw new RegistryForbiddenError(url, messageFromServer)
-  throw new RegistryFetchError(url, response.status, messageFromServer)
+  if (response.status === 401) throw new RegistryUnauthorizedError(url, messageFromServer);
+  if (response.status === 404) throw new RegistryNotFoundError(url, messageFromServer);
+  if (response.status === 410) throw new RegistryGoneError(url, messageFromServer);
+  if (response.status === 403) throw new RegistryForbiddenError(url, messageFromServer);
+  throw new RegistryFetchError(url, response.status, messageFromServer);
 }
 ```
 
@@ -288,11 +289,11 @@ if (!response.ok) {
 // packages/shadcn/src/preflights/preflight-init.ts:11-27
 // Preflight — エラーマップで複数の検証結果を返す
 export async function preFlightInit(options: z.infer<typeof initOptionsSchema>) {
-  const errors: Record<string, boolean> = {}
+  const errors: Record<string, boolean> = {};
 
   if (!fs.existsSync(options.cwd) || !fs.existsSync(path.resolve(options.cwd, "package.json"))) {
-    errors[ERRORS.MISSING_DIR_OR_EMPTY_PROJECT] = true
-    return { errors, projectInfo: null }
+    errors[ERRORS.MISSING_DIR_OR_EMPTY_PROJECT] = true;
+    return { errors, projectInfo: null };
   }
   // ... further checks populate errors map
 }
@@ -330,7 +331,7 @@ export async function preFlightInit(options: z.infer<typeof initOptionsSchema>) 
         context: { cwd },
         suggestion:
           "Run 'npx shadcn@latest init' to create a components.json file, or check that you're in the correct directory.",
-      })
+      });
     }
   }
   ```
@@ -343,7 +344,7 @@ export async function preFlightInit(options: z.infer<typeof initOptionsSchema>) 
     NOT_FOUND: "NOT_FOUND",
     GONE: "GONE",
     // ...
-  } as const
+  } as const;
   ```
 
 - **RFC 7807 のサーバーメッセージ解析**: fetch 時にサーバーが返す `detail` / `message` フィールドを Zod で安全にパースし、`cause` に渡す。サーバー側のエラー情報をユーザーに中継できる。
@@ -354,7 +355,7 @@ export async function preFlightInit(options: z.infer<typeof initOptionsSchema>) 
     title: z.string().optional(),
     message: z.string().optional(),
     error: z.string().optional(),
-  }).safeParse(json)
+  }).safeParse(json);
   ```
 
 - **`toJSON()` による構造化エラーシリアライズ**: MCP レスポンスやデバッグログなど、エラーをシリアライズする場面で `toJSON()` が一貫した形式を保証する。
@@ -383,17 +384,17 @@ export async function preFlightInit(options: z.infer<typeof initOptionsSchema>) 
   ```typescript
   // Bad: packages/shadcn/src/preflights/preflight-init.ts:39-49
   if (fs.existsSync(path.resolve(options.cwd, "components.json")) && !options.force) {
-    projectSpinner?.fail()
-    logger.break()
-    logger.error(`A components.json file already exists...`)
-    logger.break()
-    process.exit(1)
+    projectSpinner?.fail();
+    logger.break();
+    logger.error(`A components.json file already exists...`);
+    logger.break();
+    process.exit(1);
   }
 
   // Better: エラーマップに追加して呼び出し側に判断を委ねる
   if (fs.existsSync(path.resolve(options.cwd, "components.json")) && !options.force) {
-    errors[ERRORS.EXISTING_CONFIG] = true
-    return { errors, projectInfo: null }
+    errors[ERRORS.EXISTING_CONFIG] = true;
+    return { errors, projectInfo: null };
   }
   ```
 
@@ -418,18 +419,18 @@ export async function preFlightInit(options: z.infer<typeof initOptionsSchema>) 
   // Bad: packages/shadcn/src/registry/api.ts:162-171
   export async function getShadcnRegistryIndex() {
     try {
-      const [result] = await fetchRegistry(["index.json"])
-      return registryIndexSchema.parse(result)
+      const [result] = await fetchRegistry(["index.json"]);
+      return registryIndexSchema.parse(result);
     } catch (error) {
-      logger.error("\n")
-      handleError(error)  // ここで process.exit するが、呼び出し側にも catch がある
+      logger.error("\n");
+      handleError(error); // ここで process.exit するが、呼び出し側にも catch がある
     }
   }
 
   // Better: エラーを throw して呼び出し側に委ねる
   export async function getShadcnRegistryIndex() {
-    const [result] = await fetchRegistry(["index.json"])
-    return registryIndexSchema.parse(result)
+    const [result] = await fetchRegistry(["index.json"]);
+    return registryIndexSchema.parse(result);
   }
   ```
 

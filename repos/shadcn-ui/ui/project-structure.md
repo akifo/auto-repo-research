@@ -23,12 +23,12 @@ pnpm workspaces + Turborepo を用いたモノレポ構成を分析する。こ�
 
 モノレポは以下の 3 + 1 層構造を取る。
 
-| 層 | パス | 役割 | private | publish |
-|---|---|---|---|---|
-| CLI (コア) | `packages/shadcn` | npm パッケージ。コンポーネントの取得・変換・配置 | No | Yes |
-| ドキュメント + レジストリ | `apps/v4` | Next.js サイト。コンポーネント実体を JSON API として配信 | Yes | No |
-| 統合テスト | `packages/tests` | CLI の E2E テスト。`workspace:*` で CLI に依存 | Yes | No |
-| テンプレート | `templates/*` | ユーザー向けスターター。外部リポジトリへ同期 | - | No |
+| 層                        | パス              | 役割                                                     | private | publish |
+| ------------------------- | ----------------- | -------------------------------------------------------- | ------- | ------- |
+| CLI (コア)                | `packages/shadcn` | npm パッケージ。コンポーネントの取得・変換・配置         | No      | Yes     |
+| ドキュメント + レジストリ | `apps/v4`         | Next.js サイト。コンポーネント実体を JSON API として配信 | Yes     | No      |
+| 統合テスト                | `packages/tests`  | CLI の E2E テスト。`workspace:*` で CLI に依存           | Yes     | No      |
+| テンプレート              | `templates/*`     | ユーザー向けスターター。外部リポジトリへ同期             | -       | No      |
 
 `apps/www` は deprecated として残されており、`.contentlayer` と `.next` のキャッシュのみが存在する。
 
@@ -69,13 +69,13 @@ pnpm workspaces + Turborepo を用いたモノレポ構成を分析する。こ�
 ```typescript
 // pnpm-workspace.yaml:1-8
 packages:
-  - "apps/*"
+-"apps/*"
   - "packages/*"
   - "!**/test/**"
   - "!**/fixtures/**"
   - "!**/temp/**"
   - "!packages/tests/temp/**"
-  - "!deprecated/**"
+  - "!deprecated/**";
 ```
 
 ```typescript
@@ -111,12 +111,12 @@ entry: [
 
 ```typescript
 // packages/shadcn/src/schema/index.ts:1
-export * from "../registry/schema"
+export * from "../registry/schema";
 ```
 
 ```typescript
 // packages/tests/src/utils/helpers.ts:12
-const SHADCN_CLI_PATH = path.join(__dirname, "../../../shadcn/dist/index.js")
+const SHADCN_CLI_PATH = path.join(__dirname, "../../../shadcn/dist/index.js");
 ```
 
 ```typescript
@@ -170,7 +170,7 @@ const SHADCN_CLI_PATH = path.join(__dirname, "../../../shadcn/dist/index.js")
 
 ```typescript
 // packages/tests/src/utils/helpers.ts:12
-const SHADCN_CLI_PATH = path.join(__dirname, "../../../shadcn/dist/index.js")
+const SHADCN_CLI_PATH = path.join(__dirname, "../../../shadcn/dist/index.js");
 ```
 
 - **tsup エントリポイント分割によるサブパスエクスポート**: 1 パッケージから複数のサブモジュールを公開する場合、tsup の `entry` 配列と `package.json` の `exports` マップを対応させることで、ツリーシェイキングと明確な API 境界を両立している。
@@ -210,14 +210,14 @@ apps/www/
 
 ```typescript
 // Bad: 相対パスのハードコード
-const SHADCN_CLI_PATH = path.join(__dirname, "../../../shadcn/dist/index.js")
+const SHADCN_CLI_PATH = path.join(__dirname, "../../../shadcn/dist/index.js");
 ```
 
 ```typescript
 // Better: package.json の bin フィールドを利用するか、
 // workspace protocol で解決された実行パスを使う
-import { resolve } from "import-meta-resolve"
-const SHADCN_CLI_PATH = await resolve("shadcn", import.meta.url)
+import { resolve } from "import-meta-resolve";
+const SHADCN_CLI_PATH = await resolve("shadcn", import.meta.url);
 ```
 
 - **schema の間接再エクスポート**: `src/schema/index.ts` が `export * from "../registry/schema"` だけの 1 行ファイル。これは `package.json` の `exports` で `shadcn/schema` サブパスを提供するための間接層だが、実質的には `registry/schema.ts` との二重管理になる可能性がある。tsup のエントリポイント設定で直接参照する方が明快。

@@ -26,15 +26,15 @@ drizzle-orm は PostgreSQL / MySQL / SQLite の3方言を、共通の基底レ�
 ```typescript
 // pg-core/table.ts:33-54
 export class PgTable<T extends TableConfig = TableConfig> extends Table<T> {
-  static override readonly [entityKind]: string = 'PgTable';
+  static override readonly [entityKind]: string = "PgTable";
 
   static override readonly Symbol = Object.assign({}, Table.Symbol, {
     InlineForeignKeys: InlineForeignKeys as typeof InlineForeignKeys,
-    EnableRLS: EnableRLS as typeof EnableRLS,  // PG 固有
+    EnableRLS: EnableRLS as typeof EnableRLS, // PG 固有
   });
 
   [InlineForeignKeys]: ForeignKey[] = [];
-  [EnableRLS]: boolean = false;  // PG 固有
+  [EnableRLS]: boolean = false; // PG 固有
 }
 ```
 
@@ -68,11 +68,11 @@ export abstract class MySqlColumnBuilder<
 
 各 `Dialect` クラスは `escapeName`, `escapeParam`, `escapeString` の3メソッドで SQL 出力の方言差分を吸収する。
 
-| メソッド | PG | MySQL | SQLite |
-|---|---|---|---|
-| `escapeName` | `"name"` | `` `name` `` | `"name"` |
-| `escapeParam` | `$1`, `$2`... | `?` | `?` |
-| `escapeString` | `'str'` | `'str'` | `'str'` |
+| メソッド       | PG            | MySQL        | SQLite   |
+| -------------- | ------------- | ------------ | -------- |
+| `escapeName`   | `"name"`      | `` `name` `` | `"name"` |
+| `escapeParam`  | `$1`, `$2`... | `?`          | `?`      |
+| `escapeString` | `'str'`       | `'str'`      | `'str'`  |
 
 これらは `BuildQueryConfig` インターフェース（`sql/sql.ts:32-41`）を通じて SQL ノードツリーの最終変換時に注入される。
 
@@ -172,10 +172,10 @@ pg-core/               mysql-core/            sqlite-core/
 
 ```typescript
 // PG: returning() あり
-const result = await db.insert(users).values({ name: 'John' }).returning();
+const result = await db.insert(users).values({ name: "John" }).returning();
 
 // MySQL: $returningId() のみ（returning() は型に存在しない）
-const result = await db.insert(users).values({ name: 'John' }).$returningId();
+const result = await db.insert(users).values({ name: "John" }).$returningId();
 ```
 
 - **getSQLType() による SQL 型名の方言分離**: 各カラムクラスの `getSQLType()` abstract メソッドが方言固有の SQL 型名を返す。PG の `pgEnum` は `enumName` を返し、MySQL の `mysqlEnum` は `enum('a','b','c')` をインラインで返す。これにより型マッピングロジックが各カラムクラスにカプセル化される。
@@ -206,7 +206,7 @@ buildInsertQuery(config) {
 // sqlite-core/dialect.ts:455  — SQLite 版
 ```
 
-- **mapFromDriverValue の不統一**: SQLite の `buildInsertQuery` では未定義値のデフォルトに `sql\`null\`` を使うが、PG と MySQL は `sql\`default\`` を使う（`sqlite-core/dialect.ts:496` vs `pg-core/dialect.ts:553`）。これは SQLite の `DEFAULT` 句の制約に起因するが、方言間で異なるフォールバック挙動がバグの温床になりうる。
+- **mapFromDriverValue の不統一**: SQLite の `buildInsertQuery` では未定義値のデフォルトに `sql\`null\``を使うが、PG と MySQL は`sql\`default\``を使う（`sqlite-core/dialect.ts:496`vs`pg-core/dialect.ts:553`）。これは SQLite の`DEFAULT` 句の制約に起因するが、方言間で異なるフォールバック挙動がバグの温床になりうる。
 
 ## 導出ルール
 

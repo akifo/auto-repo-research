@@ -27,13 +27,13 @@ shadcn/ui の Registry API は、コンポーネント配信プラットフォ�
 // packages/shadcn/package.json:29-57
 {
   "exports": {
-    ".":          { "types": "./dist/index.d.ts",          "default": "./dist/index.js" },
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
     "./registry": { "types": "./dist/registry/index.d.ts", "default": "./dist/registry/index.js" },
-    "./schema":   { "types": "./dist/schema/index.d.ts",   "default": "./dist/schema/index.js" },
-    "./mcp":      { "types": "./dist/mcp/index.d.ts",      "default": "./dist/mcp/index.js" },
-    "./utils":    { "types": "./dist/utils/index.d.ts",     "default": "./dist/utils/index.js" },
-    "./icons":    { "types": "./dist/icons/index.d.ts",     "default": "./dist/icons/index.js" }
-  }
+    "./schema": { "types": "./dist/schema/index.d.ts", "default": "./dist/schema/index.js" },
+    "./mcp": { "types": "./dist/mcp/index.d.ts", "default": "./dist/mcp/index.js" },
+    "./utils": { "types": "./dist/utils/index.d.ts", "default": "./dist/utils/index.js" },
+    "./icons": { "types": "./dist/icons/index.d.ts", "default": "./dist/icons/index.js" },
+  },
 }
 ```
 
@@ -41,14 +41,14 @@ shadcn/ui の Registry API は、コンポーネント配信プラットフォ�
 
 ```typescript
 // packages/shadcn/src/schema/index.ts:1
-export * from "../registry/schema"
+export * from "../registry/schema";
 ```
 
 ```typescript
 // packages/shadcn/src/registry/index.ts:1-23
-export { getRegistries, getRegistryItems, resolveRegistryItems, getRegistry, getRegistriesIndex } from "./api"
-export { searchRegistries } from "./search"
-export { RegistryError, RegistryNotFoundError, /* ... 8 more */ } from "./errors"
+export { getRegistries, getRegistriesIndex, getRegistry, getRegistryItems, resolveRegistryItems } from "./api";
+export { RegistryError, RegistryNotFoundError /* ... 8 more */ } from "./errors";
+export { searchRegistries } from "./search";
 ```
 
 この設計の重要な点は、内部モジュール（`builder.ts`, `fetcher.ts`, `resolver.ts`, `context.ts`）を意図的にエクスポートから除外していることである。これにより公開 API サーフェスを制御し、内部実装の変更を破壊的変更にしない自由度を確保している。
@@ -76,7 +76,7 @@ export const registryItemSchema = z.discriminatedUnion("type", [
   registryItemCommonSchema.extend({
     type: registryItemTypeSchema.exclude(["registry:base", "registry:font"]),
   }),
-])
+]);
 ```
 
 また、レジストリ設定の `registryConfigItemSchema` は `z.union()` で「簡易文字列フォーマット」と「詳細オブジェクトフォーマット」を同時にサポートする。
@@ -88,11 +88,11 @@ export const registryConfigItemSchema = z.union([
     message: "Registry URL must include {name} placeholder",
   }),
   z.object({
-    url: z.string().refine((s) => s.includes("{name}"), { /* ... */ }),
+    url: z.string().refine((s) => s.includes("{name}"), {/* ... */}),
     params: z.record(z.string(), z.string()).optional(),
     headers: z.record(z.string(), z.string()).optional(),
   }),
-])
+]);
 ```
 
 ### コンポーネントの API 規約パターン
@@ -119,14 +119,14 @@ function Button({
 
 ```tsx
 // apps/v4/registry/new-york-v4/ui/card.tsx:8
-<div data-slot="card" className={cn(/* ... */)} {...props} />
+<div data-slot="card" className={cn(/* ... */)} {...props} />;
 ```
 
 **関数宣言 + 末尾の named export**: `React.forwardRef` は一切使わず（React 19 対応）、通常の `function` 宣言で定義し、ファイル末尾で `export { }` する。
 
 ```tsx
 // apps/v4/registry/new-york-v4/ui/card.tsx:84-92
-export { Card, CardHeader, CardFooter, CardTitle, CardAction, CardDescription, CardContent }
+export { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle };
 ```
 
 ### 後方互換性の維持戦略
@@ -138,10 +138,10 @@ export { Card, CardHeader, CardFooter, CardTitle, CardAction, CardDescription, C
 /**
  * @deprecated Use getRegistries() instead.
  */
-export async function getRegistriesIndex(options?: { useCache?: boolean }) {
-  const registries = await getRegistries(options)
-  if (!registries) return null
-  return Object.fromEntries(registries.map((r) => [r.name, r.url])) as z.infer<typeof registriesIndexSchema>
+export async function getRegistriesIndex(options?: { useCache?: boolean; }) {
+  const registries = await getRegistries(options);
+  if (!registries) return null;
+  return Object.fromEntries(registries.map((r) => [r.name, r.url])) as z.infer<typeof registriesIndexSchema>;
 }
 ```
 
@@ -156,7 +156,7 @@ export const RegistryErrorCode = {
   NOT_FOUND: "NOT_FOUND",
   UNAUTHORIZED: "UNAUTHORIZED",
   // ...
-} as const
+} as const;
 ```
 
 ```typescript
@@ -169,7 +169,7 @@ export class RegistryNotFoundError extends RegistryError {
       cause,
       context: { url },
       suggestion: "Check if the item name is correct and the registry URL is accessible.",
-    })
+    });
   }
 }
 ```
@@ -180,15 +180,15 @@ export class RegistryNotFoundError extends RegistryError {
 // packages/shadcn/src/registry/fetcher.ts:61-109
 // HTTP レスポンスのステータスコードに応じて型付きエラーに変換
 if (response.status === 401) {
-  throw new RegistryUnauthorizedError(url, messageFromServer)
+  throw new RegistryUnauthorizedError(url, messageFromServer);
 }
 if (response.status === 404) {
-  throw new RegistryNotFoundError(url, messageFromServer)
+  throw new RegistryNotFoundError(url, messageFromServer);
 }
 if (response.status === 403) {
-  throw new RegistryForbiddenError(url, messageFromServer)
+  throw new RegistryForbiddenError(url, messageFromServer);
 }
-throw new RegistryFetchError(url, response.status, messageFromServer)
+throw new RegistryFetchError(url, response.status, messageFromServer);
 ```
 
 ```typescript
@@ -197,14 +197,14 @@ throw new RegistryFetchError(url, response.status, messageFromServer)
 export function buildUrlFromRegistryConfig(
   item: string,
   registryConfig: z.infer<typeof registryConfigItemSchema>,
-  config?: Config
+  config?: Config,
 ) {
   if (typeof registryConfig === "string") {
-    let url = registryConfig.replace(NAME_PLACEHOLDER, item)
+    let url = registryConfig.replace(NAME_PLACEHOLDER, item);
     // ...
-    return expandEnvVars(url)
+    return expandEnvVars(url);
   }
-  let baseUrl = registryConfig.url.replace(NAME_PLACEHOLDER, item)
+  let baseUrl = registryConfig.url.replace(NAME_PLACEHOLDER, item);
   // ...
 }
 ```
@@ -263,20 +263,20 @@ function DialogContent({
 ```typescript
 // packages/shadcn/src/registry/schema.ts:6-19
 export const registryConfigItemSchema = z.union([
-  z.string().refine((s) => s.includes("{name}"), { /* ... */ }),
+  z.string().refine((s) => s.includes("{name}"), {/* ... */}),
   z.object({
-    url: z.string().refine((s) => s.includes("{name}"), { /* ... */ }),
+    url: z.string().refine((s) => s.includes("{name}"), {/* ... */}),
     params: z.record(z.string(), z.string()).optional(),
     headers: z.record(z.string(), z.string()).optional(),
   }),
-])
+]);
 ```
 
 - **`data-slot` による安定的なセレクタ契約**: クラス名はユーティリティ CSS の都合で頻繁に変わるが、`data-slot` は意味的な識別子として安定させている。外部の消費者（テスト、スタイリング）が `[data-slot="card-header"]` で安定的に要素を特定できる。
 
 ```tsx
 // apps/v4/registry/new-york-v4/ui/card.tsx:8
-<div data-slot="card" className={cn("flex flex-col ...", className)} {...props} />
+<div data-slot="card" className={cn("flex flex-col ...", className)} {...props} />;
 ```
 
 - **`React.ComponentProps<>` による Props 型の導出**: ラップ元コンポーネントの型を直接利用することで、型定義の重複を排除し、上流の型変更に自動追従する。53 コンポーネント・289 箇所で一貫して使用。
@@ -302,25 +302,20 @@ suggestion: "Check if the item name is correct and the registry URL is accessibl
 
 ```typescript
 // Bad: 意図しないエクスポートの漏洩
-export * from "../registry/schema"
+export * from "../registry/schema";
 
 // Better: 明示的な named re-export
-export {
-  registryItemSchema,
-  registryConfigSchema,
-  type RegistryItem,
-  type Registry,
-} from "../registry/schema"
+export { type Registry, registryConfigSchema, type RegistryItem, registryItemSchema } from "../registry/schema";
 ```
 
 - **`handleError` での `process.exit(1)` ハードコード**: CLI 用のエラーハンドラが `process.exit()` を呼ぶため、ライブラリとして利用する場合にプロセスが終了してしまう。CLI 専用のコードパスとライブラリ用のコードパスを分離すべき。
 
 ```typescript
 // Bad: packages/shadcn/src/utils/handle-error.ts:17
-process.exit(1)
+process.exit(1);
 
 // Better: エラーを throw して呼び出し元に制御を返す
-throw error
+throw error;
 ```
 
 ## 導出ルール

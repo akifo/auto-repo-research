@@ -216,15 +216,15 @@ export async function runCommand(
 ```typescript
 // fetcher.test.ts:88-109
 it("should not use cache when disabled", async () => {
-  let callCount = 0
+  let callCount = 0;
   server.use(
     http.get(`${REGISTRY_URL}/cache-test.json`, () => {
-      callCount++
-      return HttpResponse.json({ name: `test-${callCount}`, type: "registry:ui" })
-    })
-  )
+      callCount++;
+      return HttpResponse.json({ name: `test-${callCount}`, type: "registry:ui" });
+    }),
+  );
   // ...
-})
+});
 ```
 
 - **型付きエラークラスによるテスト**: HTTP ステータスコードごとの振る舞いを `rejects.toThrow(SpecificErrorClass)` で検証する。エラーメッセージの文字列マッチに依存せず、エラーの種類をコードレベルで区別できる。
@@ -232,11 +232,11 @@ it("should not use cache when disabled", async () => {
 ```typescript
 // fetcher.test.ts:112-134
 it("should handle 404 errors", async () => {
-  await expect(fetchRegistry(["not-found.json"])).rejects.toThrow(RegistryNotFoundError)
-})
+  await expect(fetchRegistry(["not-found.json"])).rejects.toThrow(RegistryNotFoundError);
+});
 it("should handle 401 errors", async () => {
-  await expect(fetchRegistry(["unauthorized.json"])).rejects.toThrow(RegistryUnauthorizedError)
-})
+  await expect(fetchRegistry(["unauthorized.json"])).rejects.toThrow(RegistryUnauthorizedError);
+});
 ```
 
 - **一時ディレクトリ + finally ブロック**: ファイルシステムに書き込むテストは `fs.mkdtemp()` で一時ディレクトリを作り、`try/finally` でクリーンアップする。テスト失敗時もゴミファイルが残らない。
@@ -244,17 +244,17 @@ it("should handle 401 errors", async () => {
 ```typescript
 // api.test.ts:136-176
 it("should read and parse a valid local JSON file", async () => {
-  const tempDir = await fs.mkdtemp(path.join(tmpdir(), "shadcn-test-"))
-  const tempFile = path.join(tempDir, "test-component.json")
-  await fs.writeFile(tempFile, JSON.stringify(componentData, null, 2))
+  const tempDir = await fs.mkdtemp(path.join(tmpdir(), "shadcn-test-"));
+  const tempFile = path.join(tempDir, "test-component.json");
+  await fs.writeFile(tempFile, JSON.stringify(componentData, null, 2));
   try {
-    const [result] = await getRegistryItems([tempFile])
-    expect(result).toMatchObject({ name: "test-component" })
+    const [result] = await getRegistryItems([tempFile]);
+    expect(result).toMatchObject({ name: "test-component" });
   } finally {
-    await fs.unlink(tempFile)
-    await fs.rmdir(tempDir)
+    await fs.unlink(tempFile);
+    await fs.rmdir(tempDir);
   }
-})
+});
 ```
 
 - **環境変数の beforeEach/afterEach 管理**: テストで `process.env` を操作する場合、`beforeEach` で設定し `afterEach` で `delete` する。テスト間の環境変数汚染を防ぐ。
@@ -262,11 +262,11 @@ it("should read and parse a valid local JSON file", async () => {
 ```typescript
 // validator.test.ts:46-52
 beforeEach(() => {
-  process.env.TOKEN = "value"
-})
+  process.env.TOKEN = "value";
+});
 afterEach(() => {
-  delete process.env.TOKEN
-})
+  delete process.env.TOKEN;
+});
 ```
 
 ## Anti-Patterns / 注意点
@@ -275,7 +275,7 @@ afterEach(() => {
 
 ```typescript
 // Bad: packages/tests/src/tests/init.test.ts:14
-await new Promise((resolve) => setTimeout(resolve, 2000))
+await new Promise((resolve) => setTimeout(resolve, 2000));
 ```
 
 ```typescript
@@ -283,13 +283,13 @@ await new Promise((resolve) => setTimeout(resolve, 2000))
 async function waitForServer(url: string, maxRetries = 10) {
   for (let i = 0; i < maxRetries; i++) {
     try {
-      await fetch(url)
-      return
+      await fetch(url);
+      return;
     } catch {
-      await new Promise((r) => setTimeout(r, 100))
+      await new Promise((r) => setTimeout(r, 100));
     }
   }
-  throw new Error(`Server at ${url} did not start`)
+  throw new Error(`Server at ${url} did not start`);
 }
 ```
 
@@ -298,24 +298,26 @@ async function waitForServer(url: string, maxRetries = 10) {
 ```typescript
 // Bad: search.test.ts での各テスト内の vi.mock 重複
 it("should apply search filter", async () => {
-  vi.mock("./api", () => ({ getRegistry: vi.fn() }))  // 毎回宣言
-  const mockGetRegistry = vi.mocked(getRegistry)
+  vi.mock("./api", () => ({ getRegistry: vi.fn() })); // 毎回宣言
+  const mockGetRegistry = vi.mocked(getRegistry);
   // ...
-})
+});
 ```
 
 ```typescript
 // Better: ファイル先頭で一度だけ宣言
-vi.mock("./api", () => ({ getRegistry: vi.fn() }))
+vi.mock("./api", () => ({ getRegistry: vi.fn() }));
 
 describe("searchRegistries", () => {
-  beforeEach(() => { vi.clearAllMocks() })
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
   it("should apply search filter", async () => {
-    const mockGetRegistry = vi.mocked(getRegistry)
-    mockGetRegistry.mockImplementation(async () => { /* ... */ })
+    const mockGetRegistry = vi.mocked(getRegistry);
+    mockGetRegistry.mockImplementation(async () => {/* ... */});
     // ...
-  })
-})
+  });
+});
 ```
 
 ## 導出ルール

@@ -32,8 +32,8 @@ async function main() {
     .version(
       packageJson.version || "1.0.0",
       "-v, --version",
-      "display the version number"
-    )
+      "display the version number",
+    );
 
   program
     .addCommand(init)
@@ -46,11 +46,11 @@ async function main() {
     .addCommand(info)
     .addCommand(build)
     .addCommand(mcp)
-    .addCommand(registry)
+    .addCommand(registry);
   // Legacy registry commands.
-  program.addCommand(registryBuild).addCommand(registryMcp)
+  program.addCommand(registryBuild).addCommand(registryMcp);
 
-  program.parse()
+  program.parse();
 }
 ```
 
@@ -72,7 +72,7 @@ export const addOptionsSchema = z.object({
   silent: z.boolean(),
   srcDir: z.boolean().optional(),
   cssVariables: z.boolean(),
-})
+});
 ```
 
 ```typescript
@@ -109,14 +109,14 @@ migration: z
 
 ```typescript
 // packages/shadcn/src/utils/errors.ts:1-14
-export const MISSING_DIR_OR_EMPTY_PROJECT = "1"
-export const EXISTING_CONFIG = "2"
-export const MISSING_CONFIG = "3"
-export const FAILED_CONFIG_READ = "4"
-export const TAILWIND_NOT_CONFIGURED = "5"
-export const IMPORT_ALIAS_MISSING = "6"
-export const UNSUPPORTED_FRAMEWORK = "7"
-export const BUILD_MISSING_REGISTRY_FILE = "13"
+export const MISSING_DIR_OR_EMPTY_PROJECT = "1";
+export const EXISTING_CONFIG = "2";
+export const MISSING_CONFIG = "3";
+export const FAILED_CONFIG_READ = "4";
+export const TAILWIND_NOT_CONFIGURED = "5";
+export const IMPORT_ALIAS_MISSING = "6";
+export const UNSUPPORTED_FRAMEWORK = "7";
+export const BUILD_MISSING_REGISTRY_FILE = "13";
 ```
 
 preflight は `{ errors: Record<string, boolean>, config: Config | null }` 形式の結果オブジェクトを返す。呼び出し側はエラーコードを key でチェックして分岐する。
@@ -145,17 +145,19 @@ if (errors[ERRORS.MISSING_CONFIG]) {
 // packages/shadcn/src/preflights/preflight-init.ts:29-53
 const projectSpinner = spinner(`Preflight checks.`, {
   silent: options.silent,
-}).start()
+}).start();
 // ... 検証 ...
-projectSpinner?.succeed()
+projectSpinner?.succeed();
 
 const frameworkSpinner = spinner(`Verifying framework.`, {
   silent: options.silent,
-}).start()
+}).start();
 // ... 検証 ...
-frameworkSpinner?.succeed(`Verifying framework. Found ${highlighter.info(
-  projectInfo.framework.label
-)}.`)
+frameworkSpinner?.succeed(`Verifying framework. Found ${
+  highlighter.info(
+    projectInfo.framework.label,
+  )
+}.`);
 ```
 
 ### Shadow Config による段階的設定解決
@@ -165,22 +167,22 @@ frameworkSpinner?.succeed(`Verifying framework. Found ${highlighter.info(
 ```typescript
 // packages/shadcn/src/commands/view.ts:37-56
 // Start with a shadow config to support partial components.json.
-let shadowConfig = configWithDefaults({})
+let shadowConfig = configWithDefaults({});
 
 // Check if there's a components.json file (partial or complete).
-const componentsJsonPath = path.resolve(options.cwd, "components.json")
+const componentsJsonPath = path.resolve(options.cwd, "components.json");
 if (fsExtra.existsSync(componentsJsonPath)) {
-  const existingConfig = await fsExtra.readJson(componentsJsonPath)
-  const partialConfig = rawConfigSchema.partial().parse(existingConfig)
-  shadowConfig = configWithDefaults(partialConfig)
+  const existingConfig = await fsExtra.readJson(componentsJsonPath);
+  const partialConfig = rawConfigSchema.partial().parse(existingConfig);
+  shadowConfig = configWithDefaults(partialConfig);
 }
 
 // Try to get the full config, but fall back to shadow config if it fails.
-let config = shadowConfig
+let config = shadowConfig;
 try {
-  const fullConfig = await getConfig(options.cwd)
+  const fullConfig = await getConfig(options.cwd);
   if (fullConfig) {
-    config = configWithDefaults(fullConfig)
+    config = configWithDefaults(fullConfig);
   }
 } catch {
   // Use shadow config if getConfig fails (partial components.json).
@@ -235,16 +237,16 @@ export function handleError(error: unknown) {
 ```typescript
 // packages/shadcn/src/commands/init.ts:51-61
 process.on("exit", (code) => {
-  const filePath = path.resolve(process.cwd(), "components.json")
+  const filePath = path.resolve(process.cwd(), "components.json");
 
   // Delete backup if successful.
   if (code === 0) {
-    return deleteFileBackup(filePath)
+    return deleteFileBackup(filePath);
   }
 
   // Restore backup if error.
-  return restoreFileBackup(filePath)
-})
+  return restoreFileBackup(filePath);
+});
 ```
 
 ## コード例
@@ -271,25 +273,25 @@ export async function preFlightAdd(options: z.infer<typeof addOptionsSchema>) {
 // packages/shadcn/src/registry/errors.ts:32-62
 // ドメイン固有エラーにコード・コンテキスト・修正提案を含める
 export class RegistryError extends Error {
-  public readonly code: RegistryErrorCode
-  public readonly statusCode?: number
-  public readonly context?: Record<string, unknown>
-  public readonly suggestion?: string
-  public readonly timestamp: Date
+  public readonly code: RegistryErrorCode;
+  public readonly statusCode?: number;
+  public readonly context?: Record<string, unknown>;
+  public readonly suggestion?: string;
+  public readonly timestamp: Date;
 
   constructor(
     message: string,
     options: {
-      code?: RegistryErrorCode
-      statusCode?: number
-      cause?: unknown
-      context?: Record<string, unknown>
-      suggestion?: string
-    } = {}
+      code?: RegistryErrorCode;
+      statusCode?: number;
+      cause?: unknown;
+      context?: Record<string, unknown>;
+      suggestion?: string;
+    } = {},
   ) {
-    super(message)
-    this.name = "RegistryError"
-    this.code = options.code || RegistryErrorCode.UNKNOWN_ERROR
+    super(message);
+    this.name = "RegistryError";
+    this.code = options.code || RegistryErrorCode.UNKNOWN_ERROR;
     // ...
   }
 }
@@ -298,14 +300,14 @@ export class RegistryError extends Error {
 ```typescript
 // packages/shadcn/src/utils/highlighter.ts:1-8
 // CLI 出力のカラーリングを薄いラッパーで抽象化
-import { cyan, green, red, yellow } from "kleur/colors"
+import { cyan, green, red, yellow } from "kleur/colors";
 
 export const highlighter = {
   error: red,
   warn: yellow,
   info: cyan,
   success: green,
-}
+};
 ```
 
 ## パターンカタログ
@@ -347,9 +349,8 @@ export class RegistryNotFoundError extends RegistryError {
   constructor(public readonly url: string, cause?: unknown) {
     super(message, {
       code: RegistryErrorCode.NOT_FOUND,
-      suggestion:
-        "Check if the item name is correct and the registry URL is accessible.",
-    })
+      suggestion: "Check if the item name is correct and the registry URL is accessible.",
+    });
   }
 }
 ```
@@ -358,8 +359,8 @@ export class RegistryNotFoundError extends RegistryError {
 
 ```typescript
 // packages/shadcn/src/utils/spinner.ts:3-13
-export function spinner(text: Options["text"], options?: { silent?: boolean }) {
-  return ora({ text, isSilent: options?.silent })
+export function spinner(text: Options["text"], options?: { silent?: boolean; }) {
+  return ora({ text, isSilent: options?.silent });
 }
 ```
 
@@ -377,8 +378,8 @@ if (errors[ERRORS.MISSING_CONFG]) { // typo: CONFG vs CONFIG
 ```typescript
 // Better: discriminated union で型安全に
 type PreflightResult =
-  | { ok: true; config: Config }
-  | { ok: false; error: "MISSING_CONFIG" | "MISSING_DIR" }
+  | { ok: true; config: Config; }
+  | { ok: false; error: "MISSING_CONFIG" | "MISSING_DIR"; };
 ```
 
 - **グローバル状態のクリーンアップが手動**: `clearRegistryContext()` を `finally` で手動呼び出しする必要があり、呼び忘れリスクがある。5 つのコマンドファイルで同じ `finally { clearRegistryContext() }` が重複している。
@@ -394,10 +395,14 @@ type PreflightResult =
 // Better: コマンド実行をラップするヘルパー
 function withRegistryContext(fn: () => Promise<void>) {
   return async () => {
-    try { await fn() }
-    catch (error) { handleError(error) }
-    finally { clearRegistryContext() }
-  }
+    try {
+      await fn();
+    } catch (error) {
+      handleError(error);
+    } finally {
+      clearRegistryContext();
+    }
+  };
 }
 ```
 

@@ -65,7 +65,9 @@ export const mapToClass = <T extends Function | Type<any>>(
       use(...params: unknown[]) {
         const [req, _, next] = params as [Record<string, any>, any, Function];
         const isExcluded = isMiddlewareRouteExcluded(
-          req, excludedRoutes, httpAdapter,
+          req,
+          excludedRoutes,
+          httpAdapter,
         );
         if (isExcluded) {
           return next();
@@ -80,7 +82,9 @@ export const mapToClass = <T extends Function | Type<any>>(
       use = (...params: unknown[]) => {
         const [req, _, next] = params as [Record<string, any>, any, Function];
         const isExcluded = isMiddlewareRouteExcluded(
-          req, excludedRoutes, httpAdapter,
+          req,
+          excludedRoutes,
+          httpAdapter,
         );
         if (isExcluded) {
           return next();
@@ -212,13 +216,13 @@ Express では同期的にファクトリを返すが、Fastify では `@fastify
 consumer
   .apply((req, res, next) => res.send(MIDDLEWARE_VALUE))
   .exclude(
-    'test',
-    'overview/:id',
-    'wildcard/*',
-    { path: 'middleware', method: RequestMethod.POST },
+    "test",
+    "overview/:id",
+    "wildcard/*",
+    { path: "middleware", method: RequestMethod.POST },
   )
-  .exclude('multiple/exclude')
-  .forRoutes('*path');
+  .exclude("multiple/exclude")
+  .forRoutes("*path");
 ```
 
 - **コントローラクラス参照によるルートスコープ**: 文字列パスではなくコントローラクラスを `forRoutes()` に渡すことで、そのコントローラの全ルートに自動的にミドルウェアが適用される。パスのハードコーディングを避け、コントローラのリファクタリングに対して堅牢になる。
@@ -241,17 +245,20 @@ export class CoreModule implements NestModule {
 ```typescript
 // Bad: 最初にマッチしたミドルウェアが応答を返してしまい、後続が実行されない
 consumer
-  .apply((req, res, next) => res.send('A'))
-  .forRoutes('*')
-  .apply((req, res, next) => res.send('B'))  // 到達しない
-  .forRoutes('*');
+  .apply((req, res, next) => res.send("A"))
+  .forRoutes("*")
+  .apply((req, res, next) => res.send("B")) // 到達しない
+  .forRoutes("*");
 
 // Better: next() を呼んでチェーンを維持する
 consumer
-  .apply((req, res, next) => { req.tag = 'A'; next(); })
-  .forRoutes('*')
+  .apply((req, res, next) => {
+    req.tag = "A";
+    next();
+  })
+  .forRoutes("*")
   .apply((req, res, next) => res.send(req.tag))
-  .forRoutes('*');
+  .forRoutes("*");
 ```
 
 - **`use()` メソッドを持たないクラスをミドルウェアとして登録する**: NestJS は `instance.use` の存在を実行時にチェックし、なければ `InvalidMiddlewareException` を投げる。インターフェース準拠のコンパイル時チェックだけでは不十分で、DI 解決後の実体が `use` を持っているかが重要である。
@@ -259,12 +266,14 @@ consumer
 ```typescript
 // Bad: @Injectable() だけではミドルウェアにならない
 @Injectable()
-class InvalidMiddleware {}  // use() メソッドがない
+class InvalidMiddleware {} // use() メソッドがない
 
 // Better: NestMiddleware を implements して型安全にする
 @Injectable()
 class ValidMiddleware implements NestMiddleware {
-  use(req: any, res: any, next: () => void) { next(); }
+  use(req: any, res: any, next: () => void) {
+    next();
+  }
 }
 ```
 

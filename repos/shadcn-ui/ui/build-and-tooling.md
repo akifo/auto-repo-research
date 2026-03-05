@@ -61,9 +61,9 @@ export default defineConfig({
   outDir: "dist",
   treeshake: true,
   onSuccess: async () => {
-    copyFileSync("src/tailwind.css", "dist/tailwind.css")
+    copyFileSync("src/tailwind.css", "dist/tailwind.css");
   },
-})
+});
 ```
 
 `onSuccess` コールバックで CSS ファイルをコピーするパターンは、tsup のビルドパイプラインに非 TS アセットの処理を統合する方法として参考になる。
@@ -84,11 +84,11 @@ export default defineConfig({
 // Build all styles in parallel.
 await Promise.all(
   stylesToBuild.map(async (style) => {
-    await buildRegistryJsonFile(style.name)
-    await buildRegistry(style.name)
-    console.log(`   ✅ ${style.name}`)
-  })
-)
+    await buildRegistryJsonFile(style.name);
+    await buildRegistry(style.name);
+    console.log(`   ✅ ${style.name}`);
+  }),
+);
 ```
 
 ### cn-* セマンティッククラスによるスタイル抽象化
@@ -107,8 +107,8 @@ const buttonVariants = cva(
         // ...
       },
     },
-  }
-)
+  },
+);
 ```
 
 ```css
@@ -138,8 +138,8 @@ export async function transform(
     transformRtl,
     transformIcons,
     transformCleanup,
-  ]
-)
+  ],
+);
 ```
 
 各トランスフォーマーは `(opts & { sourceFile }) => Promise<SourceFile>` のシグネチャを持ち、同一の `SourceFile` を順次変異させる。この設計により、新しい変換を追加する際はトランスフォーマーを 1 つ追加するだけでよい。
@@ -151,7 +151,7 @@ export async function transform(
 ```typescript
 // apps/v4/scripts/build-registry.mts:453-478
 async function buildRegistry(styleName: string) {
-  const outputPath = `public/r/styles/${styleName}`
+  const outputPath = `public/r/styles/${styleName}`;
   await new Promise<void>((resolve, reject) => {
     const proc = spawn(
       "node",
@@ -162,10 +162,10 @@ async function buildRegistry(styleName: string) {
         "--output",
         outputPath,
       ],
-      { cwd: process.cwd(), stdio: "pipe" }
-    )
+      { cwd: process.cwd(), stdio: "pipe" },
+    );
     // ...
-  })
+  });
 }
 ```
 
@@ -189,10 +189,10 @@ async function buildRegistry(styleName: string) {
 
 ```typescript
 // apps/v4/scripts/build-registry.mts:138-142
-const parseResult = registrySchema.safeParse(importedRegistry)
+const parseResult = registrySchema.safeParse(importedRegistry);
 if (!parseResult.success) {
-  console.error(`❌ Registry validation failed for ${base.name}:`)
-  throw new Error(`Invalid registry schema for ${base.name}`)
+  console.error(`❌ Registry validation failed for ${base.name}:`);
+  throw new Error(`Invalid registry schema for ${base.name}`);
 }
 ```
 
@@ -200,10 +200,10 @@ if (!parseResult.success) {
 
 ```typescript
 // apps/v4/scripts/build-registry.mts:47-111
-const totalStart = performance.now()
+const totalStart = performance.now();
 // ... 逐次: buildBasesIndex → buildBases → batchPrettier
 // ... 並列: stylesToBuild.map(style => buildRegistryJsonFile + buildRegistry)
-const elapsed = ((performance.now() - totalStart) / 1000).toFixed(2)
+const elapsed = ((performance.now() - totalStart) / 1000).toFixed(2);
 ```
 
 - **自動生成ファイルに `@ts-nocheck` + 「Do not edit」コメントを付与**: 生成された `__index__.tsx` には型チェック無効化と編集禁止の注意書きが含まれる。手書きコードと自動生成コードの境界を明確にする。

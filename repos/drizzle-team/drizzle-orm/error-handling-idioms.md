@@ -26,13 +26,13 @@ drizzle-orm のエラークラスは `drizzle-orm/src/errors.ts` に集約され
 ```typescript
 // drizzle-orm/src/errors.ts:3-11
 export class DrizzleError extends Error {
-	static readonly [entityKind]: string = 'DrizzleError';
+  static readonly [entityKind]: string = "DrizzleError";
 
-	constructor({ message, cause }: { message?: string; cause?: unknown }) {
-		super(message);
-		this.name = 'DrizzleError';
-		this.cause = cause;
-	}
+  constructor({ message, cause }: { message?: string; cause?: unknown; }) {
+    super(message);
+    this.name = "DrizzleError";
+    this.cause = cause;
+  }
 }
 ```
 
@@ -41,15 +41,15 @@ export class DrizzleError extends Error {
 ```typescript
 // drizzle-orm/src/errors.ts:13-25
 export class DrizzleQueryError extends Error {
-	constructor(
-		public query: string,
-		public params: any[],
-		public override cause?: Error,
-	) {
-		super(`Failed query: ${query}\nparams: ${params}`);
-		Error.captureStackTrace(this, DrizzleQueryError);
-		if (cause) (this as any).cause = cause;
-	}
+  constructor(
+    public query: string,
+    public params: any[],
+    public override cause?: Error,
+  ) {
+    super(`Failed query: ${query}\nparams: ${params}`);
+    Error.captureStackTrace(this, DrizzleQueryError);
+    if (cause) (this as any).cause = cause;
+  }
 }
 ```
 
@@ -58,11 +58,11 @@ export class DrizzleQueryError extends Error {
 ```typescript
 // drizzle-orm/src/errors.ts:27-33
 export class TransactionRollbackError extends DrizzleError {
-	static override readonly [entityKind]: string = 'TransactionRollbackError';
+  static override readonly [entityKind]: string = "TransactionRollbackError";
 
-	constructor() {
-		super({ message: 'Rollback' });
-	}
+  constructor() {
+    super({ message: "Rollback" });
+  }
 }
 ```
 
@@ -146,7 +146,7 @@ override async transaction<T>(transaction: (tx: NodePgTransaction<TFullSchema, T
 ```typescript
 // drizzle-orm/src/utils.ts:174-176
 export interface DrizzleTypeError<T extends string> {
-	$drizzleTypeError: T;
+  $drizzleTypeError: T;
 }
 ```
 
@@ -166,7 +166,7 @@ export interface DrizzleTypeError<T extends string> {
 ```typescript
 // drizzle-orm/type-tests/sqlite/insert.ts:27-28
 const insertAll = db.insert(users).values(newUser).all();
-Expect<Equal<DrizzleTypeError<'.all() cannot be used without .returning()'>, typeof insertAll>>;
+Expect<Equal<DrizzleTypeError<".all() cannot be used without .returning()">, typeof insertAll>>;
 ```
 
 ### 5. entityKind による instanceof 代替
@@ -176,27 +176,27 @@ drizzle-orm は `instanceof` の代わりに Symbol ベースの `entityKind` �
 ```typescript
 // drizzle-orm/src/entity.ts:12-42
 export function is<T extends DrizzleEntityClass<any>>(value: any, type: T): value is InstanceType<T> {
-	if (!value || typeof value !== 'object') {
-		return false;
-	}
-	if (value instanceof type) {
-		return true;
-	}
-	if (!Object.prototype.hasOwnProperty.call(type, entityKind)) {
-		throw new Error(
-			`Class "${type.name ?? '<unknown>'}" doesn't look like a Drizzle entity. ...`,
-		);
-	}
-	let cls = Object.getPrototypeOf(value).constructor;
-	if (cls) {
-		while (cls) {
-			if (entityKind in cls && cls[entityKind] === type[entityKind]) {
-				return true;
-			}
-			cls = Object.getPrototypeOf(cls);
-		}
-	}
-	return false;
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  if (value instanceof type) {
+    return true;
+  }
+  if (!Object.prototype.hasOwnProperty.call(type, entityKind)) {
+    throw new Error(
+      `Class "${type.name ?? "<unknown>"}" doesn't look like a Drizzle entity. ...`,
+    );
+  }
+  let cls = Object.getPrototypeOf(value).constructor;
+  if (cls) {
+    while (cls) {
+      if (entityKind in cls && cls[entityKind] === type[entityKind]) {
+        return true;
+      }
+      cls = Object.getPrototypeOf(cls);
+    }
+  }
+  return false;
 }
 ```
 
@@ -255,15 +255,15 @@ create(context, options) {
 ```typescript
 // drizzle-orm/src/errors.ts:13-25
 export class DrizzleQueryError extends Error {
-	constructor(
-		public query: string,
-		public params: any[],
-		public override cause?: Error,
-	) {
-		super(`Failed query: ${query}\nparams: ${params}`);
-		Error.captureStackTrace(this, DrizzleQueryError);
-		if (cause) (this as any).cause = cause;
-	}
+  constructor(
+    public query: string,
+    public params: any[],
+    public override cause?: Error,
+  ) {
+    super(`Failed query: ${query}\nparams: ${params}`);
+    Error.captureStackTrace(this, DrizzleQueryError);
+    if (cause) (this as any).cause = cause;
+  }
 }
 ```
 
@@ -283,13 +283,15 @@ rollback(): never {
 - **型レベルエラーのランタイム不整合**: `DrizzleTypeError` は型のみで機能するため、`any` や型アサーションで型チェックを回避するとランタイムで予期しない動作が起こりうる。drizzle-orm では `selection-proxy.ts:95` のように一部のケースでランタイム throw も併用している。
 
 Bad:
+
 ```typescript
 // 型エラーを as any で回避すると、ランタイムで undefined が返る
-const result = (db.insert(users).values(newUser).all() as any);
+const result = db.insert(users).values(newUser).all() as any;
 // result は undefined — 型レベルでは DrizzleTypeError が出ていたはず
 ```
 
 Better:
+
 ```typescript
 // 型レベルエラーに対応するランタイムチェックも設ける
 const result = db.insert(users).values(newUser).returning().all();
@@ -299,24 +301,35 @@ const result = db.insert(users).values(newUser).returning().all();
 - **queryWithCache 内の catch ブロック重複**: `pg-core/session.ts` の `queryWithCache` メソッドでは、6 つ以上の分岐それぞれで同一の `try/catch` + `throw new DrizzleQueryError(...)` が繰り返されている。ロジックの変更時に漏れが生じるリスクがある。
 
 Bad:
+
 ```typescript
 // 同一のラッピングが各分岐で繰り返される
 if (conditionA) {
-	try { return await query(); }
-	catch (e) { throw new DrizzleQueryError(queryString, params, e as Error); }
+  try {
+    return await query();
+  } catch (e) {
+    throw new DrizzleQueryError(queryString, params, e as Error);
+  }
 }
 if (conditionB) {
-	try { return await query(); }
-	catch (e) { throw new DrizzleQueryError(queryString, params, e as Error); }
+  try {
+    return await query();
+  } catch (e) {
+    throw new DrizzleQueryError(queryString, params, e as Error);
+  }
 }
 ```
 
 Better:
+
 ```typescript
 // ラッピングを一箇所に集約する
 const executeWithWrapping = async () => {
-	try { return await query(); }
-	catch (e) { throw new DrizzleQueryError(queryString, params, e as Error); }
+  try {
+    return await query();
+  } catch (e) {
+    throw new DrizzleQueryError(queryString, params, e as Error);
+  }
 };
 if (conditionA) return executeWithWrapping();
 if (conditionB) return executeWithWrapping();

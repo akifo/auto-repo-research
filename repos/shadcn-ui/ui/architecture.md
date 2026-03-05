@@ -61,8 +61,8 @@ export async function transform(
     transformRtl,
     transformIcons,
     transformCleanup,
-  ]
-)
+  ],
+);
 ```
 
 `update-files.ts` では、コンテキストに応じてデフォルトとは異なる変換チェーンを渡している。例えば `transformMenu`、`transformAsChild`、`transformNext` が条件付きで追加される:
@@ -82,7 +82,7 @@ export async function transform(
     ? [transformNext]
     : []),
   transformCleanup,
-]
+];
 ```
 
 各 Transformer は `(opts: TransformOpts & { sourceFile: SourceFile }) => Promise<SourceFile>` という統一シグネチャを持ち、ts-morph の SourceFile を in-place で変換する。
@@ -111,12 +111,12 @@ Registry 層は `RegistryError` 基底クラスから派生した特化エラー
 ```typescript
 // packages/shadcn/src/registry/errors.ts:32-76
 export class RegistryError extends Error {
-  public readonly code: RegistryErrorCode
-  public readonly statusCode?: number
-  public readonly context?: Record<string, unknown>
-  public readonly suggestion?: string
-  public readonly timestamp: Date
-  public readonly cause?: unknown
+  public readonly code: RegistryErrorCode;
+  public readonly statusCode?: number;
+  public readonly context?: Record<string, unknown>;
+  public readonly suggestion?: string;
+  public readonly timestamp: Date;
+  public readonly cause?: unknown;
 }
 ```
 
@@ -130,11 +130,11 @@ export class RegistryError extends Error {
 export async function resolveRegistryTree(
   names: z.infer<typeof registryItemSchema>["name"][],
   config: Config,
-  options: { useCache?: boolean } = {}
+  options: { useCache?: boolean; } = {},
 ) {
   // ...
-  const uniqueNames = Array.from(new Set(names))
-  const results = await fetchRegistryItems(uniqueNames, config, options)
+  const uniqueNames = Array.from(new Set(names));
+  const results = await fetchRegistryItems(uniqueNames, config, options);
   // ...
 }
 ```
@@ -142,27 +142,27 @@ export async function resolveRegistryTree(
 ```typescript
 // packages/shadcn/src/registry/fetcher.ts:24-50
 // Promise キャッシュ: 同一 URL の重複リクエストを防ぐ（Promise 自体をキャッシュ）
-const registryCache = new Map<string, Promise<any>>()
+const registryCache = new Map<string, Promise<any>>();
 
-export async function fetchRegistry(paths: string[], options: { useCache?: boolean } = {}) {
+export async function fetchRegistry(paths: string[], options: { useCache?: boolean; } = {}) {
   // ...
   const results = await Promise.all(
     paths.map(async (path) => {
-      const url = resolveRegistryUrl(path)
+      const url = resolveRegistryUrl(path);
       if (options.useCache && registryCache.has(url)) {
-        return registryCache.get(url)
+        return registryCache.get(url);
       }
       const fetchPromise = (async () => {
-        const headers = getRegistryHeadersFromContext(url)
-        const response = await fetch(url, { agent, headers: { ...headers } })
+        const headers = getRegistryHeadersFromContext(url);
+        const response = await fetch(url, { agent, headers: { ...headers } });
         // ...
-      })()
+      })();
       if (options.useCache) {
-        registryCache.set(url, fetchPromise)
+        registryCache.set(url, fetchPromise);
       }
-      return fetchPromise
-    })
-  )
+      return fetchPromise;
+    }),
+  );
 }
 ```
 
@@ -170,12 +170,12 @@ export async function fetchRegistry(paths: string[], options: { useCache?: boole
 // packages/shadcn/src/utils/is-safe-target.ts:3-98
 // パストラバーサル対策: URL エンコード、null バイト、Windows ドライブレター等を多段階で検証
 export function isSafeTarget(targetPath: string, cwd: string): boolean {
-  if (targetPath.includes("\0")) return false
-  let decodedPath = targetPath
-  let prevPath = ""
+  if (targetPath.includes("\0")) return false;
+  let decodedPath = targetPath;
+  let prevPath = "";
   while (decodedPath !== prevPath && decodedPath.includes("%")) {
-    prevPath = decodedPath
-    decodedPath = decodeURIComponent(decodedPath)
+    prevPath = decodedPath;
+    decodedPath = decodeURIComponent(decodedPath);
   }
   // ...多段階の検証が続く
 }
@@ -217,9 +217,12 @@ const parsed = registryResolvedItemsTreeSchema.parse({
   dependencies: deepmerge.all(payload.map((item) => item.dependencies ?? [])),
   devDependencies: deepmerge.all(payload.map((item) => item.devDependencies ?? [])),
   files: deduplicatedFiles,
-  tailwind, cssVars, css, docs,
+  tailwind,
+  cssVars,
+  css,
+  docs,
   fonts: fonts.length > 0 ? fonts : undefined,
-})
+});
 ```
 
 - **Transformer の統一シグネチャによる合成可能性**: すべての Transformer が `(opts) => Promise<SourceFile>` という同一の型を持つため、配列として合成し、条件に応じた追加・除外が自然に行える。
@@ -227,19 +230,19 @@ const parsed = registryResolvedItemsTreeSchema.parse({
 ```typescript
 // packages/shadcn/src/utils/transformers/index.ts:27-28
 export type Transformer<Output = SourceFile> = (
-  opts: TransformOpts & { sourceFile: SourceFile }
-) => Promise<Output>
+  opts: TransformOpts & { sourceFile: SourceFile; },
+) => Promise<Output>;
 ```
 
 - **セキュリティ検証の多段階実装**: `isSafeTarget()` は null バイト、URL エンコード（多重デコード対応）、パストラバーサル、Windows ドライブレター、制御文字を網羅的にチェックする。外部レジストリからのファイルパスを信頼しない防御的設計。
 
 ```typescript
 // packages/shadcn/src/utils/is-safe-target.ts:12-22
-let decodedPath = targetPath
-let prevPath = ""
+let decodedPath = targetPath;
+let prevPath = "";
 while (decodedPath !== prevPath && decodedPath.includes("%")) {
-  prevPath = decodedPath
-  decodedPath = decodeURIComponent(decodedPath)
+  prevPath = decodedPath;
+  decodedPath = decodeURIComponent(decodedPath);
 }
 ```
 
@@ -252,7 +255,7 @@ export class RegistryNotFoundError extends RegistryError {
     super(message, {
       code: RegistryErrorCode.NOT_FOUND,
       suggestion: "Check if the item name is correct and the registry URL is accessible.",
-    })
+    });
   }
 }
 ```

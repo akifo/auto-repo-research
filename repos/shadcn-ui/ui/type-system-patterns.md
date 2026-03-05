@@ -37,7 +37,7 @@ export const registryItemSchema = z.discriminatedUnion("type", [
   registryItemCommonSchema.extend({
     type: registryItemTypeSchema.exclude(["registry:base", "registry:font"]),
   }),
-])
+]);
 ```
 
 ここでは `.exclude()` を使って「それ以外の全タイプ」を1つのバリアントで捕捉するパターンが使われている。新しいタイプを `registryItemTypeSchema` に追加しても、`discriminatedUnion` の各ブランチを手動で更新する必要がない。
@@ -51,15 +51,15 @@ export const registryItemFileSchema = z.discriminatedUnion("type", [
     path: z.string(),
     content: z.string().optional(),
     type: z.enum(["registry:file", "registry:page"]),
-    target: z.string(),  // required
+    target: z.string(), // required
   }),
   z.object({
     path: z.string(),
     content: z.string().optional(),
     type: registryItemTypeSchema.exclude(["registry:file", "registry:page"]),
-    target: z.string().optional(),  // optional
+    target: z.string().optional(), // optional
   }),
-])
+]);
 ```
 
 ### Extract<> による discriminatedUnion からのバリアント型抽出
@@ -68,18 +68,18 @@ export const registryItemFileSchema = z.discriminatedUnion("type", [
 
 ```typescript
 // packages/shadcn/src/registry/schema.ts:183-189
-export type RegistryItem = z.infer<typeof registryItemSchema>
-export type RegistryBaseItem = Extract<RegistryItem, { type: "registry:base" }>
-export type RegistryFontItem = Extract<RegistryItem, { type: "registry:font" }>
+export type RegistryItem = z.infer<typeof registryItemSchema>;
+export type RegistryBaseItem = Extract<RegistryItem, { type: "registry:base"; }>;
+export type RegistryFontItem = Extract<RegistryItem, { type: "registry:font"; }>;
 ```
 
 このパターンは UI 層でも使われている。ページツリーのノード型から特定のノード種を取り出す:
 
 ```typescript
 // apps/v4/lib/page-tree.ts:1-5
-export type PageTreeNode = (typeof source.pageTree)["children"][number]
-export type PageTreeFolder = Extract<PageTreeNode, { type: "folder" }>
-export type PageTreePage = Extract<PageTreeNode, { type: "page" }>
+export type PageTreeNode = (typeof source.pageTree)["children"][number];
+export type PageTreeFolder = Extract<PageTreeNode, { type: "folder"; }>;
+export type PageTreePage = Extract<PageTreeNode, { type: "page"; }>;
 ```
 
 ジェネリクスと組み合わせた高度な例として、iframe メッセージングの型安全なディスパッチがある:
@@ -91,8 +91,8 @@ export function useIframeMessageListener<
   MessageType extends Message["type"],
 >(
   messageType: MessageType,
-  onMessage: (data: Extract<Message, { type: MessageType }>["data"]) => void
-)
+  onMessage: (data: Extract<Message, { type: MessageType; }>["data"]) => void,
+);
 ```
 
 ### React.ComponentProps による Props 型のインライン定義
@@ -159,7 +159,7 @@ export const rawConfigSchema = z
     rsc: z.coerce.boolean().default(false),
     // ... base fields
   })
-  .strict()
+  .strict();
 
 export const configSchema = rawConfigSchema.extend({
   resolvedPaths: z.object({
@@ -167,7 +167,7 @@ export const configSchema = rawConfigSchema.extend({
     tailwindConfig: z.string(),
     // ... resolved fields
   }),
-})
+});
 ```
 
 内部で一時的に使うスキーマも `.extend().passthrough()` で柔軟に構成する:
@@ -181,7 +181,7 @@ const registryItemWithSourceSchema = registryItemCommonSchema
     font: registryItemFontSchema.optional(),
     config: z.any().optional(),
   })
-  .passthrough()
+  .passthrough();
 ```
 
 ### .pick().extend() による View 固有スキーマの導出
@@ -206,9 +206,9 @@ export const registryResolvedItemsTreeSchema = registryItemCommonSchema
       registryItemCommonSchema.extend({
         type: z.literal("registry:font"),
         font: registryItemFontSchema,
-      })
+      }),
     ).optional(),
-  })
+  });
 ```
 
 ### z.lazy() による再帰型の定義
@@ -223,7 +223,7 @@ const cssValueSchema: z.ZodType<any> = z.lazy(() =>
     z.array(z.union([z.string(), z.record(z.string(), z.string())])),
     z.record(z.string(), cssValueSchema),
   ])
-)
+);
 ```
 
 `z.lazy()` の戻り値には型推論が効かないため、明示的に `z.ZodType<any>` と型注釈している。
@@ -261,17 +261,17 @@ export const addOptionsSchema = z.object({
 
 ```typescript
 // apps/v4/registry/config.ts:23-26
-export type BaseName = Base["name"]
-export type StyleName = Style["name"]
-export type ThemeName = Theme["name"]
-export type BaseColorName = BaseColor["name"]
+export type BaseName = Base["name"];
+export type StyleName = Style["name"];
+export type ThemeName = Theme["name"];
+export type BaseColorName = BaseColor["name"];
 
 // apps/v4/registry/config.ts:29-34
 const fontValues = fonts.map((f) => f.name.replace("font-", "")) as [
   string,
   ...string[],
-]
-export type FontValue = (typeof fontValues)[number]
+];
+export type FontValue = (typeof fontValues)[number];
 ```
 
 ### FormState の型構成パターン
@@ -281,10 +281,10 @@ export type FontValue = (typeof fontValues)[number]
 ```typescript
 // apps/v4/registry/new-york-v4/examples/form-next-complex-schema.ts:30-34
 export type FormState = {
-  values: z.infer<typeof formSchema>
-  errors: null | Partial<Record<keyof z.infer<typeof formSchema>, string[]>>
-  success: boolean
-}
+  values: z.infer<typeof formSchema>;
+  errors: null | Partial<Record<keyof z.infer<typeof formSchema>, string[]>>;
+  success: boolean;
+};
 ```
 
 `keyof z.infer<typeof formSchema>` でフィールド名の型を取得し、`Partial<Record<...>>` でエラー辞書を構成している。フォームスキーマにフィールドを追加すると、エラー型にも自動的に反映される。
@@ -301,9 +301,9 @@ export type FormState = {
 // packages/shadcn/src/utils/transformers/index.ts:27-31
 export type Transformer<Output = SourceFile> = (
   opts: TransformOpts & {
-    sourceFile: SourceFile
-  }
-) => Promise<Output>
+    sourceFile: SourceFile;
+  },
+) => Promise<Output>;
 ```
 
 ## Good Patterns
@@ -325,15 +325,15 @@ const theme = {
 ```typescript
 // apps/v4/registry/bases/base/ui/native-select.tsx:6-8
 type NativeSelectProps = Omit<React.ComponentProps<"select">, "size"> & {
-  size?: "sm" | "default"
-}
+  size?: "sm" | "default";
+};
 ```
 
 - **type-fest の活用**: 複雑な型変換に `type-fest` のユーティリティ型（`PackageJson` 等）を使い、自前で型を再発明しない。
 
 ```typescript
 // packages/shadcn/src/utils/get-package-info.ts:3
-import { type PackageJson } from "type-fest"
+import { type PackageJson } from "type-fest";
 ```
 
 - **z.enum に as [T, ...T[]] キャストを使う動的 enum 構築**: 実行時の配列から `z.enum()` を構成する際、非空タプル型にキャストして Zod の型要件を満たす。
@@ -349,14 +349,10 @@ base: z.enum(BASES.map((b) => b.name) as [BaseName, ...BaseName[]]),
 
 ```typescript
 // Bad: 型推論が any に崩壊する
-const schema = z.lazy(() =>
-  z.object({ children: z.array(schema) })
-)
+const schema = z.lazy(() => z.object({ children: z.array(schema) }));
 
 // Better: 明示的な ZodType 注釈
-const schema: z.ZodType<TreeNode> = z.lazy(() =>
-  z.object({ children: z.array(schema) })
-)
+const schema: z.ZodType<TreeNode> = z.lazy(() => z.object({ children: z.array(schema) }));
 ```
 
 shadcn/ui では `z.ZodType<any>` を使っている（`schema.ts:125`）が、可能なら具体的な型を指定すべき。

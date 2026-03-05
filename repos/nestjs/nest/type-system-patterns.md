@@ -38,7 +38,7 @@ export type InjectionToken<T = any> =
 ```typescript
 // packages/common/interfaces/type.interface.ts:1-3
 export interface Type<T = any> extends Function {
-  new (...args: any[]): T;
+  new(...args: any[]): T;
 }
 
 // packages/common/interfaces/abstract.interface.ts:1-3
@@ -59,7 +59,7 @@ export interface ClassProvider<T = any> {
   provide: InjectionToken;
   useClass: Type<T>;
   scope?: Scope;
-  inject?: never;  // FactoryProvider 専用のプロパティを明示的に禁止
+  inject?: never; // FactoryProvider 専用のプロパティを明示的に禁止
   durable?: boolean;
 }
 ```
@@ -73,14 +73,13 @@ export interface ClassProvider<T = any> {
 ```typescript
 // packages/common/constants.ts:26-34
 export const ENHANCER_KEY_TO_SUBTYPE_MAP = {
-  [GUARDS_METADATA]: 'guard',
-  [INTERCEPTORS_METADATA]: 'interceptor',
-  [PIPES_METADATA]: 'pipe',
-  [EXCEPTION_FILTERS_METADATA]: 'filter',
+  [GUARDS_METADATA]: "guard",
+  [INTERCEPTORS_METADATA]: "interceptor",
+  [PIPES_METADATA]: "pipe",
+  [EXCEPTION_FILTERS_METADATA]: "filter",
 } as const;
 
-export type EnhancerSubtype =
-  (typeof ENHANCER_KEY_TO_SUBTYPE_MAP)[keyof typeof ENHANCER_KEY_TO_SUBTYPE_MAP];
+export type EnhancerSubtype = (typeof ENHANCER_KEY_TO_SUBTYPE_MAP)[keyof typeof ENHANCER_KEY_TO_SUBTYPE_MAP];
 ```
 
 `as const` でリテラル型を保持し、indexed access type で値型のユニオン（`'guard' | 'interceptor' | 'pipe' | 'filter'`）を自動導出する。新しいエンハンサーを追加する際、定数にエントリを追加するだけで型が自動的に拡張される。
@@ -128,16 +127,22 @@ export type ConfigurableModuleCls<
   MethodKey extends string = typeof DEFAULT_METHOD_KEY,
   FactoryClassMethodKey extends string = typeof DEFAULT_FACTORY_CLASS_METHOD_KEY,
   ExtraModuleDefinitionOptions = {},
-> = {
-  new (): any;
-} & Record<
-  `${MethodKey}`,
-  (options: ModuleOptions & Partial<ExtraModuleDefinitionOptions>) => DynamicModule
-> & Record<
-  `${MethodKey}Async`,
-  (options: ConfigurableModuleAsyncOptions<ModuleOptions, FactoryClassMethodKey> &
-    Partial<ExtraModuleDefinitionOptions>) => DynamicModule
->;
+> =
+  & {
+    new(): any;
+  }
+  & Record<
+    `${MethodKey}`,
+    (options: ModuleOptions & Partial<ExtraModuleDefinitionOptions>) => DynamicModule
+  >
+  & Record<
+    `${MethodKey}Async`,
+    (
+      options:
+        & ConfigurableModuleAsyncOptions<ModuleOptions, FactoryClassMethodKey>
+        & Partial<ExtraModuleDefinitionOptions>,
+    ) => DynamicModule
+  >;
 ```
 
 `MethodKey` が `"register"` なら `register()` と `registerAsync()` メソッドが型として現れる。`"forRoot"` を渡せば `forRoot()` と `forRootAsync()` になる。
@@ -203,10 +208,10 @@ NestJS はデコレータメタデータを2層で管理する。第1層は Type
 
 ```typescript
 // packages/common/constants.ts:11-14
-export const PARAMTYPES_METADATA = 'design:paramtypes';
-export const SELF_DECLARED_DEPS_METADATA = 'self:paramtypes';
-export const OPTIONAL_DEPS_METADATA = 'optional:paramtypes';
-export const PROPERTY_DEPS_METADATA = 'self:properties_metadata';
+export const PARAMTYPES_METADATA = "design:paramtypes";
+export const SELF_DECLARED_DEPS_METADATA = "self:paramtypes";
+export const OPTIONAL_DEPS_METADATA = "optional:paramtypes";
+export const PROPERTY_DEPS_METADATA = "self:properties_metadata";
 ```
 
 `@Inject()` デコレータは、明示的なトークンが渡されない場合に `design:paramtypes` からメタタイプを推論し、`self:paramtypes` に手動オーバーライドを格納する。
@@ -281,7 +286,7 @@ export interface ClassProvider<T = any> {
   provide: InjectionToken;
   useClass: Type<T>;
   scope?: Scope;
-  inject?: never;  // FactoryProvider 専用プロパティの誤用を防止
+  inject?: never; // FactoryProvider 専用プロパティの誤用を防止
 }
 ```
 
@@ -290,14 +295,13 @@ export interface ClassProvider<T = any> {
 ```typescript
 // packages/common/constants.ts:26-34
 export const ENHANCER_KEY_TO_SUBTYPE_MAP = {
-  [GUARDS_METADATA]: 'guard',
-  [INTERCEPTORS_METADATA]: 'interceptor',
-  [PIPES_METADATA]: 'pipe',
-  [EXCEPTION_FILTERS_METADATA]: 'filter',
+  [GUARDS_METADATA]: "guard",
+  [INTERCEPTORS_METADATA]: "interceptor",
+  [PIPES_METADATA]: "pipe",
+  [EXCEPTION_FILTERS_METADATA]: "filter",
 } as const;
 
-export type EnhancerSubtype =
-  (typeof ENHANCER_KEY_TO_SUBTYPE_MAP)[keyof typeof ENHANCER_KEY_TO_SUBTYPE_MAP];
+export type EnhancerSubtype = (typeof ENHANCER_KEY_TO_SUBTYPE_MAP)[keyof typeof ENHANCER_KEY_TO_SUBTYPE_MAP];
 // => 'guard' | 'interceptor' | 'pipe' | 'filter'
 ```
 

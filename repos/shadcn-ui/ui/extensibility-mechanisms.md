@@ -59,17 +59,17 @@ shadcn/ui は「コンポーネントライブラリ」ではなく「コンポ�
 
 ```typescript
 // packages/shadcn/src/registry/parser.ts:2-14
-const REGISTRY_PATTERN = /^(@[a-zA-Z0-9](?:[a-zA-Z0-9-_]*[a-zA-Z0-9])?)\/(.+)$/
+const REGISTRY_PATTERN = /^(@[a-zA-Z0-9](?:[a-zA-Z0-9-_]*[a-zA-Z0-9])?)\/(.+)$/;
 
 export function parseRegistryAndItemFromString(name: string) {
   if (!name.startsWith("@")) {
-    return { registry: null, item: name }
+    return { registry: null, item: name };
   }
-  const match = name.match(REGISTRY_PATTERN)
+  const match = name.match(REGISTRY_PATTERN);
   if (match) {
-    return { registry: match[1], item: match[2] }
+    return { registry: match[1], item: match[2] };
   }
-  return { registry: null, item: name }
+  return { registry: null, item: name };
 }
 ```
 
@@ -86,31 +86,31 @@ export const registryConfigItemSchema = z.union([
     params: z.record(z.string(), z.string()).optional(),
     headers: z.record(z.string(), z.string()).optional(),
   }),
-])
+]);
 
 export const registryConfigSchema = z.record(
   z.string().refine((key) => key.startsWith("@"), {
     message: "Registry names must start with @ (e.g., @v0, @acme)",
   }),
-  registryConfigItemSchema
-)
+  registryConfigItemSchema,
+);
 ```
 
 ```typescript
 // packages/shadcn/src/registry/builder.ts:120-139
 function shouldIncludeHeader(originalValue: string, expandedValue: string) {
-  const trimmedExpanded = expandedValue.trim()
-  if (!trimmedExpanded) { return false }
+  const trimmedExpanded = expandedValue.trim();
+  if (!trimmedExpanded) return false;
   if (originalValue.includes("${")) {
-    const envVars = originalValue.match(ENV_VAR_PATTERN)
+    const envVars = originalValue.match(ENV_VAR_PATTERN);
     if (envVars) {
       const templateWithoutVars = originalValue
         .replace(ENV_VAR_PATTERN, "")
-        .trim()
-      return trimmedExpanded !== templateWithoutVars
+        .trim();
+      return trimmedExpanded !== templateWithoutVars;
     }
   }
-  return true
+  return true;
 }
 ```
 
@@ -120,15 +120,15 @@ export function configWithDefaults(config?: DeepPartial<Config>) {
   const baseConfig = createConfig({
     style: FALLBACK_STYLE,
     registries: BUILTIN_REGISTRIES,
-  })
-  if (!config) { return baseConfig }
+  });
+  if (!config) return baseConfig;
   return configSchema.parse(
     deepmerge(baseConfig, {
       ...config,
       style: resolveStyleFromConfig(config),
       registries: { ...BUILTIN_REGISTRIES, ...config.registries },
-    })
-  )
+    }),
+  );
 }
 ```
 
@@ -144,7 +144,7 @@ export const iconLibraries = {
     export: "lucide-react",
   },
   // ... tabler, hugeicons, phosphor, remixicon
-} as const
+} as const;
 ```
 
 ## パターンカタログ
@@ -196,8 +196,11 @@ export class RegistryNotConfiguredError extends RegistryError {
     "${registryName}": "[URL_TO_REGISTRY]"
   }
 }`
-      : `Unknown registry. Make sure it is defined in components.json under "registries".`
-    super(message, { code: RegistryErrorCode.NOT_CONFIGURED, suggestion: "Add the registry configuration to your components.json file." })
+      : `Unknown registry. Make sure it is defined in components.json under "registries".`;
+    super(message, {
+      code: RegistryErrorCode.NOT_CONFIGURED,
+      suggestion: "Add the registry configuration to your components.json file.",
+    });
   }
 }
 ```
@@ -207,16 +210,16 @@ export class RegistryNotConfiguredError extends RegistryError {
 ```typescript
 // packages/shadcn/src/registry/builder.ts:120-139
 function shouldIncludeHeader(originalValue: string, expandedValue: string) {
-  const trimmedExpanded = expandedValue.trim()
-  if (!trimmedExpanded) { return false }
+  const trimmedExpanded = expandedValue.trim();
+  if (!trimmedExpanded) return false;
   if (originalValue.includes("${")) {
-    const envVars = originalValue.match(ENV_VAR_PATTERN)
+    const envVars = originalValue.match(ENV_VAR_PATTERN);
     if (envVars) {
-      const templateWithoutVars = originalValue.replace(ENV_VAR_PATTERN, "").trim()
-      return trimmedExpanded !== templateWithoutVars
+      const templateWithoutVars = originalValue.replace(ENV_VAR_PATTERN, "").trim();
+      return trimmedExpanded !== templateWithoutVars;
     }
   }
-  return true
+  return true;
 }
 ```
 
@@ -226,18 +229,18 @@ function shouldIncludeHeader(originalValue: string, expandedValue: string) {
 
 ```typescript
 // Bad: packages/shadcn/src/registry/context.ts:1-7
-let context: RegistryContext = { headers: {} }
+let context: RegistryContext = { headers: {} };
 export function setRegistryHeaders(headers: Record<string, Record<string, string>>) {
-  context.headers = { ...context.headers, ...headers }
+  context.headers = { ...context.headers, ...headers };
 }
 ```
 
 ```typescript
 // Better: AsyncLocalStorage や引数渡しでスコープを明示する
-import { AsyncLocalStorage } from "node:async_hooks"
-const registryStorage = new AsyncLocalStorage<RegistryContext>()
+import { AsyncLocalStorage } from "node:async_hooks";
+const registryStorage = new AsyncLocalStorage<RegistryContext>();
 export function withRegistryContext<T>(context: RegistryContext, fn: () => T) {
-  return registryStorage.run(context, fn)
+  return registryStorage.run(context, fn);
 }
 ```
 
@@ -251,8 +254,11 @@ export const iconLibraries = { lucide: { ... }, tabler: { ... } } as const
 ```typescript
 // Better: レジストリ同様に設定から読み込む
 const iconLibrarySchema = z.object({
-  name: z.string(), import: z.string(), usage: z.string(), packages: z.array(z.string()),
-})
+  name: z.string(),
+  import: z.string(),
+  usage: z.string(),
+  packages: z.array(z.string()),
+});
 // components.json の iconLibraries フィールドから動的に読み込む
 ```
 

@@ -73,11 +73,14 @@ export class WsException extends Error {
 return [
   ...this.createConcreteContext<T, R>(
     globalMetadata || ([] as unknown[] as T),
-    contextId, inquirerId,
+    contextId,
+    inquirerId,
   ),
   ...this.createConcreteContext<T, R>(classMetadata, contextId, inquirerId),
   ...this.createConcreteContext<T, R>(
-    methodMetadata, contextId, inquirerId,
+    methodMetadata,
+    contextId,
+    inquirerId,
   ),
 ] as R;
 ```
@@ -97,8 +100,8 @@ export const selectExceptionFilterMetadata = <T = any>(
 ): ExceptionFilterMetadata | undefined =>
   filters.find(
     ({ exceptionMetatypes }) =>
-      !exceptionMetatypes.length ||
-      exceptionMetatypes.some(
+      !exceptionMetatypes.length
+      || exceptionMetatypes.some(
         ExceptionMetaType => exception instanceof ExceptionMetaType,
       ),
   );

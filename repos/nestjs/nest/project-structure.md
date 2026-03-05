@@ -60,7 +60,8 @@ export interface HttpServer<TRequest = any, TResponse = any, ServerInstance = an
 ```typescript
 // packages/core/adapters/http-adapter.ts:8-12
 export abstract class AbstractHttpAdapter<TServer = any, TRequest = any, TResponse = any>
-  implements HttpServer<TRequest, TResponse> {
+  implements HttpServer<TRequest, TResponse>
+{
   // 共通メソッドのデフォルト実装 + abstract メソッド宣言
 }
 ```
@@ -79,12 +80,12 @@ export class ExpressAdapter extends AbstractHttpAdapter<http.Server | https.Serv
 ```typescript
 // packages/core/nest-application.ts:42-49
 const { SocketModule } = optionalRequire(
-  '@nestjs/websockets/socket-module',
-  () => require('@nestjs/websockets/socket-module'),
+  "@nestjs/websockets/socket-module",
+  () => require("@nestjs/websockets/socket-module"),
 );
 const { MicroservicesModule } = optionalRequire(
-  '@nestjs/microservices/microservices-module',
-  () => require('@nestjs/microservices/microservices-module'),
+  "@nestjs/microservices/microservices-module",
+  () => require("@nestjs/microservices/microservices-module"),
 );
 ```
 
@@ -146,7 +147,7 @@ export function loadPackage(packageName: string, context: string, loaderFn?: Fun
 ```typescript
 // tools/gulp/tasks/move.ts:11-13
 function moveToNodeModules() {
-  return distFiles.pipe(dest('node_modules/@nestjs'));
+  return distFiles.pipe(dest("node_modules/@nestjs"));
 }
 ```
 
@@ -199,9 +200,9 @@ export * from './utils';
 
 ```typescript
 // packages/common/utils/shared.utils.ts:1-51
-export const isUndefined = (obj: any): obj is undefined => typeof obj === 'undefined';
-export const isObject = (fn: any): fn is object => !isNil(fn) && typeof fn === 'object';
-export const isFunction = (val: any): val is Function => typeof val === 'function';
+export const isUndefined = (obj: any): obj is undefined => typeof obj === "undefined";
+export const isObject = (fn: any): fn is object => !isNil(fn) && typeof fn === "object";
+export const isFunction = (val: any): val is Function => typeof val === "function";
 // ... すべて1行の純粋関数
 ```
 

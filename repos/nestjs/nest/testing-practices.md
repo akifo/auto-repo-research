@@ -125,8 +125,8 @@ await app.init();
 
 it(`/GET`, () => {
   return app
-    .inject({ method: 'GET', url: '/hello' })
-    .then(({ payload }) => expect(payload).to.be.eql('Hello world!'));
+    .inject({ method: "GET", url: "/hello" })
+    .then(({ payload }) => expect(payload).to.be.eql("Hello world!"));
 });
 ```
 
@@ -137,13 +137,13 @@ it(`/GET`, () => {
 ```typescript
 // integration/hello-world/e2e/hello-world.spec.ts:20-77
 [
-  { host: 'example.com', path: '/hello', greeting: 'Hello world!' },
-  { host: 'acme.example.com', path: '/host', greeting: 'Host Greeting! tenant=acme' },
+  { host: "example.com", path: "/hello", greeting: "Hello world!" },
+  { host: "acme.example.com", path: "/host", greeting: "Host Greeting! tenant=acme" },
   // ...
 ].forEach(({ host, path, greeting }) => {
   describe(`host=${host}`, () => {
     it(`should return "${greeting}"`, () => {
-      return request(server).get(path).set('Host', host).expect(200).expect(greeting);
+      return request(server).get(path).set("Host", host).expect(200).expect(greeting);
     });
   });
 });
@@ -206,7 +206,7 @@ async function createApp(
   const app = (
     await Test.createTestingModule({ imports: [TestModule] }).compile()
   ).createNestApplication();
-  if (beforeInit) { beforeInit(app); }
+  if (beforeInit) beforeInit(app);
   await app.init();
   return app;
 }
@@ -236,9 +236,9 @@ it(`should create controller for each request`, () => {
 // integration/scopes/e2e/inject-inquirer.spec.ts:42-48
 expect(
   logger.log.calledWith({
-    message: 'Hello request!',
-    requestId: sinon.match.string,  // 任意の文字列にマッチ
-    feature: 'request',
+    message: "Hello request!",
+    requestId: sinon.match.string, // 任意の文字列にマッチ
+    feature: "request",
   }),
 ).to.be.true;
 ```
@@ -250,7 +250,7 @@ expect(
 ```typescript
 // Bad: afterEach でリストアしない
 beforeEach(() => {
-  sinon.stub(adapter, 'reply').callsFake(/* ... */);
+  sinon.stub(adapter, "reply").callsFake(/* ... */);
 });
 // テスト終了後もスタブが残る
 
@@ -264,12 +264,16 @@ afterEach(() => {
 
 ```typescript
 // Bad: 50行にわたるフィクスチャ定義のあとにテストが始まる
-@Injectable() class ServiceA { /* ... */ }
-@Injectable() class ServiceB { /* ... */ }
-@Module({ /* 20行 */ }) class TestModule { /* ... */ }
-@Controller() class TestController { /* ... */ }
+@Injectable()
+class ServiceA {/* ... */}
+@Injectable()
+class ServiceB {/* ... */}
+@Module({/* 20行 */})
+class TestModule {/* ... */}
+@Controller()
+class TestController {/* ... */}
 
-describe('Integration', () => { /* やっとテストが始まる */ });
+describe("Integration", () => {/* やっとテストが始まる */});
 
 // Better: テスト用フィクスチャを別ファイルに切り出す、または describe ブロック内で定義する
 ```

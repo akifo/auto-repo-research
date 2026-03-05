@@ -23,11 +23,11 @@ shadcn/ui CLI が提供する3つのマイグレーションスクリプト（ic
 
 3つのマイグレーション（icons, radix, rtl）は共通のアーキテクチャに従いつつ、変換対象の特性に応じて異なるアプローチを採用している。
 
-| マイグレーション | 変換対象 | 手法 | データソース |
-|---|---|---|---|
-| icons | import 文 + JSX タグ名 | ts-morph AST | レジストリ API + LEGACY_ICON_LIBRARIES |
-| radix | import 文 + Slot 使用箇所 | 正規表現 + 文字列操作 | 正規表現パターン + ハードコードルール |
-| rtl | className 文字列 + JSX 属性 | ts-morph AST + マッピングテーブル | RTL_MAPPINGS 定数配列 |
+| マイグレーション | 変換対象                    | 手法                              | データソース                           |
+| ---------------- | --------------------------- | --------------------------------- | -------------------------------------- |
+| icons            | import 文 + JSX タグ名      | ts-morph AST                      | レジストリ API + LEGACY_ICON_LIBRARIES |
+| radix            | import 文 + Slot 使用箇所   | 正規表現 + 文字列操作             | 正規表現パターン + ハードコードルール  |
+| rtl              | className 文字列 + JSX 属性 | ts-morph AST + マッピングテーブル | RTL_MAPPINGS 定数配列                  |
 
 `icons` と `rtl` は ts-morph を使った AST 操作を採用しているのに対し、`radix` は正規表現ベースのアプローチを採用している。この違いは import 文のパースにおいて興味深い対比を生む。`radix` は複雑な正規表現 1 つで全パターンを捕捉しようとし、結果として 450 行超のファイルになっている。
 
@@ -91,7 +91,7 @@ RTL マッピングテーブルは、部分一致の誤変換を防ぐために�
 // packages/shadcn/src/migrations/migrate-radix.ts:274-276
 // 正規表現で複数の import パターン（namespace, named, type-only）を一括捕捉
 const radixImportPattern =
-  /import\s+(?:(type)\s+)?(?:\*\s+as\s+(\w+)|{([^}]+)})\s+from\s+(["'])@radix-ui\/react-([^"']+)\4(;?)/g
+  /import\s+(?:(type)\s+)?(?:\*\s+as\s+(\w+)|{([^}]+)})\s+from\s+(["'])@radix-ui\/react-([^"']+)\4(;?)/g;
 ```
 
 ```typescript
@@ -105,7 +105,7 @@ const RTL_MAPPINGS: [string, string][] = [
   // ... 38 エントリ
   ["origin-left", "origin-start"],
   ["origin-right", "origin-end"],
-]
+];
 ```
 
 ```typescript
@@ -113,38 +113,38 @@ const RTL_MAPPINGS: [string, string][] = [
 // 重複 import の排除: name + alias + type の3属性で一意性を判定
 const uniqueImports = imports.filter(
   (importName, index, self) =>
-    index ===
-    self.findIndex(
-      (i) =>
-        i.name === importName.name &&
-        i.alias === importName.alias &&
-        i.isType === importName.isType
-    )
-)
+    index
+      === self.findIndex(
+        (i) =>
+          i.name === importName.name
+          && i.alias === importName.alias
+          && i.isType === importName.isType,
+      ),
+);
 ```
 
 ```typescript
 // packages/shadcn/src/migrations/migrate-radix.ts:304-309
 // 最初の import からクォートスタイルとセミコロンスタイルを検出して統一
 if (linesToRemove.length === 1) {
-  quoteStyle = quote
-  hasSemicolon = semicolon === ";"
+  quoteStyle = quote;
+  hasSemicolon = semicolon === ";";
 }
 ```
 
 ```typescript
 // packages/shadcn/src/migrations/migrate-rtl.ts:100-116
 // 設定ファイル（components.json）の更新を変換とは別フェーズで実行
-const configSpinner = spinner("Updating components.json...").start()
+const configSpinner = spinner("Updating components.json...").start();
 try {
-  const configPath = path.resolve(config.resolvedPaths.cwd, "components.json")
-  const existingConfig = JSON.parse(await fs.readFile(configPath, "utf-8"))
-  existingConfig.rtl = true
-  await fs.writeFile(configPath, JSON.stringify(existingConfig, null, 2) + "\n")
-  configSpinner.succeed("Updated components.json.")
+  const configPath = path.resolve(config.resolvedPaths.cwd, "components.json");
+  const existingConfig = JSON.parse(await fs.readFile(configPath, "utf-8"));
+  existingConfig.rtl = true;
+  await fs.writeFile(configPath, JSON.stringify(existingConfig, null, 2) + "\n");
+  configSpinner.succeed("Updated components.json.");
 } catch {
-  configSpinner.fail("Failed to update components.json.")
-  throw new Error("Could not update components.json. Please manually set `rtl: true`.")
+  configSpinner.fail("Failed to update components.json.");
+  throw new Error("Could not update components.json. Please manually set `rtl: true`.");
 }
 ```
 
@@ -175,21 +175,21 @@ try {
 ```typescript
 // packages/shadcn/src/migrations/migrate-radix.ts:304-309
 if (linesToRemove.length === 1) {
-  quoteStyle = quote
-  hasSemicolon = semicolon === ";"
+  quoteStyle = quote;
+  hasSemicolon = semicolon === ";";
 }
 // ...
-const unifiedImport = `import { ${importList} } from ${quoteStyle}radix-ui${quoteStyle}${hasSemicolon ? ";" : ""}`
+const unifiedImport = `import { ${importList} } from ${quoteStyle}radix-ui${quoteStyle}${hasSemicolon ? ";" : ""}`;
 ```
 
 - **差分検出による不要書き込み回避**: RTL マイグレーションは変換前後の内容を比較し、実際に変更があったファイルのみを書き込む。不要な git diff やタイムスタンプ変更を防ぐ。
 
 ```typescript
 // packages/shadcn/src/migrations/migrate-rtl.ts:131-135
-const transformed = await transformDirection(content, true)
+const transformed = await transformDirection(content, true);
 if (transformed !== content) {
-  await fs.writeFile(filePath, transformed)
-  transformedCount++
+  await fs.writeFile(filePath, transformed);
+  transformedCount++;
 }
 ```
 
@@ -198,8 +198,8 @@ if (transformed !== content) {
 ```typescript
 // packages/shadcn/src/migrations/migrate-radix.ts:269-271
 export async function migrateRadixFile(
-  content: string
-): Promise<{ content: string; replacedPackages: string[] }>
+  content: string,
+): Promise<{ content: string; replacedPackages: string[]; }>;
 ```
 
 - **除外リストによる安全ガード**: Radix マイグレーションは `@radix-ui/react-icons` パッケージを明示的に除外している。パッケージ名のプレフィックスが一致するが意味的に異なるものを誤変換しない配慮。
@@ -207,7 +207,7 @@ export async function migrateRadixFile(
 ```typescript
 // packages/shadcn/src/migrations/migrate-radix.ts:299-301
 if (packageName === "icons" || packageName.startsWith("icons/")) {
-  continue
+  continue;
 }
 ```
 
@@ -218,12 +218,12 @@ if (packageName === "icons" || packageName.startsWith("icons/")) {
 ```typescript
 // Bad: 1つの正規表現で全パターンを捕捉しようとする
 const radixImportPattern =
-  /import\s+(?:(type)\s+)?(?:\*\s+as\s+(\w+)|{([^}]+)})\s+from\s+(["'])@radix-ui\/react-([^"']+)\4(;?)/g
+  /import\s+(?:(type)\s+)?(?:\*\s+as\s+(\w+)|{([^}]+)})\s+from\s+(["'])@radix-ui\/react-([^"']+)\4(;?)/g;
 // + processNamedImports でコメント除去、ホワイトスペース正規化
 
 // Better: ts-morph の AST 操作を使う（migrate-icons.ts のアプローチ）
 for (const importDeclaration of sourceFile.getImportDeclarations()) {
-  if (importDeclaration.getModuleSpecifier()?.getText() !== `"${source}"`) continue
+  if (importDeclaration.getModuleSpecifier()?.getText() !== `"${source}"`) continue;
   // 構造的に安全にパース可能
 }
 ```
@@ -234,10 +234,10 @@ for (const importDeclaration of sourceFile.getImportDeclarations()) {
 // Bad: マジック文字列をプレースホルダとして使用
 transformedLine = transformedLine.replace(
   /\b(asChild\s*\?\s*)Slot(\s*:)/g,
-  "$1__SLOT_PLACEHOLDER__$2"
-)
+  "$1__SLOT_PLACEHOLDER__$2",
+);
 // ...最後に一括置換
-transformedLine = transformedLine.replace(/__SLOT_PLACEHOLDER__/g, "SlotPrimitive.Slot")
+transformedLine = transformedLine.replace(/__SLOT_PLACEHOLDER__/g, "SlotPrimitive.Slot");
 
 // Better: AST を使って識別子の参照を追跡し、スコープを考慮した置換を行う
 ```
@@ -248,9 +248,9 @@ transformedLine = transformedLine.replace(/__SLOT_PLACEHOLDER__/g, "SlotPrimitiv
 // 順序を間違えると ml- が -ml- より先にマッチして誤変換
 // 順序制約がコメントのみで表現されている
 const RTL_MAPPINGS: [string, string][] = [
-  ["-ml-", "-ms-"],  // 負のプレフィックスが先
-  ["ml-", "ms-"],    // 正のプレフィックスが後
-]
+  ["-ml-", "-ms-"], // 負のプレフィックスが先
+  ["ml-", "ms-"], // 正のプレフィックスが後
+];
 
 // Better: 最長一致マッチングを使うか、末尾の - の有無で完全一致を判定する
 ```

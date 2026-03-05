@@ -96,9 +96,7 @@ let redisPackage = {} as any;
 
 ```typescript
 // server/server-redis.ts:44-46 (constructor内)
-redisPackage = this.loadPackage('ioredis', ServerRedis.name, () =>
-  require('ioredis'),
-);
+redisPackage = this.loadPackage("ioredis", ServerRedis.name, () => require("ioredis"));
 ```
 
 この `type X = any` + コメントアウトされた本来の型宣言というパターンは、ServerNats, ServerMqtt, ServerKafka, ServerGrpc, ServerRMQ のすべてで一貫して使われている。
@@ -131,13 +129,13 @@ public static create(microserviceOptions: MicroserviceOptions) {
 
 デフォルトシリアライザはトランスポートごとに最適な実装を持つ:
 
-| トランスポート | デフォルトシリアライザ | 入出力型 |
-|---|---|---|
-| TCP, Redis | `IdentitySerializer` | そのまま返す |
-| NATS | `NatsRecordSerializer` | JSON Codec でエンコード |
-| MQTT | `MqttRecordSerializer` | JSON.stringify |
-| Kafka | `KafkaRequestSerializer` | Buffer / key-value 構造化 |
-| RMQ | `RmqRecordSerializer` | RmqRecord でオプション分離 |
+| トランスポート | デフォルトシリアライザ   | 入出力型                   |
+| -------------- | ------------------------ | -------------------------- |
+| TCP, Redis     | `IdentitySerializer`     | そのまま返す               |
+| NATS           | `NatsRecordSerializer`   | JSON Codec でエンコード    |
+| MQTT           | `MqttRecordSerializer`   | JSON.stringify             |
+| Kafka          | `KafkaRequestSerializer` | Buffer / key-value 構造化  |
+| RMQ            | `RmqRecordSerializer`    | RmqRecord でオプション分離 |
 
 各トランスポートが `initializeSerializer()` をオーバーライドしてデフォルトを切り替える:
 
@@ -261,7 +259,14 @@ type Redis = any;
 let redisPackage = {} as any;
 
 // Better: conditional type import + branded type で最低限の型安全性を確保
-type Redis = { connect(): Promise<void>; quit(): Promise<void>; on(event: string, fn: Function): void; publish(channel: string, message: string, cb?: Function): void; subscribe(channel: string, cb?: Function): void; [key: string]: unknown };
+type Redis = {
+  connect(): Promise<void>;
+  quit(): Promise<void>;
+  on(event: string, fn: Function): void;
+  publish(channel: string, message: string, cb?: Function): void;
+  subscribe(channel: string, cb?: Function): void;
+  [key: string]: unknown;
+};
 ```
 
 - **initializeSerializer の Union 型キャスト**: 基底クラスの `initializeSerializer()` で全トランスポートの Options 型を Union でキャストしている。トランスポートが増えるたびにこの Union を更新する必要がある。

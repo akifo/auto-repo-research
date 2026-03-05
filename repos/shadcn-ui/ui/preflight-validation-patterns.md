@@ -23,13 +23,13 @@ shadcn/ui の CLI（`shadcn`）は、`init`・`add`・`build`・`migrate` の各
 
 全 5 つの preflight 関数は同じ構造パターンに従う。エラーマップと、検証成功時のみ有効な成果物（config, projectInfo, resolvePaths）を返す。
 
-| preflight 関数 | 成果物 | 主な検証項目 |
-|---|---|---|
-| `preFlightInit` | `projectInfo` | ディレクトリ、既存設定、フレームワーク、Tailwind、alias |
-| `preFlightAdd` | `config` | ディレクトリ、components.json、設定パース |
-| `preFlightBuild` | `resolvePaths` | registry ファイル存在 |
-| `preFlightMigrate` | `config` | ディレクトリ、components.json、設定パース |
-| `preFlightRegistryBuild` | `config` + `resolvePaths` | registry ファイル、components.json、設定パース |
+| preflight 関数           | 成果物                    | 主な検証項目                                            |
+| ------------------------ | ------------------------- | ------------------------------------------------------- |
+| `preFlightInit`          | `projectInfo`             | ディレクトリ、既存設定、フレームワーク、Tailwind、alias |
+| `preFlightAdd`           | `config`                  | ディレクトリ、components.json、設定パース               |
+| `preFlightBuild`         | `resolvePaths`            | registry ファイル存在                                   |
+| `preFlightMigrate`       | `config`                  | ディレクトリ、components.json、設定パース               |
+| `preFlightRegistryBuild` | `config` + `resolvePaths` | registry ファイル、components.json、設定パース          |
 
 エラーがある場合、成果物は `null` になる。呼び出し元はエラーマップのキーを検査して処理を分岐する。
 
@@ -39,15 +39,15 @@ shadcn/ui の CLI（`shadcn`）は、`init`・`add`・`build`・`migrate` の各
 
 ```typescript
 // packages/shadcn/src/utils/errors.ts:1-14
-export const MISSING_DIR_OR_EMPTY_PROJECT = "1"
-export const EXISTING_CONFIG = "2"
-export const MISSING_CONFIG = "3"
-export const FAILED_CONFIG_READ = "4"
-export const TAILWIND_NOT_CONFIGURED = "5"
-export const IMPORT_ALIAS_MISSING = "6"
-export const UNSUPPORTED_FRAMEWORK = "7"
+export const MISSING_DIR_OR_EMPTY_PROJECT = "1";
+export const EXISTING_CONFIG = "2";
+export const MISSING_CONFIG = "3";
+export const FAILED_CONFIG_READ = "4";
+export const TAILWIND_NOT_CONFIGURED = "5";
+export const IMPORT_ALIAS_MISSING = "6";
+export const UNSUPPORTED_FRAMEWORK = "7";
 // ...
-export const BUILD_MISSING_REGISTRY_FILE = "13"
+export const BUILD_MISSING_REGISTRY_FILE = "13";
 ```
 
 preflight 側は `errors[ERRORS.MISSING_CONFIG] = true` でフラグを立て、コマンド側は `errors[ERRORS.MISSING_CONFIG]` で検査する。`import * as ERRORS` による名前空間インポートにより、タイポを防止している。
@@ -92,7 +92,7 @@ const options = addOptionsSchema.parse({
   components,
   cwd: path.resolve(opts.cwd),
   ...opts,
-})
+});
 ```
 
 `migrateOptionsSchema` では `.refine()` を使って有効なマイグレーション名のみを受け付ける（`migrate.ts:32-36`）。Zod のバリデーションエラーは `handleError` 内で `z.ZodError` として検出され、フィールドごとのエラーメッセージとして表示される（`handle-error.ts:38-45`）。
@@ -117,52 +117,52 @@ preflight-init の段階的検証チェーン:
 ```typescript
 // packages/shadcn/src/preflights/preflight-init.ts:11-119
 export async function preFlightInit(
-  options: z.infer<typeof initOptionsSchema>
+  options: z.infer<typeof initOptionsSchema>,
 ) {
-  const errors: Record<string, boolean> = {}
+  const errors: Record<string, boolean> = {};
 
   // Stage 1: ディレクトリ存在チェック（致命的 → 早期リターン）
   if (
-    !fs.existsSync(options.cwd) ||
-    !fs.existsSync(path.resolve(options.cwd, "package.json"))
+    !fs.existsSync(options.cwd)
+    || !fs.existsSync(path.resolve(options.cwd, "package.json"))
   ) {
-    errors[ERRORS.MISSING_DIR_OR_EMPTY_PROJECT] = true
-    return { errors, projectInfo: null }
+    errors[ERRORS.MISSING_DIR_OR_EMPTY_PROJECT] = true;
+    return { errors, projectInfo: null };
   }
 
   // Stage 2: 既存設定の衝突チェック（--force で回避可能）
   if (
-    fs.existsSync(path.resolve(options.cwd, "components.json")) &&
-    !options.force
+    fs.existsSync(path.resolve(options.cwd, "components.json"))
+    && !options.force
   ) {
     // process.exit(1)
   }
 
   // Stage 3: フレームワーク検出（検出不能 → ガイド付き中断）
-  const projectInfo = await getProjectInfo(options.cwd)
+  const projectInfo = await getProjectInfo(options.cwd);
   if (!projectInfo || projectInfo?.framework.name === "manual") {
-    errors[ERRORS.UNSUPPORTED_FRAMEWORK] = true
+    errors[ERRORS.UNSUPPORTED_FRAMEWORK] = true;
     // process.exit(1)
   }
 
   // Stage 4: Tailwind CSS 設定検証
   if (projectInfo.tailwindVersion === "v3" && !projectInfo?.tailwindConfigFile) {
-    errors[ERRORS.TAILWIND_NOT_CONFIGURED] = true
+    errors[ERRORS.TAILWIND_NOT_CONFIGURED] = true;
   }
 
   // Stage 5: import alias 検証
   if (!projectInfo?.aliasPrefix) {
-    errors[ERRORS.IMPORT_ALIAS_MISSING] = true
+    errors[ERRORS.IMPORT_ALIAS_MISSING] = true;
   }
 
   // 複数エラーをまとめて報告
   if (Object.keys(errors).length > 0) {
     // 各エラーに対応するガイダンスを表示
-    logger.break()
-    process.exit(1)
+    logger.break();
+    process.exit(1);
   }
 
-  return { errors, projectInfo }
+  return { errors, projectInfo };
 }
 ```
 
@@ -197,14 +197,14 @@ if (errors[ERRORS.MISSING_DIR_OR_EMPTY_PROJECT]) {
 // packages/shadcn/src/utils/add-components.ts:390-405
 function validateFilesTarget(
   files: z.infer<typeof registryItemFileSchema>[],
-  cwd: string
+  cwd: string,
 ) {
   for (const file of files) {
-    if (!file?.target) { continue }
+    if (!file?.target) continue;
     if (!isSafeTarget(file.target, cwd)) {
       throw new Error(
-        `We found an unsafe file path "${file.target} in the registry item. Installation aborted.`
-      )
+        `We found an unsafe file path "${file.target} in the registry item. Installation aborted.`,
+      );
     }
   }
 }
@@ -231,13 +231,13 @@ function validateFilesTarget(
 ```typescript
 // packages/shadcn/src/preflights/preflight-add.ts:10-24
 export async function preFlightAdd(options: z.infer<typeof addOptionsSchema>) {
-  const errors: Record<string, boolean> = {}
+  const errors: Record<string, boolean> = {};
   if (!fs.existsSync(options.cwd) || !fs.existsSync(path.resolve(options.cwd, "package.json"))) {
-    errors[ERRORS.MISSING_DIR_OR_EMPTY_PROJECT] = true
-    return { errors, config: null }
+    errors[ERRORS.MISSING_DIR_OR_EMPTY_PROJECT] = true;
+    return { errors, config: null };
   }
   // ...
-  return { errors, config: config! }
+  return { errors, config: config! };
 }
 ```
 
@@ -261,13 +261,13 @@ if (errors[ERRORS.MISSING_DIR_OR_EMPTY_PROJECT]) {
 
 ```typescript
 // packages/shadcn/src/preflights/preflight-init.ts:54-79
-const frameworkSpinner = spinner(`Verifying framework.`, { silent: options.silent }).start()
-const projectInfo = await getProjectInfo(options.cwd)
+const frameworkSpinner = spinner(`Verifying framework.`, { silent: options.silent }).start();
+const projectInfo = await getProjectInfo(options.cwd);
 if (!projectInfo || projectInfo?.framework.name === "manual") {
-  frameworkSpinner?.fail()
+  frameworkSpinner?.fail();
   // ...
 }
-frameworkSpinner?.succeed(`Verifying framework. Found ${highlighter.info(projectInfo.framework.label)}.`)
+frameworkSpinner?.succeed(`Verifying framework. Found ${highlighter.info(projectInfo.framework.label)}.`);
 ```
 
 - **フレームワーク固有のガイダンス URL**: エラー時にフレームワークごとの公式ドキュメント URL を表示する。`frameworks.ts` でフレームワークとリンクの対応を一元管理し、preflight のエラーメッセージから参照する。
@@ -276,8 +276,8 @@ frameworkSpinner?.succeed(`Verifying framework. Found ${highlighter.info(project
 // packages/shadcn/src/preflights/preflight-init.ts:62-69
 if (projectInfo?.framework.links.installation) {
   logger.error(
-    `Visit ${highlighter.info(projectInfo?.framework.links.installation)} to manually configure your project.`
-  )
+    `Visit ${highlighter.info(projectInfo?.framework.links.installation)} to manually configure your project.`,
+  );
 }
 ```
 
@@ -289,15 +289,15 @@ if (projectInfo?.framework.links.installation) {
 // Bad: preflight 内で直接 exit
 // packages/shadcn/src/preflights/preflight-init.ts:47-49
 if (fs.existsSync(path.resolve(options.cwd, "components.json")) && !options.force) {
-  projectSpinner?.fail()
+  projectSpinner?.fail();
   // ... エラーメッセージ
-  process.exit(1)  // 呼び出し元に制御が戻らない
+  process.exit(1); // 呼び出し元に制御が戻らない
 }
 
 // Better: エラーマップに記録して呼び出し元に委ねる
 if (fs.existsSync(path.resolve(options.cwd, "components.json")) && !options.force) {
-  errors[ERRORS.EXISTING_CONFIG] = true
-  return { errors, projectInfo: null }
+  errors[ERRORS.EXISTING_CONFIG] = true;
+  return { errors, projectInfo: null };
 }
 ```
 
@@ -305,15 +305,15 @@ if (fs.existsSync(path.resolve(options.cwd, "components.json")) && !options.forc
 
 ```typescript
 // Bad: 任意の文字列キーを許容
-const errors: Record<string, boolean> = {}
-errors[ERRORS.MISSING_CONFIG] = true
-errors["typo_error"] = true  // 型エラーにならない
+const errors: Record<string, boolean> = {};
+errors[ERRORS.MISSING_CONFIG] = true;
+errors["typo_error"] = true; // 型エラーにならない
 
 // Better: 判別共用体でエラー型を制限
 type PreflightError =
-  | { code: "MISSING_CONFIG" }
-  | { code: "MISSING_DIR"; path: string }
-  | { code: "UNSUPPORTED_FRAMEWORK"; framework: string }
+  | { code: "MISSING_CONFIG"; }
+  | { code: "MISSING_DIR"; path: string; }
+  | { code: "UNSUPPORTED_FRAMEWORK"; framework: string; };
 ```
 
 - **preflight-add と preflight-migrate の重複**: この 2 つの preflight はほぼ同一のロジック（ディレクトリ存在 → components.json 存在 → config パース）を持つ。共通の基底 preflight を抽出すれば重複を排除できる。
@@ -325,17 +325,17 @@ type PreflightError =
 
 // Better: 共通ロジックを抽出
 async function preFlightWithConfig(cwd: string) {
-  const errors: Record<string, boolean> = {}
+  const errors: Record<string, boolean> = {};
   if (!fs.existsSync(cwd) || !fs.existsSync(path.resolve(cwd, "package.json"))) {
-    errors[ERRORS.MISSING_DIR_OR_EMPTY_PROJECT] = true
-    return { errors, config: null }
+    errors[ERRORS.MISSING_DIR_OR_EMPTY_PROJECT] = true;
+    return { errors, config: null };
   }
   if (!fs.existsSync(path.resolve(cwd, "components.json"))) {
-    errors[ERRORS.MISSING_CONFIG] = true
-    return { errors, config: null }
+    errors[ERRORS.MISSING_CONFIG] = true;
+    return { errors, config: null };
   }
-  const config = await getConfig(cwd)
-  return { errors, config }
+  const config = await getConfig(cwd);
+  return { errors, config };
 }
 ```
 

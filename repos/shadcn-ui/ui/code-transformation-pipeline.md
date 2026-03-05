@@ -62,22 +62,22 @@ export async function transform(
     transformRtl,
     transformIcons,
     transformCleanup,
-  ]
+  ],
 ) {
-  const tempFile = await createTempSourceFile(opts.filename)
+  const tempFile = await createTempSourceFile(opts.filename);
   const sourceFile = project.createSourceFile(tempFile, opts.raw, {
     scriptKind: ScriptKind.TSX,
-  })
+  });
 
   for (const transformer of transformers) {
-    await transformer({ sourceFile, ...opts })
+    await transformer({ sourceFile, ...opts });
   }
 
   if (opts.transformJsx) {
-    return await transformJsx({ sourceFile, ...opts })
+    return await transformJsx({ sourceFile, ...opts });
   }
 
-  return sourceFile.getText()
+  return sourceFile.getText();
 }
 ```
 
@@ -86,16 +86,16 @@ export async function transform(
 // 設定駆動の早期リターン — rsc=true なら何もしない
 export const transformRsc: Transformer = async ({ sourceFile, config }) => {
   if (config.rsc) {
-    return sourceFile
+    return sourceFile;
   }
 
-  const first = sourceFile.getFirstChildByKind(SyntaxKind.ExpressionStatement)
+  const first = sourceFile.getFirstChildByKind(SyntaxKind.ExpressionStatement);
   if (first && directiveRegex.test(first.getText())) {
-    first.remove()
+    first.remove();
   }
 
-  return sourceFile
-}
+  return sourceFile;
+};
 ```
 
 ```typescript
@@ -103,17 +103,17 @@ export const transformRsc: Transformer = async ({ sourceFile, config }) => {
 // コアロジックの文脈非依存な抽出 — CLI とビルドスクリプト両方で使える
 export async function transformDirection(source: string, rtl: boolean) {
   if (!rtl) {
-    return source
+    return source;
   }
 
-  const project = new Project({ useInMemoryFileSystem: true })
+  const project = new Project({ useInMemoryFileSystem: true });
   const sourceFile = project.createSourceFile("component.tsx", source, {
     scriptKind: ScriptKind.TSX,
     overwrite: true,
-  })
+  });
 
-  applyRtlTransformToSourceFile(sourceFile)
-  return sourceFile.getText()
+  applyRtlTransformToSourceFile(sourceFile);
+  return sourceFile.getText();
 }
 ```
 
@@ -142,8 +142,8 @@ const content = await transform(
       ? [transformNext]
       : []),
     transformCleanup,
-  ]
-)
+  ],
+);
 ```
 
 ## パターンカタログ
@@ -173,8 +173,8 @@ const content = await transform(
 ```typescript
 // packages/shadcn/src/utils/transformers/index.ts:27-31
 export type Transformer<Output = SourceFile> = (
-  opts: TransformOpts & { sourceFile: SourceFile }
-) => Promise<Output>
+  opts: TransformOpts & { sourceFile: SourceFile; },
+) => Promise<Output>;
 ```
 
 - **コアロジックの再利用エクスポート**: `transformDirection`（RTL）と `cleanupMarkers`（マーカー除去）は、Transformer インターフェースに依存しないスタンドアロン関数として別途エクスポートされ、ビルドスクリプト（`build-registry.mts:652`）やマイグレーションツール（`migrate-rtl.ts:129`）から直接呼び出される。`utils/index.ts` でこれらを公開 API として再エクスポートしている。
@@ -184,13 +184,13 @@ export type Transformer<Output = SourceFile> = (
 // Standalone function to clean up cn-* markers from source code.
 // This is used by the build script and doesn't require a config object.
 export async function cleanupMarkers(source: string) {
-  const project = new Project({ useInMemoryFileSystem: true })
+  const project = new Project({ useInMemoryFileSystem: true });
   const sourceFile = project.createSourceFile("component.tsx", source, {
     scriptKind: ScriptKind.TSX,
     overwrite: true,
-  })
-  applyCleanup(sourceFile)
-  return sourceFile.getText()
+  });
+  applyCleanup(sourceFile);
+  return sourceFile.getText();
 }
 ```
 
@@ -209,7 +209,7 @@ for (const info of transformations.reverse()) {
 function _useSemicolon(sourceFile: SourceFile) {
   return (
     sourceFile.getImportDeclarations()?.[0]?.getText().endsWith(";") ?? false
-  )
+  );
 }
 ```
 
@@ -220,11 +220,11 @@ function _useSemicolon(sourceFile: SourceFile) {
 ```typescript
 // Bad: 順序依存のマッピングテーブルが暗黙の制約を持つ
 const RTL_MAPPINGS: [string, string][] = [
-  ["-ml-", "-ms-"],  // 負のプレフィックスが先（順序重要）
+  ["-ml-", "-ms-"], // 負のプレフィックスが先（順序重要）
   ["-mr-", "-me-"],
   ["ml-", "ms-"],
   // ...50行以上
-]
+];
 ```
 
 ```typescript
@@ -233,7 +233,7 @@ const RTL_MAPPINGS = [
   { from: "ml-", to: "ms-", negated: "-ms-" },
   { from: "mr-", to: "me-", negated: "-me-" },
   // ...
-].sort((a, b) => b.from.length - a.from.length) // 長い方を優先
+].sort((a, b) => b.from.length - a.from.length); // 長い方を優先
 ```
 
 - **トランスフォーマー間の暗黙の順序依存**: `transformCleanup` は `cn-*` マーカークラスを除去するため、必ずパイプラインの最後に配置する必要がある。しかしこの制約はコード上のコメントでしか表現されておらず、型システムでは強制されない。順序を入れ替えると RTL や Tailwind プレフィックスの変換がマーカーに対して動作しなくなる。
@@ -249,8 +249,8 @@ transformers: Transformer[] = [
 ```typescript
 // Better: cleanup を最後に強制する構造
 function transform(opts, transformers) {
-  const [regular, cleanup] = partition(transformers, t => t !== transformCleanup)
-  for (const t of [...regular, ...cleanup]) { await t(opts) }
+  const [regular, cleanup] = partition(transformers, t => t !== transformCleanup);
+  for (const t of [...regular, ...cleanup]) await t(opts);
 }
 ```
 

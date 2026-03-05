@@ -67,7 +67,7 @@ build(): ConfigurableModuleHost<...> {
 const { ConfigurableModuleClass } = new ConfigurableModuleBuilder()
   .setExtras(
     { isGlobal: false },
-    (definition, extras: { isGlobal: boolean }) => ({
+    (definition, extras: { isGlobal: boolean; }) => ({
       ...definition,
       global: extras.isGlobal,
     }),
@@ -117,9 +117,7 @@ export function Global(): ClassDecorator {
 let children = [...imports.values()].filter(identity);
 if (isTraversing) {
   const contextModuleExports = moduleRef.exports;
-  children = children.filter(child =>
-    contextModuleExports.has(child.metatype),
-  );
+  children = children.filter(child => contextModuleExports.has(child.metatype));
 }
 ```
 
@@ -238,13 +236,13 @@ export class FeatureModule {}
 
 ```typescript
 // Bad: forRoot を複数回呼ぶ（意図せず別モジュールが生成される）
-@Module({ imports: [ConfigModule.forRoot({ path: '.env' }) ] })
+@Module({ imports: [ConfigModule.forRoot({ path: ".env" })] })
 class Module1 {}
-@Module({ imports: [ConfigModule.forRoot({ path: '.env' }) ] })
+@Module({ imports: [ConfigModule.forRoot({ path: ".env" })] })
 class Module2 {}
 
 // Better: forRoot は AppModule で1回だけ、@Global() と組み合わせる
-@Module({ imports: [ConfigModule.forRoot({ isGlobal: true, path: '.env' }) ] })
+@Module({ imports: [ConfigModule.forRoot({ isGlobal: true, path: ".env" })] })
 class AppModule {}
 ```
 

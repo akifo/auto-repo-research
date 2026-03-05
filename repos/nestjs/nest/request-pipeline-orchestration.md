@@ -35,18 +35,18 @@ return async <TRequest, TResponse>(
   next: Function,
 ) => {
   const args = this.contextUtils.createNullArray(argsLength);
-  fnCanActivate && (await fnCanActivate([req, res, next]));  // 1. Guards
+  fnCanActivate && (await fnCanActivate([req, res, next])); // 1. Guards
 
   this.responseController.setStatus(res, httpStatusCode);
-  hasCustomHeaders &&
-    this.responseController.setHeaders(res, responseHeaders);
+  hasCustomHeaders
+    && this.responseController.setHeaders(res, responseHeaders);
 
-  const result = await this.interceptorsConsumer.intercept(   // 2. Interceptors
+  const result = await this.interceptorsConsumer.intercept( // 2. Interceptors
     interceptors,
     [req, res, next],
     instance,
     callback,
-    handler(args, req, res, next),  // handler 内部で 3. Pipes -> 4. Handler
+    handler(args, req, res, next), // handler 内部で 3. Pipes -> 4. Handler
     contextType,
   );
   await (fnHandleResponse as HandlerResponseBasicFn)(result, res, req);
@@ -129,8 +129,7 @@ const nextFn = async (i = 0) => {
     return defer(AsyncResource.bind(() => this.transformDeferred(next)));
   }
   const handler: CallHandler = {
-    handle: () =>
-      defer(AsyncResource.bind(() => nextFn(i + 1))).pipe(mergeAll()),
+    handle: () => defer(AsyncResource.bind(() => nextFn(i + 1))).pipe(mergeAll()),
   };
   return interceptors[i].intercept(context, handler);
 };
@@ -172,10 +171,10 @@ Pipes は他のコンポーネントと異なり、ルートレベル（`@UsePip
 // packages/core/router/router-execution-context.ts:400-407
 args[index] = this.isPipeable(type)
   ? await this.getParamValue(
-      value,
-      { metatype, type, data } as any,
-      pipes.concat(paramPipes),  // ルートレベル pipes + パラメータレベル paramPipes
-    )
+    value,
+    { metatype, type, data } as any,
+    pipes.concat(paramPipes), // ルートレベル pipes + パラメータレベル paramPipes
+  )
   : value;
 ```
 
@@ -254,8 +253,8 @@ export const selectExceptionFilterMetadata = <T = any>(
 ): ExceptionFilterMetadata | undefined =>
   filters.find(
     ({ exceptionMetatypes }) =>
-      !exceptionMetatypes.length ||  // 空 = ワイルドカード
-      exceptionMetatypes.some(
+      !exceptionMetatypes.length // 空 = ワイルドカード
+      || exceptionMetatypes.some(
         ExceptionMetaType => exception instanceof ExceptionMetaType,
       ),
   );

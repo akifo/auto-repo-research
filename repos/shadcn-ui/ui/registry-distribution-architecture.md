@@ -137,29 +137,29 @@ if (options.useCache) {
 export async function fetchRegistryItems(
   items: string[],
   config: Config,
-  options: { useCache?: boolean } = {}
+  options: { useCache?: boolean; } = {},
 ) {
   const results = await Promise.all(
     items.map(async (item) => {
       if (isLocalFile(item)) {
-        return fetchRegistryLocal(item)
+        return fetchRegistryLocal(item);
       }
       if (isUrl(item)) {
-        const [result] = await fetchRegistry([item], options)
-        return registryItemSchema.parse(result)
+        const [result] = await fetchRegistry([item], options);
+        return registryItemSchema.parse(result);
       }
       if (item.startsWith("@") && config?.registries) {
-        const paths = resolveRegistryItemsFromRegistries([item], config)
-        const [result] = await fetchRegistry(paths, options)
-        return registryItemSchema.parse(result)
+        const paths = resolveRegistryItemsFromRegistries([item], config);
+        const [result] = await fetchRegistry(paths, options);
+        return registryItemSchema.parse(result);
       }
       // デフォルト: @shadcn レジストリ
-      const path = `styles/${config?.style ?? "new-york-v4"}/${item}.json`
-      const [result] = await fetchRegistry([path], options)
-      return registryItemSchema.parse(result)
-    })
-  )
-  return results
+      const path = `styles/${config?.style ?? "new-york-v4"}/${item}.json`;
+      const [result] = await fetchRegistry([path], options);
+      return registryItemSchema.parse(result);
+    }),
+  );
+  return results;
 }
 ```
 
@@ -178,7 +178,7 @@ export const registryItemSchema = z.discriminatedUnion("type", [
   registryItemCommonSchema.extend({
     type: registryItemTypeSchema.exclude(["registry:base", "registry:font"]),
   }),
-])
+]);
 ```
 
 ```typescript
@@ -186,30 +186,30 @@ export const registryItemSchema = z.discriminatedUnion("type", [
 // ビルトインレジストリ: 常に利用可能で上書き不可
 export const BUILTIN_REGISTRIES: z.infer<typeof registryConfigSchema> = {
   "@shadcn": `${REGISTRY_URL}/styles/{style}/{name}.json`,
-}
+};
 ```
 
 ```typescript
 // packages/shadcn/src/registry/errors.ts:32-76
 // エラー階層: RegistryError 基底クラスに code, statusCode, suggestion を持たせる
 export class RegistryError extends Error {
-  public readonly code: RegistryErrorCode
-  public readonly statusCode?: number
-  public readonly suggestion?: string
-  public readonly timestamp: Date
+  public readonly code: RegistryErrorCode;
+  public readonly statusCode?: number;
+  public readonly suggestion?: string;
+  public readonly timestamp: Date;
 
   constructor(message: string, options: {
-    code?: RegistryErrorCode
-    statusCode?: number
-    cause?: unknown
-    context?: Record<string, unknown>
-    suggestion?: string
+    code?: RegistryErrorCode;
+    statusCode?: number;
+    cause?: unknown;
+    context?: Record<string, unknown>;
+    suggestion?: string;
   } = {}) {
-    super(message)
-    this.code = options.code || RegistryErrorCode.UNKNOWN_ERROR
-    this.statusCode = options.statusCode
-    this.suggestion = options.suggestion
-    this.timestamp = new Date()
+    super(message);
+    this.code = options.code || RegistryErrorCode.UNKNOWN_ERROR;
+    this.statusCode = options.statusCode;
+    this.suggestion = options.suggestion;
+    this.timestamp = new Date();
   }
 }
 ```
@@ -247,13 +247,13 @@ export class RegistryError extends Error {
 ```typescript
 // packages/shadcn/src/registry/fetcher.ts:44-51
 if (options.useCache && registryCache.has(url)) {
-  return registryCache.get(url)  // 既に実行中の Promise を返す
+  return registryCache.get(url); // 既に実行中の Promise を返す
 }
-const fetchPromise = (async () => { /* fetch logic */ })()
+const fetchPromise = (async () => {/* fetch logic */})();
 if (options.useCache) {
-  registryCache.set(url, fetchPromise)  // 完了を待たずにキャッシュ
+  registryCache.set(url, fetchPromise); // 完了を待たずにキャッシュ
 }
-return fetchPromise
+return fetchPromise;
 ```
 
 - **エラーに suggestion フィールドを持たせる**: 各エラークラスが `suggestion` プロパティで具体的な解決策を提示する。CLI ツールやエディタ統合がユーザーに actionable なガイダンスを表示できる。
@@ -272,14 +272,14 @@ export const registryItemFileSchema = z.discriminatedUnion("type", [
   z.object({
     path: z.string(),
     type: z.enum(["registry:file", "registry:page"]),
-    target: z.string(),  // 必須
+    target: z.string(), // 必須
   }),
   z.object({
     path: z.string(),
     type: registryItemTypeSchema.exclude(["registry:file", "registry:page"]),
-    target: z.string().optional(),  // 任意
+    target: z.string().optional(), // 任意
   }),
-])
+]);
 ```
 
 - **ビルトインレジストリの上書き保護**: `BUILTIN_REGISTRIES` を `const` 定義し、ユーザー設定とマージする際にビルトインを先に展開する（`{ ...BUILTIN_REGISTRIES, ...config?.registries }`）。`registry:add` コマンドではビルトイン namespace の追加を明示的にスキップする（`packages/shadcn/src/commands/registry/add.ts:105-109`）。
@@ -306,13 +306,13 @@ async function fetchRegistryItems(
 
 ```typescript
 // Bad: 際限なく成長する Map キャッシュ
-const registryCache = new Map<string, Promise<any>>()
+const registryCache = new Map<string, Promise<any>>();
 
 // Better: TTL 付きキャッシュまたは LRU キャッシュ
 const registryCache = new LRUCache<string, Promise<any>>({
   max: 500,
   ttl: 1000 * 60 * 5, // 5 minutes
-})
+});
 ```
 
 ## 導出ルール

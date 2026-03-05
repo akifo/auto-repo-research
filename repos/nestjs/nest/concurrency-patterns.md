@@ -152,7 +152,7 @@ if (instanceHost.isPending) {
     throw new CircularDependencyException(`"${wrapper.name}"`);
   }
   return instanceHost.donePromise!.then((err?: unknown) => {
-    if (err) { throw err; }
+    if (err) throw err;
   });
 }
 ```
@@ -195,8 +195,7 @@ const nextFn = async (i = 0) => {
     return defer(AsyncResource.bind(() => this.transformDeferred(next)));
   }
   const handler: CallHandler = {
-    handle: () =>
-      defer(AsyncResource.bind(() => nextFn(i + 1))).pipe(mergeAll()),
+    handle: () => defer(AsyncResource.bind(() => nextFn(i + 1))).pipe(mergeAll()),
   };
   return interceptors[i].intercept(context, handler);
 };

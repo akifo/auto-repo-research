@@ -26,18 +26,18 @@ shadcn/ui の CLI は、ユーザープロジェクトごとに異なるフレ�
 ```typescript
 // packages/shadcn/src/utils/get-config.ts:31-44
 export async function getConfig(cwd: string) {
-  const config = await getRawConfig(cwd)
+  const config = await getRawConfig(cwd);
 
   if (!config) {
-    return null
+    return null;
   }
 
   // Set default icon library if not provided.
   if (!config.iconLibrary) {
-    config.iconLibrary = config.style === "new-york" ? "radix" : "lucide"
+    config.iconLibrary = config.style === "new-york" ? "radix" : "lucide";
   }
 
-  return await resolveConfigPaths(cwd, config)
+  return await resolveConfigPaths(cwd, config);
 }
 ```
 
@@ -67,11 +67,19 @@ lib: config.aliases["lib"]
 // packages/shadcn/src/utils/get-project-info.ts:39-65
 export async function getProjectInfo(cwd: string): Promise<ProjectInfo | null> {
   const [
-    configFiles, isSrcDir, isTsx, tailwindConfigFile,
-    tailwindCssFile, tailwindVersion, aliasPrefix, packageJson,
+    configFiles,
+    isSrcDir,
+    isTsx,
+    tailwindConfigFile,
+    tailwindCssFile,
+    tailwindVersion,
+    aliasPrefix,
+    packageJson,
   ] = await Promise.all([
     fg.glob("**/{next,vite,astro,app}.config.*|gatsby-config.*|composer.json|react-router.config.*", {
-      cwd, deep: 3, ignore: PROJECT_SHARED_IGNORE,
+      cwd,
+      deep: 3,
+      ignore: PROJECT_SHARED_IGNORE,
     }),
     fs.pathExists(path.resolve(cwd, "src")),
     isTypeScriptProject(cwd),
@@ -80,7 +88,7 @@ export async function getProjectInfo(cwd: string): Promise<ProjectInfo | null> {
     getTailwindVersion(cwd),
     getTsConfigAliasPrefix(cwd),
     getPackageInfo(cwd, false),
-  ])
+  ]);
   // ... framework detection logic
 }
 ```
@@ -115,26 +123,26 @@ export const registryConfigItemSchema = z.union([
     params: z.record(z.string(), z.string()).optional(),
     headers: z.record(z.string(), z.string()).optional(),
   }),
-])
+]);
 ```
 
 ```typescript
 // packages/shadcn/src/registry/builder.ts:120-137
 function shouldIncludeHeader(originalValue: string, expandedValue: string) {
-  const trimmedExpanded = expandedValue.trim()
+  const trimmedExpanded = expandedValue.trim();
   if (!trimmedExpanded) {
-    return false
+    return false;
   }
   if (originalValue.includes("${")) {
-    const envVars = originalValue.match(ENV_VAR_PATTERN)
+    const envVars = originalValue.match(ENV_VAR_PATTERN);
     if (envVars) {
       const templateWithoutVars = originalValue
         .replace(ENV_VAR_PATTERN, "")
-        .trim()
-      return trimmedExpanded !== templateWithoutVars
+        .trim();
+      return trimmedExpanded !== templateWithoutVars;
     }
   }
-  return true
+  return true;
 }
 ```
 
@@ -145,22 +153,23 @@ function shouldIncludeHeader(originalValue: string, expandedValue: string) {
 ```typescript
 // packages/shadcn/src/utils/get-config.ts:142-170
 export async function getWorkspaceConfig(config: Config) {
-  let resolvedAliases: any = {}
+  let resolvedAliases: any = {};
   for (const key of Object.keys(config.aliases)) {
-    if (!isAliasKey(key, config)) { continue }
-    const resolvedPath = config.resolvedPaths[key]
+    if (!isAliasKey(key, config)) continue;
+    const resolvedPath = config.resolvedPaths[key];
     const packageRoot = await findPackageRoot(
-      config.resolvedPaths.cwd, resolvedPath
-    )
+      config.resolvedPaths.cwd,
+      resolvedPath,
+    );
     if (!packageRoot) {
-      resolvedAliases[key] = config
-      continue
+      resolvedAliases[key] = config;
+      continue;
     }
-    resolvedAliases[key] = await getConfig(packageRoot)
+    resolvedAliases[key] = await getConfig(packageRoot);
   }
-  const result = workspaceConfigSchema.safeParse(resolvedAliases)
-  if (!result.success) { return null }
-  return result.data
+  const result = workspaceConfigSchema.safeParse(resolvedAliases);
+  if (!result.success) return null;
+  return result.data;
 }
 ```
 
@@ -171,12 +180,12 @@ export async function getWorkspaceConfig(config: Config) {
 ```typescript
 // packages/shadcn/src/commands/init.ts:51-61
 process.on("exit", (code) => {
-  const filePath = path.resolve(process.cwd(), "components.json")
+  const filePath = path.resolve(process.cwd(), "components.json");
   if (code === 0) {
-    return deleteFileBackup(filePath)
+    return deleteFileBackup(filePath);
   }
-  return restoreFileBackup(filePath)
-})
+  return restoreFileBackup(filePath);
+});
 ```
 
 ## パターンカタログ
@@ -210,7 +219,7 @@ export const configSchema = rawConfigSchema.extend({
     hooks: z.string(),
     ui: z.string(),
   }),
-})
+});
 ```
 
 - **DeepPartial + ファクトリ関数によるテスタブルな設定生成**: `createConfig` は `DeepPartial<Config>` を受け取り、明示的なスプレッドで各ネストレベルをマージする。これにより、テストで任意のプロパティだけをオーバーライドしつつ、常に型安全な完全オブジェクトが得られる。
@@ -218,21 +227,22 @@ export const configSchema = rawConfigSchema.extend({
 ```typescript
 // packages/shadcn/src/utils/get-config.ts:219-285
 export type DeepPartial<T> = {
-  [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P]
-}
+  [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
+};
 
 export function createConfig(partial?: DeepPartial<Config>): Config {
-  const defaultConfig: Config = { /* all fields with defaults */ }
+  const defaultConfig: Config = {/* all fields with defaults */};
   if (partial) {
     return {
-      ...defaultConfig, ...partial,
+      ...defaultConfig,
+      ...partial,
       resolvedPaths: { ...defaultConfig.resolvedPaths, ...(partial.resolvedPaths || {}) },
       tailwind: { ...defaultConfig.tailwind, ...(partial.tailwind || {}) },
       aliases: { ...defaultConfig.aliases, ...(partial.aliases || {}) },
       registries: { ...defaultConfig.registries, ...(partial.registries || {}) },
-    }
+    };
   }
-  return defaultConfig
+  return defaultConfig;
 }
 ```
 
@@ -241,7 +251,7 @@ export function createConfig(partial?: DeepPartial<Config>): Config {
 ```typescript
 // packages/shadcn/src/registry/env.ts:1-4
 export function expandEnvVars(value: string) {
-  return value.replace(/\${(\w+)}/g, (_match, key) => process.env[key] || "")
+  return value.replace(/\${(\w+)}/g, (_match, key) => process.env[key] || "");
 }
 ```
 
@@ -251,12 +261,12 @@ export function expandEnvVars(value: string) {
 
 ```typescript
 // Bad: resolvedPaths を含んだまま JSON にシリアライズ
-await fs.writeFile(configPath, JSON.stringify(config, null, 2))
+await fs.writeFile(configPath, JSON.stringify(config, null, 2));
 
 // Better: resolvedPaths を除外してからシリアライズ
-const { resolvedPaths, ...configWithoutResolvedPaths } = config
-const updatedConfig = rawConfigSchema.parse(configWithoutResolvedPaths)
-await fs.writeFile(configPath, JSON.stringify(updatedConfig, null, 2))
+const { resolvedPaths, ...configWithoutResolvedPaths } = config;
+const updatedConfig = rawConfigSchema.parse(configWithoutResolvedPaths);
+await fs.writeFile(configPath, JSON.stringify(updatedConfig, null, 2));
 ```
 
 - **検出ロジックの順序依存**: `getProjectInfo` ではフレームワーク検出が if/else チェーンで行われ、順序が意味を持つ（例: Remix は Vite より先に判定される必要がある）。新規フレームワーク追加時に順序を誤ると既存の検出が壊れる。

@@ -111,13 +111,13 @@ override mapAllResult(rows: unknown, isFromBatch?: boolean): unknown {
 ```typescript
 // cache/core/cache.ts:69-78
 export async function hashQuery(sql: string, params?: any[]) {
-    const dataToHash = `${sql}-${JSON.stringify(params)}`;
-    const encoder = new TextEncoder();
-    const data = encoder.encode(dataToHash);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = [...new Uint8Array(hashBuffer)];
-    const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
-    return hashHex;
+  const dataToHash = `${sql}-${JSON.stringify(params)}`;
+  const encoder = new TextEncoder();
+  const data = encoder.encode(dataToHash);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = [...new Uint8Array(hashBuffer)];
+  const hashHex = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+  return hashHex;
 }
 ```
 
@@ -129,11 +129,11 @@ const pipeline = this.redis.pipeline();
 pipeline.hset(compositeKey, { [key]: response });
 pipeline.hexpire(compositeKey, key, ttlSeconds, hexOptions);
 if (isTag) {
-    pipeline.hset(UpstashCache.tagsMapKey, { [key]: compositeKey });
-    pipeline.hexpire(UpstashCache.tagsMapKey, key, ttlSeconds, hexOptions);
+  pipeline.hset(UpstashCache.tagsMapKey, { [key]: compositeKey });
+  pipeline.hexpire(UpstashCache.tagsMapKey, key, ttlSeconds, hexOptions);
 }
 for (const table of tables) {
-    pipeline.sadd(this.addTablePrefix(table), compositeKey);
+  pipeline.sadd(this.addTablePrefix(table), compositeKey);
 }
 await pipeline.exec();
 ```
@@ -166,7 +166,7 @@ startActiveSpan<F extends (span?: Span) => unknown>(name: SpanName, fn: F): Retu
 ```typescript
 // tracing-utils.ts:1-3
 export function iife<T extends unknown[], U>(fn: (...args: T) => U, ...args: T): U {
-    return fn(...args);
+  return fn(...args);
 }
 ```
 
@@ -223,9 +223,9 @@ prepare(name: string): PgSelectPrepare<this> {
 ```typescript
 // libsql/session.ts:77-90
 for (const query of queries) {
-    const preparedQuery = query._prepare();
-    preparedQueries.push(preparedQuery);
-    builtQueries.push({ sql: builtQuery.sql, args: builtQuery.params as InArgs });
+  const preparedQuery = query._prepare();
+  preparedQueries.push(preparedQuery);
+  builtQueries.push({ sql: builtQuery.sql, args: builtQuery.params as InArgs });
 }
 const batchResults = await this.client.batch(builtQueries);
 return batchResults.map((result, i) => preparedQueries[i]!.mapResult(result, true));
@@ -256,6 +256,7 @@ for (const item of extractUsedTable(table)) this.usedTables.add(item);
 - **queryWithCache の方言間コピー**: `queryWithCache` メソッドが `PgPreparedQuery`、`MySqlPreparedQuery`、`SQLitePreparedQuery` の3箇所にほぼ同一のコードで存在する。型制約の違いが原因だが、ロジック変更時に3箇所の同期が必要になる。
 
 Bad:
+
 ```typescript
 // pg-core/session.ts:64-147, mysql-core/session.ts:70-154, sqlite-core/session.ts:71-155
 // 3つの基底クラスに同一の queryWithCache 実装
@@ -265,20 +266,23 @@ protected async queryWithCache<T>(queryString: string, params: any[], query: () 
 ```
 
 Better: 共通ロジックを standalone 関数またはミックスインに抽出し、方言基底クラスから委譲する:
+
 ```typescript
 // shared/cache-executor.ts
 export async function executeWithCache<T>(
-    cache: Cache | undefined,
-    queryMetadata: QueryMetadata | undefined,
-    cacheConfig: WithCacheConfig | undefined,
-    queryString: string, params: any[],
-    query: () => Promise<T>,
-): Promise<T> { /* 共通ロジック */ }
+  cache: Cache | undefined,
+  queryMetadata: QueryMetadata | undefined,
+  cacheConfig: WithCacheConfig | undefined,
+  queryString: string,
+  params: any[],
+  query: () => Promise<T>,
+): Promise<T> {/* 共通ロジック */}
 ```
 
 - **hashQuery の二重呼び出しリスク**: `queryWithCache` 内でキャッシュミス時に `hashQuery` を2回呼び出す可能性がある（`get` と `put` の両方で `await hashQuery(queryString, params)` を実行）。SHA-256 ハッシュ計算は暗号的に重い操作。
 
 Bad:
+
 ```typescript
 // pg-core/session.ts:114-135
 const fromCache = await this.cache.get(
@@ -295,6 +299,7 @@ if (fromCache === undefined) {
 ```
 
 Better: ハッシュ値を事前計算して変数に保持する:
+
 ```typescript
 const cacheKey = this.cacheConfig.tag ?? await hashQuery(queryString, params);
 const fromCache = await this.cache.get(cacheKey, ...);

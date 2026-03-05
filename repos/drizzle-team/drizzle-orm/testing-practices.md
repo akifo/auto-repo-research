@@ -22,30 +22,30 @@ drizzle-orm は「すべてのテストは統合テスト」という方針を�
 
 ```typescript
 // integration-tests/tests/pg/pg-common.ts:367-392
-export async function createDockerDB(): Promise<{ connectionString: string; container: Docker.Container }> {
-	const docker = new Docker();
-	const port = await getPort({ port: 5432 });
-	const image = 'postgres:14';
+export async function createDockerDB(): Promise<{ connectionString: string; container: Docker.Container; }> {
+  const docker = new Docker();
+  const port = await getPort({ port: 5432 });
+  const image = "postgres:14";
 
-	const pullStream = await docker.pull(image);
-	await new Promise((resolve, reject) =>
-		docker.modem.followProgress(pullStream, (err) => (err ? reject(err) : resolve(err)))
-	);
+  const pullStream = await docker.pull(image);
+  await new Promise((resolve, reject) =>
+    docker.modem.followProgress(pullStream, (err) => (err ? reject(err) : resolve(err)))
+  );
 
-	pgContainer = await docker.createContainer({
-		Image: image,
-		Env: ['POSTGRES_PASSWORD=postgres', 'POSTGRES_USER=postgres', 'POSTGRES_DB=postgres'],
-		name: `drizzle-integration-tests-${uuidV4()}`,
-		HostConfig: {
-			AutoRemove: true,
-			PortBindings: {
-				'5432/tcp': [{ HostPort: `${port}` }],
-			},
-		},
-	});
+  pgContainer = await docker.createContainer({
+    Image: image,
+    Env: ["POSTGRES_PASSWORD=postgres", "POSTGRES_USER=postgres", "POSTGRES_DB=postgres"],
+    name: `drizzle-integration-tests-${uuidV4()}`,
+    HostConfig: {
+      AutoRemove: true,
+      PortBindings: {
+        "5432/tcp": [{ HostPort: `${port}` }],
+      },
+    },
+  });
 
-	await pgContainer.start();
-	return { connectionString: `postgres://postgres:postgres@localhost:${port}/postgres`, container: pgContainer };
+  await pgContainer.start();
+  return { connectionString: `postgres://postgres:postgres@localhost:${port}/postgres`, container: pgContainer };
 }
 ```
 
@@ -79,22 +79,22 @@ Vitest のモジュール拡張で `TestContext` にデータベースインス�
 
 ```typescript
 // integration-tests/tests/pg/pg-common.ts:100-109
-declare module 'vitest' {
-	interface TestContext {
-		pg: {
-			db: PgDatabase<PgQueryResultHKT>;
-		};
-		neonPg: {
-			db: NeonHttpDatabase<typeof schema>;
-		};
-	}
+declare module "vitest" {
+  interface TestContext {
+    pg: {
+      db: PgDatabase<PgQueryResultHKT>;
+    };
+    neonPg: {
+      db: NeonHttpDatabase<typeof schema>;
+    };
+  }
 }
 
 // integration-tests/tests/pg/node-postgres.test.ts:52-56
 beforeEach((ctx) => {
-	ctx.pg = {
-		db,
-	};
+  ctx.pg = {
+    db,
+  };
 });
 ```
 
@@ -107,17 +107,17 @@ beforeEach((ctx) => {
 ```typescript
 // integration-tests/tests/common.ts:3-9
 export function skipTests(names: string[]) {
-	beforeEach((ctx) => {
-		if (ctx.task.suite?.name === 'common' && names.includes(ctx.task.name)) {
-			ctx.skip();
-		}
-	});
+  beforeEach((ctx) => {
+    if (ctx.task.suite?.name === "common" && names.includes(ctx.task.name)) {
+      ctx.skip();
+    }
+  });
 }
 
 // integration-tests/tests/sqlite/better-sqlite.test.ts:51-59
 skipTests([
-	'transaction rollback',
-	'nested transaction rollback',
+  "transaction rollback",
+  "nested transaction rollback",
 ]);
 tests();
 ```
@@ -129,17 +129,17 @@ tests();
 ```typescript
 // integration-tests/tests/pg/pg-common.ts:2460-2468 — Expect<Equal<>> パターン
 const result = await db.select({
-	id: sql<number>`id`,
-	name: sql<string>`name`,
+  id: sql<number>`id`,
+  name: sql<string>`name`,
 }).from(sql`(select 1 as id, 'John' as name) as users`);
 
-Expect<Equal<{ id: number; name: string }[], typeof result>>;
-expect(result).toEqual([{ id: 1, name: 'John' }]);
+Expect<Equal<{ id: number; name: string; }[], typeof result>>;
+expect(result).toEqual([{ id: 1, name: "John" }]);
 
 // integration-tests/tests/pg/pg-common.ts:1765-1768 — expectTypeOf パターン
 expectTypeOf(res).toEqualTypeOf<{
-	population: number;
-	name: string;
+  population: number;
+  name: string;
 }[]>();
 ```
 
@@ -149,7 +149,7 @@ expectTypeOf(res).toEqualTypeOf<{
 // integration-tests/tests/utils.ts:3-6
 export function Expect<T extends true>() {}
 export type Equal<X, Y extends X> = (<T>() => T extends X ? 1 : 2) extends (<T>() => T extends Y ? 1 : 2) ? true
-	: false;
+  : false;
 ```
 
 ### 分離された型テスト（NodeNext 互換性）
@@ -211,18 +211,18 @@ fi
 ```typescript
 // integration-tests/tests/pg/node-postgres.test.ts:29-42
 client = await retry(async () => {
-	client = new Client(connectionString);
-	await client.connect();
-	return client;
+  client = new Client(connectionString);
+  await client.connect();
+  return client;
 }, {
-	retries: 20,
-	factor: 1,
-	minTimeout: 250,
-	maxTimeout: 250,
-	randomize: false,
-	onRetry() {
-		client?.end();
-	},
+  retries: 20,
+  factor: 1,
+  minTimeout: 250,
+  maxTimeout: 250,
+  randomize: false,
+  onRetry() {
+    client?.end();
+  },
 });
 ```
 
@@ -232,19 +232,21 @@ drizzle-kit のテストでは Docker ではなく PGlite（WebAssembly ベー�
 
 ```typescript
 // drizzle-kit/tests/introspect/pg.test.ts:46-64
-test('basic introspect test', async () => {
-	const client = new PGlite();
-	const schema = {
-		users: pgTable('users', {
-			id: integer('id').notNull(),
-			email: text('email'),
-		}),
-	};
-	const { statements, sqlStatements } = await introspectPgToFile(
-		client, schema, 'basic-introspect',
-	);
-	expect(statements.length).toBe(0);
-	expect(sqlStatements.length).toBe(0);
+test("basic introspect test", async () => {
+  const client = new PGlite();
+  const schema = {
+    users: pgTable("users", {
+      id: integer("id").notNull(),
+      email: text("email"),
+    }),
+  };
+  const { statements, sqlStatements } = await introspectPgToFile(
+    client,
+    schema,
+    "basic-introspect",
+  );
+  expect(statements.length).toBe(0);
+  expect(sqlStatements.length).toBe(0);
 });
 ```
 
@@ -254,12 +256,12 @@ test('basic introspect test', async () => {
 
 ```javascript
 // integration-tests/js-tests/driver-init/commonjs/node-pg.test.cjs:2-3
-const { drizzle } = require('drizzle-orm/node-postgres');
-const pg = require('pg');
+const { drizzle } = require("drizzle-orm/node-postgres");
+const pg = require("pg");
 
 // integration-tests/js-tests/driver-init/module/node-pg.test.mjs:2-3
-import { drizzle } from 'drizzle-orm/node-postgres';
-import pg from 'pg';
+import { drizzle } from "drizzle-orm/node-postgres";
+import pg from "pg";
 ```
 
 ## パターンカタログ
@@ -282,11 +284,11 @@ import pg from 'pg';
 
 ```typescript
 // integration-tests/tests/pg/node-postgres.test.ts:22-28
-if (process.env['PG_CONNECTION_STRING']) {
-	connectionString = process.env['PG_CONNECTION_STRING'];
+if (process.env["PG_CONNECTION_STRING"]) {
+  connectionString = process.env["PG_CONNECTION_STRING"];
 } else {
-	const { connectionString: conStr } = await createDockerDB();
-	connectionString = conStr;
+  const { connectionString: conStr } = await createDockerDB();
+  connectionString = conStr;
 }
 ```
 
@@ -295,10 +297,10 @@ if (process.env['PG_CONNECTION_STRING']) {
 ```typescript
 // integration-tests/tests/pg/pg-common.ts:400-403
 beforeEach(async (ctx) => {
-	const { db } = ctx.pg;
-	await db.execute(sql`drop schema if exists public cascade`);
-	await db.execute(sql`create schema public`);
-	// ...テーブル作成
+  const { db } = ctx.pg;
+  await db.execute(sql`drop schema if exists public cascade`);
+  await db.execute(sql`create schema public`);
+  // ...テーブル作成
 });
 ```
 
@@ -323,9 +325,9 @@ await new Promise((resolve) => setTimeout(resolve, 4000));
 
 // Better: PostgreSQL で使われている retry パターン
 client = await retry(async () => {
-	client = new Client(connectionString);
-	await client.connect();
-	return client;
+  client = new Client(connectionString);
+  await client.connect();
+  return client;
 }, { retries: 20, minTimeout: 250 });
 ```
 

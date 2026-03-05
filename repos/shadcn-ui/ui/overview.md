@@ -21,26 +21,26 @@ shadcn/ui は「ライブラリではなくコード配布」というパラダ�
 
 ## 分析した視点
 
-| # | 視点 | ファイル | 概要 |
-| - | ---- | -------- | ---- |
-| 1 | project-structure | project-structure.md | pnpm workspaces + Turborepo で CLI・レジストリ・テスト・テンプレートを4層分離し、publish 対象を1パッケージに限定 |
-| 2 | architecture | architecture.md | CLI→Preflight→Registry→Transformer→Updater の単方向パイプラインで、Zod スキーマがレイヤー境界のゲートキーパーとして機能 |
-| 3 | design-philosophy | design-philosophy.md | コードの所有権をユーザーに譲渡するコード配布モデルを AST 変換パイプラインとスキーマ駆動レジストリで実現 |
-| 4 | registry-distribution-architecture | registry-distribution-architecture.md | namespace による連邦型レジストリ、トポロジカルソートによる依存解決、Promise キャッシュによる重複排除を統合した配布基盤 |
-| 5 | code-transformation-pipeline | code-transformation-pipeline.md | 統一 Transformer 型で14種の AST 変換を合成し、設定駆動の早期リターンとコアロジック再利用エクスポートで拡張性を確保 |
-| 6 | schema-validation-patterns | schema-validation-patterns.md | discriminatedUnion で12種のアイテム型を3バリアントに集約し、z.infer + Extract で型安全なバリアント操作を実現 |
-| 7 | cli-framework-patterns | cli-framework-patterns.md | Commander + Zod オプション検証 + preflight 分離 + Shadow Config で多様なプロジェクト環境に適応する CLI アーキテクチャ |
-| 8 | api-design-practices | api-design-practices.md | subpath exports で6エントリポイントを段階的に公開し、data-slot + ComponentProps で安定的なコンポーネント API 契約を提供 |
-| 9 | composition-patterns | composition-patterns.md | AST トランスフォーマー・PostCSS プラグイン・トポロジカルソートの3層パイプラインと cn()+data-slot のコンポーネント合成 |
-| 10 | configuration-patterns | configuration-patterns.md | raw→resolved の2層スキーマ設計、フレームワーク自動検出、DeepPartial ファクトリで多様なプロジェクト構成を吸収 |
-| 11 | error-handling-idioms | error-handling-idioms.md | 16サブクラスの構造化エラー階層に suggestion フィールドを持たせ、handleError で単一集約する CLI エラー戦略 |
-| 12 | type-system-patterns | type-system-patterns.md | z.infer を SSOT とした型導出優先アプローチ、React.ComponentProps によるインターフェースレス Props、Extract によるバリアント抽出 |
-| 13 | extensibility-mechanisms | extensibility-mechanisms.md | Union 型設定で参入障壁を最小化し、namespace + 環境変数展開 + MCP サーバーで多層の拡張ポイントを提供 |
-| 14 | migration-patterns | migration-patterns.md | 純粋関数の変換コア、マッピングテーブル駆動設計、非破壊マイグレーション戦略で安全なコード自動書き換えを実現 |
-| 15 | testing-practices | testing-practices.md | Vitest Workspace で単体/統合テストを分離し、MSW + 実 HTTP サーバー + フレームワーク別フィクスチャで CLI テストを階層化 |
-| 16 | build-and-tooling | build-and-tooling.md | cn-* セマンティッククラスでロジックとスタイルを直交分離し、ベース x スタイルの直積をビルド時に AST 変換で合成 |
-| 17 | preflight-validation-patterns | preflight-validation-patterns.md | エラーマップ + 成果物の統一戻り値構造で検証と実行を分離し、エラー種別に応じた回復・案内・中断を実現 |
-| 18 | dev-conventions | dev-conventions.md | Conventional Commits + Changesets + 3層 CI/CD で107k+ stars 規模の品質とリリースフローを自動化 |
+| #  | 視点                               | ファイル                              | 概要                                                                                                                            |
+| -- | ---------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| 1  | project-structure                  | project-structure.md                  | pnpm workspaces + Turborepo で CLI・レジストリ・テスト・テンプレートを4層分離し、publish 対象を1パッケージに限定                |
+| 2  | architecture                       | architecture.md                       | CLI→Preflight→Registry→Transformer→Updater の単方向パイプラインで、Zod スキーマがレイヤー境界のゲートキーパーとして機能         |
+| 3  | design-philosophy                  | design-philosophy.md                  | コードの所有権をユーザーに譲渡するコード配布モデルを AST 変換パイプラインとスキーマ駆動レジストリで実現                         |
+| 4  | registry-distribution-architecture | registry-distribution-architecture.md | namespace による連邦型レジストリ、トポロジカルソートによる依存解決、Promise キャッシュによる重複排除を統合した配布基盤          |
+| 5  | code-transformation-pipeline       | code-transformation-pipeline.md       | 統一 Transformer 型で14種の AST 変換を合成し、設定駆動の早期リターンとコアロジック再利用エクスポートで拡張性を確保              |
+| 6  | schema-validation-patterns         | schema-validation-patterns.md         | discriminatedUnion で12種のアイテム型を3バリアントに集約し、z.infer + Extract で型安全なバリアント操作を実現                    |
+| 7  | cli-framework-patterns             | cli-framework-patterns.md             | Commander + Zod オプション検証 + preflight 分離 + Shadow Config で多様なプロジェクト環境に適応する CLI アーキテクチャ           |
+| 8  | api-design-practices               | api-design-practices.md               | subpath exports で6エントリポイントを段階的に公開し、data-slot + ComponentProps で安定的なコンポーネント API 契約を提供         |
+| 9  | composition-patterns               | composition-patterns.md               | AST トランスフォーマー・PostCSS プラグイン・トポロジカルソートの3層パイプラインと cn()+data-slot のコンポーネント合成           |
+| 10 | configuration-patterns             | configuration-patterns.md             | raw→resolved の2層スキーマ設計、フレームワーク自動検出、DeepPartial ファクトリで多様なプロジェクト構成を吸収                    |
+| 11 | error-handling-idioms              | error-handling-idioms.md              | 16サブクラスの構造化エラー階層に suggestion フィールドを持たせ、handleError で単一集約する CLI エラー戦略                       |
+| 12 | type-system-patterns               | type-system-patterns.md               | z.infer を SSOT とした型導出優先アプローチ、React.ComponentProps によるインターフェースレス Props、Extract によるバリアント抽出 |
+| 13 | extensibility-mechanisms           | extensibility-mechanisms.md           | Union 型設定で参入障壁を最小化し、namespace + 環境変数展開 + MCP サーバーで多層の拡張ポイントを提供                             |
+| 14 | migration-patterns                 | migration-patterns.md                 | 純粋関数の変換コア、マッピングテーブル駆動設計、非破壊マイグレーション戦略で安全なコード自動書き換えを実現                      |
+| 15 | testing-practices                  | testing-practices.md                  | Vitest Workspace で単体/統合テストを分離し、MSW + 実 HTTP サーバー + フレームワーク別フィクスチャで CLI テストを階層化          |
+| 16 | build-and-tooling                  | build-and-tooling.md                  | cn-* セマンティッククラスでロジックとスタイルを直交分離し、ベース x スタイルの直積をビルド時に AST 変換で合成                   |
+| 17 | preflight-validation-patterns      | preflight-validation-patterns.md      | エラーマップ + 成果物の統一戻り値構造で検証と実行を分離し、エラー種別に応じた回復・案内・中断を実現                             |
+| 18 | dev-conventions                    | dev-conventions.md                    | Conventional Commits + Changesets + 3層 CI/CD で107k+ stars 規模の品質とリリースフローを自動化                                  |
 
 ## 特に注目すべき知見
 

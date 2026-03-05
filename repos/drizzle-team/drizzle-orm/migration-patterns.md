@@ -56,17 +56,17 @@ drizzle-kit のマイグレーションパイプラインを分析した。TypeS
 ```typescript
 // drizzle-kit/src/serializer/index.ts:28-43
 export const serializePg = async (
-	path: string | string[],
-	casing: CasingType | undefined,
-	schemaFilter?: string[],
+  path: string | string[],
+  casing: CasingType | undefined,
+  schemaFilter?: string[],
 ): Promise<PgSchemaInternal> => {
-	const filenames = prepareFilenames(path);
-	const { prepareFromPgImports } = await import('./pgImports');
-	const { generatePgSnapshot } = await import('./pgSerializer');
-	const { tables, enums, schemas, sequences, views, matViews, roles, policies } = await prepareFromPgImports(
-		filenames,
-	);
-	return generatePgSnapshot(tables, enums, schemas, sequences, roles, policies, views, matViews, casing, schemaFilter);
+  const filenames = prepareFilenames(path);
+  const { prepareFromPgImports } = await import("./pgImports");
+  const { generatePgSnapshot } = await import("./pgSerializer");
+  const { tables, enums, schemas, sequences, views, matViews, roles, policies } = await prepareFromPgImports(
+    filenames,
+  );
+  return generatePgSnapshot(tables, enums, schemas, sequences, roles, policies, views, matViews, casing, schemaFilter);
 };
 ```
 
@@ -90,15 +90,15 @@ export const PgSquasher = {
 // drizzle-kit/src/sqlgenerator.ts:151-161
 // Strategy パターン: 各 Convertor が can/convert で型+方言のマッチングを行う
 abstract class Convertor {
-	abstract can(
-		statement: JsonStatement,
-		dialect: Dialect,
-	): boolean;
-	abstract convert(
-		statement: JsonStatement,
-		json2?: SQLiteSchemaSquashed,
-		action?: 'push',
-	): string | string[];
+  abstract can(
+    statement: JsonStatement,
+    dialect: Dialect,
+  ): boolean;
+  abstract convert(
+    statement: JsonStatement,
+    json2?: SQLiteSchemaSquashed,
+    action?: "push",
+  ): string | string[];
 }
 ```
 
@@ -106,24 +106,24 @@ abstract class Convertor {
 // drizzle-kit/src/sqlgenerator.ts:4122-4144
 // Chain of Responsibility: 登録済み Convertor から最初にマッチしたものを使用
 export function fromJson(
-	statements: JsonStatement[],
-	dialect: Dialect,
-	action?: 'push',
-	json2?: SQLiteSchemaSquashed,
+  statements: JsonStatement[],
+  dialect: Dialect,
+  action?: "push",
+  json2?: SQLiteSchemaSquashed,
 ) {
-	const result = statements
-		.flatMap((statement) => {
-			const filtered = convertors.filter((it) => {
-				return it.can(statement, dialect);
-			});
-			const convertor = filtered.length === 1 ? filtered[0] : undefined;
-			if (!convertor) {
-				return '';
-			}
-			return convertor.convert(statement, json2, action);
-		})
-		.filter((it) => it !== '');
-	return result;
+  const result = statements
+    .flatMap((statement) => {
+      const filtered = convertors.filter((it) => {
+        return it.can(statement, dialect);
+      });
+      const convertor = filtered.length === 1 ? filtered[0] : undefined;
+      if (!convertor) {
+        return "";
+      }
+      return convertor.convert(statement, json2, action);
+    })
+    .filter((it) => it !== "");
+  return result;
 }
 ```
 
@@ -131,14 +131,14 @@ export function fromJson(
 // drizzle-kit/src/migrationPreparator.ts:198-208
 // スナップショットチェーンの解決: 空なら初期状態にフォールバック
 const preparePrevSnapshot = (snapshots: string[], defaultPrev: any) => {
-	let prevSnapshot: any;
-	if (snapshots.length === 0) {
-		prevSnapshot = defaultPrev;
-	} else {
-		const lastSnapshot = snapshots[snapshots.length - 1];
-		prevSnapshot = JSON.parse(fs.readFileSync(lastSnapshot).toString());
-	}
-	return prevSnapshot;
+  let prevSnapshot: any;
+  if (snapshots.length === 0) {
+    prevSnapshot = defaultPrev;
+  } else {
+    const lastSnapshot = snapshots[snapshots.length - 1];
+    prevSnapshot = JSON.parse(fs.readFileSync(lastSnapshot).toString());
+  }
+  return prevSnapshot;
 };
 ```
 
@@ -177,14 +177,14 @@ const validatedCur = pgSchema.parse(cur);
 ```typescript
 // drizzle-kit/src/serializer/pgSchema.ts:870-886
 export const dryPg = pgSchema.parse({
-	version: snapshotVersion,
-	dialect: 'postgresql',
-	id: originUUID,
-	prevId: '',
-	tables: {},
-	enums: {},
-	schemas: {},
-	// ...
+  version: snapshotVersion,
+  dialect: "postgresql",
+  id: originUUID,
+  prevId: "",
+  tables: {},
+  enums: {},
+  schemas: {},
+  // ...
 });
 ```
 
@@ -229,7 +229,9 @@ sqlgenerator/
 
 ```typescript
 // Bad: 区切り文字のエスケープなし
-return `${idx.name};${columns};${idx.isUnique};${idx.concurrently};${idx.method};${idx.where};${JSON.stringify(idx.with)}`;
+return `${idx.name};${columns};${idx.isUnique};${idx.concurrently};${idx.method};${idx.where};${
+  JSON.stringify(idx.with)
+}`;
 ```
 
 ```typescript

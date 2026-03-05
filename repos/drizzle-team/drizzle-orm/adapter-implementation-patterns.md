@@ -56,17 +56,17 @@ postgres-js, neon-serverless, pglite, vercel-postgres, xata-http, d1, libsql, be
 ```typescript
 // node-postgres/session.ts:304-306
 export interface NodePgQueryResultHKT extends PgQueryResultHKT {
-    type: QueryResult<Assume<this['row'], QueryResultRow>>;
+  type: QueryResult<Assume<this["row"], QueryResultRow>>;
 }
 
 // postgres-js/session.ts:219-221
 export interface PostgresJsQueryResultHKT extends PgQueryResultHKT {
-    type: RowList<Assume<this['row'], Row>[]>;
+  type: RowList<Assume<this["row"], Row>[]>;
 }
 
 // pglite/session.ts:223-225
 export interface PgliteQueryResultHKT extends PgQueryResultHKT {
-    type: Results<Assume<this['row'], Row>>;
+  type: Results<Assume<this["row"], Row>>;
 }
 ```
 
@@ -78,8 +78,7 @@ SQLite アダプターは `TResultKind extends 'sync' | 'async'` という型パ
 
 ```typescript
 // sqlite-core/session.ts:325
-export type Result<TKind extends 'sync' | 'async', TResult> =
-    { sync: TResult; async: Promise<TResult> }[TKind];
+export type Result<TKind extends "sync" | "async", TResult> = { sync: TResult; async: Promise<TResult>; }[TKind];
 ```
 
 - **sync アダプター**: better-sqlite3, bun-sqlite, expo-sqlite（`SQLiteSession<'sync', RunResult, ...>`）
@@ -183,17 +182,17 @@ override async transaction<T>(...): Promise<T> {
 
 ```typescript
 // entity.ts:1
-export const entityKind = Symbol.for('drizzle:entityKind');
+export const entityKind = Symbol.for("drizzle:entityKind");
 
 // entity.ts:12-42
 export function is<T>(value: any, type: T): value is InstanceType<T> {
-    if (value instanceof type) return true;
-    let cls = Object.getPrototypeOf(value).constructor;
-    while (cls) {
-        if (entityKind in cls && cls[entityKind] === type[entityKind]) return true;
-        cls = Object.getPrototypeOf(cls);
-    }
-    return false;
+  if (value instanceof type) return true;
+  let cls = Object.getPrototypeOf(value).constructor;
+  while (cls) {
+    if (entityKind in cls && cls[entityKind] === type[entityKind]) return true;
+    cls = Object.getPrototypeOf(cls);
+  }
+  return false;
 }
 ```
 
@@ -276,9 +275,11 @@ override async transaction<T>(...): Promise<T> {
 
 ```typescript
 // Better: 型レベルで transaction を持たない型を区別する
-type HttpDriver = Omit<PgSession, 'transaction'>;
+type HttpDriver = Omit<PgSession, "transaction">;
 // または、capability フラグでコンパイル時に検出
-interface DriverCapabilities { supportsTransactions: boolean; }
+interface DriverCapabilities {
+  supportsTransactions: boolean;
+}
 ```
 
 - **PreparedQuery のコンストラクタ引数の膨張**: `NodePgPreparedQuery` は 11 個、`MySql2PreparedQuery` は 11 個のコンストラクタ引数を取る。位置引数の順序ミスが起きやすい。

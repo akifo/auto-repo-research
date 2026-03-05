@@ -60,12 +60,12 @@ pkg.exports = entries.reduce<Record<string, {...}>>(
 ```typescript
 // drizzle-orm/scripts/fix-imports.ts:8-15
 function resolvePathAlias(importPath: string, file: string) {
-  if (importPath.startsWith('~/')) {
+  if (importPath.startsWith("~/")) {
     const relativePath = path.relative(
       path.dirname(file),
-      path.resolve('dist.new', importPath.slice(2))
+      path.resolve("dist.new", importPath.slice(2)),
     );
-    importPath = relativePath.startsWith('.') ? relativePath : './' + relativePath;
+    importPath = relativePath.startsWith(".") ? relativePath : "./" + relativePath;
   }
   return importPath;
 }
@@ -112,7 +112,7 @@ package.json のスクリプト構成（build, test, test:types, pack, publish�
 
 ```typescript
 // integration-tests/tests/pg/node-postgres.test.ts:11
-import { createDockerDB, tests, usersMigratorTable, usersTable } from './pg-common';
+import { createDockerDB, tests, usersMigratorTable, usersTable } from "./pg-common";
 ```
 
 ### entityKind による instanceof 代替とカスタム ESLint ルール
@@ -121,7 +121,7 @@ import { createDockerDB, tests, usersMigratorTable, usersTable } from './pg-comm
 
 ```typescript
 // drizzle-orm/src/entity.ts:1
-export const entityKind = Symbol.for('drizzle:entityKind');
+export const entityKind = Symbol.for("drizzle:entityKind");
 
 // drizzle-orm/src/entity.ts:12-42
 export function is<T extends DrizzleEntityClass<any>>(value: any, type: T): value is InstanceType<T> {
@@ -177,8 +177,8 @@ ESLint ルールがクラス宣言を検査し、`entityKind` プロパティが
 - **サブパスエクスポートで仮想的なパッケージ境界を作る**: 20 以上のドライバを個別 npm パッケージに分割せず、`drizzle-orm/node-postgres`, `drizzle-orm/pg-core` のようなサブパスで公開する。npm パッケージの管理負荷（バージョニング、リリース、依存解決）を単一パッケージに集約しつつ、消費者にはモジュールレベルの粒度を提供する。
   ```typescript
   // ユーザーコード
-  import { drizzle } from 'drizzle-orm/node-postgres';
-  import { pgTable, serial, text } from 'drizzle-orm/pg-core';
+  import { drizzle } from "drizzle-orm/node-postgres";
+  import { pgTable, serial, text } from "drizzle-orm/pg-core";
   ```
 
 - **ビルド成果物リンクで「消費者と同じ条件」のモノレポ開発**: `workspace:./drizzle-orm/dist` や `link:../drizzle-orm/dist` でビルド成果物を参照することで、exports map の解決パスが開発時とパブリッシュ後で一致する。

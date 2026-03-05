@@ -19,26 +19,26 @@ NestJS は「デコレータでメタデータを格納し、ランタイムが�
 
 ## 分析した視点
 
-| # | 視点 | ファイル | 概要 |
-| - | ---- | -------- | ---- |
-| 1 | project-structure | project-structure.md | 契約(common)・実装(core)・プラットフォーム(platform-*)の3層分離とtsconfig Project Referencesによる依存方向の強制 |
-| 2 | architecture | architecture.md | TopologyTreeによるモジュール初期化順序の自動決定、3フェーズブートストラップ、Barrierベースの並行依存解決 |
-| 3 | design-philosophy | design-philosophy.md | デコレータはメタデータ格納のみに徹し、ランタイムが解釈する分離設計。横断的関心事をパイプラインで合成 |
-| 4 | decorator-driven-architecture | decorator-driven-architecture.md | Watermark・構成・累積・パラメータの4種デコレータパターンと3層メタデータマージ(Global→Class→Method) |
-| 5 | dependency-injection-container | dependency-injection-container.md | WeakMapベースのスコープ管理、二段階インスタンス化による循環依存解決、SettlementSignalによる循環検出 |
-| 6 | request-pipeline-orchestration | request-pipeline-orchestration.md | 固定順序パイプライン+ContextCreator基底クラスによる3層メタデータ合成+null短絡最適化 |
-| 7 | adapter-implementation-patterns | adapter-implementation-patterns.md | Interface→AbstractClass→Concreteの三層抽象化、Proxyによるメソッド委譲、型付き脱出口の提供 |
-| 8 | type-system-patterns | type-system-patterns.md | inject?:neverによる排他的プロパティ制約、as const+indexed access typeでの型導出、Builder型パラメータの段階的確定 |
-| 9 | metaprogramming-techniques | metaprogramming-techniques.md | 3層デコレータファクトリ、design:paramtypesによるDI自動解決、MetadataScannerのキャッシュ付きプロトタイプ走査 |
-| 10 | middleware-composition | middleware-composition.md | Fluent APIによる宣言的登録、モジュール依存グラフに基づく実行順序決定、関数→クラスの正規化変換 |
-| 11 | hook-and-lifecycle-patterns | hook-and-lifecycle-patterns.md | トポロジカルソートによるフック実行順序制御、duck typingによるフック検出、再入防止付きシャットダウン |
-| 12 | extensibility-mechanisms | extensibility-mechanisms.md | ConfigurableModuleBuilderによるregister/registerAsyncの自動生成、setExtrasでのメタ設定とビジネス設定の分離 |
-| 13 | error-handling-idioms | error-handling-idioms.md | トランスポート独立の例外階層、instanceofベースのフィルタ選択、IntrinsicExceptionによるログ抑制マーカー |
-| 14 | testing-practices | testing-practices.md | 単体テスト(DI不使用)と統合テスト(TestingModule)の二層構造、useMockerによる自動モック、Noop実装パターン |
-| 15 | transport-layer-abstraction | transport-layer-abstraction.md | ReadPacket/WritePacketによる統一メッセージ契約、Strategyパターンのシリアライザ差し替え、7トランスポートの抽象化 |
-| 16 | api-design-practices | api-design-practices.md | 段階的開示オーバーロード(引数なし→文字列→オプションオブジェクト)、barrel管理による公開面の明示的制御 |
-| 17 | concurrency-patterns | concurrency-patterns.md | WeakMap+オブジェクト参照キーによる自動GCスコーピング、Barrier同期プリミティブ、AsyncResource.bindでの非同期コンテキスト伝播 |
-| 18 | dependency-management | dependency-management.md | lockstepバージョニング、loadPackageによる統一遅延ロード、peerDependenciesMeta(optional)でのinstall-what-you-use |
+| #  | 視点                            | ファイル                           | 概要                                                                                                                        |
+| -- | ------------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| 1  | project-structure               | project-structure.md               | 契約(common)・実装(core)・プラットフォーム(platform-*)の3層分離とtsconfig Project Referencesによる依存方向の強制            |
+| 2  | architecture                    | architecture.md                    | TopologyTreeによるモジュール初期化順序の自動決定、3フェーズブートストラップ、Barrierベースの並行依存解決                    |
+| 3  | design-philosophy               | design-philosophy.md               | デコレータはメタデータ格納のみに徹し、ランタイムが解釈する分離設計。横断的関心事をパイプラインで合成                        |
+| 4  | decorator-driven-architecture   | decorator-driven-architecture.md   | Watermark・構成・累積・パラメータの4種デコレータパターンと3層メタデータマージ(Global→Class→Method)                          |
+| 5  | dependency-injection-container  | dependency-injection-container.md  | WeakMapベースのスコープ管理、二段階インスタンス化による循環依存解決、SettlementSignalによる循環検出                         |
+| 6  | request-pipeline-orchestration  | request-pipeline-orchestration.md  | 固定順序パイプライン+ContextCreator基底クラスによる3層メタデータ合成+null短絡最適化                                         |
+| 7  | adapter-implementation-patterns | adapter-implementation-patterns.md | Interface→AbstractClass→Concreteの三層抽象化、Proxyによるメソッド委譲、型付き脱出口の提供                                   |
+| 8  | type-system-patterns            | type-system-patterns.md            | inject?:neverによる排他的プロパティ制約、as const+indexed access typeでの型導出、Builder型パラメータの段階的確定            |
+| 9  | metaprogramming-techniques      | metaprogramming-techniques.md      | 3層デコレータファクトリ、design:paramtypesによるDI自動解決、MetadataScannerのキャッシュ付きプロトタイプ走査                 |
+| 10 | middleware-composition          | middleware-composition.md          | Fluent APIによる宣言的登録、モジュール依存グラフに基づく実行順序決定、関数→クラスの正規化変換                               |
+| 11 | hook-and-lifecycle-patterns     | hook-and-lifecycle-patterns.md     | トポロジカルソートによるフック実行順序制御、duck typingによるフック検出、再入防止付きシャットダウン                         |
+| 12 | extensibility-mechanisms        | extensibility-mechanisms.md        | ConfigurableModuleBuilderによるregister/registerAsyncの自動生成、setExtrasでのメタ設定とビジネス設定の分離                  |
+| 13 | error-handling-idioms           | error-handling-idioms.md           | トランスポート独立の例外階層、instanceofベースのフィルタ選択、IntrinsicExceptionによるログ抑制マーカー                      |
+| 14 | testing-practices               | testing-practices.md               | 単体テスト(DI不使用)と統合テスト(TestingModule)の二層構造、useMockerによる自動モック、Noop実装パターン                      |
+| 15 | transport-layer-abstraction     | transport-layer-abstraction.md     | ReadPacket/WritePacketによる統一メッセージ契約、Strategyパターンのシリアライザ差し替え、7トランスポートの抽象化             |
+| 16 | api-design-practices            | api-design-practices.md            | 段階的開示オーバーロード(引数なし→文字列→オプションオブジェクト)、barrel管理による公開面の明示的制御                        |
+| 17 | concurrency-patterns            | concurrency-patterns.md            | WeakMap+オブジェクト参照キーによる自動GCスコーピング、Barrier同期プリミティブ、AsyncResource.bindでの非同期コンテキスト伝播 |
+| 18 | dependency-management           | dependency-management.md           | lockstepバージョニング、loadPackageによる統一遅延ロード、peerDependenciesMeta(optional)でのinstall-what-you-use             |
 
 ## 特に注目すべき知見
 

@@ -20,16 +20,16 @@ drizzle-orm は drizzle-zod / drizzle-typebox / drizzle-valibot / drizzle-arktyp
 
 4つのバリデーション統合パッケージは完全に同一のファイル構成を持つ:
 
-| ファイル | 役割 |
-|---------|------|
-| `column.ts` | カラム→スキーマ変換のランタイムロジック |
-| `column.types.ts` | カラム→スキーマ変換の型レベルマッピング |
-| `constants.ts` | 整数範囲定数（全パッケージで同一内容） |
-| `schema.ts` | `createSelectSchema` / `createInsertSchema` / `createUpdateSchema` + `handleColumns` |
-| `schema.types.ts` | 公開 API の型定義 |
-| `schema.types.internal.ts` | `Conditions` / `BuildSchema` / `BuildRefine` / `NoUnknownKeys` |
-| `utils.ts` | `isColumnType` / `isWithEnum` / `isPgEnum` + ユーティリティ型 |
-| `index.ts` | re-export |
+| ファイル                   | 役割                                                                                 |
+| -------------------------- | ------------------------------------------------------------------------------------ |
+| `column.ts`                | カラム→スキーマ変換のランタイムロジック                                              |
+| `column.types.ts`          | カラム→スキーマ変換の型レベルマッピング                                              |
+| `constants.ts`             | 整数範囲定数（全パッケージで同一内容）                                               |
+| `schema.ts`                | `createSelectSchema` / `createInsertSchema` / `createUpdateSchema` + `handleColumns` |
+| `schema.types.ts`          | 公開 API の型定義                                                                    |
+| `schema.types.internal.ts` | `Conditions` / `BuildSchema` / `BuildRefine` / `NoUnknownKeys`                       |
+| `utils.ts`                 | `isColumnType` / `isWithEnum` / `isPgEnum` + ユーティリティ型                        |
+| `index.ts`                 | re-export                                                                            |
 
 `constants.ts` は4パッケージで **完全同一** のファイルである（`drizzle-zod/src/constants.ts`, `drizzle-typebox/src/constants.ts` 等、全21行が一致）。`utils.ts` の `isColumnType` / `isWithEnum` / `isPgEnum` も実装が同一であり、型定義部分のみがライブラリごとに異なる。
 
@@ -40,22 +40,24 @@ drizzle-orm は drizzle-zod / drizzle-typebox / drizzle-valibot / drizzle-arktyp
 ```typescript
 // drizzle-zod/src/schema.ts:76-92
 const selectConditions: Conditions = {
-  never: () => false,              // 除外カラムなし
-  optional: () => false,           // 全フィールド必須
-  nullable: (column) => !column.notNull,  // NOT NULL でなければ nullable
+  never: () => false, // 除外カラムなし
+  optional: () => false, // 全フィールド必須
+  nullable: (column) => !column.notNull, // NOT NULL でなければ nullable
 };
 
 const insertConditions: Conditions = {
-  never: (column) => column?.generated?.type === 'always'
-    || column?.generatedIdentity?.type === 'always',  // 自動生成カラムを除外
+  never: (column) =>
+    column?.generated?.type === "always"
+    || column?.generatedIdentity?.type === "always", // 自動生成カラムを除外
   optional: (column) => !column.notNull || (column.notNull && column.hasDefault),
   nullable: (column) => !column.notNull,
 };
 
 const updateConditions: Conditions = {
-  never: (column) => column?.generated?.type === 'always'
-    || column?.generatedIdentity?.type === 'always',
-  optional: () => true,            // 全フィールドオプショナル
+  never: (column) =>
+    column?.generated?.type === "always"
+    || column?.generatedIdentity?.type === "always",
+  optional: () => true, // 全フィールドオプショナル
   nullable: (column) => !column.notNull,
 };
 ```
@@ -108,13 +110,13 @@ if (conditions.optional(column)) {
 // drizzle-zod/src/schema.ts:36-44
 const refinement = refinements[key];
 // モード1: スキーマ直接差し替え（refinement が関数でないスキーマオブジェクト）
-if (refinement !== undefined && typeof refinement !== 'function') {
+if (refinement !== undefined && typeof refinement !== "function") {
   columnSchemas[key] = refinement;
   continue;
 }
 // モード2: 既存スキーマの拡張（refinement が関数）
 const schema = column ? columnToSchema(column, factory) : z.any();
-const refined = typeof refinement === 'function' ? refinement(schema) : schema;
+const refined = typeof refinement === "function" ? refinement(schema) : schema;
 ```
 
 ArkType の実装では、ArkType の Type 自体が callable（`expression` プロパティを持つ関数）であるため、判定条件が追加されている:
@@ -123,8 +125,8 @@ ArkType の実装では、ArkType の Type 自体が callable（`expression` プ
 // drizzle-arktype/src/schema.ts:29-35
 if (
   refinement !== undefined
-  && (typeof refinement !== 'function'
-    || (typeof refinement === 'function' && refinement.expression !== undefined))
+  && (typeof refinement !== "function"
+    || (typeof refinement === "function" && refinement.expression !== undefined))
 ) {
   columnSchemas[key] = refinement;
   continue;
@@ -138,8 +140,10 @@ drizzle-zod のみが `createSchemaFactory` でカスタム Zod インスタン�
 ```typescript
 // drizzle-zod/src/schema.ts:121-152
 export function createSchemaFactory<
-  TCoerce extends Partial<Record<'bigint' | 'boolean' | 'date' | 'number' | 'string', true>>
-    | true | undefined,
+  TCoerce extends
+    | Partial<Record<"bigint" | "boolean" | "date" | "number" | "string", true>>
+    | true
+    | undefined,
 >(options?: CreateSchemaFactoryOptions<TCoerce>) {
   // options.zodInstance — カスタム Zod インスタンス注入
   // options.coerce — 型強制の有効化（true で全型、個別指定も可能）
@@ -163,9 +167,9 @@ drizzle-typebox は `typeboxInstance` のみ、drizzle-valibot / drizzle-arktype
 
 ```typescript
 // drizzle-zod/src/column.ts:149-152 — TinyInt の範囲制約
-if (isColumnType<MySqlTinyInt<any> | SingleStoreTinyInt<any>>(column, ['MySqlTinyInt', 'SingleStoreTinyInt'])) {
-  min = unsigned ? 0 : CONSTANTS.INT8_MIN;   // -128
-  max = unsigned ? CONSTANTS.INT8_UNSIGNED_MAX : CONSTANTS.INT8_MAX;  // 255 or 127
+if (isColumnType<MySqlTinyInt<any> | SingleStoreTinyInt<any>>(column, ["MySqlTinyInt", "SingleStoreTinyInt"])) {
+  min = unsigned ? 0 : CONSTANTS.INT8_MIN; // -128
+  max = unsigned ? CONSTANTS.INT8_UNSIGNED_MAX : CONSTANTS.INT8_MAX; // 255 or 127
   integer = true;
 }
 ```
@@ -181,8 +185,7 @@ export type NoUnknownKeys<
   TCompare extends Record<string, any>,
 > = {
   [K in keyof TRefinement]: K extends keyof TCompare
-    ? TRefinement[K] extends Record<string, z.ZodType>
-      ? NoUnknownKeys<TRefinement[K], TCompare[K]>  // ネスト対応
+    ? TRefinement[K] extends Record<string, z.ZodType> ? NoUnknownKeys<TRefinement[K], TCompare[K]> // ネスト対応
     : TRefinement[K]
     : DrizzleTypeError<`Found unknown key in refinement: "${K & string}"`>;
 };
@@ -217,9 +220,9 @@ export type NoUnknownKeys<
 ```typescript
 // drizzle-zod/src/schema.ts:76-92 — 条件を追加するだけで新モード対応可能
 const patchConditions: Conditions = {
-  never: (column) => column?.generated?.type === 'always',
+  never: (column) => column?.generated?.type === "always",
   optional: () => true,
-  nullable: () => false,  // patch では null を許容しない等
+  nullable: () => false, // patch では null を許容しない等
 };
 ```
 
@@ -228,8 +231,8 @@ const patchConditions: Conditions = {
 ```typescript
 // drizzle-zod/tests/pg.test.ts:237-240 — 拡張と差し替えの混在
 const result = createSelectSchema(table, {
-  c2: (schema) => schema.lte(1000),       // 既存スキーマを拡張
-  c3: z.string().transform(Number),        // スキーマ全体を差し替え
+  c2: (schema) => schema.lte(1000), // 既存スキーマを拡張
+  c3: z.string().transform(Number), // スキーマ全体を差し替え
 });
 ```
 

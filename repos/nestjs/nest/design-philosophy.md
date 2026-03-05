@@ -165,10 +165,10 @@ export interface OnModuleInit {
 ```typescript
 // packages/common/constants.ts:1-6
 export const MODULE_METADATA = {
-  IMPORTS: 'imports',
-  PROVIDERS: 'providers',
-  CONTROLLERS: 'controllers',
-  EXPORTS: 'exports',
+  IMPORTS: "imports",
+  PROVIDERS: "providers",
+  CONTROLLERS: "controllers",
+  EXPORTS: "exports",
 };
 ```
 
@@ -176,14 +176,12 @@ export const MODULE_METADATA = {
 
 ```typescript
 // packages/common/decorators/http/request-mapping.decorator.ts:32-39
-const createMappingDecorator =
-  (method: RequestMethod) =>
-  (path?: string | string[]): MethodDecorator => {
-    return RequestMapping({
-      [PATH_METADATA]: path,
-      [METHOD_METADATA]: method,
-    });
-  };
+const createMappingDecorator = (method: RequestMethod) => (path?: string | string[]): MethodDecorator => {
+  return RequestMapping({
+    [PATH_METADATA]: path,
+    [METHOD_METADATA]: method,
+  });
+};
 
 export const Post = createMappingDecorator(RequestMethod.POST);
 export const Get = createMappingDecorator(RequestMethod.GET);
@@ -207,7 +205,9 @@ export function applyDecorators(
         continue;
       }
       (decorator as MethodDecorator | PropertyDecorator)(
-        target, propertyKey!, descriptor!,
+        target,
+        propertyKey!,
+        descriptor!,
       );
     }
   };
@@ -224,15 +224,15 @@ export function applyDecorators(
 // Bad: デコレータ内で副作用を起こす
 function MyDecorator(): ClassDecorator {
   return (target) => {
-    const config = fs.readFileSync('config.json'); // 副作用
-    Reflect.defineMetadata('config', config, target);
+    const config = fs.readFileSync("config.json"); // 副作用
+    Reflect.defineMetadata("config", config, target);
   };
 }
 
 // Better: デコレータはメタデータ格納のみ、解釈はランタイムに委ねる
 function MyDecorator(configKey: string): ClassDecorator {
   return (target) => {
-    Reflect.defineMetadata('configKey', configKey, target);
+    Reflect.defineMetadata("configKey", configKey, target);
   };
 }
 ```

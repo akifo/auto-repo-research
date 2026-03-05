@@ -38,14 +38,12 @@ HTTP メソッドデコレータは `createMappingDecorator` ファクトリで�
 
 ```typescript
 // packages/common/decorators/http/request-mapping.decorator.ts:32-39
-const createMappingDecorator =
-  (method: RequestMethod) =>
-  (path?: string | string[]): MethodDecorator => {
-    return RequestMapping({
-      [PATH_METADATA]: path,
-      [METHOD_METADATA]: method,
-    });
-  };
+const createMappingDecorator = (method: RequestMethod) => (path?: string | string[]): MethodDecorator => {
+  return RequestMapping({
+    [PATH_METADATA]: path,
+    [METHOD_METADATA]: method,
+  });
+};
 
 export const Post = createMappingDecorator(RequestMethod.POST);
 export const Get = createMappingDecorator(RequestMethod.GET);
@@ -60,10 +58,10 @@ NestJS はデコレータ適用済みクラスを実行時に識別するため�
 
 ```typescript
 // packages/common/constants.ts:44-47
-export const INJECTABLE_WATERMARK = '__injectable__';
-export const CONTROLLER_WATERMARK = '__controller__';
-export const CATCH_WATERMARK = '__catch__';
-export const ENTRY_PROVIDER_WATERMARK = '__entryProvider__';
+export const INJECTABLE_WATERMARK = "__injectable__";
+export const CONTROLLER_WATERMARK = "__controller__";
+export const CATCH_WATERMARK = "__catch__";
+export const ENTRY_PROVIDER_WATERMARK = "__entryProvider__";
 ```
 
 ```typescript
@@ -84,15 +82,15 @@ Watermark はブール値のメタデータで、「このクラスが特定の�
 
 ```typescript
 // packages/common/index.ts:9-65
-export * from './decorators';    // デコレータは全公開
-export * from './enums';         // enum は全公開
+export * from "./decorators"; // デコレータは全公開
+export * from "./enums"; // enum は全公開
 export {
   Abstract,
   ArgumentMetadata,
   ArgumentsHost,
   // ... 40 以上の明示的な名前付きエクスポート
   WsMessageHandler,
-} from './interfaces';
+} from "./interfaces";
 ```
 
 decorators や enums は `export *` で全公開する一方、interfaces は個別にピックしている。これにより内部実装用の型が外部に漏れることを防ぎ、公開 API 面を厳密に管理している。
@@ -103,8 +101,9 @@ NestJS のバージョニングは 4 つの戦略（URI, Header, Media Type, Cus
 
 ```typescript
 // packages/common/interfaces/version-options.interface.ts:104-110
-export type VersioningOptions = VersioningCommonOptions &
-  (
+export type VersioningOptions =
+  & VersioningCommonOptions
+  & (
     | HeaderVersioningOptions
     | UriVersioningOptions
     | MediaTypeVersioningOptions
@@ -116,7 +115,7 @@ export type VersioningOptions = VersioningCommonOptions &
 
 ```typescript
 // packages/common/interfaces/version-options.interface.ts:8
-export const VERSION_NEUTRAL = Symbol('VERSION_NEUTRAL');
+export const VERSION_NEUTRAL = Symbol("VERSION_NEUTRAL");
 ```
 
 バージョンはコントローラレベル（`@Controller({ version: '1' })`）とメソッドレベル（`@Version('2')`）の両方で指定でき、メソッドレベルが優先される（`packages/core/router/route-path-factory.ts:83`）。
@@ -192,7 +191,7 @@ const isGuardValid = <T extends Function | Record<string, any>>(guard: T) =>
   guard && (isFunction(guard) || isFunction(guard.canActivate));
 
 if (descriptor) {
-  validateEach(target.constructor, guards, isGuardValid, '@UseGuards', 'guard');
+  validateEach(target.constructor, guards, isGuardValid, "@UseGuards", "guard");
   extendArrayMetadata(GUARDS_METADATA, guards, descriptor.value);
   return descriptor;
 }
@@ -229,7 +228,7 @@ const metadataKeys = [IMPORTS, EXPORTS, CONTROLLERS, PROVIDERS];
 
 export function validateModuleKeys(keys: string[]) {
   const validateKey = (key: string) => {
-    if (metadataKeys.includes(key)) { return; }
+    if (metadataKeys.includes(key)) return;
     throw new Error(INVALID_MODULE_CONFIG_MESSAGE`${key}`);
   };
   keys.forEach(validateKey);
@@ -245,15 +244,15 @@ export function validateModuleKeys(keys: string[]) {
 function Auth(role: string): MethodDecorator {
   return (target, key, descriptor) => {
     const original = descriptor.value;
-    descriptor.value = function (...args) {
-      if (!checkRole(args[0], role)) throw new Error('Forbidden');
+    descriptor.value = function(...args) {
+      if (!checkRole(args[0], role)) throw new Error("Forbidden");
       return original.apply(this, args);
     };
   };
 }
 
 // Better: メタデータを付与し、Guard でロジックを実行（NestJS のアプローチ）
-const Roles = (...roles: string[]) => SetMetadata('roles', roles);
+const Roles = (...roles: string[]) => SetMetadata("roles", roles);
 // Guard 側で Reflector を使ってメタデータを読み取る
 ```
 
@@ -261,15 +260,15 @@ const Roles = (...roles: string[]) => SetMetadata('roles', roles);
 
 ```typescript
 // Bad: 全てを無条件にエクスポート
-export * from './interfaces';
+export * from "./interfaces";
 
 // Better: 公開する型を明示的にピック（NestJS の packages/common/index.ts のアプローチ）
 export {
   ArgumentMetadata,
-  PipeTransform,
   CanActivate,
+  PipeTransform,
   // ... 公開したい型のみを列挙
-} from './interfaces';
+} from "./interfaces";
 ```
 
 ## 導出ルール

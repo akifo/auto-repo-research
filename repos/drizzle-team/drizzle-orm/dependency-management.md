@@ -119,10 +119,10 @@ drizzle-orm の `peerDependencies` には 25 以上のドライバ・ユーテ�
 
 ```typescript
 // drizzle-orm/scripts/build.ts:8-44
-const entries = await glob('src/**/*.ts');
+const entries = await glob("src/**/*.ts");
 pkg.exports = entries.reduce((acc, rawEntry) => {
   const entry = rawEntry.match(/src\/(.*)\.ts/)![1]!;
-  const exportsEntry = entry === 'index' ? '.' : './' + entry.replace(/\/index$/, '');
+  const exportsEntry = entry === "index" ? "." : "./" + entry.replace(/\/index$/, "");
   acc[exportsEntry] = {
     import: { types: `./${entry}.d.ts`, default: `./${entry}.js` },
     require: { types: `./${entry}.d.cts`, default: `./${entry}.cjs` },
@@ -143,10 +143,10 @@ pkg.exports = entries.reduce((acc, rawEntry) => {
 
 ```typescript
 // drizzle-orm/src/entity.ts:1-42
-export const entityKind = Symbol.for('drizzle:entityKind');
+export const entityKind = Symbol.for("drizzle:entityKind");
 
 export function is<T extends DrizzleEntityClass<any>>(value: any, type: T): value is InstanceType<T> {
-  if (!value || typeof value !== 'object') {
+  if (!value || typeof value !== "object") {
     return false;
   }
   if (value instanceof type) { // eslint-disable-line no-instanceof/no-instanceof
@@ -210,14 +210,21 @@ drizzle-kit はほぼ全ての依存を esbuild でバンドルし、`drizzle-or
 ```typescript
 // drizzle-kit/build.ts:7-21
 const driversPackages = [
-  'pg', 'postgres', '@vercel/postgres', '@neondatabase/serverless',
-  '@electric-sql/pglite', 'mysql2', '@planetscale/database',
-  '@libsql/client', 'better-sqlite3', 'bun:sqlite',
+  "pg",
+  "postgres",
+  "@vercel/postgres",
+  "@neondatabase/serverless",
+  "@electric-sql/pglite",
+  "mysql2",
+  "@planetscale/database",
+  "@libsql/client",
+  "better-sqlite3",
+  "bun:sqlite",
 ];
 
 esbuild.buildSync({
   // ...
-  external: ['esbuild', 'drizzle-orm', ...driversPackages],
+  external: ["esbuild", "drizzle-orm", ...driversPackages],
 });
 ```
 

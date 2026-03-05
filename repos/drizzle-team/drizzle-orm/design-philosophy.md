@@ -63,14 +63,14 @@ Drizzle のアーキテクチャは Dialect → Session → Driver の三層に�
 // drizzle-orm/src/sql/sql.ts:478-495
 // sql テンプレートリテラル — SQL と値を分離し、パラメータ化クエリを生成
 export function sql(strings: TemplateStringsArray, ...params: SQLChunk[]): SQL {
-	const queryChunks: SQLChunk[] = [];
-	if (params.length > 0 || (strings.length > 0 && strings[0] !== '')) {
-		queryChunks.push(new StringChunk(strings[0]!));
-	}
-	for (const [paramIndex, param] of params.entries()) {
-		queryChunks.push(param, new StringChunk(strings[paramIndex + 1]!));
-	}
-	return new SQL(queryChunks);
+  const queryChunks: SQLChunk[] = [];
+  if (params.length > 0 || (strings.length > 0 && strings[0] !== "")) {
+    queryChunks.push(new StringChunk(strings[0]!));
+  }
+  for (const [paramIndex, param] of params.entries()) {
+    queryChunks.push(param, new StringChunk(strings[paramIndex + 1]!));
+  }
+  return new SQL(queryChunks);
 }
 ```
 
@@ -78,46 +78,46 @@ export function sql(strings: TemplateStringsArray, ...params: SQLChunk[]): SQL {
 // drizzle-orm/src/entity.ts:12-42
 // entityKind パターン — instanceof に頼らず、シンボルベースで型判別
 export function is<T extends DrizzleEntityClass<any>>(value: any, type: T): value is InstanceType<T> {
-	if (!value || typeof value !== 'object') {
-		return false;
-	}
-	if (value instanceof type) { // eslint-disable-line no-instanceof/no-instanceof
-		return true;
-	}
-	if (!Object.prototype.hasOwnProperty.call(type, entityKind)) {
-		throw new Error(
-			`Class "${type.name ?? '<unknown>'}" doesn't look like a Drizzle entity.`,
-		);
-	}
-	let cls = Object.getPrototypeOf(value).constructor;
-	if (cls) {
-		while (cls) {
-			if (entityKind in cls && cls[entityKind] === type[entityKind]) {
-				return true;
-			}
-			cls = Object.getPrototypeOf(cls);
-		}
-	}
-	return false;
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  if (value instanceof type) { // eslint-disable-line no-instanceof/no-instanceof
+    return true;
+  }
+  if (!Object.prototype.hasOwnProperty.call(type, entityKind)) {
+    throw new Error(
+      `Class "${type.name ?? "<unknown>"}" doesn't look like a Drizzle entity.`,
+    );
+  }
+  let cls = Object.getPrototypeOf(value).constructor;
+  if (cls) {
+    while (cls) {
+      if (entityKind in cls && cls[entityKind] === type[entityKind]) {
+        return true;
+      }
+      cls = Object.getPrototypeOf(cls);
+    }
+  }
+  return false;
 }
 ```
 
 ```typescript
 // drizzle-orm/src/pg-core/columns/integer.ts:34-47
 // カラム型 — getSQLType() で SQL 型名を返し、mapFromDriverValue でドライバー値を変換
-export class PgInteger<T extends ColumnBaseConfig<'number', 'PgInteger'>> extends PgColumn<T> {
-	static override readonly [entityKind]: string = 'PgInteger';
+export class PgInteger<T extends ColumnBaseConfig<"number", "PgInteger">> extends PgColumn<T> {
+  static override readonly [entityKind]: string = "PgInteger";
 
-	getSQLType(): string {
-		return 'integer';
-	}
+  getSQLType(): string {
+    return "integer";
+  }
 
-	override mapFromDriverValue(value: number | string): number {
-		if (typeof value === 'string') {
-			return Number.parseInt(value);
-		}
-		return value;
-	}
+  override mapFromDriverValue(value: number | string): number {
+    if (typeof value === "string") {
+      return Number.parseInt(value);
+    }
+    return value;
+  }
 }
 ```
 
@@ -125,7 +125,7 @@ export class PgInteger<T extends ColumnBaseConfig<'number', 'PgInteger'>> extend
 // drizzle-orm/src/utils.ts:174-176
 // 型レベルのエラーメッセージ — コンパイル時にユーザーに誤りを通知
 export interface DrizzleTypeError<T extends string> {
-	$drizzleTypeError: T;
+  $drizzleTypeError: T;
 }
 ```
 
@@ -133,17 +133,17 @@ export interface DrizzleTypeError<T extends string> {
 // drizzle-orm/src/query-promise.ts:3-35
 // QueryPromise — await 可能なクエリビルダー（Promise インターフェースを実装）
 export abstract class QueryPromise<T> implements Promise<T> {
-	static readonly [entityKind]: string = 'QueryPromise';
-	[Symbol.toStringTag] = 'QueryPromise';
+  static readonly [entityKind]: string = "QueryPromise";
+  [Symbol.toStringTag] = "QueryPromise";
 
-	then<TResult1 = T, TResult2 = never>(
-		onFulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null,
-		onRejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null,
-	): Promise<TResult1 | TResult2> {
-		return this.execute().then(onFulfilled, onRejected);
-	}
+  then<TResult1 = T, TResult2 = never>(
+    onFulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null,
+    onRejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null,
+  ): Promise<TResult1 | TResult2> {
+    return this.execute().then(onFulfilled, onRejected);
+  }
 
-	abstract execute(): Promise<T>;
+  abstract execute(): Promise<T>;
 }
 ```
 
@@ -169,12 +169,12 @@ export abstract class QueryPromise<T> implements Promise<T> {
 
 ## Good Patterns
 
-- **Tagged Template Literal による SQL インジェクション防止と型安全の両立**: `sql` テンプレートリテラルは文字列部分とパラメータを構造的に分離する。`sql\`SELECT * FROM ${users} WHERE ${users.id} = ${userId}\`` は `SELECT * FROM "users" WHERE "users"."id" = $1` とパラメータ `[userId]` に変換される。SQL を直接書く自由度を保ちつつ、パラメータは自動的にプレースホルダーに置換される。
+- **Tagged Template Literal による SQL インジェクション防止と型安全の両立**: `sql` テンプレートリテラルは文字列部分とパラメータを構造的に分離する。`sql\`SELECT * FROM ${users} WHERE ${users.id} = ${userId}\``は`SELECT * FROM "users" WHERE "users"."id" = $1`とパラメータ`[userId]` に変換される。SQL を直接書く自由度を保ちつつ、パラメータは自動的にプレースホルダーに置換される。
 
 ```typescript
 // drizzle-orm/src/sql/expressions/conditions.ts:62-63
 export const eq: BinaryOperator = (left: SQLWrapper, right: unknown): SQL => {
-	return sql`${left} = ${bindIfParam(right, left)}`;
+  return sql`${left} = ${bindIfParam(right, left)}`;
 };
 ```
 

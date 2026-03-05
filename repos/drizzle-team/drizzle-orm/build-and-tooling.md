@@ -68,19 +68,19 @@ CI の `attw` ジョブが全 8 パッケージに対して `bunx attw package.t
 ```typescript
 // drizzle-orm/scripts/build.ts:8-44
 // exports map 自動生成 — src 配下の全 .ts ファイルから導出
-const entries = await glob('src/**/*.ts');
+const entries = await glob("src/**/*.ts");
 
 pkg.exports = entries.reduce<
   Record<string, {
-    import: { types?: string; default: string };
-    require: { types: string; default: string };
+    import: { types?: string; default: string; };
+    require: { types: string; default: string; };
     default: string;
     types: string;
   }>
 >(
   (acc, rawEntry) => {
     const entry = rawEntry.match(/src\/(.*)\.ts/)![1]!;
-    const exportsEntry = entry === 'index' ? '.' : './' + entry.replace(/\/index$/, '');
+    const exportsEntry = entry === "index" ? "." : "./" + entry.replace(/\/index$/, "");
     const importEntry = `./${entry}.js`;
     const requireEntry = `./${entry}.cjs`;
     acc[exportsEntry] = {
@@ -104,23 +104,23 @@ pkg.exports = entries.reduce<
 ```typescript
 // drizzle-orm/scripts/fix-imports.ts:27-66
 // CJS ファイルのインポートパスを AST レベルで .cjs に書き換え
-const cjsFiles = await glob('dist.new/**/*.{cjs,d.cts}');
+const cjsFiles = await glob("dist.new/**/*.{cjs,d.cts}");
 
 await Promise.all(cjsFiles.map(async (file) => {
-  const code = parse(await fs.readFile(file, 'utf8'), { parser });
+  const code = parse(await fs.readFile(file, "utf8"), { parser });
 
   visit(code, {
     visitImportDeclaration(path) {
-      path.value.source.value = fixImportPath(path.value.source.value, file, '.cjs');
+      path.value.source.value = fixImportPath(path.value.source.value, file, ".cjs");
       this.traverse(path);
     },
     visitExportAllDeclaration(path) {
-      path.value.source.value = fixImportPath(path.value.source.value, file, '.cjs');
+      path.value.source.value = fixImportPath(path.value.source.value, file, ".cjs");
       this.traverse(path);
     },
     visitCallExpression(path) {
-      if (path.value.callee.type === 'Identifier' && path.value.callee.name === 'require') {
-        path.value.arguments[0].value = fixImportPath(path.value.arguments[0].value, file, '.cjs');
+      if (path.value.callee.type === "Identifier" && path.value.callee.name === "require") {
+        path.value.arguments[0].value = fixImportPath(path.value.arguments[0].value, file, ".cjs");
       }
       this.traverse(path);
     },
@@ -134,50 +134,50 @@ await Promise.all(cjsFiles.map(async (file) => {
 ```typescript
 // drizzle-orm/tsup.config.ts:1-19
 // tsup 設定 — バンドルなし・分割なしでファイル単位トランスパイル
-import { globSync } from 'glob';
-import { defineConfig } from 'tsup';
+import { globSync } from "glob";
+import { defineConfig } from "tsup";
 
-const entries = globSync('src/**/*.ts');
+const entries = globSync("src/**/*.ts");
 
 export default defineConfig({
   entry: entries,
-  outDir: 'dist.new',
-  format: ['cjs', 'esm'],
+  outDir: "dist.new",
+  format: ["cjs", "esm"],
   bundle: false,
   splitting: false,
   sourcemap: true,
   outExtension({ format }) {
     return {
-      js: format === 'cjs' ? '.cjs' : '.js',
+      js: format === "cjs" ? ".cjs" : ".js",
     };
   },
-  tsconfig: 'tsconfig.build.json',
+  tsconfig: "tsconfig.build.json",
 });
 ```
 
 ```typescript
 // drizzle-orm/scripts/build.ts:49-76
 // 並列ビルド + アトミックスワップ
-await fs.remove('dist.new');
+await fs.remove("dist.new");
 
 await Promise.all([
   (async () => {
-    await $`tsup`.stdio('pipe', 'pipe', 'pipe');
+    await $`tsup`.stdio("pipe", "pipe", "pipe");
   })(),
   (async () => {
-    await $`tsc -p tsconfig.dts.json`.stdio('pipe', 'pipe', 'pipe');
-    await cpy('dist-dts/**/*.d.ts', 'dist.new', {
-      rename: (basename) => basename.replace(/\.d\.ts$/, '.d.cts'),
+    await $`tsc -p tsconfig.dts.json`.stdio("pipe", "pipe", "pipe");
+    await cpy("dist-dts/**/*.d.ts", "dist.new", {
+      rename: (basename) => basename.replace(/\.d\.ts$/, ".d.cts"),
     });
-    await cpy('dist-dts/**/*.d.ts', 'dist.new', {
-      rename: (basename) => basename.replace(/\.d\.ts$/, '.d.ts'),
+    await cpy("dist-dts/**/*.d.ts", "dist.new", {
+      rename: (basename) => basename.replace(/\.d\.ts$/, ".d.ts"),
     });
   })(),
 ]);
 
 // ...
-await fs.remove('dist');
-await fs.rename('dist.new', 'dist');
+await fs.remove("dist");
+await fs.rename("dist.new", "dist");
 ```
 
 ```yaml
@@ -222,12 +222,12 @@ rules:
 // drizzle-orm/scripts/build.ts:51-63
 await Promise.all([
   (async () => {
-    await $`tsup`.stdio('pipe', 'pipe', 'pipe');
+    await $`tsup`.stdio("pipe", "pipe", "pipe");
   })(),
   (async () => {
-    await $`tsc -p tsconfig.dts.json`.stdio('pipe', 'pipe', 'pipe');
-    await cpy('dist-dts/**/*.d.ts', 'dist.new', { /* .d.cts コピー */ });
-    await cpy('dist-dts/**/*.d.ts', 'dist.new', { /* .d.ts コピー */ });
+    await $`tsc -p tsconfig.dts.json`.stdio("pipe", "pipe", "pipe");
+    await cpy("dist-dts/**/*.d.ts", "dist.new", {/* .d.cts コピー */});
+    await cpy("dist-dts/**/*.d.ts", "dist.new", {/* .d.ts コピー */});
   })(),
 ]);
 ```
@@ -267,8 +267,8 @@ export default defineConfig({
 
 // Better: tsc で型生成を分離し並列実行
 await Promise.all([
-  $`tsup`,                    // JS のみ
-  $`tsc -p tsconfig.dts.json` // 型定義のみ
+  $`tsup`, // JS のみ
+  $`tsc -p tsconfig.dts.json`, // 型定義のみ
 ]);
 ```
 
@@ -280,10 +280,10 @@ content = content.replace(/from '\.\/(.+)\.js'/g, "from './$1.cjs'");
 
 // Better: AST 走査で全ノード型を網羅
 visit(code, {
-  visitImportDeclaration(path) { /* ... */ },
-  visitExportAllDeclaration(path) { /* ... */ },
-  visitCallExpression(path) { /* require() も捕捉 */ },
-  visitAwaitExpression(path) { /* 動的 import も捕捉 */ },
+  visitImportDeclaration(path) {/* ... */},
+  visitExportAllDeclaration(path) {/* ... */},
+  visitCallExpression(path) {/* require() も捕捉 */},
+  visitAwaitExpression(path) {/* 動的 import も捕捉 */},
 });
 ```
 

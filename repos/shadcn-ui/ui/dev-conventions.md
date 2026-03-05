@@ -38,15 +38,15 @@ import 順序は7つのグループに分かれている。これはルートの
 ```javascript
 // prettier.config.cjs:9-29
 importOrder: [
-  "^(react/(.*)$)|^(react$)",        // 1. React
-  "^(next/(.*)$)|^(next$)",          // 2. Next.js
-  "<THIRD_PARTY_MODULES>",            // 3. サードパーティ
-  "",                                  // 空行
-  "^@workspace/(.*)$",                // 4. ワークスペース内
-  "",                                  // 空行
+  "^(react/(.*)$)|^(react$)", // 1. React
+  "^(next/(.*)$)|^(next$)", // 2. Next.js
+  "<THIRD_PARTY_MODULES>", // 3. サードパーティ
+  "", // 空行
+  "^@workspace/(.*)$", // 4. ワークスペース内
+  "", // 空行
   "^types$",
-  "^@/types/(.*)$",                   // 5. 型
-  "^@/config/(.*)$",                  // 6. 設定 → ライブラリ → フック → コンポーネント
+  "^@/types/(.*)$", // 5. 型
+  "^@/config/(.*)$", // 6. 設定 → ライブラリ → フック → コンポーネント
   "^@/lib/(.*)$",
   "^@/hooks/(.*)$",
   "^@/components/ui/(.*)$",
@@ -54,25 +54,25 @@ importOrder: [
   "^@/registry/(.*)$",
   "^@/styles/(.*)$",
   "^@/app/(.*)$",
-  "",                                  // 空行
-  "^[./]",                            // 7. 相対パス
-]
+  "", // 空行
+  "^[./]", // 7. 相対パス
+];
 ```
 
 実際のコードで一貫して適用されていることが確認できる。
 
 ```typescript
 // apps/v4/app/(create)/create/page.tsx:1-21
-import { type Metadata } from "next"          // Next.js
-import Link from "next/link"                   // Next.js
-import { ArrowLeftIcon } from "lucide-react"   // サードパーティ
-import type { SearchParams } from "nuqs/server" // サードパーティ
+import { ArrowLeftIcon } from "lucide-react"; // サードパーティ
+import { type Metadata } from "next"; // Next.js
+import Link from "next/link"; // Next.js
+import type { SearchParams } from "nuqs/server"; // サードパーティ
 
-import { siteConfig } from "@/lib/config"      // @/lib
-import { source } from "@/lib/source"          // @/lib
-import { absoluteUrl } from "@/lib/utils"      // @/lib
-import { Icons } from "@/components/icons"     // @/components
-import { MainNav } from "@/components/main-nav" // @/components
+import { Icons } from "@/components/icons"; // @/components
+import { MainNav } from "@/components/main-nav"; // @/components
+import { siteConfig } from "@/lib/config"; // @/lib
+import { source } from "@/lib/source"; // @/lib
+import { absoluteUrl } from "@/lib/utils"; // @/lib
 ```
 
 ### ESLint の設計方針
@@ -160,7 +160,7 @@ importOrder: [
   "^@/components/(.*)$",
   "",
   "^[./]",
-]
+];
 ```
 
 - **ラベルトリガーのベータリリース**: PR に `autorelease` ラベルを付けるだけでベータ版が publish され、完了後に PR にインストールコマンドがコメントされる。レビュアーがすぐにテストできる仕組みになっている。
@@ -174,8 +174,8 @@ pkg.version = "0.0.0-beta." + stdout.trim()  # git hash ベース
 
 ```javascript
 // .github/changeset-version.js:11-12
-execSync("npx changeset version", { stdio: "inherit" })
-execSync("pnpm install --lockfile-only", { stdio: "inherit" })
+execSync("npx changeset version", { stdio: "inherit" });
+execSync("pnpm install --lockfile-only", { stdio: "inherit" });
 ```
 
 ## Anti-Patterns / 注意点

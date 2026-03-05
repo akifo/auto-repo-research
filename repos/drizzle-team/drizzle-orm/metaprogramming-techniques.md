@@ -32,18 +32,23 @@ introspect コマンドは以下の 3 フェーズを経る。
 ```typescript
 // drizzle-kit/src/cli/commands/introspect.ts:97-116
 const res = await renderWithTask(
-    progress,
-    fromPostgresDatabase(
-        db, filter, schemasFilter, entities,
-        (stage, count, status) => { progress.update(stage, count, status); },
-    ),
+  progress,
+  fromPostgresDatabase(
+    db,
+    filter,
+    schemasFilter,
+    entities,
+    (stage, count, status) => {
+      progress.update(stage, count, status);
+    },
+  ),
 );
 
-const schema = { id: originUUID, prevId: '', ...res } as PgSchema;
+const schema = { id: originUUID, prevId: "", ...res } as PgSchema;
 const ts = postgresSchemaToTypeScript(schema, casing);
 const relationsTs = relationsToTypeScript(schema, casing);
 
-const schemaFile = join(out, 'schema.ts');
+const schemaFile = join(out, "schema.ts");
 writeFileSync(schemaFile, ts.file);
 ```
 
@@ -54,22 +59,22 @@ DB メタデータの中間表現は Zod スキーマとして定義され、型
 ```typescript
 // drizzle-kit/src/serializer/pgSchema.ts:175-192
 const column = object({
-    name: string(),
-    type: string(),
-    typeSchema: string().optional(),
-    primaryKey: boolean(),
-    notNull: boolean(),
-    default: any().optional(),
-    isUnique: any().optional(),
-    uniqueName: string().optional(),
-    nullsNotDistinct: boolean().optional(),
-    generated: object({
-        type: literal('stored'),
-        as: string(),
-    }).optional(),
-    identity: sequenceSchema
-        .merge(object({ type: enumType(['always', 'byDefault']) }))
-        .optional(),
+  name: string(),
+  type: string(),
+  typeSchema: string().optional(),
+  primaryKey: boolean(),
+  notNull: boolean(),
+  default: any().optional(),
+  isUnique: any().optional(),
+  uniqueName: string().optional(),
+  nullsNotDistinct: boolean().optional(),
+  generated: object({
+    type: literal("stored"),
+    as: string(),
+  }).optional(),
+  identity: sequenceSchema
+    .merge(object({ type: enumType(["always", "byDefault"]) }))
+    .optional(),
 }).strict();
 ```
 
@@ -100,9 +105,9 @@ export const pgSchema = pgSchemaInternal.merge(schemaHash);
 ```typescript
 // drizzle-kit/src/serializer/pgSchema.ts:545-548
 export const backwardCompatiblePgSchema = union([
-    pgSchemaV5,
-    pgSchemaV6,
-    pgSchema,
+  pgSchemaV5,
+  pgSchemaV6,
+  pgSchema,
 ]);
 ```
 
@@ -115,9 +120,12 @@ export const backwardCompatiblePgSchema = union([
 ```typescript
 // drizzle-kit/src/serializer/pgSerializer.ts:993-1010
 const allTables = await db.query<{
-    table_schema: string; table_name: string; type: string; rls_enabled: boolean
+  table_schema: string;
+  table_name: string;
+  type: string;
+  rls_enabled: boolean;
 }>(
-    `SELECT
+  `SELECT
     n.nspname AS table_schema,
     c.relname AS table_name,
     CASE
@@ -129,7 +137,7 @@ const allTables = await db.query<{
 FROM pg_catalog.pg_class c
 JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
 WHERE c.relkind IN ('r', 'v', 'm')
-    ${where === '' ? '' : ` AND ${where}`};`,
+    ${where === "" ? "" : ` AND ${where}`};`,
 );
 ```
 
@@ -141,15 +149,13 @@ WHERE c.relkind IN ('r', 'v', 'm')
 
 ```typescript
 // drizzle-kit/src/introspect-pg.ts:858-870
-if (lowered.startsWith('bigserial')) {
-    return `${withCasing(name, casing)}: bigserial(${
-        dbColumnName({ name, casing, withMode: true })
-    }{ mode: "bigint" })`;
+if (lowered.startsWith("bigserial")) {
+  return `${withCasing(name, casing)}: bigserial(${dbColumnName({ name, casing, withMode: true })}{ mode: "bigint" })`;
 }
 
-if (lowered.startsWith('integer')) {
-    let out = `${withCasing(name, casing)}: integer(${dbColumnName({ name, casing })})`;
-    return out;
+if (lowered.startsWith("integer")) {
+  let out = `${withCasing(name, casing)}: integer(${dbColumnName({ name, casing })})`;
+  return out;
 }
 ```
 
@@ -157,11 +163,9 @@ import 文の生成では、使用されるカラム型を `Set` で追跡し、
 
 ```typescript
 // drizzle-kit/src/introspect-pg.ts:604-611
-const uniquePgImports = ['pgTable', ...new Set(imports.pg)];
+const uniquePgImports = ["pgTable", ...new Set(imports.pg)];
 
-const importsTs = `import { ${
-    uniquePgImports.join(', ')
-} } from "drizzle-orm/pg-core"
+const importsTs = `import { ${uniquePgImports.join(", ")} } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"\n\n`;
 ```
 
@@ -172,11 +176,11 @@ DB 型名と drizzle-orm の API 関数名が異なるケースを `importsPatch
 ```typescript
 // drizzle-kit/src/introspect-pg.ts:151-157
 const importsPatch = {
-    'double precision': 'doublePrecision',
-    'timestamp without time zone': 'timestamp',
-    'timestamp with time zone': 'timestamp',
-    'time without time zone': 'time',
-    'time with time zone': 'time',
+  "double precision": "doublePrecision",
+  "timestamp without time zone": "timestamp",
+  "timestamp with time zone": "timestamp",
+  "time without time zone": "time",
+  "time with time zone": "time",
 } as Record<string, string>;
 ```
 
@@ -186,29 +190,29 @@ const importsPatch = {
 
 ```typescript
 // drizzle-orm/scripts/fix-imports.ts:29-65
-const cjsFiles = await glob('dist.new/**/*.{cjs,d.cts}');
+const cjsFiles = await glob("dist.new/**/*.{cjs,d.cts}");
 
 await Promise.all(cjsFiles.map(async (file) => {
-    const code = parse(await fs.readFile(file, 'utf8'), { parser });
+  const code = parse(await fs.readFile(file, "utf8"), { parser });
 
-    visit(code, {
-        visitImportDeclaration(path) {
-            path.value.source.value = fixImportPath(path.value.source.value, file, '.cjs');
-            this.traverse(path);
-        },
-        visitExportAllDeclaration(path) {
-            path.value.source.value = fixImportPath(path.value.source.value, file, '.cjs');
-            this.traverse(path);
-        },
-        visitCallExpression(path) {
-            if (path.value.callee.type === 'Identifier' && path.value.callee.name === 'require') {
-                path.value.arguments[0].value = fixImportPath(path.value.arguments[0].value, file, '.cjs');
-            }
-            this.traverse(path);
-        },
-    });
+  visit(code, {
+    visitImportDeclaration(path) {
+      path.value.source.value = fixImportPath(path.value.source.value, file, ".cjs");
+      this.traverse(path);
+    },
+    visitExportAllDeclaration(path) {
+      path.value.source.value = fixImportPath(path.value.source.value, file, ".cjs");
+      this.traverse(path);
+    },
+    visitCallExpression(path) {
+      if (path.value.callee.type === "Identifier" && path.value.callee.name === "require") {
+        path.value.arguments[0].value = fixImportPath(path.value.arguments[0].value, file, ".cjs");
+      }
+      this.traverse(path);
+    },
+  });
 
-    await fs.writeFile(file, print(code).code);
+  await fs.writeFile(file, print(code).code);
 }));
 ```
 
@@ -249,20 +253,20 @@ pkg.exports = entries.reduce<Record<string, { ... }>>(
 ```typescript
 // drizzle-kit/src/global.ts:4-6
 export function assertUnreachable(x: never | undefined): never {
-    throw new Error("Didn't expect to get here");
+  throw new Error("Didn't expect to get here");
 }
 ```
 
 ```typescript
 // drizzle-kit/src/introspect-pg.ts:168-177
 const withCasing = (value: string, casing: Casing) => {
-    if (casing === 'preserve') {
-        return escapeColumnKey(value);
-    }
-    if (casing === 'camel') {
-        return escapeColumnKey(value.camelCase());
-    }
-    assertUnreachable(casing);
+  if (casing === "preserve") {
+    return escapeColumnKey(value);
+  }
+  if (casing === "camel") {
+    return escapeColumnKey(value.camelCase());
+  }
+  assertUnreachable(casing);
 };
 ```
 
@@ -287,16 +291,16 @@ const withCasing = (value: string, casing: Casing) => {
 ```typescript
 // drizzle-kit/src/serializer/pgSchema.ts:330-341
 const table = object({
-    name: string(),
-    schema: string(),
-    columns: record(string(), column),
-    indexes: record(string(), index),
-    foreignKeys: record(string(), fk),
-    compositePrimaryKeys: record(string(), compositePK),
-    uniqueConstraints: record(string(), uniqueConstraint).default({}),
-    policies: record(string(), policy).default({}),
-    checkConstraints: record(string(), checkConstraint).default({}),
-    isRLSEnabled: boolean().default(false),
+  name: string(),
+  schema: string(),
+  columns: record(string(), column),
+  indexes: record(string(), index),
+  foreignKeys: record(string(), fk),
+  compositePrimaryKeys: record(string(), compositePK),
+  uniqueConstraints: record(string(), uniqueConstraint).default({}),
+  policies: record(string(), policy).default({}),
+  checkConstraints: record(string(), checkConstraint).default({}),
+  isRLSEnabled: boolean().default(false),
 }).strict();
 ```
 
@@ -305,18 +309,18 @@ const table = object({
 ```typescript
 // drizzle-kit/src/introspect-pg.ts:329-376
 const imports = Object.values(schema.tables).reduce(
-    (res, it) => {
-        const columnImports = Object.values(it.columns)
-            .map((col) => {
-                let patched: string = (importsPatch[col.type] || col.type).replace('[]', '');
-                // ... normalization ...
-                return patched;
-            })
-            .filter((type) => pgImportsList.has(type));
-        res.pg.push(...columnImports);
-        return res;
-    },
-    { pg: [] as string[] },
+  (res, it) => {
+    const columnImports = Object.values(it.columns)
+      .map((col) => {
+        let patched: string = (importsPatch[col.type] || col.type).replace("[]", "");
+        // ... normalization ...
+        return patched;
+      })
+      .filter((type) => pgImportsList.has(type));
+    res.pg.push(...columnImports);
+    return res;
+  },
+  { pg: [] as string[] },
 );
 ```
 
@@ -339,10 +343,10 @@ progressCallback?: (
 // Bad: 同一ロジックが 5 ファイルにコピーされている
 // drizzle-kit/src/introspect-pg.ts:161-166
 const escapeColumnKey = (value: string) => {
-    if (/^(?![a-zA-Z_$][a-zA-Z0-9_$]*$).+$/.test(value)) {
-        return `"${value}"`;
-    }
-    return value;
+  if (/^(?![a-zA-Z_$][a-zA-Z0-9_$]*$).+$/.test(value)) {
+    return `"${value}"`;
+  }
+  return value;
 };
 
 // drizzle-kit/src/introspect-mysql.ts:104-109 (同一コード)
@@ -354,10 +358,10 @@ const escapeColumnKey = (value: string) => {
 // Better: 共通ユーティリティに抽出する
 // shared/codegen-utils.ts
 export const escapeColumnKey = (value: string) => {
-    if (/^(?![a-zA-Z_$][a-zA-Z0-9_$]*$).+$/.test(value)) {
-        return `"${value}"`;
-    }
-    return value;
+  if (/^(?![a-zA-Z_$][a-zA-Z0-9_$]*$).+$/.test(value)) {
+    return `"${value}"`;
+  }
+  return value;
 };
 ```
 
@@ -377,9 +381,9 @@ const column = (...) => {
 ```typescript
 // Better: レジストリパターンで型マッピングを宣言的にする
 const pgTypeMappers: Record<string, (name: string, casing: Casing) => string> = {
-    serial: (name, casing) => `${withCasing(name, casing)}: serial(${dbColumnName({ name, casing })})`,
-    integer: (name, casing) => `${withCasing(name, casing)}: integer(${dbColumnName({ name, casing })})`,
-    // ...
+  serial: (name, casing) => `${withCasing(name, casing)}: serial(${dbColumnName({ name, casing })})`,
+  integer: (name, casing) => `${withCasing(name, casing)}: integer(${dbColumnName({ name, casing })})`,
+  // ...
 };
 ```
 

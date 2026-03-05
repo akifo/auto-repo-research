@@ -5,7 +5,7 @@
 
 ## 概要
 
-Drizzle ORM の SQL テンプレートリテラルシステムは、TypeScript のタグ付きテンプレート（`sql`\`...\``）を使って SQL フラグメントを型安全に合成する仕組みである。SQL 文字列の直接結合を避け、チャンクの再帰的な木構造として SQL を表現することで、パラメータ化・エスケープ・方言差異の吸収を一元化している。式ヘルパー（`eq`, `and`, `or` 等）はすべてこのテンプレートシステムの上に構築されており、DSL 的な使いやすさとロー SQL の柔軟性を両立させている点が注目に値する。
+Drizzle ORM の SQL テンプレートリテラルシステムは、TypeScript のタグ付きテンプレート（`sql`\`...\``）を使って SQL フラグメントを型安全に合成する仕組みである。SQL 文字列の直接結合を避け、チャンクの再帰的な木構造として SQL を表現することで、パラメータ化・エスケープ・方言差異の吸収を一元化している。式ヘルパー（`eq`,`and`,`or` 等）はすべてこのテンプレートシステムの上に構築されており、DSL 的な使いやすさとロー SQL の柔軟性を両立させている点が注目に値する。
 
 ## 背景にある原則
 
@@ -26,15 +26,15 @@ Drizzle ORM の SQL テンプレートリテラルシステムは、TypeScript �
 ```typescript
 // drizzle-orm/src/sql/sql.ts:485-495
 export function sql(strings: TemplateStringsArray, ...params: SQLChunk[]): SQL {
-	const queryChunks: SQLChunk[] = [];
-	if (params.length > 0 || (strings.length > 0 && strings[0] !== '')) {
-		queryChunks.push(new StringChunk(strings[0]!));
-	}
-	for (const [paramIndex, param] of params.entries()) {
-		queryChunks.push(param, new StringChunk(strings[paramIndex + 1]!));
-	}
+  const queryChunks: SQLChunk[] = [];
+  if (params.length > 0 || (strings.length > 0 && strings[0] !== "")) {
+    queryChunks.push(new StringChunk(strings[0]!));
+  }
+  for (const [paramIndex, param] of params.entries()) {
+    queryChunks.push(param, new StringChunk(strings[paramIndex + 1]!));
+  }
 
-	return new SQL(queryChunks);
+  return new SQL(queryChunks);
 }
 ```
 
@@ -45,15 +45,15 @@ export function sql(strings: TemplateStringsArray, ...params: SQLChunk[]): SQL {
 ```typescript
 // drizzle-orm/src/sql/sql.ts:172-174
 if (chunk === undefined) {
-	return { sql: '', params: [] };
+  return { sql: "", params: [] };
 }
 
 // drizzle-orm/src/sql/sql.ts:188-193  — SQL のネスト解決
 if (is(chunk, SQL)) {
-	return this.buildQueryFromSourceParams(chunk.queryChunks, {
-		...config,
-		inlineParams: inlineParams || chunk.shouldInlineParams,
-	});
+  return this.buildQueryFromSourceParams(chunk.queryChunks, {
+    ...config,
+    inlineParams: inlineParams || chunk.shouldInlineParams,
+  });
 }
 ```
 
@@ -75,7 +75,7 @@ if(condition: any | undefined): this | undefined {
 const whereSql = where ? sql` where ${where}` : undefined;
 
 // drizzle-orm/src/pg-core/query-builders/count.ts:22  — .if() パターン
-return sql<number>`(select count(*) from ${source}${sql.raw(' where ').if(filters)}${filters})`;
+return sql<number>`(select count(*) from ${source}${sql.raw(" where ").if(filters)}${filters})`;
 ```
 
 ### sql namespace のユーティリティ群
@@ -101,7 +101,7 @@ export namespace sql {
 ```typescript
 // drizzle-orm/src/sql/expressions/conditions.ts:62-64
 export const eq: BinaryOperator = (left: SQLWrapper, right: unknown): SQL => {
-	return sql`${left} = ${bindIfParam(right, left)}`;
+  return sql`${left} = ${bindIfParam(right, left)}`;
 };
 ```
 
@@ -110,16 +110,16 @@ export const eq: BinaryOperator = (left: SQLWrapper, right: unknown): SQL => {
 ```typescript
 // drizzle-orm/src/sql/expressions/conditions.ts:107-125
 export function and(...unfilteredConditions: (SQLWrapper | undefined)[]): SQL | undefined {
-	const conditions = unfilteredConditions.filter(
-		(c): c is Exclude<typeof c, undefined> => c !== undefined,
-	);
-	if (conditions.length === 0) return undefined;
-	if (conditions.length === 1) return new SQL(conditions);
-	return new SQL([
-		new StringChunk('('),
-		sql.join(conditions, new StringChunk(' and ')),
-		new StringChunk(')'),
-	]);
+  const conditions = unfilteredConditions.filter(
+    (c): c is Exclude<typeof c, undefined> => c !== undefined,
+  );
+  if (conditions.length === 0) return undefined;
+  if (conditions.length === 1) return new SQL(conditions);
+  return new SQL([
+    new StringChunk("("),
+    sql.join(conditions, new StringChunk(" and ")),
+    new StringChunk(")"),
+  ]);
 }
 ```
 
@@ -130,7 +130,7 @@ export function and(...unfilteredConditions: (SQLWrapper | undefined)[]): SQL | 
 ```typescript
 // drizzle-orm/src/sqlite-core/expressions.ts:27-29
 export function rowId(): SQL<number> {
-	return sql<number>`rowid`;
+  return sql<number>`rowid`;
 }
 ```
 
@@ -141,17 +141,17 @@ export function rowId(): SQL<number> {
 ```typescript
 // drizzle-orm/src/entity.ts:12-42
 export function is<T extends DrizzleEntityClass<any>>(value: any, type: T): value is InstanceType<T> {
-	if (!value || typeof value !== 'object') return false;
-	if (value instanceof type) return true;
-	// ...プロトタイプチェーンを辿る
-	let cls = Object.getPrototypeOf(value).constructor;
-	if (cls) {
-		while (cls) {
-			if (entityKind in cls && cls[entityKind] === type[entityKind]) return true;
-			cls = Object.getPrototypeOf(cls);
-		}
-	}
-	return false;
+  if (!value || typeof value !== "object") return false;
+  if (value instanceof type) return true;
+  // ...プロトタイプチェーンを辿る
+  let cls = Object.getPrototypeOf(value).constructor;
+  if (cls) {
+    while (cls) {
+      if (entityKind in cls && cls[entityKind] === type[entityKind]) return true;
+      cls = Object.getPrototypeOf(cls);
+    }
+  }
+  return false;
 }
 ```
 
@@ -178,7 +178,7 @@ constructor(readonly queryChunks: SQLChunk[]) {
 // drizzle-orm/src/pg-core/dialect.ts:440-441
 // 複数の SQL フラグメントを undefined 許容で合成する SELECT 文の最終組み立て
 const finalQuery =
-	sql`${withSql}select${distinctSql} ${selection} from ${tableSql}${joinsSql}${whereSql}${groupBySql}${havingSql}${orderBySql}${limitSql}${offsetSql}${lockingClauseSql}`;
+  sql`${withSql}select${distinctSql} ${selection} from ${tableSql}${joinsSql}${whereSql}${groupBySql}${havingSql}${orderBySql}${limitSql}${offsetSql}${lockingClauseSql}`;
 ```
 
 ```typescript
@@ -186,21 +186,23 @@ const finalQuery =
 // sql.empty() + append で命令的に SQL を組み立てるパターン
 const lockingClauseSql = sql.empty();
 if (lockingClause) {
-	const clauseSql = sql` for ${sql.raw(lockingClause.strength)}`;
-	if (lockingClause.config.of) {
-		clauseSql.append(
-			sql` of ${sql.join(
-				Array.isArray(lockingClause.config.of) ? lockingClause.config.of : [lockingClause.config.of],
-				sql`, `,
-			)}`
-		);
-	}
-	if (lockingClause.config.noWait) {
-		clauseSql.append(sql` nowait`);
-	} else if (lockingClause.config.skipLocked) {
-		clauseSql.append(sql` skip locked`);
-	}
-	lockingClauseSql.append(clauseSql);
+  const clauseSql = sql` for ${sql.raw(lockingClause.strength)}`;
+  if (lockingClause.config.of) {
+    clauseSql.append(
+      sql` of ${
+        sql.join(
+          Array.isArray(lockingClause.config.of) ? lockingClause.config.of : [lockingClause.config.of],
+          sql`, `,
+        )
+      }`,
+    );
+  }
+  if (lockingClause.config.noWait) {
+    clauseSql.append(sql` nowait`);
+  } else if (lockingClause.config.skipLocked) {
+    clauseSql.append(sql` skip locked`);
+  }
+  lockingClauseSql.append(clauseSql);
 }
 ```
 
@@ -208,7 +210,7 @@ if (lockingClause) {
 // drizzle-orm/src/sql/functions/aggregate.ts:19-20
 // mapWith による結果型のデコード指定
 export function count(expression?: SQLWrapper): SQL<number> {
-	return sql`count(${expression || sql.raw('*')})`.mapWith(Number);
+  return sql`count(${expression || sql.raw("*")})`.mapWith(Number);
 }
 ```
 
@@ -216,18 +218,18 @@ export function count(expression?: SQLWrapper): SQL<number> {
 // drizzle-orm/src/sql/expressions/conditions.ts:17-30
 // bindIfParam — プリミティブ値の自動パラメータバインド
 export function bindIfParam(value: unknown, column: SQLWrapper): SQLChunk {
-	if (
-		isDriverValueEncoder(column)
-		&& !isSQLWrapper(value)
-		&& !is(value, Param)
-		&& !is(value, Placeholder)
-		&& !is(value, Column)
-		&& !is(value, Table)
-		&& !is(value, View)
-	) {
-		return new Param(value, column);
-	}
-	return value as SQLChunk;
+  if (
+    isDriverValueEncoder(column)
+    && !isSQLWrapper(value)
+    && !is(value, Param)
+    && !is(value, Placeholder)
+    && !is(value, Column)
+    && !is(value, Table)
+    && !is(value, View)
+  ) {
+    return new Param(value, column);
+  }
+  return value as SQLChunk;
 }
 ```
 
@@ -253,7 +255,7 @@ export function bindIfParam(value: unknown, column: SQLWrapper): SQLChunk {
 
 ## Good Patterns
 
-- **undefined スキップによる宣言的な条件付き SQL 合成**: テンプレート内で `undefined` が自動スキップされることを利用し、`const whereSql = where ? sql\` where \${where}\` : undefined` のように条件付きフラグメントを変数として用意し、最終テンプレートに `${whereSql}` で埋め込む。命令的な文字列結合と比べて、最終形の構造が一目で見える。
+- **undefined スキップによる宣言的な条件付き SQL 合成**: テンプレート内で `undefined` が自動スキップされることを利用し、`const whereSql = where ? sql\` where \${where}\` : undefined`のように条件付きフラグメントを変数として用意し、最終テンプレートに`${whereSql}` で埋め込む。命令的な文字列結合と比べて、最終形の構造が一目で見える。
 
 ```typescript
 // drizzle-orm/src/pg-core/dialect.ts:140-149
@@ -272,23 +274,23 @@ buildDeleteQuery({ table, where, returning, withList }: PgDeleteConfig): SQL {
 ```typescript
 // ユーザーコードでの利用例
 const conditions = and(
-	eq(users.role, 'admin'),
-	searchTerm ? like(users.name, `%${searchTerm}%`) : undefined,
-	minAge ? gte(users.age, minAge) : undefined,
+  eq(users.role, "admin"),
+  searchTerm ? like(users.name, `%${searchTerm}%`) : undefined,
+  minAge ? gte(users.age, minAge) : undefined,
 );
 // conditions は undefined | SQL
 ```
 
-- **sql namespace パターン**: 関数と namespace の二重定義により、`sql\`...\`` と `sql.join()` を同一のインポートで使える。ユーザーの認知負荷を下げつつ、名前空間の汚染を防いでいる。
+- **sql namespace パターン**: 関数と namespace の二重定義により、`sql\`...\``と`sql.join()` を同一のインポートで使える。ユーザーの認知負荷を下げつつ、名前空間の汚染を防いでいる。
 
 ```typescript
-import { sql } from 'drizzle-orm';
+import { sql } from "drizzle-orm";
 // タグ付きテンプレートとして
 sql`SELECT * FROM ${users}`;
 // namespace ユーティリティとして
 sql.join([sql`a`, sql`b`], sql`, `);
-sql.raw('SELECT 1');
-sql.identifier('table-name');
+sql.raw("SELECT 1");
+sql.identifier("table-name");
 ```
 
 - **bindIfParam による透過的パラメータ化**: 式ヘルパーが `bindIfParam` を通して値を受け取ることで、プリミティブ値も SQL 式も同じ API で渡せる。カラムのエンコーダ情報を使って適切な型変換も自動適用される。
@@ -318,11 +320,11 @@ const whereSql = where ? sql` WHERE ${where}` : undefined;
 const query = sql`SELECT * FROM users${whereSql}`;
 ```
 
-- **型引数なしの sql テンプレート**: `sql\`...\`` はデフォルトで `SQL<unknown>` を返す。SELECT の結果型を活かすには `sql<number>\`count(*)\`` のように型引数を付けるか、`.mapWith()` でデコーダを指定する必要がある。
+- **型引数なしの sql テンプレート**: `sql\`...\``はデフォルトで`SQL<unknown>`を返す。SELECT の結果型を活かすには`sql<number>\`count(*)\``のように型引数を付けるか、`.mapWith()` でデコーダを指定する必要がある。
 
 ```typescript
 // Bad: 型情報なし
-const result = sql`count(*)`;  // SQL<unknown>
+const result = sql`count(*)`; // SQL<unknown>
 
 // Better: 型引数またはmapWithで型を指定
 const result = sql<number>`count(*)`.mapWith(Number);

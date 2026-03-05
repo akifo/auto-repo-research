@@ -38,6 +38,7 @@ NestJS は Lerna によるロックステップバージョニングのモノレ
 パッケージ間の依存は peerDependencies で宣言し、ビルド時は TypeScript Project References + paths で解決する明確な二層構造になっている。
 
 **ランタイム依存（package.json）**:
+
 - `@nestjs/common` は最下層で peer を持たない（rxjs, reflect-metadata のみ）
 - `@nestjs/core` は `@nestjs/common` を peer + devDependencies で参照
 - `@nestjs/microservices` は `@nestjs/common` + `@nestjs/core` を peer で参照
@@ -71,7 +72,7 @@ NestJS は Lerna によるロックステップバージョニングのモノレ
 const MISSING_REQUIRED_DEPENDENCY = (name: string, reason: string) =>
   `The "${name}" package is missing. Please, make sure to install it to take advantage of ${reason}.`;
 
-const logger = new Logger('PackageLoader');
+const logger = new Logger("PackageLoader");
 
 export function loadPackage(
   packageName: string,
@@ -89,6 +90,7 @@ export function loadPackage(
 ```
 
 設計判断のポイント:
+
 1. **loaderFn の間接参照**: `require(packageName)` を直接呼ぶのではなく、`() => require('ioredis')` のようなクロージャを渡す。これにより、バンドラーが静的解析でパッケージ名を検出してしまう問題を回避できる
 2. **process.exit(1) による早期失敗**: 依存が見つからない場合は例外ではなくプロセス終了で対応する。フレームワーク起動時の必須依存欠落は回復不能という判断
 3. **context パラメータ**: エラーメッセージにどの機能が依存を必要としているかを含め、ユーザにとってアクショナブルなエラーにしている
@@ -191,13 +193,12 @@ CJS 環境から ESM-only パッケージ（`file-type`）をロードする必�
 // packages/common/pipes/file/file-type.validator.ts:127-135
 let fileTypeModule: string;
 try {
-  const resolvedPath = require.resolve('file-type');
+  const resolvedPath = require.resolve("file-type");
   fileTypeModule = pathToFileURL(resolvedPath).href;
 } catch {
-  fileTypeModule = 'file-type';
+  fileTypeModule = "file-type";
 }
-const { fileTypeFromBuffer } =
-  await loadEsm<typeof import('file-type')>(fileTypeModule);
+const { fileTypeFromBuffer } = await loadEsm<typeof import("file-type")>(fileTypeModule);
 ```
 
 ### Renovate による依存更新自動化
@@ -238,14 +239,10 @@ devDependencies の更新は Renovate Bot で自動マージされ、本番依�
 
 ```typescript
 // packages/microservices/client/client-kafka.ts:121
-kafkaPackage = loadPackage('kafkajs', ClientKafka.name, () =>
-  require('kafkajs'),
-);
+kafkaPackage = loadPackage("kafkajs", ClientKafka.name, () => require("kafkajs"));
 
 // packages/platform-fastify/adapters/fastify-adapter.ts:560
-loadPackage('@fastify/static', 'FastifyAdapter.useStaticAssets()', () =>
-  require('@fastify/static'),
-)
+loadPackage("@fastify/static", "FastifyAdapter.useStaticAssets()", () => require("@fastify/static"));
 ```
 
 - **コメントアウトされた型情報による意図の文書化**: `type Redis = any` の直上に `// type Redis = import('ioredis').Redis;` を残すことで、(1) なぜ any を使っているかの理由、(2) 将来型安全化する際の正しい型、(3) コード検索で元のパッケージを特定可能にしている。

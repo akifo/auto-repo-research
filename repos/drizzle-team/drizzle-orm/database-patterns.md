@@ -29,10 +29,10 @@ Session/Transaction の抽象化階層、そしてキャッシュレイヤーの
 
 ```typescript
 // pg-core/columns/integer.ts:49-53
-export function integer(): PgIntegerBuilderInitial<''>;
+export function integer(): PgIntegerBuilderInitial<"">;
 export function integer<TName extends string>(name: TName): PgIntegerBuilderInitial<TName>;
 export function integer(name?: string) {
-  return new PgIntegerBuilder(name ?? '');
+  return new PgIntegerBuilder(name ?? "");
 }
 ```
 
@@ -52,10 +52,10 @@ Drizzle は `Symbol.for('drizzle:entityKind')` を全クラスに静的プロパ
 
 ```typescript
 // entity.ts:1-42
-export const entityKind = Symbol.for('drizzle:entityKind');
+export const entityKind = Symbol.for("drizzle:entityKind");
 
 export function is<T extends DrizzleEntityClass<any>>(value: any, type: T): value is InstanceType<T> {
-  if (!value || typeof value !== 'object') {
+  if (!value || typeof value !== "object") {
     return false;
   }
   if (value instanceof type) {
@@ -123,9 +123,15 @@ Cache は `strategy()` / `get()` / `put()` / `onMutate()` の4メソッドを持
 ```typescript
 // cache/core/cache.ts:5-42
 export abstract class Cache {
-  abstract strategy(): 'explicit' | 'all';
+  abstract strategy(): "explicit" | "all";
   abstract get(key: string, tables: string[], isTag: boolean, isAutoInvalidate?: boolean): Promise<any[] | undefined>;
-  abstract put(hashedQuery: string, response: any, tables: string[], isTag: boolean, config?: CacheConfig): Promise<void>;
+  abstract put(
+    hashedQuery: string,
+    response: any,
+    tables: string[],
+    isTag: boolean,
+    config?: CacheConfig,
+  ): Promise<void>;
   abstract onMutate(params: MutationOption): Promise<void>;
 }
 ```
@@ -138,10 +144,10 @@ export abstract class Cache {
 
 ```typescript
 // pg-core/db.ts:660-668
-const select: Q['select'] = (...args: []) => getReplica(replicas).select(...args);
-const update: Q['update'] = (...args: [any]) => primary.update(...args);
-const insert: Q['insert'] = (...args: [any]) => primary.insert(...args);
-const transaction: Q['transaction'] = (...args: [any]) => primary.transaction(...args);
+const select: Q["select"] = (...args: []) => getReplica(replicas).select(...args);
+const update: Q["update"] = (...args: [any]) => primary.update(...args);
+const insert: Q["insert"] = (...args: [any]) => primary.insert(...args);
+const transaction: Q["transaction"] = (...args: [any]) => primary.transaction(...args);
 ```
 
 ### QueryPromise: クエリビルダを直接 await 可能にする

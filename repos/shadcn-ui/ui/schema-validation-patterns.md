@@ -39,7 +39,7 @@ export const registryItemSchema = z.discriminatedUnion("type", [
   registryItemCommonSchema.extend({
     type: registryItemTypeSchema.exclude(["registry:base", "registry:font"]),
   }),
-])
+]);
 ```
 
 同じパターンが `registryItemFileSchema` にも適用されており、`registry:file` と `registry:page` は `target` を必須、それ以外は任意としている。
@@ -59,7 +59,7 @@ export const registryItemFileSchema = z.discriminatedUnion("type", [
     type: registryItemTypeSchema.exclude(["registry:file", "registry:page"]),
     target: z.string().optional(),
   }),
-])
+]);
 ```
 
 ### Extract による discriminatedUnion からのバリアント型導出
@@ -68,9 +68,9 @@ export const registryItemFileSchema = z.discriminatedUnion("type", [
 
 ```typescript
 // packages/shadcn/src/registry/schema.ts:183-189
-export type RegistryItem = z.infer<typeof registryItemSchema>
-export type RegistryBaseItem = Extract<RegistryItem, { type: "registry:base" }>
-export type RegistryFontItem = Extract<RegistryItem, { type: "registry:font" }>
+export type RegistryItem = z.infer<typeof registryItemSchema>;
+export type RegistryBaseItem = Extract<RegistryItem, { type: "registry:base"; }>;
+export type RegistryFontItem = Extract<RegistryItem, { type: "registry:font"; }>;
 ```
 
 `RegistryFontItem` を使うと `font` プロパティが確実に存在する型として利用でき、`resolver.ts` でフォントアイテムのフィルタリング後に安全にアクセスできる。
@@ -83,7 +83,7 @@ const fonts: RegistryFontItem[] = payload
     ...item,
     type: "registry:font" as const,
     font: item.font!,
-  }))
+  }));
 ```
 
 ### rawConfigSchema と configSchema の段階的拡張
@@ -98,7 +98,7 @@ export const rawConfigSchema = z
     style: z.string(),
     // ... ユーザーが書くフィールド
   })
-  .strict()
+  .strict();
 
 export const configSchema = rawConfigSchema.extend({
   resolvedPaths: z.object({
@@ -106,7 +106,7 @@ export const configSchema = rawConfigSchema.extend({
     tailwindConfig: z.string(),
     // ... ランタイムで解決されるパス
   }),
-})
+});
 ```
 
 この段階的拡張は `rawConfigSchema.deepPartial()` の再利用にもつながっている。`registry:base` アイテムがベース設定をオーバーライドする際、全フィールドを省略可能にする必要があり、`.deepPartial()` がこれを実現する。
@@ -131,7 +131,7 @@ const cssValueSchema: z.ZodType<any> = z.lazy(() =>
     z.array(z.union([z.string(), z.record(z.string(), z.string())])),
     z.record(z.string(), cssValueSchema),
   ])
-)
+);
 ```
 
 ### .pick() + .extend() によるビュースキーマの構築
@@ -157,10 +157,10 @@ export const registryResolvedItemsTreeSchema = registryItemCommonSchema
         registryItemCommonSchema.extend({
           type: z.literal("registry:font"),
           font: registryItemFontSchema,
-        })
+        }),
       )
       .optional(),
-  })
+  });
 ```
 
 ### z.union による柔軟な入力形式の受け入れ
@@ -180,7 +180,7 @@ export const registryConfigItemSchema = z.union([
     params: z.record(z.string(), z.string()).optional(),
     headers: z.record(z.string(), z.string()).optional(),
   }),
-])
+]);
 ```
 
 ### .passthrough() による内部拡張スキーマ
@@ -196,7 +196,7 @@ const registryItemWithSourceSchema = registryItemCommonSchema
     font: registryItemFontSchema.optional(),
     config: z.any().optional(),
   })
-  .passthrough()
+  .passthrough();
 ```
 
 ### safeParse と parse の使い分け
@@ -205,14 +205,14 @@ const registryItemWithSourceSchema = registryItemCommonSchema
 
 ```typescript
 // packages/shadcn/src/commands/build.ts:43 - safeParse: ユーザーのレジストリファイル検証
-const result = registrySchema.safeParse(JSON.parse(content))
+const result = registrySchema.safeParse(JSON.parse(content));
 if (!result.success) {
-  logger.error(`Invalid registry file found at ${highlighter.info(resolvePaths.registryFile)}.`)
-  process.exit(1)
+  logger.error(`Invalid registry file found at ${highlighter.info(resolvePaths.registryFile)}.`);
+  process.exit(1);
 }
 
 // packages/shadcn/src/registry/api.ts:55 - parse: 内部的な信頼済みデータ
-return registrySchema.parse(result)
+return registrySchema.parse(result);
 ```
 
 ### 構造化エラークラスとスキーマの連携
@@ -223,18 +223,20 @@ return registrySchema.parse(result)
 // packages/shadcn/src/registry/errors.ts:213-236
 export class RegistryParseError extends RegistryError {
   constructor(public readonly item: string, parseError: unknown) {
-    let message = `Failed to parse registry item: ${item}`
+    let message = `Failed to parse registry item: ${item}`;
     if (parseError instanceof z.ZodError) {
-      message = `Failed to parse registry item: ${item}\n${parseError.errors
-        .map((e) => `  - ${e.path.join(".")}: ${e.message}`)
-        .join("\n")}`
+      message = `Failed to parse registry item: ${item}\n${
+        parseError.errors
+          .map((e) => `  - ${e.path.join(".")}: ${e.message}`)
+          .join("\n")
+      }`;
     }
     super(message, {
       code: RegistryErrorCode.PARSE_ERROR,
       cause: parseError,
       context: { item },
       suggestion: "The registry item may be corrupted or have an invalid format...",
-    })
+    });
   }
 }
 ```
@@ -259,7 +261,7 @@ export const registryItemTypeSchema = z.enum([
   "registry:font",
   "registry:example",
   "registry:internal",
-])
+]);
 ```
 
 ```typescript
@@ -269,8 +271,8 @@ export const registryConfigSchema = z.record(
   z.string().refine((key) => key.startsWith("@"), {
     message: "Registry names must start with @ (e.g., @v0, @acme)",
   }),
-  registryConfigItemSchema
-)
+  registryConfigItemSchema,
+);
 ```
 
 ```typescript
@@ -280,17 +282,17 @@ export function configWithDefaults(config?: DeepPartial<Config>) {
   const baseConfig = createConfig({
     style: FALLBACK_STYLE,
     registries: BUILTIN_REGISTRIES,
-  })
+  });
   if (!config) {
-    return baseConfig
+    return baseConfig;
   }
   return configSchema.parse(
     deepmerge(baseConfig, {
       ...config,
       style: resolveStyleFromConfig(config),
       registries: { ...BUILTIN_REGISTRIES, ...config.registries },
-    })
-  )
+    }),
+  );
 }
 ```
 
@@ -304,7 +306,7 @@ const parsed = z
     message: z.string().optional(),
     error: z.string().optional(),
   })
-  .safeParse(json)
+  .safeParse(json);
 ```
 
 ## パターンカタログ
@@ -339,21 +341,21 @@ const parsed = z
 
 ```typescript
 // Good: 共通スキーマを一度定義し、extend でバリアント固有フィールドを追加
-const commonSchema = z.object({ name: z.string(), description: z.string().optional() })
+const commonSchema = z.object({ name: z.string(), description: z.string().optional() });
 
-const variantA = commonSchema.extend({ type: z.literal("a"), config: configSchema })
-const variantB = commonSchema.extend({ type: z.literal("b"), font: fontSchema })
-const variantC = commonSchema.extend({ type: z.enum(["c", "d", "e"]) })
+const variantA = commonSchema.extend({ type: z.literal("a"), config: configSchema });
+const variantB = commonSchema.extend({ type: z.literal("b"), font: fontSchema });
+const variantC = commonSchema.extend({ type: z.enum(["c", "d", "e"]) });
 
-const itemSchema = z.discriminatedUnion("type", [variantA, variantB, variantC])
+const itemSchema = z.discriminatedUnion("type", [variantA, variantB, variantC]);
 ```
 
 - **`z.infer` + `Extract` による型導出**: discriminatedUnion からバリアント固有の型を手動で書かず、`Extract` で自動導出する。スキーマ変更時に型定義の更新漏れがない。
 
 ```typescript
-type Item = z.infer<typeof itemSchema>
-type BaseItem = Extract<Item, { type: "registry:base" }> // config フィールドが存在する型
-type FontItem = Extract<Item, { type: "registry:font" }> // font フィールドが存在する型
+type Item = z.infer<typeof itemSchema>;
+type BaseItem = Extract<Item, { type: "registry:base"; }>; // config フィールドが存在する型
+type FontItem = Extract<Item, { type: "registry:font"; }>; // font フィールドが存在する型
 ```
 
 - **`.refine()` によるビジネスルールのスキーマ内記述**: URL に `{name}` プレースホルダが含まれることを `.refine()` で強制し、バリデーションロジックをスキーマに集約する。バリデーション漏れのリスクを構造的に排除。
@@ -361,17 +363,17 @@ type FontItem = Extract<Item, { type: "registry:font" }> // font フィールド
 ```typescript
 z.string().refine((s) => s.includes("{name}"), {
   message: "Registry URL must include {name} placeholder",
-})
+});
 ```
 
 - **`.strict()` と `.passthrough()` の段階的使い分け**: ユーザー入力は `.strict()` で余分なフィールドを拒否し、内部中間データは `.passthrough()` で柔軟に拡張可能にする。
 
 ```typescript
 // ユーザー入力: 余分なフィールドを拒否
-const rawConfigSchema = z.object({ /* ... */ }).strict()
+const rawConfigSchema = z.object({/* ... */}).strict();
 
 // 内部表現: _source などのメタデータフィールドを許容
-const internalSchema = baseSchema.extend({ _source: z.string().optional() }).passthrough()
+const internalSchema = baseSchema.extend({ _source: z.string().optional() }).passthrough();
 ```
 
 - **Zod スキーマと JSON Schema の並行管理**: `registryItemSchema` (Zod) と `registry-item.json` (JSON Schema) を併用し、Zod はランタイム+型チェック用、JSON Schema は外部ツール (IDE、エディタ) の補完用として使い分けている。スキーマファイルの冒頭コメントで同期の注意喚起がある (`schema.ts:4`)。
@@ -382,16 +384,14 @@ const internalSchema = baseSchema.extend({ _source: z.string().optional() }).pas
 
 ```typescript
 // Bad: any 型が伝播する
-const cssValueSchema: z.ZodType<any> = z.lazy(() =>
-  z.union([z.string(), z.record(z.string(), cssValueSchema)])
-)
+const cssValueSchema: z.ZodType<any> = z.lazy(() => z.union([z.string(), z.record(z.string(), cssValueSchema)]));
 // このスキーマから z.infer すると any になる
 
 // Better: 再帰型を明示的に定義して ZodType に渡す
-type CssValue = string | string[] | { [key: string]: CssValue }
+type CssValue = string | string[] | { [key: string]: CssValue; };
 const cssValueSchema: z.ZodType<CssValue> = z.lazy(() =>
   z.union([z.string(), z.array(z.string()), z.record(z.string(), cssValueSchema)])
-)
+);
 ```
 
 - **Zod スキーマと JSON Schema の手動同期**: `schema.ts` の冒頭に「JSON Schema も更新せよ」というコメントがあるが、自動同期の仕組みがない。`zod-to-json-schema` などのツールで自動生成するか、テストで同期を検証する方が安全。
