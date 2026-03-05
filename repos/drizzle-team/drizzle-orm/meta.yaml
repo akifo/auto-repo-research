@@ -1,0 +1,100 @@
+url: https://github.com/drizzle-team/drizzle-orm
+stars: 33092
+language: TypeScript
+license: Apache-2.0
+description: "ORM"
+analyzed_at: "2026-03-04"
+local_path: /Users/akiho/github/github.com/drizzle-team/drizzle-orm
+scale: large
+
+perspectives:
+  - name: project-structure
+    file: project-structure.md
+    wave: 1
+    intent: "pnpm モノレポの境界設計と各パッケージの役割・依存関係を明らかにする"
+    summary: "ファットコアパッケージ戦略とサブパスエクスポート自動生成で20+ドライバを単一パッケージに統合"
+  - name: architecture
+    file: architecture.md
+    wave: 1
+    intent: "core → dialect → driver → session のレイヤー構成と依存方向を明らかにする"
+    summary: "core/dialect/session/driverの4層レイヤードアーキテクチャでHKTと抽象クラスにより型安全なドライバ差し替えを実現"
+  - name: design-philosophy
+    file: design-philosophy.md
+    wave: 1
+    intent: "SQL ファースト・ノーマジック・型安全の設計判断とその根拠を明らかにする"
+    summary: "SQL構文との1:1対応・0依存・declare型メタデータ・エスケープハッチ提供という4原則で型安全ORM を設計"
+  - name: type-system-patterns
+    file: type-system-patterns.md
+    wave: 1
+    intent: "型レベル SQL 推論・ジェネリクスチェーン・ブランド型の仕組みを明らかにする"
+    summary: "declare幽霊プロパティ・交差型による型状態累積・HKTエミュレーション・DrizzleTypeErrorで型推論チェーンを構築"
+  - name: adapter-implementation-patterns
+    file: adapter-implementation-patterns.md
+    wave: 1
+    intent: "20+ ドライバアダプターの共通パターンと差分吸収の仕組みを明らかにする"
+    summary: "Dialect/Session/PreparedQueryの3層抽象とNullObjectパターンで20+ドライバの差異を統一的に吸収"
+  - name: composition-patterns
+    file: composition-patterns.md
+    wave: 1
+    intent: "クエリビルダーチェイニングと SQL テンプレート合成のパターンを明らかにする"
+    summary: "SQLWrapperインターフェースによる統一合成とOmitベースの型状態制御でFluent APIの安全性を保証"
+  - name: database-patterns
+    file: database-patterns.md
+    wave: 1
+    intent: "スキーマ定義 API・クエリビルド・コネクション管理の設計を明らかにする"
+    summary: "テーブル定義を型の単一ソースとし、Session層でドライバを隠蔽しTransaction継承で同一API を提供"
+  - name: schema-validation-patterns
+    file: schema-validation-patterns.md
+    wave: 2
+    intent: "drizzle-zod/typebox/valibot エコシステムとの統合手法を明らかにする"
+    summary: "4バリデーションライブラリを同型構造で並列管理しConditionsオブジェクトでselect/insert/updateの差分を宣言的に制御"
+  - name: migration-patterns
+    file: migration-patterns.md
+    wave: 2
+    intent: "スキーマ → JSON スナップショット → diff → SQL 生成パイプラインを明らかにする"
+    summary: "Serialize→Snapshot→Squash→Diff→JSON Statements→SQLの6段パイプラインでZodバージョン管理付きIRを介した方言横断マイグレーション"
+  - name: api-design-practices
+    file: api-design-practices.md
+    wave: 2
+    intent: "マルチエントリポイント export 設計と公開 API 表面の管理を明らかにする"
+    summary: "ビルド時exports自動生成・Symbol.forによる内部API隠蔽・$プレフィックス規約で444ファイルのAPI表面を統制"
+  - name: error-handling-idioms
+    file: error-handling-idioms.md
+    wave: 2
+    intent: "エラー型設計・SQL エラーラッピング・バリデーションエラーの戦略を明らかにする"
+    summary: "3クラスのフラットなエラー階層・DrizzleTypeErrorによる型レベルエラー・ESLintプラグインの三層防御"
+  - name: testing-practices
+    file: testing-practices.md
+    wave: 2
+    intent: "Docker ベース統合テスト・型テスト分離の戦略を明らかにする"
+    summary: "全テストを実DB統合テストとし共通テスト関数を10+ドライバで再利用、型テストをランタイムテストにインライン配置"
+  - name: build-and-tooling
+    file: build-and-tooling.md
+    wave: 2
+    intent: "tsup/turbo/dprint によるビルド・フォーマットパイプラインを明らかにする"
+    summary: "tsup+tsc並列ビルド・ASTベースのCJS/ESMパス修正・attwによる型正当性ゲートでデュアルパブリッシュを自動化"
+  - name: performance-techniques
+    file: performance-techniques.md
+    wave: 2
+    intent: "Prepared statements・バッチ・キャッシュレイヤーの実装を明らかにする"
+    summary: "Prepare/Execute分離・バッチパイプライン・NullObjectキャッシュ・テーブルベース自動無効化でゼロコスト抽象を実現"
+  - name: dependency-management
+    file: dependency-management.md
+    wave: 2
+    intent: "モノレポ workspace・peer deps・バージョニング戦略を明らかにする"
+    summary: "全25+ドライバをoptional peer depsにしworkspace:dist参照とSymbol.forで公開後と同一条件の開発環境を構築"
+  - name: metaprogramming-techniques
+    file: metaprogramming-techniques.md
+    wave: 2
+    intent: "DB introspect → TypeScript コード生成のパイプラインを明らかにする"
+    summary: "Zodスキーマ付きバージョン管理IRを軸にDB→中間表現→TypeScriptコードの3層コード生成パイプラインを構築"
+  - name: sql-template-abstraction
+    file: sql-template-abstraction.md
+    wave: 2
+    intent: "SQL タグ付きテンプレートシステムと式の合成パターンを明らかにする"
+    summary: "タグ付きテンプレートでSQLをチャンク配列として保持しSQLWrapper統一インターフェースとundefinedスキップで宣言的合成を実現"
+  - name: dialect-normalization-patterns
+    file: dialect-normalization-patterns.md
+    wave: 2
+    intent: "3方言（pg/mysql/sqlite）の共通化と方言固有拡張の設計を明らかにする"
+    summary: "並列ミラーディレクトリ構造と型タグベースの方言分離で共通API を維持しつつ方言固有機能を型安全に提供"

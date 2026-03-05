@@ -52,7 +52,7 @@
 
 | #  | リポジトリ                                                              | 抽出できそうなプラクティス                                                   | Status |
 | -- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ------ |
-| 27 | [drizzle-team/drizzle-orm](https://github.com/drizzle-team/drizzle-orm) | SQL ファースト ORM 設計、マイグレーション生成、マルチ DB ドライバ対応        |        |
+| 27 | [drizzle-team/drizzle-orm](https://github.com/drizzle-team/drizzle-orm) | SQL ファースト ORM 設計、マイグレーション生成、マルチ DB ドライバ対応        | 済     |
 | 28 | [prisma/prisma](https://github.com/prisma/prisma)                       | スキーマファースト設計、コード生成パイプライン、クエリエンジンアーキテクチャ |        |
 | 29 | [kysely-org/kysely](https://github.com/kysely-org/kysely)               | 型安全クエリビルダー、プラグインシステム、方言抽象化                         |        |
 | 30 | [tursodatabase/libsql](https://github.com/tursodatabase/libsql)         | SQLite フォーク戦略、レプリケーション設計、エッジ DB アーキテクチャ          |        |
