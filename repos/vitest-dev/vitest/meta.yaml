@@ -1,0 +1,119 @@
+url: https://github.com/vitest-dev/vitest
+stars: 16072
+language: TypeScript
+license: MIT
+description: "Next generation testing framework powered by Vite"
+analyzed_at: "2026-03-05"
+local_path: /Users/akiho/github/github.com/vitest-dev/vitest
+scale: large
+
+perspectives:
+  # Wave 1: Core perspectives
+  - name: project-structure
+    file: project-structure.md
+    wave: 1
+    intent: "17パッケージのモノレポ構成とパッケージ間依存関係、test/とpackages/の分離戦略を明らかにする"
+    summary: "pnpm ワークスペースモノレポの3層依存グラフ、テストと本体の分離、catalog による依存一元管理"
+
+  - name: architecture
+    file: architecture.md
+    wave: 1
+    intent: "テストフレームワークのレイヤー構成（CLI→Node→Runner→Runtime→Worker）と依存方向を解明する"
+    summary: "CLI→Core→Pool→PoolRunner→Worker の5層構成、birpc 双方向 RPC、Safe Timers による防御"
+
+  - name: design-philosophy
+    file: design-philosophy.md
+    wave: 1
+    intent: "Vite-powered テストの設計思想、ESM-first 方針、no-mock テストポリシーの根拠を分析する"
+    summary: "Vite パイプライン再利用、No-mock テストポリシー、スマートデフォルト、サブパスエクスポート強制"
+
+  - name: worker-isolation-patterns
+    file: worker-isolation-patterns.md
+    wave: 1
+    intent: "Tinypool ベースのワーカースレッド分離、テスト並列化、プロセス間通信の仕組みを解明する"
+    summary: "5種プール（threads/forks/vm系/typescript）の Strategy 切替、状態マシン、ワーカー再利用戦略"
+
+  - name: test-runner-lifecycle
+    file: test-runner-lifecycle.md
+    wave: 1
+    intent: "テスト収集→フィクスチャ解決→実行→レポートの一連のライフサイクルとフック設計を分析する"
+    summary: "4フェーズ分離（収集→実行→レポート）、use() コールバックによるフィクスチャ管理、スロットル通知"
+
+  - name: api-design-practices
+    file: api-design-practices.md
+    wave: 1
+    intent: "expect/spy/snapshot 等の公開 API 設計、Jest 互換性の維持戦略、拡張ポイントを分析する"
+    summary: "Chai プラグインで Jest API を構築、expect.extend の自動非対称マッチャー化、エイリアス廃止戦略"
+
+  # Wave 2: Extended perspectives
+  - name: vite-integration-patterns
+    file: vite-integration-patterns.md
+    wave: 2
+    intent: "Vite の ModuleRunner/プラグインシステムをテストフレームワークに統合する手法を分析する"
+    summary: "プラグイン配列による責務分離、DevServer 機能の選択的無効化、バージョン差異の機能検出吸収"
+
+  - name: module-mocking-architecture
+    file: module-mocking-architecture.md
+    wave: 2
+    intent: "mocker パッケージの AST 変換、自動モック生成、ブラウザ/Node 両対応の仕組みを解明する"
+    summary: "正規表現ガード+MagicString による AST ホイスティング、RefTracker 循環参照追跡、3環境インターセプト"
+
+  - name: snapshot-design
+    file: snapshot-design.md
+    wave: 2
+    intent: "スナップショットのシリアライズ、差分比較、インラインスナップショットの AST 書き換え手法を分析する"
+    summary: "3形態統一 match、プラグインチェーンシリアライズ、MagicString 非破壊書き戻し、冪等書き込み"
+
+  - name: browser-testing-abstraction
+    file: browser-testing-abstraction.md
+    wave: 2
+    intent: "Playwright/WebDriverIO をプロバイダとして抽象化し、ブラウザテストを統一 API で提供する設計を分析する"
+    summary: "BrowserProvider 最小インターフェース、declare module 型拡張、名前ベースコマンドディスパッチ"
+
+  - name: coverage-provider-patterns
+    file: coverage-provider-patterns.md
+    wave: 2
+    intent: "V8/Istanbul カバレッジプロバイダの抽象化層、ソースマップ統合、レポート生成パイプラインを分析する"
+    summary: "二層インターフェース（Runtime/Host）、CoverageMap 共通フォーマット正規化、動的プロバイダ解決"
+
+  - name: configuration-patterns
+    file: configuration-patterns.md
+    wave: 2
+    intent: "Vite config 拡張としての vitest.config、ワークスペース設定、条件付き設定マージの戦略を分析する"
+    summary: "Vite config 寄生拡張、3フェーズ設定マージ、矛盾早期検出、ホワイトリスト式 CLI 伝播"
+
+  - name: error-handling-idioms
+    file: error-handling-idioms.md
+    wave: 2
+    intent: "テスト失敗時のエラーフォーマット、スタックトレース加工、pretty-print 差分表示の設計を分析する"
+    summary: "多段フォールバック表示、Worker 間エラーシリアライズ、差分の段階的劣化、actionable エラーメッセージ"
+
+  - name: type-system-patterns
+    file: type-system-patterns.md
+    wave: 2
+    intent: "カスタムマッチャーの型拡張、ジェネリクスを使った型安全アサーション、declaration merging の活用を分析する"
+    summary: "空 interface 拡張ポイント、declare module 段階的型合成、ThisType/Phantom Type/再帰 mapped type"
+
+  - name: testing-practices
+    file: testing-practices.md
+    wave: 2
+    intent: "テストフレームワーク自身のテスト戦略（runInlineTests、no-mock ポリシー、セルフホスティング）を分析する"
+    summary: "セルフホスティング、runInlineTests 宣言的テスト、onTestFinished 自動クリーンアップ、結果ツリー検証"
+
+  - name: build-and-tooling
+    file: build-and-tooling.md
+    wave: 2
+    intent: "Rollup ベースビルド、DTS 生成、pnpm catalog/patches の活用、開発ワークフローを分析する"
+    summary: "2段階 DTS 生成（OXC+rollup-plugin-dts）、ビルド設定共通化、pnpm catalog/patches 戦略的活用"
+
+  - name: ci-cd
+    file: ci-cd.md
+    wave: 2
+    intent: "マルチOS/Node マトリクス CI、Rolldown 互換テスト、ecosystem-ci、変更検出によるスキップ戦略を分析する"
+    summary: "非対称マトリクス、変更検出スキップ、Rolldown 互換独立ジョブ、SHA ピン留め、最小権限設計"
+
+  - name: ai-settings
+    file: ai-settings.md
+    wave: 2
+    intent: "CLAUDE.md と AGENTS.md の構成、AI エージェント向け開発ガイドの設計意図を分析する"
+    summary: "Hub-Spoke 3層構成、制約駆動の品質保証（禁止事項明示）、専門エージェント委譲パターン"

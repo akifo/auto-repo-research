@@ -75,7 +75,7 @@
 
 | #  | リポジトリ                                                                                        | 抽出できそうなプラクティス                                                | Status |
 | -- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------ |
-| 40 | [vitest-dev/vitest](https://github.com/vitest-dev/vitest)                                         | Vite ベーステストランナー、ワーカー並列化、スナップショット設計           |        |
+| 40 | [vitest-dev/vitest](https://github.com/vitest-dev/vitest)                                         | Vite ベーステストランナー、ワーカー並列化、スナップショット設計           | 済     |
 | 41 | [microsoft/playwright](https://github.com/microsoft/playwright)                                   | ブラウザ自動化 API 設計、テスト分離、コード生成                           |        |
 | 42 | [testing-library/react-testing-library](https://github.com/testing-library/react-testing-library) | ユーザー中心テスト哲学、アクセシビリティクエリ、テストユーティリティ設計  |        |
 | 43 | [storybook-js/storybook](https://github.com/storybookjs/storybook)                                | アドオンシステム、CSF フォーマット設計、マルチフレームワーク対応          |        |
