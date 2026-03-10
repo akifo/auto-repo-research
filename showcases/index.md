@@ -49,6 +49,8 @@
 | [ast-canonical-normalization](./pattern_ast-canonical-normalization)           | AST正規フォーマットでN:N変換をN+N化するクロスプラットフォーム正規化パターン                    |
 | [metadata-driven-architecture](./pattern_metadata-driven-architecture)         | デコレータでメタデータ格納→ランタイム解釈のWrite/Read分離+キー集約+3層マージ                   |
 | [three-layer-platform-abstraction](./pattern_three-layer-platform-abstraction) | Interface→AbstractClass→Concreteの三層抽象化+型付き脱出口によるプラットフォーム交換            |
+| [fs-driven-registration](./pattern_fs-driven-registration)                     | ファイル配置をレジストリとして使いproc macro/スキャンでコンポーネントを自動登録                 |
+| [ir-size-static-assertion](./pattern_ir-size-static-assertion)                 | ホットデータ構造のサイズをstatic_assert!で固定しパフォーマンス回帰を防止                       |
 
 ## Practice
 
@@ -95,6 +97,7 @@
 | [peer-deps-dual-declaration](./practice_peer-deps-dual-declaration)     | peerDependencies広レンジ+devDependencies具体バージョン二重宣言+sherif一貫性検証      |
 | [progressive-disclosure-api](./practice_progressive-disclosure-api)     | 引数なし→プリミティブ→オプションオブジェクトの段階的オーバーロードAPI設計            |
 | [optional-peer-lazy-load](./practice_optional-peer-lazy-load)           | optional peerDependencies+統一遅延ローダーでinstall-what-you-useを実現(4リポ横断)    |
+| [nursery-incubation](./practice_nursery-incubation)                     | nurseryステージで試験的公開→段階的stable昇格によるAPI安定化リリース戦略               |
 
 ## Claude
 
@@ -109,6 +112,7 @@
 | [always-ask-never-boundaries](./claude_always-ask-never-boundaries) | Always/Ask first/Neverの3段階行動境界でAIツールの行動を明示的に制御                   |
 | [skills-npm-bundled-docs](./claude_skills-npm-bundled-docs)         | SKILL.md+docsをnpmパッケージに同梱しAIエージェントがnode_modules/から直接参照         |
 | [agents-md-style-enforcement](./claude_agents-md-style-enforcement) | AGENTS.mdでAI生成コードのスタイルを強制する4リポ横断パターン比較と規模別構成ガイド    |
+| [domain-specialized-agents](./claude_domain-specialized-agents)     | ドメイン専門agents+skillsカタログで大規模OSSのAI開発支援を設計する手法                |
 
 ## Tool
 
