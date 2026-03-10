@@ -1,0 +1,117 @@
+url: https://github.com/biomejs/biome
+stars: 23966
+language: Rust
+license: Apache-2.0
+description: "A toolchain for web projects, aimed to provide functionalities to maintain them. Biome offers formatter and linter, usable via CLI and LSP."
+analyzed_at: "2026-03-09"
+local_path: /Users/akiho/github/github.com/biomejs/biome
+scale: large
+
+perspectives:
+  - name: project-structure
+    file: project-structure.md
+    wave: 1
+    intent: "94クレートの分割戦略・命名規則・依存方向を明らかにし、大規模Rustワークスペースの組織化パターンを抽出する"
+    summary: "94クレートを biome_{lang}_{role} の3層命名で統一し、言語間水平依存を排除した垂直積層アーキテクチャ"
+
+  - name: architecture
+    file: architecture.md
+    wave: 1
+    intent: "Parser→Formatter→Analyzer→CLI→LSP のレイヤー構成と、言語横断の共通基盤設計を明らかにする"
+    summary: "Language traitで言語を型パラメータ化し、共通基盤+6クレートパターンの反復適用で多言語対応を実現"
+
+  - name: design-philosophy
+    file: design-philosophy.md
+    wave: 1
+    intent: "Prettier/ESLint統合・Rust選択・ゼロ依存JS配布など、技術選定の根拠と設計思想を体系化する"
+    summary: "Prettier 97%互換+独自改善、npm optional dependenciesによるネイティブ配布、nursery段階的安定化"
+
+  - name: cst-and-syntax-model
+    file: cst-and-syntax-model.md
+    wave: 1
+    intent: "Rowan CST（Concrete Syntax Tree）の設計と、型安全なノードアクセス・ファクトリパターンを分析する"
+    summary: "Green/Red分離の不変CST、スロットベースアクセス、Bogusノードによるエラー回復、ungram駆動コード生成"
+
+  - name: multi-language-pipeline
+    file: multi-language-pipeline.md
+    wave: 1
+    intent: "JS/TS/CSS/JSON/GraphQL/HTML/Markdown/YAML 8言語対応の共通パイプライン設計を明らかにする"
+    summary: "FormatLanguage/Parser/Rule traitの関連型で言語を注入し、Capabilitiesで段階的機能公開を実現"
+
+  - name: rule-system-architecture
+    file: rule-system-architecture.md
+    wave: 1
+    intent: "Lint/Assist ルールの宣言的登録・メタデータ管理・nursery→stable昇格のライフサイクルを分析する"
+    summary: "declare_lint_rule!マクロで489+ルールを宣言的登録、3層階層フィルタリング、nurseryインキュベーション"
+
+  - name: metaprogramming-techniques
+    file: metaprogramming-techniques.md
+    wave: 2
+    intent: "derive マクロ・proc-macro・xtask コード生成によるボイラープレート削減戦略を明らかにする"
+    summary: "xtask/proc-macro/declarative macroの3層で.ungramから54,000行超を生成、FS駆動のルール自動登録"
+
+  - name: ir-formatter-design
+    file: ir-formatter-design.md
+    wave: 2
+    intent: "IR（中間表現）ベースのフォーマッター設計と、Prettier互換を保ちつつ独自最適化する手法を分析する"
+    summary: "24バイトFormatElement IRをフラット配列+タグペアで表現、BestFitting複数バリアント選択、Interned共有"
+
+  - name: error-handling-idioms
+    file: error-handling-idioms.md
+    wave: 2
+    intent: "Diagnostics システムの設計・エラーカテゴリ管理・リッチなエラーメッセージ生成パターンを分析する"
+    summary: "構造化Diagnostics+Visitor出力分離、コンパイル時カテゴリ検証、Box<Box<dyn>>でResult<T>をusize化"
+
+  - name: testing-practices
+    file: testing-practices.md
+    wave: 2
+    intent: "insta スナップショットテスト・spec_tests パターン・conformance テストの戦略を分析する"
+    summary: "gen_tests!マクロでファイル配置=テスト登録、コードアクション多段階検証、Test262/Prettier適合率測定"
+
+  - name: performance-techniques
+    file: performance-techniques.md
+    wave: 2
+    intent: "mimalloc/jemalloc・rayon 並列処理・アリーナアロケーション・インクリメンタル処理の最適化手法を分析する"
+    summary: "OS別アロケータ選択、rayon並列走査、NodeCacheインターニング+世代GC、papaya lock-freeマップ"
+
+  - name: configuration-patterns
+    file: configuration-patterns.md
+    wave: 2
+    intent: "biome.json の設計・スキーマ生成・デシリアライズマクロ・設定マージ戦略を分析する"
+    summary: "Option<T>+Merge traitで設定継承、フォールトトレラントデシリアライズ、単一定義から多面的生成"
+
+  - name: cli-framework-patterns
+    file: cli-framework-patterns.md
+    wave: 2
+    intent: "bpaf ベースの CLI 設計・サブコマンド構造・LSP統合・daemon モードの設計を分析する"
+    summary: "bpaf宣言的CLI+Workspace trait透過バックエンド、daemon隠しコマンド、CommandRunner共通パイプライン"
+
+  - name: platform-abstraction
+    file: platform-abstraction.md
+    wave: 2
+    intent: "ネイティブバイナリ・WASM（bundler/node/web）・npm パッケージの多プラットフォーム配布戦略を分析する"
+    summary: "FileSystem traitでプラットフォーム差異を吸収、npm os/cpuパターンで8環境+WASM3ターゲット配布"
+
+  - name: extensibility-mechanisms
+    file: extensibility-mechanisms.md
+    wave: 2
+    intent: "GritQL プラグイン・Boa JSプラグインエンジン・将来の拡張ポイント設計を分析する"
+    summary: "AnalyzerPlugin traitで GritQL/Boa JS 二重バックエンド統一、合成モジュールでAPI境界を制御"
+
+  - name: ai-settings
+    file: ai-settings.md
+    wave: 2
+    intent: "CLAUDE.md・AGENTS.md・.claude/skills・.claude/agents の AI 開発支援設計を分析する"
+    summary: "エージェント3つ+スキル8つの組み合わせカタログ、settings.jsonコマンド権限制御、AI開示ポリシー"
+
+  - name: build-and-tooling
+    file: build-and-tooling.md
+    wave: 2
+    intent: "justfile タスクランナー・xtask コード生成・CI/CD パイプライン・リリースフローを分析する"
+    summary: "just readyでCI等価ローカルチェック、Overwrite/Verifyモード、changesets fixed群バージョン同期"
+
+  - name: semantic-analysis-patterns
+    file: semantic-analysis-patterns.md
+    wave: 2
+    intent: "セマンティックモデル・スコープ分析・型情報・モジュールグラフの設計パターンを分析する"
+    summary: "イベント駆動二段階構築、Arc+IDハンドルパターン、NonZeroニッチ最適化、型解決4段階レベル制御"

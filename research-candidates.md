@@ -63,7 +63,7 @@
 | #  | リポジトリ                                                | 抽出できそうなプラクティス                                                         | Status |
 | -- | --------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------ |
 | 32 | [vitejs/vite](https://github.com/vitejs/vite)             | プラグインアーキテクチャ、ESM ベース開発サーバー、Rollup 統合                      | 済     |
-| 33 | [biomejs/biome](https://github.com/biomejs/biome)         | Rust で JS ツール構築、Linter/Formatter 統合設計、パフォーマンス重視アーキテクチャ |        |
+| 33 | [biomejs/biome](https://github.com/biomejs/biome)         | Rust で JS ツール構築、Linter/Formatter 統合設計、パフォーマンス重視アーキテクチャ | 済     |
 | 34 | [oxc-project/oxc](https://github.com/oxc-project/oxc)     | Rust 製 JS パーサー、AST 設計、アリーナアロケーション                              |        |
 | 35 | [evanw/esbuild](https://github.com/evanw/esbuild)         | Go で JS バンドラ構築、並列処理設計、ゼロ依存ポリシー                              |        |
 | 36 | [rolldown/rolldown](https://github.com/rolldown/rolldown) | Rust 製 Rollup 互換、NAPI ブリッジ設計、プラグイン互換レイヤー                     |        |
